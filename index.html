@@ -1,96 +1,106 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-  <meta charset="UTF-8">
-  <title>Login</title>
-  <style>
-    body {
-      background-color: #f2f2f2;
-      font-family: Arial, sans-serif;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-    }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: #f4f4f4;
+        }
 
-    .login-box {
-      background-color: #fff;
-      padding: 40px;
-      border-radius: 10px;
-      box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
-      text-align: center;
-      width: 300px;
-    }
+        .container {
+            width: 100%;
+            max-width: 400px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
 
-    .logo {
-      max-width: 100px;
-      margin-bottom: 20px;
-    }
+        .logo {
+            width: 100%;
+            max-width: 150px;
+            margin-bottom: 20px;
+        }
 
-    .login-title {
-      max-width: 150px;
-      margin-bottom: 20px;
-    }
+        input[type="text"], input[type="password"] {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
 
-    input[type="text"], input[type="password"] {
-      width: 100%;
-      padding: 10px;
-      margin: 10px 0;
-      border: 1px solid #ccc;
-      border-radius: 5px;
-    }
+        button {
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
 
-    button {
-      width: 100%;
-      padding: 10px;
-      background-color: #007bff;
-      color: white;
-      border: none;
-      border-radius: 5px;
-      font-weight: bold;
-      cursor: pointer;
-    }
+        button:hover {
+            background-color: #45a049;
+        }
 
-    button:hover {
-      background-color: #0056b3;
-    }
+        .report-button {
+            display: none;
+            margin-top: 20px;
+        }
 
-    .error {
-      color: red;
-      margin-top: 10px;
-    }
-  </style>
+        iframe {
+            width: 100%;
+            height: 500px;
+            border: none;
+            margin-top: 20px;
+        }
+    </style>
 </head>
 <body>
 
-  <div class="login-box">
-    <!-- LOGO -->
-    <img src="images/logo.jpg" alt="Logo" class="logo" />
+    <div class="container">
+        <img src="/images/logo.png" alt="Logo" class="logo">
+        <h2>Login</h2>
+        
+        <!-- Form di login -->
+        <form id="loginForm">
+            <input type="text" id="username" placeholder="Utenza" required>
+            <input type="password" id="password" placeholder="Password" required>
+            <button type="submit">Accedi</button>
+        </form>
 
-    <!-- TITOLO LOGIN COME IMMAGINE -->
-    <img src="images/login-title.png" alt="Login" class="login-title" />
+        <!-- Bottone Report, inizialmente nascosto -->
+        <button id="reportButton" class="report-button" onclick="showReport()">Report</button>
 
-    <!-- FORM -->
-    <input type="text" id="username" placeholder="Username">
-    <input type="password" id="password" placeholder="Password">
-    <button onclick="login()">Accedi</button>
-    <div class="error" id="error-msg"></div>
-  </div>
+        <!-- Iframe per visualizzare il PDF -->
+        <iframe id="pdfViewer" style="display: none;" src=""></iframe>
+    </div>
 
-  <script>
-    function login() {
-      const user = document.getElementById('username').value;
-      const pass = document.getElementById('password').value;
+    <script>
+        document.getElementById("loginForm").addEventListener("submit", function(event) {
+            event.preventDefault();  // Impedisce il comportamento di submit normale
 
-      if (user === 'admin' && pass === '1234') {
-        alert("Accesso riuscito!");
-        // window.location.href = "dashboard.html";
-      } else {
-        document.getElementById('error-msg').textContent = "Credenziali errate.";
-      }
-    }
-  </script>
+            var username = document.getElementById("username").value;
+            var password = document.getElementById("password").value;
+
+            if (username === "sono io" && password !== "") {
+                document.getElementById("reportButton").style.display = "inline-block";  // Mostra il bottone Report
+            } else {
+                alert("Username o password errati.");
+            }
+        });
+
+        function showReport() {
+            var pdfViewer = document.getElementById("pdfViewer");
+            pdfViewer.src = "/report/template.pdf";  // Sostituisci con il percorso del tuo PDF
+            pdfViewer.style.display = "block";  // Mostra il PDF
+        }
+    </script>
 
 </body>
 </html>
-
