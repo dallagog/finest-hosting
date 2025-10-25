@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Login & Registrazione ver 1.1</title>
+<title>Login & Registrazione ver 0.1beta</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 <link rel="icon" type="image/x-icon" href="images/logo-bullandbear.png">
 <style>
@@ -21,14 +21,20 @@
     border-radius: 12px;
     box-shadow: 0 0 15px rgba(0,0,0,0.1);
     width: 300px;
+    text-align: center;
+  }
+  .logo {
+    width: 100px;
+    height: auto;
+    margin-bottom: 15px;
   }
   h2 {
-    text-align: center;
     margin-bottom: 30px;
   }
   .input-group {
     position: relative;
     margin-bottom: 25px;
+    text-align: left;
   }
   .input-group i {
     position: absolute;
@@ -72,11 +78,12 @@
 </head>
 <body>
 <div class="container">
+  <img src="images/logo-bullandbear.png" alt="Logo" class="logo">
   <h2 id="form-title">Login</h2>
   
   <div class="input-group">
-    <i class="fa fa-envelope"></i>
-    <input type="email" id="email" placeholder="Email">
+    <i class="fa fa-user"></i>
+    <input type="text" id="username" placeholder="Username">
   </div>
   <div class="input-group">
     <i class="fa fa-lock"></i>
@@ -98,7 +105,7 @@
 
   switchForm.addEventListener("click", () => {
     isLogin = !isLogin;
-    if(isLogin){
+    if (isLogin) {
       title.textContent = "Login";
       submitBtn.textContent = "Accedi";
       switchForm.textContent = "Non hai un account? Registrati";
@@ -110,15 +117,15 @@
   });
 
   submitBtn.addEventListener("click", async () => {
-    const email = document.getElementById("email").value.trim();
+    const username = document.getElementById("username").value.trim();
     const password = document.getElementById("password").value.trim();
-    if(!email || !password){
+    if (!username || !password) {
       alert("Compila tutti i campi");
       return;
     }
 
     const apiUrl = isLogin ? `${apiBaseUser}/login` : `${apiBaseNew}/create`;
-    const payload = { email, password };
+    const payload = { username, password };
 
     try {
       const response = await fetch(apiUrl, {
@@ -127,7 +134,7 @@
         body: JSON.stringify(payload)
       });
       const data = await response.json();
-      if(response.ok){
+      if (response.ok) {
         alert(isLogin ? "Login riuscito!" : "Account creato!");
       } else {
         alert(data.detail || "Errore API");
@@ -137,6 +144,5 @@
     }
   });
 </script>
-1G</body>
+</body>
 </html>
-
