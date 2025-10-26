@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Login & Registration ver 0.3</title>
+<title>Login & Registration ver 0.4</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 <link rel="icon" type="image/x-icon" href="/images/logo-bullandbear.png">
 <style>
@@ -78,6 +78,10 @@
     margin-top: 15px;
     text-align: left;
   }
+  #update-btn {
+    margin-top: 15px;
+    display: none;
+  }
 </style>
 </head>
 <body>
@@ -97,16 +101,21 @@
   <div id="extra-fields"></div>
   
   <button id="submit-btn">Sign in</button>
-  <div class="switch" id="switch-form">Don’t have an account? Sign up</div>
+  <button id="update-btn">Update Info</button>
+  <div class="switch" id="switch-form">Don't have an account? Sign up</div>
 </div>
 
 <script>
-  const apiBaseNew  = "https://new-user-tunnel.fe-web.eu";
-  const apiBaseUser = "https://user-tunnel.fe-web.eu";
+  const apiBaseNew      = "https://new-user-tunnel.fe-web.eu";
+  const apiBaseUser     = "https://user-tunnel.fe-web.eu";
+  const apiBaseUserInfo = "https://user-tunnel.fe-web.eu";
 
   let isLogin = true;
+  let currentTellme = [];
+  
   const title = document.getElementById("form-title");
   const submitBtn = document.getElementById("submit-btn");
+  const updateBtn = document.getElementById("update-btn");
   const switchForm = document.getElementById("switch-form");
   const extraFieldsDiv = document.getElementById("extra-fields");
 
@@ -115,52 +124,24 @@
     if (isLogin) {
       title.textContent = "Login";
       submitBtn.textContent = "Sign in";
-      switchForm.textContent = "Don’t have an account? Sign up";
+      switchForm.textContent = "Don't have an account? Sign up";
       extraFieldsDiv.innerHTML = "";
+      updateBtn.style.display = "none";
+      submitBtn.style.display = "block";
     } else {
       title.textContent = "Registration";
       submitBtn.textContent = "Create Account";
       switchForm.textContent = "Already have an account? Sign in";
       extraFieldsDiv.innerHTML = "";
+      updateBtn.style.display = "none";
+      submitBtn.style.display = "block";
     }
   });
-
-  // Mostra dinamicamente i campi richiesti dal server
-  function showExtraFields(tellme) {
-    extraFieldsDiv.innerHTML = ""; // Pulisce eventuali campi precedenti
-    if (!tellme || !Array.isArray(tellme)) return;
-
-    if (tellme.includes("email")) {
-      extraFieldsDiv.innerHTML += `
-        <div class="input-group">
-          <i class="fa fa-envelope"></i>
-          <input type="email" id="email" placeholder="Email">
-        </div>`;
-    }
-    if (tellme.includes("language")) {
-      extraFieldsDiv.innerHTML += `
-        <div class="input-group">
-          <i class="fa fa-language"></i>
-          <input type="text" id="language" placeholder="Language (es. IT, EN)">
-        </div>`;
-    }
-    if (tellme.includes("currency")) {
-      extraFieldsDiv.innerHTML += `
-        <div class="input-group">
-          <i class="fa fa-coins"></i>
-          <input type="text" id="currency" placeholder="Currency (es. EUR, USD)">
-        </div>`;
-    }
-
-    if (tellme.length > 0) {
-      alert("Additional information is required to complete the login.");
-      //#TODO: richiamo API /update per aggironare l'utenza
-    }
-  }
 
   submitBtn.addEventListener("click", async () => {
     const username = document.getElementById("username").value.trim();
     const password = document.getElementById("password").value.trim();
+    
     if (!username || !password) {
       alert("Please fill in all fields");
       return;
@@ -181,17 +162,100 @@
       if (response.ok) {
         if (isLogin) {
           if (data.tellme && Array.isArray(data.tellme) && data.tellme.length > 0) {
-            showExtraFields(data.tellme);
+            currentTellme = data.tellme;
+            extraFieldsDiv.innerHTML = "";
+
+            if (data.tellme.includes("email")) {
+              extraFieldsDiv.innerHTML += `
+                <div class="input-group">
+                  <i class="fa fa-envelope"></i>
+                  <input type="email" id="email" placeholder="Email">
+                </div>`;
+            }
+            if (data.tellme.includes("language")) {
+              extraFieldsDiv.innerHTML += `
+                <div class="input-group">
+                  <i class="fa fa-language"></i>
+                  <input type="text" id="language" placeholder="Language (es. IT, EN)">
+                </div>`;
+            }
+            if (data.tellme.includes("currency")) {
+              extraFieldsDiv.innerHTML += `
+                <div class="input-group">
+                  <i class="fa fa-coins"></i>
+                  <input type="text" id="currency" placeholder="Currency (es. EUR, USD)">
+                </div>`;
+            }
+
+            alert("Additional information is required to complete the login.");
+            submitBtn.style.display = "none";
+            updateBtn.style.display = "block";
           } else {
-            alert("Logged!");
+            alert("Logged in successfully!");
           }
         } else {
-          alert("Account: created!");
+          alert("Account created successfully!");
         }
       } else {
         alert(data.detail || "API Error.");
       }
+    } catch (err) {
+      alert("Connection error: " + err);
+    }
+  });
 
+  updateBtn.addEventListener("click", async () => {
+    const username = document.getElementById("username").value.trim();
+    const password = document.getElementById("password").value.trim();
+    
+    const updateData = { username, password };
+
+    if (currentTellme.includes("email")) {
+      const email = document.getElementById("email")?.value.trim();
+      if (!email) {
+        alert("Please fill in the email field");
+        return;
+      }
+      updateData.email = email;
+    }
+    
+    if (currentTellme.includes("language")) {
+      const language = document.getElementById("language")?.value.trim();
+      if (!language) {
+        alert("Please fill in the language field");
+        return;
+      }
+      updateData.language = language;
+    }
+    
+    if (currentTellme.includes("currency")) {
+      const currency = document.getElementById("currency")?.value.trim();
+      if (!currency) {
+        alert("Please fill in the currency field");
+        return;
+      }
+      updateData.currency = currency;
+    }
+
+    const apiUrl = `${apiBaseUser}/update`;
+
+    try {
+      const response = await fetch(apiUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(updateData)
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        alert("Information updated successfully! You are now logged in.");
+        extraFieldsDiv.innerHTML = "";
+        updateBtn.style.display = "none";
+        submitBtn.style.display = "block";
+      } else {
+        alert(data.detail || "Update failed.");
+      }
     } catch (err) {
       alert("Connection error: " + err);
     }
