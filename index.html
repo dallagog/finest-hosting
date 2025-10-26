@@ -3,8 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Login & Registration ver 0.2beta</title>
+<title>Login & Registration ver 0.3</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<link rel="icon" type="image/x-icon" href="/images/logo-bullandbear.png">
 <style>
   body {
     font-family: Arial, sans-serif;
@@ -73,11 +74,15 @@
     color: #555;
     cursor: pointer;
   }
+  #extra-fields {
+    margin-top: 15px;
+    text-align: left;
+  }
 </style>
 </head>
 <body>
 <div class="container">
-  <img src="images/logo-bullandbear.png" alt="Logo" class="logo">
+  <img src="images/under_construction.jpeg" alt="Logo" class="logo">
   <h2 id="form-title">Login</h2>
   
   <div class="input-group">
@@ -88,6 +93,8 @@
     <i class="fa fa-lock"></i>
     <input type="password" id="password" placeholder="Password">
   </div>
+
+  <div id="extra-fields"></div>
   
   <button id="submit-btn">Sign in</button>
   <div class="switch" id="switch-form">Don’t have an account? Sign up</div>
@@ -97,10 +104,11 @@
   const apiBaseNew  = "https://new-user-tunnel.fe-web.eu";
   const apiBaseUser = "https://user-tunnel.fe-web.eu";
 
-  let isLogin = true; // true = login, false = registrazione
+  let isLogin = true;
   const title = document.getElementById("form-title");
   const submitBtn = document.getElementById("submit-btn");
   const switchForm = document.getElementById("switch-form");
+  const extraFieldsDiv = document.getElementById("extra-fields");
 
   switchForm.addEventListener("click", () => {
     isLogin = !isLogin;
@@ -108,12 +116,47 @@
       title.textContent = "Login";
       submitBtn.textContent = "Sign in";
       switchForm.textContent = "Don’t have an account? Sign up";
+      extraFieldsDiv.innerHTML = "";
     } else {
       title.textContent = "Registration";
       submitBtn.textContent = "Create Account";
       switchForm.textContent = "Already have an account? Sign in";
+      extraFieldsDiv.innerHTML = "";
     }
   });
+
+  // Mostra dinamicamente i campi richiesti dal server
+  function showExtraFields(tellme) {
+    extraFieldsDiv.innerHTML = ""; // Pulisce eventuali campi precedenti
+    if (!tellme || !Array.isArray(tellme)) return;
+
+    if (tellme.includes("email")) {
+      extraFieldsDiv.innerHTML += `
+        <div class="input-group">
+          <i class="fa fa-envelope"></i>
+          <input type="email" id="email" placeholder="Email">
+        </div>`;
+    }
+    if (tellme.includes("language")) {
+      extraFieldsDiv.innerHTML += `
+        <div class="input-group">
+          <i class="fa fa-language"></i>
+          <input type="text" id="language" placeholder="Language (es. IT, EN)">
+        </div>`;
+    }
+    if (tellme.includes("currency")) {
+      extraFieldsDiv.innerHTML += `
+        <div class="input-group">
+          <i class="fa fa-coins"></i>
+          <input type="text" id="currency" placeholder="Currency (es. EUR, USD)">
+        </div>`;
+    }
+
+    if (tellme.length > 0) {
+      alert("Additional information is required to complete the login.");
+      //#TODO: richiamo API /update per aggironare l'utenza
+    }
+  }
 
   submitBtn.addEventListener("click", async () => {
     const username = document.getElementById("username").value.trim();
@@ -132,12 +175,24 @@
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
       });
+
       const data = await response.json();
+
       if (response.ok) {
-        alert(isLogin ? "Logged in!" : "Account created!");
+        if (isLogin) {
+          if (data.tellme && Array.isArray(data.tellme) && data.tellme.length > 0) {
+            // Mostra i campi aggiuntivi richiesti
+            showExtraFields(data.tellme);
+          } else {
+            alert("Logged!");
+          }
+        } else {
+          alert("Account: created!");
+        }
       } else {
-        alert(data.detail || "API error");
+        alert(data.detail || "API Error.");
       }
+
     } catch (err) {
       alert("Connection error: " + err);
     }
