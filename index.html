@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>FinEst, ver 0.1</title>
+<title>Login & Registration ver 0.4beta</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 <link rel="icon" type="image/x-icon" href="/images/logo-bullandbear.png">
 <style>
@@ -14,18 +14,18 @@
     justify-content: center;
     align-items: center;
     height: 100vh;
+    margin: 0;
   }
   .container {
     background: white;
     padding: 40px;
     border-radius: 12px;
     box-shadow: 0 0 15px rgba(0,0,0,0.1);
-    width: 300px;
+    width: 320px;
     text-align: center;
   }
   .logo {
     width: 100px;
-    height: auto;
     margin-bottom: 15px;
   }
   h2 {
@@ -67,18 +67,68 @@
   button:hover {
     background: #0056b3;
   }
-  .switch {
+  .switch, .forgot {
     text-align: center;
     margin-top: 15px;
     font-size: 14px;
     color: #555;
     cursor: pointer;
   }
-  #offline-message {
-    color: red;
-    font-size: 18px;
-    font-weight: bold;
+  .forgot:hover, .switch:hover {
+    text-decoration: underline;
+  }
+
+  /* === DASHBOARD === */
+  .dashboard {
+    display: flex;
+    width: 100%;
+    height: 100vh;
+  }
+  .sidebar {
+    width: 220px;
+    background: #1a1a1a;
+    color: white;
+    padding: 20px;
+  }
+  .sidebar h3 {
     text-align: center;
+    margin-bottom: 20px;
+  }
+  .menu-item {
+    margin-bottom: 15px;
+  }
+  .menu-item > div {
+    cursor: pointer;
+    padding: 8px;
+    background: #333;
+    border-radius: 5px;
+  }
+  .submenu {
+    margin-top: 5px;
+    margin-left: 10px;
+    display: none;
+  }
+  .submenu div {
+    background: #444;
+    padding: 6px;
+    border-radius: 5px;
+    margin-top: 5px;
+    cursor: pointer;
+  }
+  .submenu div:hover {
+    background: #555;
+  }
+  .content {
+    flex-grow: 1;
+    padding: 20px;
+    background: #f8f9fa;
+  }
+
+  /* === IMMAGINE OFFLINE === */
+  .offline {
+    width: 300px;
+    border-radius: 12px;
+    box-shadow: 0 0 15px rgba(0,0,0,0.2);
   }
 </style>
 </head>
@@ -97,6 +147,7 @@
   </div>
   
   <button id="submit-btn">Sign in</button>
+  <div class="forgot" id="forgot-password">Forgot password?</div>
   <div class="switch" id="switch-form">Don’t have an account? Sign up</div>
 </div>
 
@@ -104,23 +155,28 @@
   const apiBaseNew  = "https://new-user-tunnel.fe-web.eu";
   const apiBaseUser = "https://user-tunnel.fe-web.eu";
 
+  // === CHECK SERVIZIO HEALTH ===
   async function checkHealth() {
     try {
-      const response = await fetch(`${apiBaseUser}/health`, { cache: "no-cache" });
-      if (!response.ok) throw new Error("HTTP error");
-      const data = await response.json();
-      if (data.status !== "ok") throw new Error("Service not OK");
+      const resUser = await fetch(`${apiBaseUser}/health`, { cache: "no-cache" });
+      const resNew  = await fetch(`${apiBaseNew}/health`, { cache: "no-cache" });
+      if (!resUser.ok || !resNew.ok) throw new Error("HTTP error");
+      const dataUser = await resUser.json();
+      const dataNew  = await resNew.json();
+      if (dataUser.status !== "ok" || dataNew.status !== "ok") throw new Error("Service not OK");
     } catch (err) {
-      const container = document.getElementById("app-container");
-      container.innerHTML = `<div id="offline-message">Off line</div>`;
+      document.body.innerHTML = `
+        <div style="display:flex;justify-content:center;align-items:center;height:100vh;">
+          <img src="images/off-line.jpeg" alt="Offline" class="offline">
+        </div>
+      `;
       console.error("Service check failed:", err);
     }
   }
 
-  // Esegui il check al caricamento della pagina
   checkHealth();
 
-  // === GESTIONE FORM LOGIN/REGISTRAZIONE ===
+  // === LOGIN / REGISTRAZIONE SWITCH ===
   let isLogin = true;
   const title = document.getElementById("form-title");
   const submitBtn = document.getElementById("submit-btn");
@@ -132,13 +188,16 @@
       title.textContent = "Login";
       submitBtn.textContent = "Sign in";
       switchForm.textContent = "Don’t have an account? Sign up";
+      document.getElementById("forgot-password").style.display = "block";
     } else {
       title.textContent = "Registration";
       submitBtn.textContent = "Create Account";
       switchForm.textContent = "Already have an account? Sign in";
+      document.getElementById("forgot-password").style.display = "none";
     }
   });
 
+  // === LOGIN / REGISTER ===
   submitBtn.addEventListener("click", async () => {
     const username = document.getElementById("username").value.trim();
     const password = document.getElementById("password").value.trim();
@@ -159,6 +218,7 @@
       const data = await response.json();
       if (response.ok) {
         alert(isLogin ? "Logged in!" : "Account created!");
+        if (isLogin) openDashboard(username);
       } else {
         alert(data.detail || "API error");
       }
@@ -166,6 +226,54 @@
       alert("Connection error: " + err);
     }
   });
+
+  // === FORGOT PASSWORD ===
+  document.getElementById("forgot-password").addEventListener("click", () => {
+    const email = prompt("Enter your email to reset password:");
+    if (!email) return;
+    alert("If this email is registered, you will receive a password reset link.");
+    // eventuale chiamata API -> fetch(`${apiBaseUser}/forgot`, { method:"POST", ... })
+  });
+
+  // === DASHBOARD ===
+  function openDashboard(username) {
+    document.body.innerHTML = `
+      <div class="dashboard">
+        <div class="sidebar">
+          <h3>Welcome, ${username}</h3>
+          <div class="menu-item">
+            <div onclick="toggleSubmenu('settings-submenu')">⚙️ Impostazioni</div>
+            <div class="submenu" id="settings-submenu">
+              <div onclick="showContent('Profilo')">Profilo</div>
+              <div onclick="showContent('Sicurezza')">Sicurezza</div>
+            </div>
+          </div>
+          <div class="menu-item">
+            <div onclick="toggleSubmenu('wallet-submenu')">💰 Wallet</div>
+            <div class="submenu" id="wallet-submenu">
+              <div onclick="showContent('Saldo')">Saldo</div>
+              <div onclick="showContent('Transazioni')">Transazioni</div>
+            </div>
+          </div>
+        </div>
+        <div class="content" id="dashboard-content">
+          <h2>Dashboard</h2>
+          <p>Benvenuto nella tua area riservata.</p>
+        </div>
+      </div>
+    `;
+  }
+
+  // === FUNZIONI DASHBOARD ===
+  window.toggleSubmenu = function(id) {
+    const submenu = document.getElementById(id);
+    submenu.style.display = submenu.style.display === "block" ? "none" : "block";
+  };
+
+  window.showContent = function(section) {
+    const content = document.getElementById("dashboard-content");
+    content.innerHTML = `<h2>${section}</h2><p>Contenuto della sezione "${section}".</p>`;
+  };
 </script>
 </body>
 </html>
