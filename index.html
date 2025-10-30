@@ -210,30 +210,61 @@
     const payload = { username, password };
 
     try {
-      alert(apiUrl)
       const response = await fetch(apiUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
       });
-      const data = await response.json();
+      //const data = await response.json();
 
-      if (response.ok && data.status === "ok") {
-        if (isLogin) {
-          alert(data.info)
-          // controlla se il campo info è valorizzato e completo
-          if (data.info && ( !data.info.email || !data.info.language || !data.info.currency )) {
-            requestMissingInfo(data.info, username);
+      // *********************
+      let data;
+        try {
+          const contentType = response.headers.get("content-type");
+          if (contentType && contentType.includes("application/json")) {
+            data = await response.json();
           } else {
-            alert("Logged in!");
-            openDashboard(username);
+            const text = await response.text();
+            throw new Error("Invalid JSON response: " + text.slice(0, 100));
+          }
+        } catch (parseErr) {
+          alert("Server returned invalid JSON: " + parseErr.message);
+          return;
+        }
+
+        if (response.ok && data.status === "ok") {
+          if (isLogin) {
+            if (data.info && (!data.info.email || !data.info.language || !data.info.currency)) {
+              requestMissingInfo(data.info, username);
+            } else {
+              alert("Logged in!");
+              openDashboard(username);
+            }
+          } else {
+            alert("Account created!");
           }
         } else {
-          alert("Account created!");
+          alert(data.detail || "API error");
         }
-      } else {
-        alert(data.detail || "API error");
-      }
+
+      // *********************
+
+      //if (response.ok && data.status === "ok") {
+      //  if (isLogin) {
+      //    alert(data.info)
+      //    // controlla se il campo info è valorizzato e completo
+      //    if (data.info && ( !data.info.email || !data.info.language || !data.info.currency )) {
+      //      requestMissingInfo(data.info, username);
+      //    } else {
+      //      alert("Logged in!");
+      //      openDashboard(username);
+      //    }
+      //  } else {
+      //    alert("Account created!");
+      //  }
+      //} else {
+      //  alert(data.detail || "API error");
+      //}
     } catch (err) {
       alert("Connection error: " + err);
     }
