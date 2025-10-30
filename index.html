@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Login & Registration ver 0.2beta</title>
+<title>FinEst, ver 0.1</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 <link rel="icon" type="image/x-icon" href="/images/logo-bullandbear.png">
 <style>
@@ -74,10 +74,16 @@
     color: #555;
     cursor: pointer;
   }
+  #offline-message {
+    color: red;
+    font-size: 18px;
+    font-weight: bold;
+    text-align: center;
+  }
 </style>
 </head>
 <body>
-<div class="container">
+<div class="container" id="app-container">
   <img src="images/under_construction.jpeg" alt="Logo" class="logo">
   <h2 id="form-title">Login</h2>
   
@@ -98,7 +104,24 @@
   const apiBaseNew  = "https://new-user-tunnel.fe-web.eu";
   const apiBaseUser = "https://user-tunnel.fe-web.eu";
 
-  let isLogin = true; // true = login, false = registrazione
+  async function checkHealth() {
+    try {
+      const response = await fetch(`${apiBaseUser}/health`, { cache: "no-cache" });
+      if (!response.ok) throw new Error("HTTP error");
+      const data = await response.json();
+      if (data.status !== "ok") throw new Error("Service not OK");
+    } catch (err) {
+      const container = document.getElementById("app-container");
+      container.innerHTML = `<div id="offline-message">Off line</div>`;
+      console.error("Service check failed:", err);
+    }
+  }
+
+  // Esegui il check al caricamento della pagina
+  checkHealth();
+
+  // === GESTIONE FORM LOGIN/REGISTRAZIONE ===
+  let isLogin = true;
   const title = document.getElementById("form-title");
   const submitBtn = document.getElementById("submit-btn");
   const switchForm = document.getElementById("switch-form");
@@ -133,7 +156,6 @@
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
       });
-      alert(response);
       const data = await response.json();
       if (response.ok) {
         alert(isLogin ? "Logged in!" : "Account created!");
