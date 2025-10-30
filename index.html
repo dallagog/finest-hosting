@@ -3,19 +3,30 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Login & Registration version 0.1</title>
+<title>FinEst, ver 0.2</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 <link rel="icon" type="image/x-icon" href="/images/logo-bullandbear.png">
 <style>
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+  
   body {
     font-family: Arial, sans-serif;
     background: #f5f5f5;
+  }
+  
+  /* Login Styles */
+  .login-container {
     display: flex;
     justify-content: center;
     align-items: center;
     height: 100vh;
   }
-  .container {
+  
+  .login-box {
     background: white;
     padding: 40px;
     border-radius: 12px;
@@ -23,25 +34,30 @@
     width: 300px;
     text-align: center;
   }
+  
   .logo {
     width: 100px;
     height: auto;
     margin-bottom: 15px;
   }
+  
   h2 {
     margin-bottom: 30px;
   }
+  
   .input-group {
     position: relative;
     margin-bottom: 25px;
     text-align: left;
   }
+  
   .input-group i {
     position: absolute;
     top: 10px;
     left: 0;
     color: #555;
   }
+  
   .input-group input {
     width: 100%;
     padding: 10px 10px 10px 30px;
@@ -50,9 +66,11 @@
     outline: none;
     transition: 0.3s;
   }
+  
   .input-group input:focus {
     border-bottom-color: #007bff;
   }
+  
   button {
     width: 100%;
     padding: 10px;
@@ -64,9 +82,11 @@
     cursor: pointer;
     transition: 0.3s;
   }
+  
   button:hover {
     background: #0056b3;
   }
+  
   .switch {
     text-align: center;
     margin-top: 15px;
@@ -74,51 +94,597 @@
     color: #555;
     cursor: pointer;
   }
+  
+  .forgot-password {
+    text-align: right;
+    margin-top: 10px;
+    margin-bottom: 15px;
+    font-size: 13px;
+    color: #007bff;
+    cursor: pointer;
+    text-decoration: underline;
+  }
+  
+  .forgot-password:hover {
+    color: #0056b3;
+  }
+  
   #extra-fields {
     margin-top: 15px;
     text-align: left;
   }
+  
   #update-btn {
     margin-top: 15px;
+    display: none;
+  }
+  
+  .back-to-login {
+    margin-top: 15px;
+    background: #6c757d;
+  }
+  
+  .back-to-login:hover {
+    background: #5a6268;
+  }
+  
+  /* Dashboard Styles */
+  .dashboard {
+    display: none;
+    height: 100vh;
+  }
+  
+  .dashboard.active {
+    display: flex;
+  }
+  
+  /* Sidebar */
+  .sidebar {
+    width: 260px;
+    background: #2c3e50;
+    color: white;
+    padding: 20px 0;
+    overflow-y: auto;
+  }
+  
+  .sidebar-header {
+    padding: 0 20px 20px;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  
+  .sidebar-header h3 {
+    font-size: 18px;
+  }
+  
+  .menu-section {
+    margin-top: 10px;
+  }
+  
+  .menu-title {
+    padding: 15px 20px;
+    font-size: 14px;
+    font-weight: bold;
+    color: #95a5a6;
+    text-transform: uppercase;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: 0.3s;
+  }
+  
+  .menu-title:hover {
+    background: rgba(255,255,255,0.05);
+  }
+  
+  .menu-title i {
+    font-size: 12px;
+    transition: transform 0.3s;
+  }
+  
+  .menu-title.active i {
+    transform: rotate(180deg);
+  }
+  
+  .submenu {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease;
+  }
+  
+  .submenu.active {
+    max-height: 500px;
+  }
+  
+  .submenu-item {
+    padding: 12px 20px 12px 40px;
+    cursor: pointer;
+    transition: 0.3s;
+    font-size: 14px;
+  }
+  
+  .submenu-item:hover {
+    background: rgba(255,255,255,0.1);
+  }
+  
+  .submenu-item.active {
+    background: #3498db;
+  }
+  
+  .logout-btn {
+    margin: 20px;
+    background: #e74c3c;
+  }
+  
+  .logout-btn:hover {
+    background: #c0392b;
+  }
+  
+  /* Main Content */
+  .main-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .topbar {
+    background: white;
+    padding: 15px 30px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  
+  .topbar h1 {
+    font-size: 24px;
+    color: #2c3e50;
+  }
+  
+  .user-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  
+  .content-area {
+    flex: 1;
+    padding: 30px;
+    overflow-y: auto;
+    background: #ecf0f1;
+  }
+  
+  .content-page {
+    display: none;
+    background: white;
+    padding: 30px;
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+  }
+  
+  .content-page.active {
+    display: block;
+  }
+  
+  .content-page h2 {
+    margin-bottom: 20px;
+    color: #2c3e50;
+    border-bottom: 2px solid #3498db;
+    padding-bottom: 10px;
+  }
+  
+  .form-group {
+    margin-bottom: 20px;
+  }
+  
+  .form-group label {
+    display: block;
+    margin-bottom: 5px;
+    color: #555;
+    font-weight: bold;
+  }
+  
+  .form-group input,
+  .form-group select {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+  }
+  
+  .btn-primary {
+    background: #3498db;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+  }
+  
+  .btn-primary:hover {
+    background: #2980b9;
+  }
+  
+  .hidden {
     display: none;
   }
 </style>
 </head>
 <body>
-<div class="container">
-  <img src="images/under_construction.jpeg" alt="Logo" class="logo">
-  <h2 id="form-title">Login</h2>
-  
-  <div class="input-group">
-    <i class="fa fa-user"></i>
-    <input type="text" id="username" placeholder="Username">
-  </div>
-  <div class="input-group">
-    <i class="fa fa-lock"></i>
-    <input type="password" id="password" placeholder="Password">
-  </div>
 
-  <div id="extra-fields"></div>
+<!-- Login Page -->
+<div id="login-page" class="login-container">
+  <div class="login-box">
+    <img src="images/under_construction.jpeg" alt="Logo" class="logo">
+    <h2 id="form-title">Login</h2>
+    
+    <div class="input-group">
+      <i class="fa fa-user"></i>
+      <input type="text" id="username" placeholder="Username">
+    </div>
+    <div class="input-group">
+      <i class="fa fa-lock"></i>
+      <input type="password" id="password" placeholder="Password">
+    </div>
+
+    <div id="extra-fields"></div>
+    
+    <div id="forgot-link" class="forgot-password">Forgot Password?</div>
+    
+    <button id="submit-btn">Sign in</button>
+    <button id="update-btn">Update Info</button>
+    <div class="switch" id="switch-form">Don't have an account? Sign up</div>
+  </div>
+</div>
+
+<!-- Forgot Password Page -->
+<div id="forgot-password-page" class="login-container" style="display: none;">
+  <div class="login-box">
+    <img src="images/under_construction.jpeg" alt="Logo" class="logo">
+    <h2>Reset Password</h2>
+    
+    <div id="forgot-step-1">
+      <p style="font-size: 14px; color: #555; margin-bottom: 20px;">
+        Enter your username and email to receive a reset code.
+      </p>
+      <div class="input-group">
+        <i class="fa fa-user"></i>
+        <input type="text" id="forgot-username" placeholder="Username">
+      </div>
+      <div class="input-group">
+        <i class="fa fa-envelope"></i>
+        <input type="email" id="forgot-email" placeholder="Email">
+      </div>
+      <button id="send-code-btn">Send Reset Code</button>
+    </div>
+    
+    <div id="forgot-step-2" style="display: none;">
+      <p style="font-size: 14px; color: #555; margin-bottom: 20px;">
+        Enter the reset code sent to your email and your new password.
+      </p>
+      <div class="input-group">
+        <i class="fa fa-key"></i>
+        <input type="text" id="reset-code" placeholder="Reset Code">
+      </div>
+      <div class="input-group">
+        <i class="fa fa-lock"></i>
+        <input type="password" id="new-password-reset" placeholder="New Password">
+      </div>
+      <div class="input-group">
+        <i class="fa fa-lock"></i>
+        <input type="password" id="confirm-password-reset" placeholder="Confirm Password">
+      </div>
+      <button id="reset-password-btn">Reset Password</button>
+    </div>
+    
+    <button class="back-to-login" id="back-to-login-btn">Back to Login</button>
+  </div>
+</div>
+
+<!-- Dashboard -->
+<div id="dashboard" class="dashboard">
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <div class="sidebar-header">
+      <h3>Financial Estimates</h3>
+    </div>
+    
+    <!-- Customize Menu -->
+    <div class="menu-section">
+      <div class="menu-title" data-menu="customize">
+        <span><i class="fa fa-cog"></i> Customize</span>
+        <i class="fa fa-chevron-down"></i>
+      </div>
+      <div class="submenu" id="customize-menu">
+        <div class="submenu-item" data-page="change-password">Change Password</div>
+        <div class="submenu-item" data-page="change-info">Change Info</div>
+      </div>
+    </div>
+    
+    <!-- Dataflow Menu -->
+    <div class="menu-section">
+      <div class="menu-title" data-menu="dataflow">
+        <span><i class="fa fa-database"></i> Dataflow</span>
+        <i class="fa fa-chevron-down"></i>
+      </div>
+      <div class="submenu" id="dataflow-menu">
+        <div class="submenu-item" data-page="import-registration">Import - Registration</div>
+        <div class="submenu-item" data-page="import-wallet">Import - Wallet</div>
+        <div class="submenu-item" data-page="import-trade">Import - Trade</div>
+        <div class="submenu-item" data-page="import-price">Import - Price</div>
+        <div class="submenu-item" data-page="import-exchange">Import - Exchange</div>
+        <div class="submenu-item" data-page="export">Export</div>
+      </div>
+    </div>
+    
+    <!-- Portfolio Menu -->
+    <div class="menu-section">
+      <div class="menu-title" data-menu="portfolio">
+        <span><i class="fa fa-briefcase"></i> Portfolio</span>
+        <i class="fa fa-chevron-down"></i>
+      </div>
+      <div class="submenu" id="portfolio-menu">
+        <div class="submenu-item" data-page="portfolio-overview">Overview</div>
+      </div>
+    </div>
+    
+    <!-- Market Menu -->
+    <div class="menu-section">
+      <div class="menu-title" data-menu="market">
+        <span><i class="fa fa-chart-line"></i> Market</span>
+        <i class="fa fa-chevron-down"></i>
+      </div>
+      <div class="submenu" id="market-menu">
+        <div class="submenu-item" data-page="market-security">Security</div>
+        <div class="submenu-item" data-page="market-price">Price</div>
+        <div class="submenu-item" data-page="market-exchange">Exchange</div>
+        <div class="submenu-item" data-page="market-rate">Rate</div>
+        <div class="submenu-item" data-page="market-inflation">Inflation</div>
+      </div>
+    </div>
+    
+    <!-- Assessing Menu -->
+    <div class="menu-section">
+      <div class="menu-title" data-menu="assessing">
+        <span><i class="fa fa-calculator"></i> Assessing</span>
+        <i class="fa fa-chevron-down"></i>
+      </div>
+      <div class="submenu" id="assessing-menu">
+        <div class="submenu-item" data-page="assessing-composition">Composition</div>
+        <div class="submenu-item" data-page="assessing-yield">Yield</div>
+        <div class="submenu-item" data-page="assessing-tax">Tax and Fee</div>
+      </div>
+    </div>
+    
+    <button class="logout-btn" id="logout-btn">
+      <i class="fa fa-sign-out-alt"></i> Logout
+    </button>
+  </div>
   
-  <button id="submit-btn">Sign in</button>
-  <button id="update-btn">Update Info</button>
-  <div class="switch" id="switch-form">Don't have an account? Sign up</div>
+  <!-- Main Content -->
+  <div class="main-content">
+    <div class="topbar">
+      <h1 id="page-title">Dashboard</h1>
+      <div class="user-info">
+        <i class="fa fa-user-circle" style="font-size: 24px;"></i>
+        <span id="username-display">User</span>
+      </div>
+    </div>
+    
+    <div class="content-area">
+      <!-- Change Password Page -->
+      <div class="content-page" id="change-password">
+        <h2>Change Password</h2>
+        <div class="form-group">
+          <label>Current Password</label>
+          <input type="password" id="current-password" placeholder="Enter current password">
+        </div>
+        <div class="form-group">
+          <label>New Password</label>
+          <input type="password" id="new-password" placeholder="Enter new password">
+        </div>
+        <div class="form-group">
+          <label>Confirm Password</label>
+          <input type="password" id="confirm-password" placeholder="Confirm new password">
+        </div>
+        <button class="btn-primary" onclick="changePassword()">Update Password</button>
+      </div>
+      
+      <!-- Change Info Page -->
+      <div class="content-page" id="change-info">
+        <h2>Change Information</h2>
+        <div class="form-group">
+          <label>Email</label>
+          <input type="email" id="info-email" placeholder="Enter email">
+        </div>
+        <div class="form-group">
+          <label>Language</label>
+          <select id="info-language">
+            <option value="IT">Italian (IT)</option>
+            <option value="EN">English (EN)</option>
+            <option value="ES">Spanish (ES)</option>
+            <option value="FR">French (FR)</option>
+            <option value="DE">German (DE)</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Currency</label>
+          <select id="info-currency">
+            <option value="EUR">Euro (EUR)</option>
+            <option value="USD">US Dollar (USD)</option>
+            <option value="GBP">British Pound (GBP)</option>
+            <option value="CHF">Swiss Franc (CHF)</option>
+          </select>
+        </div>
+        <button class="btn-primary" onclick="changeInfo()">Update Information</button>
+      </div>
+      
+      <!-- Import Registration -->
+      <div class="content-page" id="import-registration">
+        <h2>Import Registration Data</h2>
+        <p>Upload a JSON file containing registration data.</p>
+        <div class="form-group">
+          <label>Select JSON File</label>
+          <input type="file" id="file-registration" accept=".json">
+        </div>
+        <button class="btn-primary" onclick="importData('registration')">Import Registration</button>
+      </div>
+      
+      <!-- Import Wallet -->
+      <div class="content-page" id="import-wallet">
+        <h2>Import Wallet Data</h2>
+        <p>Upload a JSON file containing wallet data.</p>
+        <div class="form-group">
+          <label>Select JSON File</label>
+          <input type="file" id="file-wallet" accept=".json">
+        </div>
+        <button class="btn-primary" onclick="importData('wallet')">Import Wallet</button>
+      </div>
+      
+      <!-- Import Trade -->
+      <div class="content-page" id="import-trade">
+        <h2>Import Trade Data</h2>
+        <p>Upload a JSON file containing trade transactions.</p>
+        <div class="form-group">
+          <label>Select JSON File</label>
+          <input type="file" id="file-trade" accept=".json">
+        </div>
+        <button class="btn-primary" onclick="importData('trade')">Import Trade</button>
+      </div>
+      
+      <!-- Import Price -->
+      <div class="content-page" id="import-price">
+        <h2>Import Price Data</h2>
+        <p>Upload a JSON file containing price information.</p>
+        <div class="form-group">
+          <label>Select JSON File</label>
+          <input type="file" id="file-price" accept=".json">
+        </div>
+        <button class="btn-primary" onclick="importData('price')">Import Price</button>
+      </div>
+      
+      <!-- Import Exchange -->
+      <div class="content-page" id="import-exchange">
+        <h2>Import Exchange Data</h2>
+        <p>Upload a JSON file containing exchange rates.</p>
+        <div class="form-group">
+          <label>Select JSON File</label>
+          <input type="file" id="file-exchange" accept=".json">
+        </div>
+        <button class="btn-primary" onclick="importData('exchange')">Import Exchange</button>
+      </div>
+      
+      <!-- Export -->
+      <div class="content-page" id="export">
+        <h2>Export Data</h2>
+        <p>Export your data in JSON format.</p>
+        <div class="form-group">
+          <label>Select Data Type</label>
+          <select id="export-type">
+            <option value="all">All Data</option>
+            <option value="portfolio">Portfolio</option>
+            <option value="trades">Trades</option>
+            <option value="prices">Prices</option>
+          </select>
+        </div>
+        <button class="btn-primary" onclick="exportData()">Export Data</button>
+      </div>
+      
+      <!-- Portfolio Overview -->
+      <div class="content-page active" id="portfolio-overview">
+        <h2>Portfolio Overview</h2>
+        <p>Welcome to your portfolio dashboard. Here you can view your investments and performance.</p>
+        <div id="portfolio-content">
+          <p style="color: #7f8c8d; margin-top: 20px;">Portfolio data will be loaded here...</p>
+        </div>
+      </div>
+      
+      <!-- Market - Security -->
+      <div class="content-page" id="market-security">
+        <h2>Market Security</h2>
+        <p>View and analyze security information.</p>
+        <div id="security-content"></div>
+      </div>
+      
+      <!-- Market - Price -->
+      <div class="content-page" id="market-price">
+        <h2>Market Price</h2>
+        <p>Real-time price information for securities.</p>
+        <div id="price-content"></div>
+      </div>
+      
+      <!-- Market - Exchange -->
+      <div class="content-page" id="market-exchange">
+        <h2>Market Exchange</h2>
+        <p>Exchange information and trading platforms.</p>
+        <div id="exchange-content"></div>
+      </div>
+      
+      <!-- Market - Rate -->
+      <div class="content-page" id="market-rate">
+        <h2>Market Rate</h2>
+        <p>Current exchange rates and currency information.</p>
+        <div id="rate-content"></div>
+      </div>
+      
+      <!-- Market - Inflation -->
+      <div class="content-page" id="market-inflation">
+        <h2>Market Inflation</h2>
+        <p>Inflation data and economic indicators.</p>
+        <div id="inflation-content"></div>
+      </div>
+      
+      <!-- Assessing - Composition -->
+      <div class="content-page" id="assessing-composition">
+        <h2>Portfolio Composition</h2>
+        <p>Analyze your portfolio composition and asset allocation.</p>
+        <div id="composition-content"></div>
+      </div>
+      
+      <!-- Assessing - Yield -->
+      <div class="content-page" id="assessing-yield">
+        <h2>Yield Analysis</h2>
+        <p>Calculate and analyze investment yields and returns.</p>
+        <div id="yield-content"></div>
+      </div>
+      
+      <!-- Assessing - Tax -->
+      <div class="content-page" id="assessing-tax">
+        <h2>Tax and Fee Analysis</h2>
+        <p>Calculate taxes and fees on your investments.</p>
+        <div id="tax-content"></div>
+      </div>
+    </div>
+  </div>
 </div>
 
 <script>
-  const apiBaseNew      = "https://new-user-tunnel.fe-web.eu";
-  const apiBaseUser     = "https://user-tunnel.fe-web.eu";
-  const apiBaseUserInfo = "https://user-tunnel.fe-web.eu";
+  // API Endpoints
+  const apiBaseNew = "https://new-user-tunnel.fe-web.eu";
+  const apiBaseUser = "https://user-tunnel.fe-web.eu";
+  const apiFEweb = "https://feweb-tunnel.fe-web.eu";
 
   let isLogin = true;
   let currentTellme = [];
+  let currentUsername = "";
+  let forgotUsername = "";
   
+  const loginPage = document.getElementById("login-page");
+  const forgotPasswordPage = document.getElementById("forgot-password-page");
+  const dashboard = document.getElementById("dashboard");
   const title = document.getElementById("form-title");
   const submitBtn = document.getElementById("submit-btn");
   const updateBtn = document.getElementById("update-btn");
   const switchForm = document.getElementById("switch-form");
   const extraFieldsDiv = document.getElementById("extra-fields");
+  const forgotLink = document.getElementById("forgot-link");
 
+  // Switch between login and registration
   switchForm.addEventListener("click", () => {
     isLogin = !isLogin;
     if (isLogin) {
@@ -128,6 +694,7 @@
       extraFieldsDiv.innerHTML = "";
       updateBtn.style.display = "none";
       submitBtn.style.display = "block";
+      forgotLink.style.display = "block";
     } else {
       title.textContent = "Registration";
       submitBtn.textContent = "Create Account";
@@ -135,9 +702,397 @@
       extraFieldsDiv.innerHTML = "";
       updateBtn.style.display = "none";
       submitBtn.style.display = "block";
+      forgotLink.style.display = "none";
     }
   });
 
+  // Show forgot password page
+  forgotLink.addEventListener("click", () => {
+    loginPage.style.display = "none";
+    forgotPasswordPage.style.display = "flex";
+  });
+
+  // Back to login
+  document.getElementById("back-to-login-btn").addEventListener("click", () => {
+    forgotPasswordPage.style.display = "none";
+    loginPage.style.display = "flex";
+    document.getElementById("forgot-step-1").style.display = "block";
+    document.getElementById("forgot-step-2").style.display = "none";
+    document.getElementById("forgot-username").value = "";
+    document.getElementById("forgot-email").value = "";
+    document.getElementById("reset-code").value = "";
+    document.getElementById("new-password-reset").value = "";
+    document.getElementById("confirm-password-reset").value = "";
+  });
+
+  // Send reset code
+  document.getElementById("send-code-btn").addEventListener("click", async () => {
+    const username = document.getElementById("forgot-username").value.trim();
+    const email = document.getElementById("forgot-email").value.trim();
+    
+    if (!username || !email) {
+      alert("Please fill in all fields");
+      return;
+    }
+
+    try {
+      const response = await fetch(`${apiFEweb}/forgot-password/request`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, email })
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        forgotUsername = username;
+        alert("Reset code sent to your email!");
+        document.getElementById("forgot-step-1").style.display = "none";
+        document.getElementById("forgot-step-2").style.display = "block";
+      } else {
+        alert(data.detail || "Failed to send reset code. Please check your username and email.");
+      }
+    } catch (err) {
+      alert("Connection error: " + err);
+    }
+  });
+
+  // Update user info
+  updateBtn.addEventListener("click", async () => {
+    const username = document.getElementById("username").value.trim();
+    const password = document.getElementById("password").value.trim();
+    
+    const updateData = { username, password };
+
+    if (currentTellme.includes("email")) {
+      const email = document.getElementById("email")?.value.trim();
+      if (!email) {
+        alert("Please fill in the email field");
+        return;
+      }
+      updateData.email = email;
+    }
+    
+    if (currentTellme.includes("language")) {
+      const language = document.getElementById("language")?.value.trim();
+      if (!language) {
+        alert("Please fill in the language field");
+        return;
+      }
+      updateData.language = language;
+    }
+    
+    if (currentTellme.includes("currency")) {
+      const currency = document.getElementById("currency")?.value.trim();
+      if (!currency) {
+        alert("Please fill in the currency field");
+        return;
+      }
+      updateData.currency = currency;
+    }
+
+    const apiUrl = `${apiBaseUser}/update`;
+
+    try {
+      const response = await fetch(apiUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(updateData)
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        currentUsername = username;
+        showDashboard();
+      } else {
+        alert(data.detail || "Update failed.");
+      }
+    } catch (err) {
+      alert("Connection error: " + err);
+    }
+  });
+
+  // Show dashboard
+  function showDashboard() {
+    loginPage.style.display = "none";
+    dashboard.classList.add("active");
+    document.getElementById("username-display").textContent = currentUsername;
+  }
+
+  // Logout
+  document.getElementById("logout-btn").addEventListener("click", () => {
+    if (confirm("Are you sure you want to logout?")) {
+      dashboard.classList.remove("active");
+      loginPage.style.display = "flex";
+      document.getElementById("username").value = "";
+      document.getElementById("password").value = "";
+      extraFieldsDiv.innerHTML = "";
+      currentUsername = "";
+      currentTellme = [];
+    }
+  });
+
+  // Menu navigation
+  document.querySelectorAll(".menu-title").forEach(menu => {
+    menu.addEventListener("click", function() {
+      const submenuId = this.dataset.menu + "-menu";
+      const submenu = document.getElementById(submenuId);
+      
+      this.classList.toggle("active");
+      submenu.classList.toggle("active");
+    });
+  });
+
+  // Page navigation
+  document.querySelectorAll(".submenu-item").forEach(item => {
+    item.addEventListener("click", function() {
+      const pageName = this.dataset.page;
+      
+      // Remove active class from all pages and menu items
+      document.querySelectorAll(".content-page").forEach(p => p.classList.remove("active"));
+      document.querySelectorAll(".submenu-item").forEach(i => i.classList.remove("active"));
+      
+      // Add active class to current page and menu item
+      document.getElementById(pageName).classList.add("active");
+      this.classList.add("active");
+      
+      // Update page title
+      document.getElementById("page-title").textContent = this.textContent;
+    });
+  });
+
+  // Change Password Function
+  async function changePassword() {
+    const current = document.getElementById("current-password").value;
+    const newPass = document.getElementById("new-password").value;
+    const confirm = document.getElementById("confirm-password").value;
+    
+    if (!current || !newPass || !confirm) {
+      alert("Please fill in all fields");
+      return;
+    }
+    
+    if (newPass !== confirm) {
+      alert("New passwords do not match");
+      return;
+    }
+    
+    try {
+      const response = await fetch(`${apiFEweb}/change-password`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          username: currentUsername,
+          current_password: current,
+          new_password: newPass
+        })
+      });
+      
+      const data = await response.json();
+      
+      if (response.ok) {
+        alert("Password changed successfully!");
+        document.getElementById("current-password").value = "";
+        document.getElementById("new-password").value = "";
+        document.getElementById("confirm-password").value = "";
+      } else {
+        alert(data.detail || "Failed to change password");
+      }
+    } catch (err) {
+      alert("Error: " + err);
+    }
+  }
+
+  // Change Info Function
+  async function changeInfo() {
+    const email = document.getElementById("info-email").value;
+    const language = document.getElementById("info-language").value;
+    const currency = document.getElementById("info-currency").value;
+    
+    if (!email) {
+      alert("Please enter an email address");
+      return;
+    }
+    
+    try {
+      const response = await fetch(`${apiFEweb}/change-info`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          username: currentUsername,
+          email: email,
+          language: language,
+          currency: currency
+        })
+      });
+      
+      const data = await response.json();
+      
+      if (response.ok) {
+        alert("Information updated successfully!");
+      } else {
+        alert(data.detail || "Failed to update information");
+      }
+    } catch (err) {
+      alert("Error: " + err);
+    }
+  }
+
+  // Import Data Function
+  async function importData(type) {
+    const fileInput = document.getElementById(`file-${type}`);
+    const file = fileInput.files[0];
+    
+    if (!file) {
+      alert("Please select a file");
+      return;
+    }
+    
+    const reader = new FileReader();
+    
+    reader.onload = async function(e) {
+      try {
+        const jsonData = JSON.parse(e.target.result);
+        
+        const response = await fetch(`${apiFEweb}/import/${type}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            username: currentUsername,
+            data: jsonData
+          })
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok) {
+          alert(`${type} data imported successfully!`);
+          fileInput.value = "";
+        } else {
+          alert(result.detail || `Failed to import ${type} data`);
+        }
+      } catch (parseErr) {
+        alert("Invalid JSON file: " + parseErr.message);
+      }
+    };
+    
+    reader.onerror = function() {
+      alert("Error reading file");
+    };
+    
+    reader.readAsText(file);
+  }
+
+  // Export Data Function
+  async function exportData() {
+    const exportType = document.getElementById("export-type").value;
+    
+    try {
+      const response = await fetch(`${apiFEweb}/export/${exportType}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          username: currentUsername
+        })
+      });
+      
+      const data = await response.json();
+      
+      if (response.ok) {
+        // Create downloadable JSON file
+        const dataStr = JSON.stringify(data, null, 2);
+        const dataBlob = new Blob([dataStr], { type: "application/json" });
+        const url = URL.createObjectURL(dataBlob);
+        
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = `${exportType}_${currentUsername}_${new Date().toISOString().split('T')[0]}.json`;
+        link.click();
+        
+        URL.revokeObjectURL(url);
+        alert("Data exported successfully!");
+      } else {
+        alert(data.detail || "Failed to export data");
+      }
+    } catch (err) {
+      alert("Error: " + err);
+    }
+  }
+
+  // Load initial data when dashboard is shown
+  async function loadDashboardData() {
+    try {
+      const response = await fetch(`${apiFEweb}/portfolio/overview`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          username: currentUsername
+        })
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        document.getElementById("portfolio-content").innerHTML = `
+          <div style="margin-top: 20px;">
+            <p><strong>Total Value:</strong> ${data.total_value || 'N/A'}</p>
+            <p><strong>Total Assets:</strong> ${data.total_assets || '0'}</p>
+            <p><strong>Last Update:</strong> ${data.last_update || 'N/A'}</p>
+          </div>
+        `;
+      }
+    } catch (err) {
+      console.error("Error loading dashboard data:", err);
+    }
+  }
+</script>
+</body>
+</html> {
+      alert("Connection error: " + err);
+    }
+  });
+
+  // Reset password
+  document.getElementById("reset-password-btn").addEventListener("click", async () => {
+    const resetCode = document.getElementById("reset-code").value.trim();
+    const newPassword = document.getElementById("new-password-reset").value.trim();
+    const confirmPassword = document.getElementById("confirm-password-reset").value.trim();
+    
+    if (!resetCode || !newPassword || !confirmPassword) {
+      alert("Please fill in all fields");
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      alert("Passwords do not match");
+      return;
+    }
+
+    try {
+      const response = await fetch(`${apiFEweb}/forgot-password/reset`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          username: forgotUsername,
+          reset_code: resetCode,
+          new_password: newPassword
+        })
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        alert("Password reset successfully! Please login with your new password.");
+        document.getElementById("back-to-login-btn").click();
+      } else {
+        alert(data.detail || "Failed to reset password. Please check your reset code.");
+      }
+    } catch (err) {
+      alert("Connection error: " + err);
+    }
+  });
+
+  // Submit login/registration
   submitBtn.addEventListener("click", async () => {
     const username = document.getElementById("username").value.trim();
     const password = document.getElementById("password").value.trim();
@@ -190,76 +1145,16 @@
             alert("Additional information is required to complete the login.");
             submitBtn.style.display = "none";
             updateBtn.style.display = "block";
+            forgotLink.style.display = "none";
           } else {
-            alert("Logged in successfully!");
+            currentUsername = username;
+            showDashboard();
           }
         } else {
-          alert("Account created successfully!");
+          alert("Account created successfully! Please login.");
+          switchForm.click();
         }
       } else {
         alert(data.detail || "API Error.");
       }
-    } catch (err) {
-      alert("Connection error: " + err);
-    }
-  });
-
-  updateBtn.addEventListener("click", async () => {
-    const username = document.getElementById("username").value.trim();
-    const password = document.getElementById("password").value.trim();
-    
-    const updateData = { username, password };
-
-    if (currentTellme.includes("email")) {
-      const email = document.getElementById("email")?.value.trim();
-      if (!email) {
-        alert("Please fill in the email field");
-        return;
-      }
-      updateData.email = email;
-    }
-    
-    if (currentTellme.includes("language")) {
-      const language = document.getElementById("language")?.value.trim();
-      if (!language) {
-        alert("Please fill in the language field");
-        return;
-      }
-      updateData.language = language;
-    }
-    
-    if (currentTellme.includes("currency")) {
-      const currency = document.getElementById("currency")?.value.trim();
-      if (!currency) {
-        alert("Please fill in the currency field");
-        return;
-      }
-      updateData.currency = currency;
-    }
-
-    const apiUrl = `${apiBaseUser}/update`;
-
-    try {
-      const response = await fetch(apiUrl, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(updateData)
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        alert("Information updated successfully! You are now logged in.");
-        extraFieldsDiv.innerHTML = "";
-        updateBtn.style.display = "none";
-        submitBtn.style.display = "block";
-      } else {
-        alert(data.detail || "Update failed.");
-      }
-    } catch (err) {
-      alert("Connection error: " + err);
-    }
-  });
-</script>
-</body>
-</html>
+    } catch (err)
