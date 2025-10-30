@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>FinEst, ver. 0.10 abeta</title>
+  <title>FinEst, ver. 0.11 abeta</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
   <link rel="icon" type="image/x-icon" href="/images/logo-bullandbear.png">
   <style>
@@ -258,7 +258,7 @@
         if (response.ok && data.status === "ok") {
           if (isLogin) {
             if (data.info && (!data.info.email || !data.info.language || !data.info.currency)) {
-              requestMissingInfo(data.info, username);
+              requestMissingInfo(data.info, username, password);
             } else {
               alert("Logged in!");
               openDashboard(username);
@@ -267,7 +267,7 @@
             alert("Account created!");
           }
         } else {
-          alert(response.detail || "API error");
+          //alert(response.detail || "API error");
         }
 
       } catch (err) {
@@ -282,7 +282,7 @@
       alert("If this email is registered, you will receive a password reset link.");
     });
 
-    function requestMissingInfo(info, username) {
+    function requestMissingInfo(info, username, password) {
       const container = document.getElementById("app-container");
       container.innerHTML = `
         <h2>Complete your profile</h2>
