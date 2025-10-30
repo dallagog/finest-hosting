@@ -242,7 +242,6 @@
         });
         //const data = await response.json();
 
-        // *********************
         let data;
         try {
           const contentType = response.headers.get("content-type");
@@ -257,6 +256,9 @@
           return;
         }
 
+        alert(response)
+        alert(data)
+
         if (response.ok && data.status === "ok") {
           if (isLogin) {
             if (data.info && (!data.info.email || !data.info.language || !data.info.currency)) {
@@ -269,27 +271,9 @@
             alert("Account created!");
           }
         } else {
-          alert(data.detail || "API error");
+          alert(data.detail || "API error" || response);
         }
 
-        // *********************
-
-        //if (response.ok && data.status === "ok") {
-        //  if (isLogin) {
-        //    alert(data.info)
-        //    // controlla se il campo info è valorizzato e completo
-        //    if (data.info && ( !data.info.email || !data.info.language || !data.info.currency )) {
-        //      requestMissingInfo(data.info, username);
-        //    } else {
-        //      alert("Logged in!");
-        //      openDashboard(username);
-        //    }
-        //  } else {
-        //    alert("Account created!");
-        //  }
-        //} else {
-        //  alert(data.detail || "API error");
-        //}
       } catch (err) {
         alert("Connection error: " + err);
       }
