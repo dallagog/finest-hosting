@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Login & Registration ver 0.4beta</title>
+<title>Login & Registration ver 0.5beta</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 <link rel="icon" type="image/x-icon" href="/images/logo-bullandbear.png">
 <style>
@@ -42,7 +42,7 @@
     left: 0;
     color: #555;
   }
-  .input-group input {
+  .input-group input, .input-group select {
     width: 100%;
     padding: 10px 10px 10px 30px;
     border: none;
@@ -50,7 +50,7 @@
     outline: none;
     transition: 0.3s;
   }
-  .input-group input:focus {
+  .input-group input:focus, .input-group select:focus {
     border-bottom-color: #007bff;
   }
   button {
@@ -124,7 +124,7 @@
     background: #f8f9fa;
   }
 
-  /* === IMMAGINE OFFLINE === */
+  /* === OFFLINE === */
   .offline {
     width: 300px;
     border-radius: 12px;
@@ -167,7 +167,7 @@
     } catch (err) {
       document.body.innerHTML = `
         <div style="display:flex;justify-content:center;align-items:center;height:100vh;">
-          <img src="images/off-line.jpeg" alt="Offline" class="offline">
+          <img src="images/offline.jpeg" alt="Offline" class="offline">
         </div>
       `;
       console.error("Service check failed:", err);
@@ -216,9 +216,19 @@
         body: JSON.stringify(payload)
       });
       const data = await response.json();
-      if (response.ok) {
-        alert(isLogin ? "Logged in!" : "Account created!");
-        if (isLogin) openDashboard(username);
+
+      if (response.ok && data.status === "ok") {
+        if (isLogin) {
+          // controlla se il campo info è valorizzato e completo
+          if (data.info && ( !data.info.email || !data.info.language || !data.info.currency )) {
+            requestMissingInfo(data.info, username);
+          } else {
+            alert("Logged in!");
+            openDashboard(username);
+          }
+        } else {
+          alert("Account created!");
+        }
       } else {
         alert(data.detail || "API error");
       }
@@ -232,8 +242,55 @@
     const email = prompt("Enter your email to reset password:");
     if (!email) return;
     alert("If this email is registered, you will receive a password reset link.");
-    // eventuale chiamata API -> fetch(`${apiBaseUser}/forgot`, { method:"POST", ... })
   });
+
+  // === RICHIESTA CAMPI MANCANTI ===
+  function requestMissingInfo(info, username) {
+    const container = document.getElementById("app-container");
+    container.innerHTML = `
+      <h2>Complete your profile</h2>
+      <div class="input-group">
+        <i class="fa fa-envelope"></i>
+        <input type="email" id="email" placeholder="Email" value="${info.email || ''}">
+      </div>
+      <div class="input-group">
+        <i class="fa fa-language"></i>
+        <select id="language">
+          <option value="">Select language</option>
+          <option value="en" ${info.language==='en'?'selected':''}>English</option>
+          <option value="it" ${info.language==='it'?'selected':''}>Italiano</option>
+          <option value="fr" ${info.language==='fr'?'selected':''}>Français</option>
+        </select>
+      </div>
+      <div class="input-group">
+        <i class="fa fa-coins"></i>
+        <select id="currency">
+          <option value="">Select currency</option>
+          <option value="EUR" ${info.currency==='EUR'?'selected':''}>EUR</option>
+          <option value="USD" ${info.currency==='USD'?'selected':''}>USD</option>
+          <option value="GBP" ${info.currency==='GBP'?'selected':''}>GBP</option>
+        </select>
+      </div>
+      <button id="save-info">Save and Continue</button>
+    `;
+
+    document.getElementById("save-info").addEventListener("click", () => {
+      const email = document.getElementById("email").value.trim();
+      const language = document.getElementById("language").value.trim();
+      const currency = document.getElementById("currency").value.trim();
+
+      if (!email || !language || !currency) {
+        alert("Please complete all fields.");
+        return;
+      }
+
+      // qui si può aggiungere una chiamata API per salvare i dati
+      fetch(`${apiBaseUser}/update`, { method: "POST", body: JSON.stringify({ email, language, currency }) })
+
+      alert("Information saved!");
+      openDashboard(username);
+    });
+  }
 
   // === DASHBOARD ===
   function openDashboard(username) {
