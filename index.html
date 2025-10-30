@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>FinEst, ver. 0.9beta</title>
+  <title>FinEst, ver. 0.10 abeta</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
   <link rel="icon" type="image/x-icon" href="/images/logo-bullandbear.png">
   <style>
@@ -240,7 +240,6 @@
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload)
         });
-        //const data = await response.json();
 
         let data;
         try {
@@ -255,9 +254,6 @@
           alert("Server returned invalid JSON: " + parseErr.message);
           return;
         }
-
-        alert(response)
-        alert(data)
 
         if (response.ok && data.status === "ok") {
           if (isLogin) {
@@ -286,37 +282,36 @@
       alert("If this email is registered, you will receive a password reset link.");
     });
 
-    // === RICHIESTA CAMPI MANCANTI ===
     function requestMissingInfo(info, username) {
       const container = document.getElementById("app-container");
       container.innerHTML = `
-      <h2>Complete your profile</h2>
-      <div class="input-group">
-        <i class="fa fa-envelope"></i>
-        <input type="email" id="email" placeholder="Email" value="${info.email || ''}">
-      </div>
-      <div class="input-group">
-        <i class="fa fa-language"></i>
-        <select id="language">
-          <option value="">Select language</option>
-          <option value="en" ${info.language === 'en' ? 'selected' : ''}>English</option>
-          <option value="it" ${info.language === 'it' ? 'selected' : ''}>Italiano</option>
-          <option value="fr" ${info.language === 'fr' ? 'selected' : ''}>Français</option>
-        </select>
-      </div>
-      <div class="input-group">
-        <i class="fa fa-coins"></i>
-        <select id="currency">
-          <option value="">Select currency</option>
-          <option value="EUR" ${info.currency === 'EUR' ? 'selected' : ''}>EUR</option>
-          <option value="USD" ${info.currency === 'USD' ? 'selected' : ''}>USD</option>
-          <option value="GBP" ${info.currency === 'GBP' ? 'selected' : ''}>GBP</option>
-        </select>
-      </div>
-      <button id="save-info">Save and Continue</button>
-    `;
+        <h2>Complete your profile</h2>
+        <div class="input-group">
+          <i class="fa fa-envelope"></i>
+          <input type="email" id="email" placeholder="Email" value="${info.email || ''}">
+        </div>
+        <div class="input-group">
+          <i class="fa fa-language"></i>
+          <select id="language">
+            <option value="">Select language</option>
+            <option value="en" ${info.language === 'en' ? 'selected' : ''}>English</option>
+            <option value="it" ${info.language === 'it' ? 'selected' : ''}>Italiano</option>
+            <option value="fr" ${info.language === 'fr' ? 'selected' : ''}>Français</option>
+          </select>
+        </div>
+        <div class="input-group">
+          <i class="fa fa-coins"></i>
+          <select id="currency">
+            <option value="">Select currency</option>
+            <option value="EUR" ${info.currency === 'EUR' ? 'selected' : ''}>EUR</option>
+            <option value="USD" ${info.currency === 'USD' ? 'selected' : ''}>USD</option>
+            <option value="GBP" ${info.currency === 'GBP' ? 'selected' : ''}>GBP</option>
+          </select>
+        </div>
+        <button id="save-info">Save and Continue</button>
+      `;
 
-      document.getElementById("save-info").addEventListener("click", () => {
+      document.getElementById("save-info").addEventListener("click", async () => {
         const email = document.getElementById("email").value.trim();
         const language = document.getElementById("language").value.trim();
         const currency = document.getElementById("currency").value.trim();
@@ -326,13 +321,47 @@
           return;
         }
 
-        // qui si può aggiungere una chiamata API per salvare i dati
-        fetch(`${apiBaseUser}/update`, { method: "POST", body: JSON.stringify({ email, language, currency }) })
+        // chiamata API /update
+        try {
+          const response = await fetch(`${apiBaseUser}/update`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              username,
+              email,
+              language,
+              currency
+            })
+          });
 
-        alert("Information saved!");
-        openDashboard(username);
+          if (!response.ok) {
+            const text = await response.text();
+            alert(`Server error ${response.status}: ${text.slice(0, 80)}...`);
+            return;
+          }
+
+          const contentType = response.headers.get("content-type");
+          let data;
+          if (contentType && contentType.includes("application/json")) {
+            data = await response.json();
+          } else {
+            const text = await response.text();
+            alert("Invalid JSON: " + text.slice(0, 100));
+            return;
+          }
+
+          if (data.status === "ok") {
+            alert("Information saved successfully!");
+            openDashboard(username);
+          } else {
+            alert(data.detail || "Update failed.");
+          }
+        } catch (err) {
+          alert("Connection error while saving info: " + err.message);
+        }
       });
     }
+
 
     // === DASHBOARD ===
     function openDashboard(username) {
