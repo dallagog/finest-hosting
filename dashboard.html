@@ -33,16 +33,40 @@
   </div>
 
   <script>
+    
     // Recupera token e username
-    const username = localStorage.getItem("feweb_username");
-    const token = localStorage.getItem("feweb_token");
-
+    const username = localStorage.getItem("username");
+    const token = localStorage.getItem("token");
+    
     if (!token) {
       alert("Sessione scaduta. Effettua di nuovo il login.");
       window.location.href = "/"; // torna al login
     } else {
       document.getElementById("username").textContent = `👋 Ciao, ${username}`;
       console.log("Token:", token);
+    }
+
+    const payload = { username };
+
+    //TODO: controllo token
+    const apiUrl = "https://feweb-tunnel.fe-web.eu/token";
+    try {
+      const response = await fetch(apiUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+
+      const contentType = response.headers.get("content-type");
+      let data = contentType && contentType.includes("application/json")
+        ? await response.json()
+        : null;
+
+      if (!response.ok) {
+        alert("Token non valido")
+      }
+    } catch (err) {
+      alert("Connection error: " + err);
     }
 
     function toggleSubmenu(id) {
@@ -55,8 +79,8 @@
     }
 
     function logout() {
-      localStorage.removeItem("feweb_token");
-      localStorage.removeItem("feweb_username");
+      localStorage.removeItem("token");
+      localStorage.removeItem("username");
       window.location.href = "/";
     }
   </script>
