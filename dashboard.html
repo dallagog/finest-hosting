@@ -38,17 +38,9 @@
     const username = localStorage.getItem("username");
     const token = localStorage.getItem("token");
     
-    if (!token) {
-      alert("Sessione scaduta. Effettua di nuovo il login.");
-      window.location.href = "/"; // torna al login
-    } else {
-      document.getElementById("username").textContent = `👋 Ciao, ${username}`;
-      console.log("Token:", token);
-    }
+    const payload = { username, token };
 
-    const payload = { username };
-
-    //TODO: controllo token
+    //Controllo validità del token
     const apiUrl = "https://feweb-tunnel.fe-web.eu/token";
     try {
       const response = await fetch(apiUrl, {
@@ -62,12 +54,16 @@
         ? await response.json()
         : null;
 
-      if (!response.ok) {
-        alert("Token non valido")
+      if (!response.ok || data.token != token) {
+        alert("Token non valido. Sessione scaduta")
+        window.location.href = "/";
       }
     } catch (err) {
       alert("Connection error: " + err);
     }
+
+    document.getElementById("username").textContent = `Ciao, ${username}`;
+    console.log("Token:", token);
 
     function toggleSubmenu(id) {
       const submenu = document.getElementById(id);
