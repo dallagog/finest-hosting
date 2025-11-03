@@ -122,7 +122,8 @@
       const apiLogout = "https://feweb-tunnel.fe-web.eu/logout";
       const username = localStorage.getItem("username");
       const token = localStorage.getItem("token");
-
+      const payload =  {username, token}
+      
       // Notifica immediata all’utente
       alert("Logout in corso...");
 
@@ -133,22 +134,23 @@
             "Content-Type": "application/json",
             "Authorization": `Bearer ${token}`
           },
-          body: JSON.stringify({ username, token })
+          body: JSON.stringify(payload)
         });
 
         if (response.ok) {
-          console.log("Logout completato correttamente dal server.");
+          console.log("Logged out");
         } else {
-          console.warn("Errore durante il logout:", await response.text());
+          console.warn("Logout error, session pending:", await response.text());
         }
       } catch (err) {
-        console.error("Errore di disconnessione:", err);
-      } finally {
-        // Pulizia locale e reindirizzamento
-        localStorage.removeItem("token");
-        localStorage.removeItem("username");
-        window.location.href = "index.html";
-      }
+        console.error("Disconnection error:", err);
+      } 
+
+      // Pulizia locale e reindirizzamento
+      localStorage.removeItem("token");
+      localStorage.removeItem("username");
+      window.location.href = "/";
+      
     }
 
     // === Mostra contenuto della sezione ===
