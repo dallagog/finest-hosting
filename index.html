@@ -94,61 +94,6 @@
       text-decoration: underline;
     }
 
-    /* === DASHBOARD === */
-    .dashboard {
-      display: flex;
-      width: 100%;
-      height: 100vh;
-    }
-
-    .sidebar {
-      width: 220px;
-      background: #1a1a1a;
-      color: white;
-      padding: 20px;
-    }
-
-    .sidebar h3 {
-      text-align: center;
-      margin-bottom: 20px;
-    }
-
-    .menu-item {
-      margin-bottom: 15px;
-    }
-
-    .menu-item>div {
-      cursor: pointer;
-      padding: 8px;
-      background: #333;
-      border-radius: 5px;
-    }
-
-    .submenu {
-      margin-top: 5px;
-      margin-left: 10px;
-      display: none;
-    }
-
-    .submenu div {
-      background: #444;
-      padding: 6px;
-      border-radius: 5px;
-      margin-top: 5px;
-      cursor: pointer;
-    }
-
-    .submenu div:hover {
-      background: #555;
-    }
-
-    .content {
-      flex-grow: 1;
-      padding: 20px;
-      background: #f8f9fa;
-    }
-
-    /* === OFFLINE === */
     .offline {
       width: 300px;
       border-radius: 12px;
@@ -180,7 +125,6 @@
     const apiBaseNew = "https://new-user-tunnel.fe-web.eu";
     const apiBaseUser = "https://user-tunnel.fe-web.eu";
 
-    // === CHECK SERVIZIO HEALTH ===
     async function checkHealth() {
       try {
         const resUser = await fetch(`${apiBaseUser}/health`, { cache: "no-cache" });
@@ -198,7 +142,6 @@
         console.error("Service check failed:", err);
       }
     }
-
     checkHealth();
 
     // === LOGIN / REGISTRAZIONE SWITCH ===
@@ -241,21 +184,12 @@
           body: JSON.stringify(payload)
         });
 
-        let data;
-        try {
-          const contentType = response.headers.get("content-type");
-          if (contentType && contentType.includes("application/json")) {
-            data = await response.json();
-          } else {
-            const text = await response.text();
-            throw new Error("Invalid JSON response: " + text);
-          }
-        } catch (parseErr) {
-          alert("Server returned invalid JSON: " + parseErr.message);
-          return;
-        }
+        const contentType = response.headers.get("content-type");
+        let data = contentType && contentType.includes("application/json")
+          ? await response.json()
+          : null;
 
-        if (response.ok && data.status === "ok") {
+        if (response.ok && data && data.status === "ok") {
           if (isLogin) {
             if (data.info && (!data.info.email || !data.info.language || !data.info.currency)) {
               requestMissingInfo(data.info, username, password);
@@ -267,9 +201,8 @@
             alert("Account created!");
           }
         } else {
-          alert("Account created");
+          alert("Account creation or login failed");
         }
-
       } catch (err) {
         alert("Connection error: " + err);
       }
@@ -282,6 +215,7 @@
       alert("If this email is registered, you will receive a password reset link.");
     });
 
+    // === UPDATE INFO E RITORNO AL LOGIN ===
     function requestMissingInfo(info, username, password) {
       const container = document.getElementById("app-container");
       container.innerHTML = `
@@ -308,7 +242,7 @@
             <option value="GBP" ${info.currency === 'GBP' ? 'selected' : ''}>GBP</option>
           </select>
         </div>
-        <button id="save-info">Verify, Update and Continue</button>
+        <button id="save-info">Update</button>
       `;
 
       document.getElementById("save-info").addEventListener("click", async () => {
@@ -321,48 +255,26 @@
           return;
         }
 
-        // chiamata API /update
         try {
           const response = await fetch(`${apiBaseUser}/update`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              username,
-              password,
-              email,
-              language,
-              currency
-            })
+            body: JSON.stringify({ username, password, email, language, currency })
           });
 
-          if (!response.ok) {
-            const text = await response.text();
-            alert(`Server error ${response.status}: ${text.slice(0, 80)}...`);
-            return;
-          }
+          const data = await response.json();
 
-          const contentType = response.headers.get("content-type");
-          let data;
-          if (contentType && contentType.includes("application/json")) {
-            data = await response.json();
+          if (response.ok && data.status === "ok") {
+            alert("Information saved successfully! Please log in again.");
+            window.location.href = "index.html"; // 👈 RITORNA AL LOGIN
           } else {
-            const text = await response.text();
-            alert("Invalid JSON: " + text.slice(0, 100));
-            return;
-          }
-
-          if (data.status === "ok") {
-            alert("Information saved successfully!");
-            openDashboard(username);
-          } else {
-            alert(data.detail || "Update failed:" || + data.message);
+            alert("Update failed: " + (data.message || "unknown error"));
           }
         } catch (err) {
-          alert("Error in saving info: " + data.message + " ! " + err.message);
+          alert("Error saving info: " + err.message);
         }
       });
     }
-
 
     // === DASHBOARD ===
     function openDashboard(username) {
@@ -389,11 +301,9 @@
           <h2>Dashboard</h2>
           <p>Benvenuto nella tua area riservata.</p>
         </div>
-      </div>
-    `;
+      </div>`;
     }
 
-    // === FUNZIONI DASHBOARD ===
     window.toggleSubmenu = function (id) {
       const submenu = document.getElementById(id);
       submenu.style.display = submenu.style.display === "block" ? "none" : "block";
