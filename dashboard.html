@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html lang="it">
-
 <head>
   <meta charset="UTF-8">
   <title>FinEst Dashboard</title>
@@ -8,19 +7,21 @@
     body {
       font-family: Arial, sans-serif;
       background: #f5f5f5;
+      margin: 0;
     }
 
     .sidebar {
-      width: 200px;
+      width: 220px;
       float: left;
       background: #007bff;
       color: white;
       height: 100vh;
       padding: 20px;
+      box-sizing: border-box;
     }
 
     .content {
-      margin-left: 220px;
+      margin-left: 240px;
       padding: 20px;
     }
 
@@ -33,22 +34,39 @@
       display: none;
       margin-left: 10px;
     }
+
+    button {
+      margin-top: 20px;
+      padding: 8px 14px;
+      border: none;
+      background-color: #fff;
+      color: #007bff;
+      font-weight: bold;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+
+    button:hover {
+      background-color: #e3e3e3;
+    }
   </style>
 </head>
-
 <body>
   <div class="sidebar">
-    <h3 id="username"></h3>
+    <h3 id="username">Caricamento...</h3>
     <div class="menu-item" onclick="toggleSubmenu('settings-submenu')">⚙️ Impostazioni</div>
     <div class="submenu" id="settings-submenu">
       <div onclick="showContent('Profilo')">Profilo</div>
       <div onclick="showContent('Sicurezza')">Sicurezza</div>
     </div>
+
     <div class="menu-item" onclick="toggleSubmenu('wallet-submenu')">💰 Wallet</div>
     <div class="submenu" id="wallet-submenu">
       <div onclick="showContent('Saldo')">Saldo</div>
       <div onclick="showContent('Transazioni')">Transazioni</div>
     </div>
+
     <button onclick="logout()">Logout</button>
   </div>
 
@@ -58,54 +76,56 @@
   </div>
 
   <script>
+    // === Verifica token e setup iniziale ===
+    async function checkToken() {
+      const username = localStorage.getItem("username");
+      const token = localStorage.getItem("token");
 
-    // Recupera token e username
-    const username = localStorage.getItem("username");
-    const token = localStorage.getItem("token");
-
-    const payload = { username, token };
-
-    //Controllo validità del token
-    const apiUrl = "https://feweb-tunnel.fe-web.eu/token";
-    try {
-      const response = await fetch(apiUrl, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
-      });
-
-      const contentType = response.headers.get("content-type");
-      let data = contentType && contentType.includes("application/json")
-        ? await response.json()
-        : null;
-
-      if (!response.ok || data.token != token) {
-        alert(response.detail || "Token " || data.token || "non valido " || token || " . Sessione scaduta")
-        window.location.href = "/";
+      if (!username || !token) {
+        alert("Sessione non valida. Effettua nuovamente il login.");
+        window.location.href = "index.html";
+        return;
       }
-    } catch (err) {
-      alert("Connection error: " + err);
+
+      document.getElementById("username").textContent = `Ciao, ${username}`;
+
+      const apiUrl = "https://feweb-tunnel.fe-web.eu/token";
+      const payload = { username, token };
+
+      try {
+        const response = await fetch(apiUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+
+        const contentType = response.headers.get("content-type");
+        const data = contentType && contentType.includes("application/json")
+          ? await response.json()
+          : null;
+
+        if (!response.ok || !data || data.token !== token) {
+          alert("Sessione scaduta o token non valido. Effettua nuovamente il login.");
+          localStorage.clear();
+          window.location.href = "index.html";
+        } else {
+          console.log("Token valido per", username);
+        }
+      } catch (err) {
+        console.error("Errore di connessione:", err);
+        alert("Impossibile verificare la sessione. Riprova più tardi.");
+      }
     }
 
-    document.getElementById("username").textContent = `Ciao, ${username}`;
-    console.log("Token:", token);
-
-    function toggleSubmenu(id) {
-      const submenu = document.getElementById(id);
-      submenu.style.display = submenu.style.display === "block" ? "none" : "block";
-    }
-
-    function showContent(section) {
-      document.getElementById("content").innerHTML = `<h2>${section}</h2><p>Contenuto della sezione "${section}".</p>`;
-    }
-
+    // === Logout ===
     async function logout() {
       const apiLogout = "https://feweb-tunnel.fe-web.eu/logout";
       const username = localStorage.getItem("username");
       const token = localStorage.getItem("token");
 
-      alert("Logout")
-      
+      // Notifica immediata all’utente
+      alert("Logout in corso...");
+
       try {
         const response = await fetch(apiLogout, {
           method: "POST",
@@ -117,21 +137,36 @@
         });
 
         if (response.ok) {
-          console.log("You are Logged out.");
+          console.log("Logout completato correttamente dal server.");
         } else {
-          console.warn("Logging out error:", await response.text());
+          console.warn("Errore durante il logout:", await response.text());
         }
       } catch (err) {
-        console.error("Disconnection error:", err);
+        console.error("Errore di disconnessione:", err);
+      } finally {
+        // Pulizia locale e reindirizzamento
+        localStorage.removeItem("token");
+        localStorage.removeItem("username");
+        window.location.href = "index.html";
       }
-
-      // Pulizia locale e reindirizzamento
-      localStorage.removeItem("token");
-      localStorage.removeItem("username");
-      window.location.href = "/";
-
     }
+
+    // === Mostra contenuto della sezione ===
+    function showContent(section) {
+      document.getElementById("content").innerHTML = `
+        <h2>${section}</h2>
+        <p>Contenuto della sezione "${section}".</p>
+      `;
+    }
+
+    // === Espandi o nascondi sottomenu ===
+    function toggleSubmenu(id) {
+      const submenu = document.getElementById(id);
+      submenu.style.display = submenu.style.display === "block" ? "none" : "block";
+    }
+
+    // Avvio iniziale
+    checkToken();
   </script>
 </body>
-
 </html>
