@@ -74,11 +74,35 @@
       document.getElementById("content").innerHTML = `<h2>${section}</h2><p>Contenuto della sezione "${section}".</p>`;
     }
 
-    function logout() {
-      localStorage.removeItem("token");
-      localStorage.removeItem("username");
-      window.location.href = "/";
+async function logout() {
+  const apiLogout = "https://feweb-tunnel.fe-web.eu/logout"; // 🔁 Cambia se usi un altro tunnel
+  const username = localStorage.getItem("username");
+  const token = localStorage.getItem("token");
+
+  try {
+    const response = await fetch(apiLogout, {
+      method: "POST",
+      headers: { 
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}` // se il backend lo richiede
+      },
+      body: JSON.stringify({ username, token })
+    });
+
+    if (response.ok) {
+      console.log("You are Logged out.");
+    } else {
+      console.warn("Logging out error:", await response.text());
     }
+  } catch (err) {
+    console.error("Disconnection error:", err);
+  } finally {
+    // Pulizia locale e reindirizzamento
+    localStorage.removeItem("token");
+    localStorage.removeItem("username");
+    window.location.href = "/"; 
+  }
+}
   </script>
 </body>
 </html>
