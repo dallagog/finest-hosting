@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>FinEst, ver. 0.15 beta</title>
+  <title>FinEst, ver. 0.16 beta</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
   <link rel="icon" type="image/x-icon" href="/images/logo-bullandbear.png">
   <style>
@@ -194,7 +194,7 @@
             if (data.info && (!data.info.email || !data.info.language || !data.info.currency)) {
               requestMissingInfo(data.info, username, password);
             } else {
-              openDashboard(username);
+              openDashboard(username, data.token);
             }
           } 
         } else {
@@ -273,32 +273,13 @@
       });
     }
 
-    // === DASHBOARD ===
-    function openDashboard(username) {
-      document.body.innerHTML = `
-      <div class="dashboard">
-        <div class="sidebar">
-          <h3>Welcome, ${username}</h3>
-          <div class="menu-item">
-            <div onclick="toggleSubmenu('settings-submenu')">⚙️ Impostazioni</div>
-            <div class="submenu" id="settings-submenu">
-              <div onclick="showContent('Profilo')">Profilo</div>
-              <div onclick="showContent('Sicurezza')">Sicurezza</div>
-            </div>
-          </div>
-          <div class="menu-item">
-            <div onclick="toggleSubmenu('wallet-submenu')">💰 Wallet</div>
-            <div class="submenu" id="wallet-submenu">
-              <div onclick="showContent('Saldo')">Saldo</div>
-              <div onclick="showContent('Transazioni')">Transazioni</div>
-            </div>
-          </div>
-        </div>
-        <div class="content" id="dashboard-content">
-          <h2>Dashboard</h2>
-          <p>Benvenuto nella tua area riservata.</p>
-        </div>
-      </div>`;
+    function openDashboard(username, token) {
+      // salva il token e username in localStorage per la pagina successiva
+      localStorage.setItem("username", username);
+      localStorage.setItem("token", token);
+
+      // reindirizza alla pagina della dashboard
+      window.location.href = "dashboad.html";
     }
 
     window.toggleSubmenu = function (id) {
