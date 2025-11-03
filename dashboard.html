@@ -1,16 +1,41 @@
 <!DOCTYPE html>
 <html lang="it">
+
 <head>
   <meta charset="UTF-8">
   <title>FinEst Dashboard</title>
   <style>
-    body { font-family: Arial, sans-serif; background: #f5f5f5; }
-    .sidebar { width: 200px; float: left; background: #007bff; color: white; height: 100vh; padding: 20px; }
-    .content { margin-left: 220px; padding: 20px; }
-    .menu-item { margin-bottom: 10px; cursor: pointer; }
-    .submenu { display: none; margin-left: 10px; }
+    body {
+      font-family: Arial, sans-serif;
+      background: #f5f5f5;
+    }
+
+    .sidebar {
+      width: 200px;
+      float: left;
+      background: #007bff;
+      color: white;
+      height: 100vh;
+      padding: 20px;
+    }
+
+    .content {
+      margin-left: 220px;
+      padding: 20px;
+    }
+
+    .menu-item {
+      margin-bottom: 10px;
+      cursor: pointer;
+    }
+
+    .submenu {
+      display: none;
+      margin-left: 10px;
+    }
   </style>
 </head>
+
 <body>
   <div class="sidebar">
     <h3 id="username"></h3>
@@ -33,11 +58,11 @@
   </div>
 
   <script>
-    
+
     // Recupera token e username
     const username = localStorage.getItem("username");
     const token = localStorage.getItem("token");
-    
+
     const payload = { username, token };
 
     //Controllo validità del token
@@ -74,36 +99,39 @@
       document.getElementById("content").innerHTML = `<h2>${section}</h2><p>Contenuto della sezione "${section}".</p>`;
     }
 
-async function logout() {
-  const apiLogout = "https://feweb-tunnel.fe-web.eu/logout"; 
-  const username = localStorage.getItem("username");
-  const token = localStorage.getItem("token");
+    async function logout() {
+      const apiLogout = "https://feweb-tunnel.fe-web.eu/logout";
+      const username = localStorage.getItem("username");
+      const token = localStorage.getItem("token");
 
-  try {
-    const response = await fetch(apiLogout, {
-      method: "POST",
-      headers: { 
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${token}` // se il backend lo richiede
-      },
-      body: JSON.stringify({ username, token })
-    });
+      alert("Logout")
+      
+      try {
+        const response = await fetch(apiLogout, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`
+          },
+          body: JSON.stringify({ username, token })
+        });
 
-    if (response.ok) {
-      console.log("You are Logged out.");
-    } else {
-      console.warn("Logging out error:", await response.text());
+        if (response.ok) {
+          console.log("You are Logged out.");
+        } else {
+          console.warn("Logging out error:", await response.text());
+        }
+      } catch (err) {
+        console.error("Disconnection error:", err);
+      }
+
+      // Pulizia locale e reindirizzamento
+      localStorage.removeItem("token");
+      localStorage.removeItem("username");
+      window.location.href = "/";
+
     }
-  } catch (err) {
-    console.error("Disconnection error:", err);
-  } 
-  
-  // Pulizia locale e reindirizzamento
-  localStorage.removeItem("token");
-  localStorage.removeItem("username");
-  window.location.href = "/"; 
-  
-}
   </script>
 </body>
+
 </html>
