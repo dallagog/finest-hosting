@@ -37,6 +37,11 @@
       margin-left: 10px;
     }
 
+    .submenu div {
+      margin-bottom: 6px;
+      cursor: pointer;
+    }
+
     button {
       margin-top: 20px;
       padding: 8px 14px;
@@ -52,9 +57,39 @@
     button:hover {
       background-color: #e3e3e3;
     }
+
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      margin-top: 10px;
+      background: white;
+    }
+
+    table, th, td {
+      border: 1px solid #ddd;
+    }
+
+    th, td {
+      padding: 8px 12px;
+      text-align: left;
+    }
+
+    th {
+      background-color: #007bff;
+      color: white;
+    }
+
+    pre {
+      background: #fff;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      overflow-x: auto;
+    }
   </style>
 </head>
 <body>
+  <script src="js/app.js"></script>
   <div class="sidebar">
     <h3 id="username">Caricamento...</h3>
     <div class="menu-item" onclick="toggleSubmenu('settings-submenu')">⚙️ Impostazioni</div>
@@ -65,6 +100,7 @@
 
     <div class="menu-item" onclick="toggleSubmenu('wallet-submenu')">💰 Wallet</div>
     <div class="submenu" id="wallet-submenu">
+      <div onclick="viewAccount()">📋 Visualizza Account</div>
       <div onclick="showContent('Saldo')">Saldo</div>
       <div onclick="showContent('Transazioni')">Transazioni</div>
     </div>
@@ -78,13 +114,13 @@
   </div>
 
   <script>
-    // === Verifica token e setup iniziale ===
+    // === Verifica token ===
     async function checkToken() {
       const username = localStorage.getItem("username");
       const token = localStorage.getItem("token");
 
       if (!username || !token) {
-        alert("Starting: Invalid session. Sign in again" || username || token);
+        alert("Invalid session. Sign in again.");
         window.location.href = "index.html";
         return;
       }
@@ -101,18 +137,13 @@
           body: JSON.stringify(payload)
         });
 
-        const contentType = response.headers.get("content-type");
-        const data = contentType && contentType.includes("application/json")
-          ? await response.json()
-          : null;
-
         if (!response.ok) {
-          alert("Invalid token. Sign in again");
+          alert("Invalid token. Sign in again.");
           localStorage.clear();
           window.location.href = "index.html";
-        } 
+        }
       } catch (err) {
-        alert("Token unchecked." || response.json);
+        alert("Errore durante la verifica del token.");
       }
     }
 
@@ -121,10 +152,8 @@
       const apiLogout = "https://feweb-tunnel.fe-web.eu/logout";
       const username = localStorage.getItem("username");
       const token = localStorage.getItem("token");
-      const payload =  {username, token}
+      const payload = { username, token };
       
-      alert("Logout:" || payload)
-
       try {
         const response = await fetch(apiLogout, {
           method: "POST",
@@ -142,16 +171,58 @@
         }
       } catch (err) {
         console.error("Disconnection error:", err);
-      } 
+      }
 
-      // Pulizia locale e reindirizzamento
       localStorage.removeItem("token");
       localStorage.removeItem("username");
       window.location.href = "/";
-      
     }
 
-    // === Mostra contenuto della sezione ===
+    // === Visualizza account ===
+    async function viewAccount() {
+      const username = localStorage.getItem("username");
+      const token = localStorage.getItem("token");
+
+      if (!username || !token) {
+        alert("Sessione non valida. Accedi di nuovo.");
+        window.location.href = "index.html";
+        return;
+      }
+
+      const apiUrl = "https://feweb-tunnel.fe-web.eu/getAccountList";
+      const payload = { username, token };
+
+      try {
+        const response = await fetch(apiUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+
+        if (!response.ok) {
+          alert("Errore durante il recupero degli account.");
+          return;
+        }
+
+        const data = await response.json();
+        if (data && data.accounts) {
+          // Mostra il JSON "così com'è" formattato in <pre>
+          document.getElementById("content").innerHTML = `
+            <h1 id="title"></h1>
+            <p id="description"></p>
+            <h2>Lista Account</h2>
+            <pre>${JSON.stringify(data.accounts, null, 2)}</pre>
+          `;
+        } else {
+          document.getElementById("content").innerHTML = "<p>Nessun account trovato.</p>";
+        }      
+      } catch (err) {
+        console.error("Errore durante la chiamata API:", err);
+        document.getElementById("content").innerHTML = `<p>Errore: ${err.message}</p>`;
+      }
+    }
+
+    // === Mostra contenuto generico ===
     function showContent(section) {
       document.getElementById("content").innerHTML = `
         <h2>${section}</h2>
@@ -165,7 +236,7 @@
       submenu.style.display = submenu.style.display === "block" ? "none" : "block";
     }
 
-    // Avvio iniziale
+    // === Avvio iniziale ===
     checkToken();
   </script>
 </body>
