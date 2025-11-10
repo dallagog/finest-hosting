@@ -455,31 +455,90 @@
       try {
         const response = await fetch(apiUrl, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { 
+            "Content-Type": "application/json"
+          },
           body: JSON.stringify(payload)
         });
 
         if (!response.ok) {
-          throw new Error("Errore durante il recupero del report PDF.");
+          const errorText = await response.text();
+          throw new Error(`Errore ${response.status}: ${errorText}`);
         }
 
+        // Verifica che la risposta sia effettivamente un PDF
+        const contentType = response.headers.get("content-type");
+        if (!contentType || !contentType.includes("application/pdf")) {
+          throw new Error("La risposta non è un file PDF valido");
+        }
+
+        // Converte la risposta in blob
         const blob = await response.blob();
+        
+        // Crea un URL temporaneo per il blob
         const url = URL.createObjectURL(blob);
+
+        // Informazioni sulla selezione
+        const selectionInfo = selectedAccounts.size > 0 
+          ? `Account selezionati: ${Array.from(selectedAccounts).join(', ')}` 
+          : 'Tutti gli account';
 
         document.getElementById("content").innerHTML = `
           <div class="latex-section">
-            <h1 class="latex-title">Report Finanziario</h1>
-            <p class="latex-subtitle">Account selezionati: ${selectedAccounts.size > 0 ? Array.from(selectedAccounts).join(', ') : 'Tutti'}</p>
+            <h1 class="latex-title">Report Finanziario PDF</h1>
+            <p class="latex-subtitle">${selectionInfo}</p>
+            <div style="text-align: center; margin-top: 15px;">
+              <a href="${url}" download="report_finanziario.pdf" style="
+                display: inline-block;
+                padding: 10px 20px;
+                background: #1a5f7a;
+                color: white;
+                text-decoration: none;
+                border-radius: 4px;
+                font-weight: 600;
+                margin-right: 10px;
+              ">
+                <i class="fas fa-download"></i> Scarica PDF
+              </a>
+              <button onclick="window.print()" style="
+                padding: 10px 20px;
+                background: #2b2b2b;
+                color: white;
+                border: none;
+                border-radius: 4px;
+                font-weight: 600;
+                cursor: pointer;
+              ">
+                <i class="fas fa-print"></i> Stampa
+              </button>
+            </div>
           </div>
           <iframe class="pdf-viewer" src="${url}" type="application/pdf"></iframe>
         `;
+
+        // Pulizia dell'URL quando si lascia la pagina (opzionale)
+        // URL.revokeObjectURL(url);
+        
       } catch (err) {
         console.error("Errore durante la chiamata API:", err);
         document.getElementById("content").innerHTML = `
           <div class="latex-section">
             <div class="error-message">
-              <strong>Errore:</strong> ${err.message}
+              <strong>Errore nel caricamento del report:</strong><br>
+              ${err.message}
             </div>
+            <p style="text-align: center; margin-top: 20px;">
+              <button onclick="viewAccount()" style="
+                padding: 10px 20px;
+                background: #1a5f7a;
+                color: white;
+                border: none;
+                border-radius: 4px;
+                cursor: pointer;
+              ">
+                Torna agli Account
+              </button>
+            </p>
           </div>
         `;
       }
