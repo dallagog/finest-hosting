@@ -6,114 +6,258 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
   <link rel="icon" type="image/x-icon" href="/images/logo-bullandbear.png">
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #f5f5f5;
+    * {
       margin: 0;
-    }
-
-    .sidebar {
-      width: 220px;
-      float: left;
-      background: #007bff;
-      color: white;
-      height: 100vh;
-      padding: 20px;
+      padding: 0;
       box-sizing: border-box;
     }
 
-    .content {
-      margin-left: 240px;
-      padding: 20px;
+    body {
+      font-family: 'Computer Modern', 'Latin Modern Roman', Georgia, serif;
+      background: #f9f7f4;
+      color: #2b2b2b;
+      line-height: 1.6;
+    }
+
+    .sidebar {
+      width: 260px;
+      position: fixed;
+      left: 0;
+      top: 0;
+      background: #1a1a1a;
+      color: #e8e6e3;
+      height: 100vh;
+      padding: 30px 20px;
+      border-right: 3px solid #2b2b2b;
+      overflow-y: auto;
+    }
+
+    .sidebar h3 {
+      font-size: 1.3em;
+      margin-bottom: 25px;
+      padding-bottom: 15px;
+      border-bottom: 2px solid #4a4a4a;
+      font-weight: 600;
+      letter-spacing: 0.5px;
     }
 
     .menu-item {
-      margin-bottom: 10px;
+      margin-bottom: 12px;
       cursor: pointer;
+      padding: 10px 12px;
+      border-radius: 4px;
+      transition: all 0.2s;
+      font-weight: 500;
+      font-size: 0.95em;
+    }
+
+    .menu-item:hover {
+      background: #2b2b2b;
+      padding-left: 16px;
     }
 
     .submenu {
       display: none;
-      margin-left: 10px;
+      margin-left: 20px;
+      margin-top: 8px;
     }
 
     .submenu div {
-      margin-bottom: 6px;
+      margin-bottom: 8px;
       cursor: pointer;
+      padding: 8px 10px;
+      font-size: 0.9em;
+      border-left: 2px solid #4a4a4a;
+      padding-left: 12px;
+      transition: all 0.2s;
+    }
+
+    .submenu div:hover {
+      border-left-color: #e8e6e3;
+      padding-left: 16px;
     }
 
     button {
-      margin-top: 20px;
-      padding: 8px 14px;
-      border: none;
-      background-color: #fff;
-      color: #007bff;
-      font-weight: bold;
-      border-radius: 6px;
+      margin-top: 30px;
+      padding: 12px 20px;
+      border: 2px solid #e8e6e3;
+      background-color: transparent;
+      color: #e8e6e3;
+      font-weight: 600;
+      border-radius: 4px;
       cursor: pointer;
-      transition: 0.3s;
+      transition: all 0.3s;
+      width: 100%;
+      font-size: 0.95em;
+      letter-spacing: 0.5px;
     }
 
     button:hover {
-      background-color: #e3e3e3;
+      background-color: #e8e6e3;
+      color: #1a1a1a;
     }
 
-    table {
-      border-collapse: collapse;
+    .content {
+      margin-left: 280px;
+      padding: 40px 60px;
+      max-width: 1200px;
+    }
+
+    .latex-section {
+      background: white;
+      padding: 40px;
+      margin-bottom: 30px;
+      border: 1px solid #d4d2cf;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+
+    .latex-title {
+      font-size: 2em;
+      font-weight: 700;
+      margin-bottom: 10px;
+      text-align: center;
+      letter-spacing: 1px;
+      border-bottom: 3px double #2b2b2b;
+      padding-bottom: 15px;
+    }
+
+    .latex-subtitle {
+      font-size: 1.1em;
+      text-align: center;
+      color: #666;
+      margin-bottom: 30px;
+      font-style: italic;
+    }
+
+    .account-card {
+      border: 2px solid #2b2b2b;
+      padding: 20px;
+      margin-bottom: 20px;
+      background: #fafafa;
+      cursor: pointer;
+      transition: all 0.3s;
+      position: relative;
+    }
+
+    .account-card:hover {
+      background: #f0f0f0;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      transform: translateX(5px);
+    }
+
+    .account-card.selected {
+      background: #e8f4f8;
+      border-color: #1a5f7a;
+      border-width: 3px;
+    }
+
+    .account-header {
+      font-size: 1.3em;
+      font-weight: 700;
+      margin-bottom: 15px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .account-details {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+      font-size: 0.95em;
+    }
+
+    .detail-row {
+      display: flex;
+      padding: 8px 0;
+      border-bottom: 1px solid #e0e0e0;
+    }
+
+    .detail-label {
+      font-weight: 600;
+      width: 140px;
+      color: #555;
+    }
+
+    .detail-value {
+      flex: 1;
+      font-family: 'Courier New', monospace;
+    }
+
+    .selection-badge {
+      background: #1a5f7a;
+      color: white;
+      padding: 4px 12px;
+      border-radius: 4px;
+      font-size: 0.85em;
+      font-weight: 600;
+    }
+
+    .pdf-viewer {
       width: 100%;
-      margin-top: 10px;
+      height: 800px;
+      border: 2px solid #2b2b2b;
       background: white;
     }
 
-    table, th, td {
-      border: 1px solid #ddd;
+    .loading {
+      text-align: center;
+      padding: 40px;
+      font-style: italic;
+      color: #666;
     }
 
-    th, td {
-      padding: 8px 12px;
-      text-align: left;
+    .error-message {
+      background: #fee;
+      border: 2px solid #c33;
+      padding: 20px;
+      color: #c33;
+      border-radius: 4px;
+      margin: 20px 0;
     }
 
-    th {
-      background-color: #007bff;
-      color: white;
-    }
-
-    pre {
-      background: #fff;
-      padding: 10px;
-      border: 1px solid #ccc;
-      border-radius: 5px;
-      overflow-x: auto;
+    @media print {
+      .sidebar { display: none; }
+      .content { margin-left: 0; }
     }
   </style>
 </head>
 <body>
-  <script src="js/app.js"></script>
   <div class="sidebar">
     <h3 id="username">Caricamento...</h3>
-    <div class="menu-item" onclick="toggleSubmenu('settings-submenu')">⚙️ Impostazioni</div>
+    
+    <div class="menu-item" onclick="toggleSubmenu('settings-submenu')">
+      <i class="fas fa-cog"></i> Impostazioni
+    </div>
     <div class="submenu" id="settings-submenu">
       <div onclick="showContent('Profilo')">Profilo</div>
       <div onclick="showContent('Sicurezza')">Sicurezza</div>
     </div>
 
-    <div class="menu-item" onclick="toggleSubmenu('wallet-submenu')">💰 Wallet</div>
+    <div class="menu-item" onclick="toggleSubmenu('wallet-submenu')">
+      <i class="fas fa-wallet"></i> Wallet
+    </div>
     <div class="submenu" id="wallet-submenu">
-      <div onclick="viewAccount()">📋 Visualizza Account</div>
+      <div onclick="viewAccount()"><i class="fas fa-list"></i> Visualizza Account</div>
       <div onclick="showContent('Saldo')">Saldo</div>
       <div onclick="showContent('Transazioni')">Transazioni</div>
+      <div onclick="viewReport()"><i class="fas fa-file-pdf"></i> Report PDF</div>
     </div>
 
-    <button onclick="logout()">Logout</button>
+    <button onclick="logout()"><i class="fas fa-sign-out-alt"></i> Logout</button>
   </div>
 
   <div class="content" id="content">
-    <h2>Dashboard</h2>
-    <p>Benvenuto nella tua area riservata ver. 2.</p>
+    <div class="latex-section">
+      <h1 class="latex-title">FinEst Dashboard</h1>
+      <p class="latex-subtitle">Sistema di Gestione Finanziaria</p>
+      <p style="text-align: center; margin-top: 20px;">Benvenuto nella tua area riservata versione 2.0</p>
+    </div>
   </div>
 
   <script>
+    let selectedAccounts = new Set();
+
     // === Verifica token ===
     async function checkToken() {
       const username = localStorage.getItem("username");
@@ -125,7 +269,7 @@
         return;
       }
 
-      document.getElementById("username").textContent = `Ciao, ${username}`;
+      document.getElementById("username").textContent = `${username}`;
 
       const apiUrl = "https://feweb-tunnel.fe-web.eu/token";
       const payload = { username, token };
@@ -178,6 +322,30 @@
       window.location.href = "/";
     }
 
+    // === Toggle selezione account ===
+    function toggleAccountSelection(accountId) {
+      if (selectedAccounts.has(accountId)) {
+        selectedAccounts.delete(accountId);
+      } else {
+        selectedAccounts.add(accountId);
+      }
+      
+      const card = document.getElementById(`account-${accountId}`);
+      if (card) {
+        card.classList.toggle('selected');
+        const badge = card.querySelector('.selection-badge');
+        if (badge) {
+          badge.remove();
+        } else {
+          const header = card.querySelector('.account-header');
+          const newBadge = document.createElement('span');
+          newBadge.className = 'selection-badge';
+          newBadge.textContent = 'SELEZIONATO';
+          header.appendChild(newBadge);
+        }
+      }
+    }
+
     // === Visualizza account ===
     async function viewAccount() {
       const username = localStorage.getItem("username");
@@ -188,6 +356,8 @@
         window.location.href = "index.html";
         return;
       }
+
+      document.getElementById("content").innerHTML = '<div class="loading">Caricamento account in corso...</div>';
 
       const apiUrl = "https://feweb-tunnel.fe-web.eu/getAccountList";
       const payload = { username, token };
@@ -200,33 +370,128 @@
         });
 
         if (!response.ok) {
-          alert("Errore durante il recupero degli account.");
-          return;
+          throw new Error("Errore durante il recupero degli account.");
         }
 
         const data = await response.json();
-        if (data && data.accounts) {
-          // Mostra il JSON "così com'è" formattato in <pre>
-          document.getElementById("content").innerHTML = `
-            <h1 id="title"></h1>
-            <p id="description"></p>
-            <h2>Lista Account</h2>
-            <pre>${JSON.stringify(data.accounts, null, 2)}</pre>
+        if (data && data.accounts && Array.isArray(data.accounts)) {
+          let html = `
+            <div class="latex-section">
+              <h1 class="latex-title">Lista Rapporti Finanziari</h1>
+              <p class="latex-subtitle">Clicca su un account per selezionarlo/deselezionarlo</p>
+            </div>
           `;
+
+          data.accounts.forEach((account, index) => {
+            const accountId = account.accountId || `account-${index}`;
+            const isSelected = selectedAccounts.has(accountId);
+            
+            html += `
+              <div class="account-card ${isSelected ? 'selected' : ''}" 
+                   id="account-${accountId}" 
+                   onclick="toggleAccountSelection('${accountId}')">
+                <div class="account-header">
+                  <span>Rapporto #${index + 1}</span>
+                  ${isSelected ? '<span class="selection-badge">SELEZIONATO</span>' : ''}
+                </div>
+                <div class="account-details">
+            `;
+
+            for (const [key, value] of Object.entries(account)) {
+              html += `
+                <div class="detail-row">
+                  <div class="detail-label">${key}:</div>
+                  <div class="detail-value">${value !== null && value !== undefined ? value : 'N/A'}</div>
+                </div>
+              `;
+            }
+
+            html += `
+                </div>
+              </div>
+            `;
+          });
+
+          document.getElementById("content").innerHTML = html;
         } else {
-          document.getElementById("content").innerHTML = "<p>Nessun account trovato.</p>";
+          document.getElementById("content").innerHTML = `
+            <div class="latex-section">
+              <p class="latex-subtitle">Nessun account trovato.</p>
+            </div>
+          `;
         }      
       } catch (err) {
         console.error("Errore durante la chiamata API:", err);
-        document.getElementById("content").innerHTML = `<p>Errore: ${err.message}</p>`;
+        document.getElementById("content").innerHTML = `
+          <div class="latex-section">
+            <div class="error-message">
+              <strong>Errore:</strong> ${err.message}
+            </div>
+          </div>
+        `;
+      }
+    }
+
+    // === Visualizza Report PDF ===
+    async function viewReport() {
+      const username = localStorage.getItem("username");
+      const token = localStorage.getItem("token");
+
+      if (!username || !token) {
+        alert("Sessione non valida. Accedi di nuovo.");
+        window.location.href = "index.html";
+        return;
+      }
+
+      document.getElementById("content").innerHTML = '<div class="loading">Generazione report in corso...</div>';
+
+      const apiUrl = "https://feweb-tunnel.fe-web.eu/getReportPDF";
+      const payload = { 
+        username, 
+        token,
+        account: Array.from(selectedAccounts)
+      };
+
+      try {
+        const response = await fetch(apiUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+
+        if (!response.ok) {
+          throw new Error("Errore durante il recupero del report PDF.");
+        }
+
+        const blob = await response.blob();
+        const url = URL.createObjectURL(blob);
+
+        document.getElementById("content").innerHTML = `
+          <div class="latex-section">
+            <h1 class="latex-title">Report Finanziario</h1>
+            <p class="latex-subtitle">Account selezionati: ${selectedAccounts.size > 0 ? Array.from(selectedAccounts).join(', ') : 'Tutti'}</p>
+          </div>
+          <iframe class="pdf-viewer" src="${url}" type="application/pdf"></iframe>
+        `;
+      } catch (err) {
+        console.error("Errore durante la chiamata API:", err);
+        document.getElementById("content").innerHTML = `
+          <div class="latex-section">
+            <div class="error-message">
+              <strong>Errore:</strong> ${err.message}
+            </div>
+          </div>
+        `;
       }
     }
 
     // === Mostra contenuto generico ===
     function showContent(section) {
       document.getElementById("content").innerHTML = `
-        <h2>${section}</h2>
-        <p>Contenuto della sezione "${section}".</p>
+        <div class="latex-section">
+          <h1 class="latex-title">${section}</h1>
+          <p class="latex-subtitle">Contenuto della sezione "${section}".</p>
+        </div>
       `;
     }
 
@@ -238,7 +503,6 @@
 
     // === Avvio iniziale ===
     checkToken();
-
     viewAccount();
   </script>
 </body>
