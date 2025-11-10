@@ -383,7 +383,7 @@
           `;
 
           data.accounts.forEach((account, index) => {
-            const accountId = account.accountId || `account-${index}`;
+            const accountId = account.accountId || account['51321373'] || `account-${index}`;
             const isSelected = selectedAccounts.has(accountId);
             
             html += `
@@ -397,11 +397,29 @@
                 <div class="account-details">
             `;
 
+            // Funzione per formattare il valore in modo leggibile
+            function formatValue(value) {
+              if (value === null || value === undefined) {
+                return '<em style="color: #999;">N/A</em>';
+              }
+              if (typeof value === 'object') {
+                // Se è un oggetto, mostralo in formato JSON indentato
+                return `<pre style="margin: 0; font-size: 0.85em; background: #f5f5f5; padding: 8px; border-radius: 3px; overflow-x: auto;">${JSON.stringify(value, null, 2)}</pre>`;
+              }
+              if (typeof value === 'boolean') {
+                return value ? '<span style="color: #28a745;">✓ Sì</span>' : '<span style="color: #dc3545;">✗ No</span>';
+              }
+              if (typeof value === 'number') {
+                return `<span style="font-weight: 600;">${value.toLocaleString('it-IT')}</span>`;
+              }
+              return value;
+            }
+
             for (const [key, value] of Object.entries(account)) {
               html += `
-                <div class="detail-row">
+                <div class="detail-row" style="grid-column: span 2;">
                   <div class="detail-label">${key}:</div>
-                  <div class="detail-value">${value !== null && value !== undefined ? value : 'N/A'}</div>
+                  <div class="detail-value">${formatValue(value)}</div>
                 </div>
               `;
             }
