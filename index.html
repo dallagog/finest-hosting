@@ -258,7 +258,7 @@
       }
 
       const apiUrl = isLogin ? `${apiBaseUser}/login` : `${apiBaseNew}/create`;
-      const payload = { username, password };
+      const payload = { username, password, currentLang };
 
       try {
         const response = await fetch(apiUrl, {
@@ -288,10 +288,10 @@
             }
           } 
         } else {
-          alert("Account creation or login failed");
+          alert(getTranslation('int.creationlogin.failed') || "Account creation or login failed");
         }
       } catch (err) {
-        alert("Connection error: " + err);
+        alert(getTranslation('int.connection.error') || "Connection error: " + err);
       }
     });
 
@@ -315,9 +315,9 @@
           <i class="fa fa-language"></i>
           <select id="language">
             <option value="">${getTranslation('int.select.language')}</option>
-            <option value="en" ${info.language === 'en' ? 'selected' : ''}>English</option>
-            <option value="it" ${info.language === 'it' ? 'selected' : ''}>Italiano</option>
-            <option value="fr" ${info.language === 'fr' ? 'selected' : ''}>Français</option>
+            <option value="en_UK" ${info.language === 'en_UK' ? 'selected' : ''}>English</option>
+            <option value="it_IT" ${info.language === 'it_IT' ? 'selected' : ''}>Italiano</option>
+            <option value="fr_FR" ${info.language === 'fr_FR' ? 'selected' : ''}>Français</option>
           </select>
         </div>
         <div class="input-group">
