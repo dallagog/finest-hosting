@@ -1,12 +1,11 @@
 <!DOCTYPE html>
-<html lang="it">
+<html lang="en">
 
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>FinEst, ver. 0.20 beta</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-  <link rel="icon" type="image/x-icon" href="/images/logo-bullandbear.png">
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -16,6 +15,30 @@
       align-items: center;
       height: 100vh;
       margin: 0;
+      position: relative;
+    }
+
+    .language-selector {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      z-index: 1000;
+    }
+
+    .language-selector select {
+      padding: 8px 12px;
+      border: 2px solid #007bff;
+      border-radius: 6px;
+      background: white;
+      cursor: pointer;
+      font-size: 14px;
+      outline: none;
+      transition: 0.3s;
+    }
+
+    .language-selector select:hover {
+      border-color: #0056b3;
+      box-shadow: 0 2px 8px rgba(0, 123, 255, 0.2);
     }
 
     .container {
@@ -57,6 +80,7 @@
       border-bottom: 2px solid #ccc;
       outline: none;
       transition: 0.3s;
+      box-sizing: border-box;
     }
 
     .input-group input:focus,
@@ -103,6 +127,20 @@
 </head>
 
 <body>
+  <!-- Selettore lingua in alto a destra -->
+  <div class="language-selector">
+    <label for="languageSelector" id="int.choose.language"></label>
+    <select id="languageSelector">
+      <option value="en_UK">🇬🇧 English</option>
+      <option value="it_IT">🇮🇹 Italiano</option>
+      <option value="de_DE">🇩🇪 Deutsch</option>
+      <option value="fr_FR">🇫🇷 Français</option>
+      <option value="es_ES">🇪🇸 Español</option>
+      <option value="zh_CN">🇨🇳 中文</option>
+      <option value="ar_SA">🇸🇦 العربية</option>
+    </select>
+  </div>
+
   <div class="container" id="app-container">
     <img src="images/under_construction.jpeg" alt="Logo" class="logo">
     <h2 id="form-title">Login</h2>
@@ -118,12 +156,69 @@
 
     <button id="submit-btn">Sign in</button>
     <div class="forgot" id="forgot-password">Forgot password? Reset password</div>
-    <div class="switch" id="switch-form">Don’t have an account? Sign up</div>
+    <div class="switch" id="switch-form">Don't have an account? Sign up</div>
   </div>
 
   <script>
     const apiBaseNew = "https://new-user-tunnel.fe-web.eu";
     const apiBaseUser = "https://user-tunnel.fe-web.eu";
+
+    let currentLang = 'en_UK';
+    let translations = {};
+    let isLogin = true;
+
+    // Caricamento traduzioni dai file JSON
+    async function loadTranslations(lang) {
+      try {
+        const response = await fetch(`lang/${lang}.json`);
+        if (!response.ok) throw new Error(`Errore caricamento: ${lang}.json`);
+        translations = await response.json();
+        updatePageTranslations();
+      } catch (error) {
+        console.error('Errore caricamento traduzioni:', error);
+      }
+    }
+
+    function getTranslation(key) {
+      return translations[key] || key;
+    }
+
+    function updatePageTranslations() {
+      // Aggiorna titolo form
+      const formTitle = document.getElementById('form-title');
+      if (formTitle) {
+        formTitle.textContent = isLogin ? getTranslation('int.login') : getTranslation('int.registration');
+      }
+
+      // Aggiorna placeholder
+      const usernameInput = document.getElementById('username');
+      const passwordInput = document.getElementById('password');
+      if (usernameInput) usernameInput.placeholder = getTranslation('int.username');
+      if (passwordInput) passwordInput.placeholder = getTranslation('int.password');
+
+      // Aggiorna bottone
+      const submitBtn = document.getElementById('submit-btn');
+      if (submitBtn) {
+        submitBtn.textContent = isLogin ? getTranslation('int.signin') : getTranslation('int.create.account');
+      }
+
+      // Aggiorna link
+      const forgotPassword = document.getElementById('forgot-password');
+      const switchForm = document.getElementById('switch-form');
+      if (forgotPassword) forgotPassword.textContent = getTranslation('int.forgot.password');
+      if (switchForm) {
+        switchForm.textContent = isLogin ? getTranslation('int.no.account') : getTranslation('int.have.account');
+      }
+    }
+
+    // Cambio lingua
+    document.getElementById('languageSelector').addEventListener('change', (e) => {
+      currentLang = e.target.value;
+      loadTranslations(currentLang);
+    });
+
+    // Carica lingua di default
+    loadTranslations(currentLang);
 
     async function checkHealth() {
       try {
@@ -145,28 +240,16 @@
     checkHealth();
 
     // === LOGIN / REGISTRAZIONE SWITCH ===
-    let isLogin = true;
-    const title = document.getElementById("form-title");
-    const submitBtn = document.getElementById("submit-btn");
     const switchForm = document.getElementById("switch-form");
 
     switchForm.addEventListener("click", () => {
       isLogin = !isLogin;
-      if (isLogin) {
-        title.textContent = "Login";
-        submitBtn.textContent = "Sign in";
-        switchForm.textContent = "Don’t have an account? Sign up";
-        document.getElementById("forgot-password").style.display = "block";
-      } else {
-        title.textContent = "Registration";
-        submitBtn.textContent = "Create Account";
-        switchForm.textContent = "Already have an account? Sign in";
-        document.getElementById("forgot-password").style.display = "none";
-      }
+      updatePageTranslations();
+      document.getElementById("forgot-password").style.display = isLogin ? "block" : "none";
     });
 
     // === LOGIN / REGISTER ===
-    submitBtn.addEventListener("click", async () => {
+    document.getElementById('submit-btn').addEventListener("click", async () => {
       const username = document.getElementById("username").value.trim();
       const password = document.getElementById("password").value.trim();
       if (!username || !password) {
@@ -191,6 +274,13 @@
 
         if (response.ok) {
           if (isLogin) {
+            // Se c'è il campo language nella risposta, imposta la lingua
+            if (data.info && data.info.language) {
+              currentLang = data.info.language;
+              document.getElementById('languageSelector').value = currentLang;
+              await loadTranslations(currentLang);
+            }
+            
             if (data.info && (!data.info.email || !data.info.language || !data.info.currency)) {
               requestMissingInfo(data.info, username, password);
             } else {
@@ -207,24 +297,24 @@
 
     // === FORGOT PASSWORD ===
     document.getElementById("forgot-password").addEventListener("click", () => {
-      const email = prompt("Enter your email to reset password:");
+      const email = prompt(getTranslation('int.enter.email') || "Enter your email to reset password:");
       if (!email) return;
-      alert("If this email is registered, you will receive a password reset link.");
+      alert(getTranslation('int.reset.email.sent') || "If this email is registered, you will receive a password reset link.");
     });
 
     // === UPDATE INFO E RITORNO AL LOGIN ===
     function requestMissingInfo(info, username, password) {
       const container = document.getElementById("app-container");
       container.innerHTML = `
-        <h2>Complete your profile</h2>
+        <h2>${getTranslation('int.complete.profile')}</h2>
         <div class="input-group">
           <i class="fa fa-envelope"></i>
-          <input type="email" id="email" placeholder="Email" value="${info.email || ''}">
+          <input type="email" id="email" placeholder="${getTranslation('int.email')}" value="${info.email || ''}">
         </div>
         <div class="input-group">
           <i class="fa fa-language"></i>
           <select id="language">
-            <option value="">Select language</option>
+            <option value="">${getTranslation('int.select.language')}</option>
             <option value="en" ${info.language === 'en' ? 'selected' : ''}>English</option>
             <option value="it" ${info.language === 'it' ? 'selected' : ''}>Italiano</option>
             <option value="fr" ${info.language === 'fr' ? 'selected' : ''}>Français</option>
@@ -233,13 +323,13 @@
         <div class="input-group">
           <i class="fa fa-coins"></i>
           <select id="currency">
-            <option value="">Select currency</option>
+            <option value="">${getTranslation('int.select.currency')}</option>
             <option value="EUR" ${info.currency === 'EUR' ? 'selected' : ''}>EUR</option>
             <option value="USD" ${info.currency === 'USD' ? 'selected' : ''}>USD</option>
             <option value="GBP" ${info.currency === 'GBP' ? 'selected' : ''}>GBP</option>
           </select>
         </div>
-        <button id="save-info">Update</button>
+        <button id="save-info">${getTranslation('int.update')}</button>
       `;
 
       document.getElementById("save-info").addEventListener("click", async () => {
@@ -248,7 +338,7 @@
         const currency = document.getElementById("currency").value.trim();
 
         if (!email || !language || !currency) {
-          alert("Please complete all fields.");
+          alert(getTranslation('int.complete.all.fields') || "Please complete all fields.");
           return;
         }
 
@@ -262,8 +352,8 @@
           const data = await response.json();
 
           if (response.ok && data.status === "ok") {
-            alert("Information saved successfully! Please log in again.");
-            window.location.href = "index.html"; // 👈 RITORNA AL LOGIN
+            alert(getTranslation('int.info.saved') || "Information saved successfully! Please log in again.");
+            window.location.href = "index.html";
           } else {
             alert("Update failed: " + (data.message || "unknown error"));
           }
@@ -274,23 +364,11 @@
     }
 
     function openDashboard(username, token) {
-      // salva il token e username in localStorage per la pagina successiva
       localStorage.setItem("username", username);
       localStorage.setItem("token", token);
-
-      // reindirizza alla pagina della dashboard
+      localStorage.setItem("language", currentLang); // Salva anche la lingua
       window.location.href = "dashboard.html";
     }
-
-    window.toggleSubmenu = function (id) {
-      const submenu = document.getElementById(id);
-      submenu.style.display = submenu.style.display === "block" ? "none" : "block";
-    };
-
-    window.showContent = function (section) {
-      const content = document.getElementById("dashboard-content");
-      content.innerHTML = `<h2>${section}</h2><p>Contenuto della sezione "${section}".</p>`;
-    };
   </script>
 </body>
 
