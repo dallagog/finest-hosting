@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>FinEst, ver. 0.24 beta</title>
+  <title>FinEst, ver. 0.25 beta</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
   <style>
     body {
@@ -259,7 +259,7 @@
 
       const apiUrl = isLogin ? `${apiBaseUser}/login` : `${apiBaseNew}/create`;
       //const payload = { username, password, currentLang };
-      const payload = { username, password};
+      const payload = { username, password };
 
       try {
         const response = await fetch(apiUrl, {
@@ -276,13 +276,19 @@
         if (response.ok) {
           if (isLogin) {
             await loadTranslations(currentLang);
-            
+
             if (data.info && (!data.info.email || !data.info.language || !data.info.currency)) {
               requestMissingInfo(data.info, username, password);
             } else {
               openDashboard(username, data.token);
             }
-          } 
+          } else {
+            alert(getTranslation('int.creation.success') || "Account created successfully! Please log in.");
+            isLogin = true;
+            updatePageTranslations();
+            document.getElementById("username").value = username;
+            document.getElementById("password").value = "";
+          }
         } else {
           if (isLogin) {
             alert(getTranslation('int.login.failed') || "Login failed");
@@ -355,7 +361,7 @@
             alert(getTranslation('int.info.saved') || "Information saved successfully! Please log in again.");
             window.location.href = "index.html";
           } else {
-            alert((getTranslation("int.error.update") || "Update failed: ") + data.message );
+            alert((getTranslation("int.error.update") || "Update failed: ") + data.message);
           }
         } catch (err) {
           alert((getTranslation("int.error.saving") || "Error saving info: ") + err.message);
