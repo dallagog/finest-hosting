@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>FinEst, ver. 0.27 beta</title>
+  <title>FinEst, ver. 0.29 beta</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
   <style>
     body {
@@ -295,9 +295,29 @@
 
       try {
         console.log("🌐 Sending fetch request...");
+        console.log("🔍 Testing endpoint reachability first...");
+        
+        // Test preliminare: prova una semplice GET
+        try {
+          const testResponse = await fetch(apiUrl.replace('/login', '/health').replace('/create', '/health'), {
+            method: "GET",
+            mode: "cors"
+          });
+          console.log("✅ Health check response:", testResponse.status);
+        } catch (testErr) {
+          console.error("❌ Health check failed:", testErr.message);
+          console.error("This suggests the server is not reachable or CORS is blocking");
+        }
+        
+        console.log("📤 Now attempting actual request with mode and credentials...");
         const response = await fetch(apiUrl, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          mode: "cors",
+          credentials: "omit",
+          headers: { 
+            "Content-Type": "application/json",
+            "Accept": "application/json"
+          },
           body: JSON.stringify(payload)
         });
 
