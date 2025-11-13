@@ -171,7 +171,7 @@
     async function loadTranslations(lang) {
       try {
         const response = await fetch(`lang/${lang}.json`);
-        if (!response.ok) throw new Error(`Errore caricamento: ${lang}.json`);
+        if (!response.ok) throw new Error((getTranslation("int.error.loading") || "Loaging error:") + lang);
         translations = await response.json();
         updatePageTranslations();
       } catch (error) {
@@ -253,7 +253,7 @@
       const username = document.getElementById("username").value.trim();
       const password = document.getElementById("password").value.trim();
       if (!username || !password) {
-        alert("Please fill in all fields");
+        alert(getTranslation("int.complete.all.fields") || "Please fill in all fields");
         return;
       }
 
@@ -274,7 +274,6 @@
 
         if (response.ok) {
           if (isLogin) {
-            // Se c'è il campo language nella risposta, imposta la lingua
             if (data.info) {
               currentLang = data.info.language;
               document.getElementById('languageSelector').value = currentLang;
@@ -288,6 +287,7 @@
             }
           } 
         } else {
+          alert("Dati: " || data.info)
           alert(getTranslation('int.creationlogin.failed') || "Account creation or login failed");
         }
       } catch (err) {
@@ -355,10 +355,10 @@
             alert(getTranslation('int.info.saved') || "Information saved successfully! Please log in again.");
             window.location.href = "index.html";
           } else {
-            alert("Update failed: " + (data.message || "unknown error"));
+            alert((getTranslation("int.error.update") || "Update failed: ") + data.message );
           }
         } catch (err) {
-          alert("Error saving info: " + err.message);
+          alert((getTranslation("int.error.saving") || "Error saving info: ") + err.message);
         }
       });
     }
