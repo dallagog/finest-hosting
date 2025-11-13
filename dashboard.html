@@ -1,328 +1,449 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-  <meta charset="UTF-8">
-  <title>FinEst Dashboard</title>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-  <link rel="icon" type="image/x-icon" href="/images/logo-bullandbear.png">
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Account Manager</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
-    body {
-      font-family: 'Computer Modern', 'Latin Modern Roman', Georgia, serif;
-      background: #f9f7f4;
-      color: #2b2b2b;
-      line-height: 1.6;
-    }
+        body {
+            font-family: 'Computer Modern', 'Latin Modern', serif;
+            background: #f5f5f5;
+            padding: 20px;
+            color: #333;
+        }
 
-    .sidebar {
-      width: 260px;
-      position: fixed;
-      left: 0; top: 0;
-      background: #1a1a1a;
-      color: #e8e6e3;
-      height: 100vh;
-      padding: 30px 20px;
-      border-right: 3px solid #2b2b2b;
-      overflow-y: auto;
-    }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            border-radius: 8px;
+        }
 
-    .sidebar h3 {
-      font-size: 1.3em;
-      margin-bottom: 25px;
-      padding-bottom: 15px;
-      border-bottom: 2px solid #4a4a4a;
-      font-weight: 600;
-      letter-spacing: 0.5px;
-    }
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            font-weight: 400;
+            font-size: 2em;
+            border-bottom: 2px solid #333;
+            padding-bottom: 10px;
+        }
 
-    .menu-item {
-      margin-bottom: 12px;
-      cursor: pointer;
-      padding: 10px 12px;
-      border-radius: 4px;
-      transition: all 0.2s;
-      font-weight: 500;
-      font-size: 0.95em;
-    }
+        .controls {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
 
-    .menu-item:hover { background: #2b2b2b; padding-left: 16px; }
+        button {
+            padding: 10px 20px;
+            background: #333;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.3s;
+        }
 
-    .submenu { display: none; margin-left: 20px; margin-top: 8px; }
-    .submenu div {
-      margin-bottom: 8px;
-      cursor: pointer;
-      padding: 8px 10px;
-      font-size: 0.9em;
-      border-left: 2px solid #4a4a4a;
-      padding-left: 12px;
-      transition: all 0.2s;
-    }
-    .submenu div:hover { border-left-color: #e8e6e3; padding-left: 16px; }
+        button:hover {
+            background: #555;
+        }
 
-    button {
-      margin-top: 30px;
-      padding: 12px 20px;
-      border: 2px solid #e8e6e3;
-      background-color: transparent;
-      color: #e8e6e3;
-      font-weight: 600;
-      border-radius: 4px;
-      cursor: pointer;
-      transition: all 0.3s;
-      width: 100%;
-      font-size: 0.95em;
-      letter-spacing: 0.5px;
-    }
-    button:hover { background-color: #e8e6e3; color: #1a1a1a; }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
 
-    .content { margin-left: 280px; padding: 40px 60px; max-width: 1200px; }
+        .table-container {
+            overflow-x: auto;
+            margin-bottom: 30px;
+            border: 1px solid #ddd;
+        }
 
-    .latex-section {
-      background: white;
-      padding: 40px;
-      margin-bottom: 30px;
-      border: 1px solid #d4d2cf;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-    }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+        }
 
-    .latex-title {
-      font-size: 2em;
-      font-weight: 700;
-      margin-bottom: 10px;
-      text-align: center;
-      letter-spacing: 1px;
-      border-bottom: 3px double #2b2b2b;
-      padding-bottom: 15px;
-    }
+        thead {
+            background: #f8f8f8;
+            position: sticky;
+            top: 0;
+        }
 
-    .latex-subtitle {
-      font-size: 1.1em;
-      text-align: center;
-      color: #666;
-      margin-bottom: 30px;
-      font-style: italic;
-    }
+        th {
+            padding: 12px 8px;
+            text-align: left;
+            font-weight: 600;
+            border-bottom: 2px solid #333;
+            border-right: 1px solid #ddd;
+        }
 
-    .account-card {
-      border: 2px solid #2b2b2b;
-      padding: 20px;
-      margin-bottom: 20px;
-      background: #fafafa;
-      cursor: pointer;
-      transition: all 0.3s;
-      position: relative;
-    }
+        th:last-child {
+            border-right: none;
+        }
 
-    .account-card:hover {
-      background: #f0f0f0;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-      transform: translateX(5px);
-    }
+        td {
+            padding: 10px 8px;
+            border-bottom: 1px solid #eee;
+            border-right: 1px solid #eee;
+        }
 
-    .account-card.selected {
-      background: #e8f4f8;
-      border-color: #1a5f7a;
-      border-width: 3px;
-    }
+        td:last-child {
+            border-right: none;
+        }
 
-    .account-header {
-      font-size: 1.3em;
-      font-weight: 700;
-      margin-bottom: 15px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
+        tr:hover {
+            background: #f9f9f9;
+        }
 
-    .account-details {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 12px;
-      font-size: 0.95em;
-    }
+        tr.selected {
+            background: #e3f2fd;
+        }
 
-    .detail-row {
-      display: flex;
-      padding: 8px 0;
-      border-bottom: 1px solid #e0e0e0;
-    }
+        input[type="checkbox"] {
+            cursor: pointer;
+            width: 16px;
+            height: 16px;
+        }
 
-    .detail-label { font-weight: 600; width: 140px; color: #555; }
-    .detail-value { flex: 1; font-family: 'Courier New', monospace; }
+        .pdf-viewer {
+            margin-top: 30px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            overflow: hidden;
+        }
 
-    .selection-badge {
-      background: #1a5f7a;
-      color: white;
-      padding: 4px 12px;
-      border-radius: 4px;
-      font-size: 0.85em;
-      font-weight: 600;
-    }
+        .pdf-header {
+            background: #f8f8f8;
+            padding: 15px;
+            border-bottom: 1px solid #ddd;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
 
-    .pdf-viewer { width: 100%; height: 800px; border: 2px solid #2b2b2b; background: white; }
-    .loading { text-align: center; padding: 40px; font-style: italic; color: #666; }
+        .pdf-content {
+            width: 100%;
+            height: 800px;
+            border: none;
+        }
 
-    .error-message {
-      background: #fee;
-      border: 2px solid #c33;
-      padding: 20px;
-      color: #c33;
-      border-radius: 4px;
-      margin: 20px 0;
-    }
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+        }
 
-    @media print {
-      .sidebar { display: none; }
-      .content { margin-left: 0; }
-    }
-  </style>
+        .error {
+            background: #fee;
+            color: #c33;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+
+        .success {
+            background: #efe;
+            color: #3c3;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+
+        .info {
+            background: #e3f2fd;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+        }
+
+        .selected-count {
+            color: #1976d2;
+            font-weight: 600;
+        }
+    </style>
 </head>
 <body>
-  <div class="sidebar">
-    <h3 id="username">Caricamento...</h3>
-    
-    <div class="menu-item" onclick="toggleSubmenu('settings-submenu')">
-      <i class="fas fa-cog"></i> Impostazioni
+    <div class="container">
+        <h1>Gestione Account e Report</h1>
+
+        <div class="info">
+            <strong>Utente:</strong> <span id="username">-</span> | 
+            <strong>Selezionati:</strong> <span class="selected-count" id="selectedCount">0</span> account
+        </div>
+
+        <div class="controls">
+            <button onclick="loadAccounts()">Carica Account</button>
+            <button onclick="selectAll()">Seleziona Tutti</button>
+            <button onclick="deselectAll()">Deseleziona Tutti</button>
+            <button onclick="loadPDF()" id="loadPdfBtn" disabled>Carica Report PDF</button>
+            <button onclick="logout()">Logout</button>
+        </div>
+
+        <div id="message"></div>
+
+        <div class="table-container" id="tableContainer" style="display: none;">
+            <table id="accountTable">
+                <thead>
+                    <tr>
+                        <th style="width: 50px;">Sel.</th>
+                        <th>ID Account</th>
+                        <th>Nome</th>
+                        <th>Cognome</th>
+                        <th>Tipo</th>
+                        <th>Settore</th>
+                        <th>Livello</th>
+                        <th>Tipo Account</th>
+                        <th>Data Nascita</th>
+                        <th>Genere</th>
+                        <th>Paese</th>
+                        <th>Indirizzo</th>
+                        <th>Data Accesso</th>
+                    </tr>
+                </thead>
+                <tbody id="accountTableBody">
+                </tbody>
+            </table>
+        </div>
+
+        <div class="pdf-viewer" id="pdfViewer" style="display: none;">
+            <div class="pdf-header">
+                <h3>Report PDF</h3>
+                <button onclick="downloadPDF()">Download PDF</button>
+            </div>
+            <iframe id="pdfFrame" class="pdf-content"></iframe>
+        </div>
     </div>
-    <div class="submenu" id="settings-submenu">
-      <div onclick="showContent('Profilo')">Profilo</div>
-      <div onclick="showContent('Sicurezza')">Sicurezza</div>
-    </div>
 
-    <div class="menu-item" onclick="toggleSubmenu('wallet-submenu')">
-      <i class="fas fa-wallet"></i> Wallet
-    </div>
-    <div class="submenu" id="wallet-submenu">
-      <div onclick="viewAccount()"><i class="fas fa-list"></i> Visualizza Account</div>
-      <div onclick="showContent('Saldo')">Saldo</div>
-      <div onclick="showContent('Transazioni')">Transazioni</div>
-      <div onclick="viewReport()"><i class="fas fa-file-pdf"></i> Report PDF</div>
-    </div>
+    <script>
+        // Configurazione
+        const API_URL = window.location.origin;
+        let currentUser = {
+            username: 'test_user',
+            token: 'test_token_123'
+        };
+        let accountsData = [];
+        let pdfBlob = null;
 
-    <button onclick="logout()"><i class="fas fa-sign-out-alt"></i> Logout</button>
-  </div>
+        // Inizializzazione
+        document.getElementById('username').textContent = currentUser.username;
 
-  <div class="content" id="content">
-    <div class="latex-section">
-      <h1 class="latex-title">FinEst Dashboard</h1>
-      <p class="latex-subtitle">Sistema di Gestione Finanziaria</p>
-      <p style="text-align: center; margin-top: 20px;">Benvenuto nella tua area riservata versione 0.1</p>
-    </div>
-  </div>
-
-  <script>
-    let selectedAccounts = new Set();
-
-    async function checkToken() {
-      const username = localStorage.getItem("username");
-      const token = localStorage.getItem("token");
-      if (!username || !token) {
-        alert("Invalid session. Sign in again.");
-        window.location.href = "index.html";
-        return;
-      }
-      document.getElementById("username").textContent = username;
-    }
-
-    function toggleAccountSelection(accountId) {
-      const card = document.getElementById(`account-${accountId}`);
-      if (!card) return;
-
-      if (selectedAccounts.has(accountId)) {
-        selectedAccounts.delete(accountId);
-        card.classList.remove("selected");
-        const badge = card.querySelector(".selection-badge");
-        if (badge) badge.remove();
-      } else {
-        selectedAccounts.add(accountId);
-        card.classList.add("selected");
-        const badge = document.createElement("span");
-        badge.className = "selection-badge";
-        badge.textContent = "SELEZIONATO";
-        card.querySelector(".account-header").appendChild(badge);
-      }
-    }
-
-    async function viewAccount() {
-      const username = localStorage.getItem("username");
-      const token = localStorage.getItem("token");
-      if (!username || !token) {
-        alert("Sessione non valida. Accedi di nuovo.");
-        window.location.href = "index.html";
-        return;
-      }
-
-      document.getElementById("content").innerHTML = '<div class="loading">Caricamento account in corso...</div>';
-      const apiUrl = "https://feweb-tunnel.fe-web.eu/getAccountList";
-      const payload = { username, token };
-
-      try {
-        const response = await fetch(apiUrl, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload)
-        });
-        const data = await response.json();
-
-        // ✅ Gestione del formato oggetto { "51321373": {...}, "12345678": {...} }
-        let accountsArray = [];
-        if (data && data.accounts) {
-          if (Array.isArray(data.accounts)) {
-            accountsArray = data.accounts;
-          } else if (typeof data.accounts === "object") {
-            accountsArray = Object.values(data.accounts);
-          }
+        // Funzione per mostrare messaggi
+        function showMessage(text, type = 'info') {
+            const msgDiv = document.getElementById('message');
+            msgDiv.className = type;
+            msgDiv.textContent = text;
+            msgDiv.style.display = 'block';
+            setTimeout(() => {
+                msgDiv.style.display = 'none';
+            }, 5000);
         }
 
-        if (!accountsArray.length) {
-          document.getElementById("content").innerHTML = `
-            <div class="latex-section"><p class="latex-subtitle">Nessun account trovato.</p></div>`;
-          return;
+        // Carica gli account
+        async function loadAccounts() {
+            try {
+                showMessage('Caricamento account in corso...', 'loading');
+                
+                const response = await fetch(`${API_URL}/getAccountList`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(currentUser)
+                });
+
+                const data = await response.json();
+                
+                if (data.status === 'ok' && data.accounts) {
+                    accountsData = data.accounts;
+                    renderAccountTable(accountsData);
+                    showMessage(`${accountsData.length} account caricati con successo`, 'success');
+                    document.getElementById('tableContainer').style.display = 'block';
+                } else {
+                    showMessage('Errore nel caricamento degli account', 'error');
+                }
+            } catch (error) {
+                console.error('Errore:', error);
+                showMessage('Errore di connessione: ' + error.message, 'error');
+            }
         }
 
-        let html = `
-          <div class="latex-section">
-            <h1 class="latex-title">Lista Rapporti Finanziari</h1>
-            <p class="latex-subtitle">Clicca su un account per selezionarlo/deselezionarlo</p>
-          </div>
-        `;
+        // Renderizza la tabella degli account
+        function renderAccountTable(accounts) {
+            const tbody = document.getElementById('accountTableBody');
+            tbody.innerHTML = '';
 
-        accountsArray.forEach((account, i) => {
-          const accountId = account.id_account || `account-${i}`;
-          const isSelected = selectedAccounts.has(accountId);
+            accounts.forEach((accountObj, index) => {
+                // Ogni elemento è un oggetto con una chiave che è l'ID account
+                const accountId = Object.keys(accountObj)[0];
+                const account = accountObj[accountId];
 
-          html += `
-            <div class="account-card ${isSelected ? 'selected' : ''}" id="account-${accountId}"
-                 onclick="toggleAccountSelection('${accountId}')">
-              <div class="account-header">
-                <span>Rapporto #${i + 1}</span>
-                ${isSelected ? '<span class="selection-badge">SELEZIONATO</span>' : ''}
-              </div>
-              <div class="account-details">
-                ${Object.entries(account).map(([k, v]) => `
-                  <div class="detail-row" style="grid-column: span 2;">
-                    <div class="detail-label">${k}:</div>
-                    <div class="detail-value">${v ?? '<em style="color:#999">N/A</em>'}</div>
-                  </div>`).join('')}
-              </div>
-            </div>`;
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td style="text-align: center;">
+                        <input type="checkbox" 
+                               class="account-checkbox" 
+                               data-account-id="${account.id_account}"
+                               onchange="updateSelectedCount()">
+                    </td>
+                    <td><strong>${account.id_account || '-'}</strong></td>
+                    <td>${account.name || '-'}</td>
+                    <td>${account.surname || '-'}</td>
+                    <td>${account.type || '-'}</td>
+                    <td>${account.account_sector || '-'}</td>
+                    <td>${account.account_level || '-'}</td>
+                    <td>${account.account_type || '-'}</td>
+                    <td>${account.date_birth || '-'}</td>
+                    <td>${account.gender || '-'}</td>
+                    <td>${account.country || '-'}</td>
+                    <td>${account.address || '-'}</td>
+                    <td>${account.date_accession || '-'}</td>
+                `;
+                tbody.appendChild(row);
+            });
+
+            updateSelectedCount();
+        }
+
+        // Aggiorna conteggio selezionati
+        function updateSelectedCount() {
+            const checkboxes = document.querySelectorAll('.account-checkbox');
+            const selected = Array.from(checkboxes).filter(cb => cb.checked);
+            document.getElementById('selectedCount').textContent = selected.length;
+            
+            // Abilita/disabilita pulsante PDF
+            document.getElementById('loadPdfBtn').disabled = selected.length === 0;
+        }
+
+        // Seleziona tutti
+        function selectAll() {
+            const checkboxes = document.querySelectorAll('.account-checkbox');
+            checkboxes.forEach(cb => cb.checked = true);
+            updateSelectedCount();
+        }
+
+        // Deseleziona tutti
+        function deselectAll() {
+            const checkboxes = document.querySelectorAll('.account-checkbox');
+            checkboxes.forEach(cb => cb.checked = false);
+            updateSelectedCount();
+        }
+
+        // Ottieni account selezionati
+        function getSelectedAccounts() {
+            const checkboxes = document.querySelectorAll('.account-checkbox:checked');
+            return Array.from(checkboxes).map(cb => cb.dataset.accountId);
+        }
+
+        // Carica PDF
+        async function loadPDF() {
+            try {
+                const selectedAccounts = getSelectedAccounts();
+                if (selectedAccounts.length === 0) {
+                    showMessage('Seleziona almeno un account', 'error');
+                    return;
+                }
+
+                showMessage('Caricamento PDF in corso...', 'loading');
+
+                const response = await fetch(`${API_URL}/getReportPDF`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        ...currentUser,
+                        selected_accounts: selectedAccounts
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Errore HTTP: ${response.status}`);
+                }
+
+                // Ottieni il PDF come blob
+                pdfBlob = await response.blob();
+                
+                // Crea URL per visualizzare il PDF
+                const pdfUrl = URL.createObjectURL(pdfBlob);
+                
+                // Mostra il PDF nell'iframe
+                const pdfFrame = document.getElementById('pdfFrame');
+                pdfFrame.src = pdfUrl;
+                
+                document.getElementById('pdfViewer').style.display = 'block';
+                showMessage('PDF caricato con successo', 'success');
+
+                // Scroll alla sezione PDF
+                document.getElementById('pdfViewer').scrollIntoView({ behavior: 'smooth' });
+
+            } catch (error) {
+                console.error('Errore caricamento PDF:', error);
+                showMessage('Errore nel caricamento del PDF: ' + error.message, 'error');
+            }
+        }
+
+        // Download PDF
+        function downloadPDF() {
+            if (!pdfBlob) {
+                showMessage('Nessun PDF caricato', 'error');
+                return;
+            }
+
+            const url = URL.createObjectURL(pdfBlob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'report_' + new Date().toISOString().split('T')[0] + '.pdf';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            showMessage('Download avviato', 'success');
+        }
+
+        // Logout
+        async function logout() {
+            try {
+                const response = await fetch(`${API_URL}/logout`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(currentUser)
+                });
+
+                const data = await response.json();
+                
+                if (data.status === 'ok') {
+                    showMessage('Logout effettuato con successo', 'success');
+                    setTimeout(() => {
+                        window.location.href = '/login';
+                    }, 1000);
+                } else {
+                    showMessage('Errore durante il logout', 'error');
+                }
+            } catch (error) {
+                console.error('Errore:', error);
+                showMessage('Errore di connessione: ' + error.message, 'error');
+            }
+        }
+
+        // Carica automaticamente gli account all'avvio
+        window.addEventListener('load', () => {
+            loadAccounts();
         });
-
-        document.getElementById("content").innerHTML = html;
-      } catch (err) {
-        document.getElementById("content").innerHTML = `
-          <div class="latex-section"><div class="error-message">${err.message}</div></div>`;
-      }
-    }
-
-    function toggleSubmenu(id) {
-      const submenu = document.getElementById(id);
-      submenu.style.display = submenu.style.display === "block" ? "none" : "block";
-    }
-
-    checkToken();
-    viewAccount();
-  </script>
+    </script>
 </body>
 </html>
