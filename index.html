@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>FinEst, ver. 0.25 beta</title>
+  <title>FinEst, ver. 0.26 beta</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
   <style>
     body {
@@ -167,23 +167,33 @@
     let translations = {};
     let isLogin = true;
 
+    console.log("=== FinEst Login v0.24 - Debug Mode ===");
+    console.log("Initial language:", currentLang);
+
     // Caricamento traduzioni dai file JSON
     async function loadTranslations(lang) {
+      console.log("📚 Loading translations for:", lang);
       try {
         const response = await fetch(`lang/${lang}.json`);
-        if (!response.ok) throw new Error((getTranslation("int.error.loading") || "Loaging error:") + lang);
+        console.log("Translation fetch response:", response.status, response.ok);
+        if (!response.ok) throw new Error((getTranslation("int.error.loading") || "Loading error:") + lang);
         translations = await response.json();
+        console.log("✅ Translations loaded successfully:", Object.keys(translations).length, "keys");
         updatePageTranslations();
       } catch (error) {
-        console.error('Errore caricamento traduzioni:', error);
+        console.error('❌ Errore caricamento traduzioni:', error);
       }
     }
 
     function getTranslation(key) {
-      return translations[key] || key;
+      const value = translations[key] || key;
+      console.log(`🔤 Translation [${key}]:`, value);
+      return value;
     }
 
     function updatePageTranslations() {
+      console.log("🔄 Updating page translations, isLogin:", isLogin);
+      
       // Aggiorna titolo form
       const formTitle = document.getElementById('form-title');
       if (formTitle) {
@@ -213,6 +223,7 @@
 
     // Cambio lingua
     document.getElementById('languageSelector').addEventListener('change', (e) => {
+      console.log("🌍 Language changed to:", e.target.value);
       currentLang = e.target.value;
       loadTranslations(currentLang);
     });
@@ -221,20 +232,29 @@
     loadTranslations(currentLang);
 
     async function checkHealth() {
+      console.log("🏥 Checking service health...");
       try {
         const resUser = await fetch(`${apiBaseUser}/health`, { cache: "no-cache" });
         const resNew = await fetch(`${apiBaseNew}/health`, { cache: "no-cache" });
+        console.log("User service health:", resUser.status, resUser.ok);
+        console.log("New user service health:", resNew.status, resNew.ok);
+        
         if (!resUser.ok || !resNew.ok) throw new Error("HTTP error");
+        
         const dataUser = await resUser.json();
         const dataNew = await resNew.json();
+        console.log("User service data:", dataUser);
+        console.log("New user service data:", dataNew);
+        
         if (dataUser.status !== "ok" || dataNew.status !== "ok") throw new Error("Service not OK");
+        console.log("✅ All services are healthy");
       } catch (err) {
+        console.error("❌ Service check failed:", err);
         document.body.innerHTML = `
         <div style="display:flex;justify-content:center;align-items:center;height:100vh;">
           <img src="images/off-line.jpeg" alt="Offline" class="offline">
         </div>
       `;
-        console.error("Service check failed:", err);
       }
     }
     checkHealth();
@@ -244,45 +264,76 @@
 
     switchForm.addEventListener("click", () => {
       isLogin = !isLogin;
+      console.log("🔄 Switched form mode to:", isLogin ? "LOGIN" : "REGISTRATION");
       updatePageTranslations();
       document.getElementById("forgot-password").style.display = isLogin ? "block" : "none";
     });
 
     // === LOGIN / REGISTER ===
     document.getElementById('submit-btn').addEventListener("click", async () => {
+      console.log("\n=== SUBMIT BUTTON CLICKED ===");
+      console.log("Mode:", isLogin ? "LOGIN" : "REGISTRATION");
+      
       const username = document.getElementById("username").value.trim();
       const password = document.getElementById("password").value.trim();
+      
+      console.log("Username:", username);
+      console.log("Password:", password ? "***" + password.slice(-2) : "(empty)");
+      console.log("Current language:", currentLang);
+      
       if (!username || !password) {
+        console.warn("⚠️ Missing username or password");
         alert(getTranslation("int.complete.all.fields") || "Please fill in all fields");
         return;
       }
 
       const apiUrl = isLogin ? `${apiBaseUser}/login` : `${apiBaseNew}/create`;
-      //const payload = { username, password, currentLang };
-      const payload = { username, password };
+      const payload = { username, password, currentLang };
+
+      console.log("📤 API URL:", apiUrl);
+      console.log("📤 Payload:", { username, password: "***", currentLang });
 
       try {
+        console.log("🌐 Sending fetch request...");
         const response = await fetch(apiUrl, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload)
         });
 
+        console.log("📥 Response received:");
+        console.log("  - Status:", response.status);
+        console.log("  - Status Text:", response.statusText);
+        console.log("  - OK:", response.ok);
+        console.log("  - Headers:", [...response.headers.entries()]);
+
         const contentType = response.headers.get("content-type");
-        let data = contentType && contentType.includes("application/json")
-          ? await response.json()
-          : null;
+        console.log("  - Content-Type:", contentType);
+        
+        let data;
+        if (contentType && contentType.includes("application/json")) {
+          data = await response.json();
+          console.log("📄 Response data (JSON):", data);
+        } else {
+          data = await response.text();
+          console.log("📄 Response data (TEXT):", data);
+        }
 
         if (response.ok) {
+          console.log("✅ Request successful");
           if (isLogin) {
+            console.log("🔐 Processing login...");
             await loadTranslations(currentLang);
-
+            
             if (data.info && (!data.info.email || !data.info.language || !data.info.currency)) {
+              console.log("ℹ️ Missing user info, requesting completion");
               requestMissingInfo(data.info, username, password);
             } else {
+              console.log("✅ User info complete, opening dashboard");
               openDashboard(username, data.token);
             }
           } else {
+            console.log("✅ Registration successful");
             alert(getTranslation('int.creation.success') || "Account created successfully! Please log in.");
             isLogin = true;
             updatePageTranslations();
@@ -290,26 +341,36 @@
             document.getElementById("password").value = "";
           }
         } else {
+          console.error("❌ Request failed");
           if (isLogin) {
+            console.error("Login failed with status:", response.status);
             alert(getTranslation('int.login.failed') || "Login failed");
           } else {
-            alert(getTranslation('int.creation.failed') || "Creation failed");
+            console.error("Registration failed with status:", response.status);
+            const errorMsg = getTranslation('int.creation.failed') || "Creation failed";
+            const detailMsg = typeof data === 'object' ? (data.message || JSON.stringify(data)) : data;
+            alert(errorMsg + "\n\nStatus: " + response.status + "\nDetails: " + detailMsg);
           }
         }
       } catch (err) {
-        alert(getTranslation('int.connection.error') || "Connection error: " + err);
+        console.error("❌ Exception caught:", err);
+        console.error("Error stack:", err.stack);
+        alert(getTranslation('int.connection.error') || "Connection error: " + err.message);
       }
     });
 
     // === FORGOT PASSWORD ===
     document.getElementById("forgot-password").addEventListener("click", () => {
+      console.log("🔑 Forgot password clicked");
       const email = prompt(getTranslation('int.enter.email') || "Enter your email to reset password:");
+      console.log("Email entered:", email);
       if (!email) return;
       alert(getTranslation('int.reset.email.sent') || "If this email is registered, you will receive a password reset link.");
     });
 
     // === UPDATE INFO E RITORNO AL LOGIN ===
     function requestMissingInfo(info, username, password) {
+      console.log("📝 Requesting missing info:", info);
       const container = document.getElementById("app-container");
       container.innerHTML = `
         <h2>${getTranslation('int.complete.profile')}</h2>
@@ -339,40 +400,53 @@
       `;
 
       document.getElementById("save-info").addEventListener("click", async () => {
+        console.log("💾 Save info clicked");
         const email = document.getElementById("email").value.trim();
         const language = document.getElementById("language").value.trim();
         const currency = document.getElementById("currency").value.trim();
 
+        console.log("Data to save:", { email, language, currency });
+
         if (!email || !language || !currency) {
+          console.warn("⚠️ Incomplete fields");
           alert(getTranslation('int.complete.all.fields') || "Please complete all fields.");
           return;
         }
 
         try {
+          console.log("📤 Sending update request...");
           const response = await fetch(`${apiBaseUser}/update`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ username, password, email, language, currency })
           });
 
+          console.log("Update response status:", response.status);
           const data = await response.json();
+          console.log("Update response data:", data);
 
           if (response.ok && data.status === "ok") {
+            console.log("✅ Info saved successfully");
             alert(getTranslation('int.info.saved') || "Information saved successfully! Please log in again.");
             window.location.href = "index.html";
           } else {
+            console.error("❌ Update failed");
             alert((getTranslation("int.error.update") || "Update failed: ") + data.message);
           }
         } catch (err) {
+          console.error("❌ Error saving info:", err);
           alert((getTranslation("int.error.saving") || "Error saving info: ") + err.message);
         }
       });
     }
 
     function openDashboard(username, token) {
+      console.log("🚪 Opening dashboard for user:", username);
+      console.log("Token:", token ? "***" + token.slice(-10) : "(none)");
       localStorage.setItem("username", username);
       localStorage.setItem("token", token);
-      localStorage.setItem("language", currentLang); // Salva anche la lingua
+      localStorage.setItem("language", currentLang);
+      console.log("✅ Data saved to localStorage");
       window.location.href = "dashboard.html";
     }
   </script>
