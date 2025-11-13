@@ -163,12 +163,12 @@
     const apiBaseNew = "https://new-user-tunnel.fe-web.eu";
     const apiBaseUser = "https://user-tunnel.fe-web.eu";
 
-    let currentLang = 'it_IT';
+    let language = 'it_IT';
     let translations = {};
     let isLogin = true;
 
     console.log("=== FinEst Login v0.24 - Debug Mode ===");
-    console.log("Initial language:", currentLang);
+    console.log("Initial language:", language);
 
     // Caricamento traduzioni dai file JSON
     async function loadTranslations(lang) {
@@ -224,12 +224,12 @@
     // Cambio lingua
     document.getElementById('languageSelector').addEventListener('change', (e) => {
       console.log("🌍 Language changed to:", e.target.value);
-      currentLang = e.target.value;
-      loadTranslations(currentLang);
+      language = e.target.value;
+      loadTranslations(language);
     });
 
     // Carica lingua di default
-    loadTranslations(currentLang);
+    loadTranslations(language);
 
     async function checkHealth() {
       console.log("🏥 Checking service health...");
@@ -279,7 +279,7 @@
       
       console.log("Username:", username);
       console.log("Password:", password ? "***" + password.slice(-2) : "(empty)");
-      console.log("Current language:", currentLang);
+      console.log("Current language:", language);
       
       if (!username || !password) {
         console.warn("⚠️ Missing username or password");
@@ -288,10 +288,10 @@
       }
 
       const apiUrl = isLogin ? `${apiBaseUser}/login` : `${apiBaseNew}/create`;
-      const payload = { username, password, currentLang };
+      const payload = { username, password, language };
 
       console.log("📤 API URL:", apiUrl);
-      console.log("📤 Payload:", { username, password: "***", currentLang });
+      console.log("📤 Payload:", { username, password: "***", language});
 
       try {
         console.log("🌐 Sending fetch request...");
@@ -323,7 +323,7 @@
           console.log("✅ Request successful");
           if (isLogin) {
             console.log("🔐 Processing login...");
-            await loadTranslations(currentLang);
+            await loadTranslations(language);
             
             if (data.info && (!data.info.email || !data.info.language || !data.info.currency)) {
               console.log("ℹ️ Missing user info, requesting completion");
@@ -445,7 +445,7 @@
       console.log("Token:", token ? "***" + token.slice(-10) : "(none)");
       localStorage.setItem("username", username);
       localStorage.setItem("token", token);
-      localStorage.setItem("language", currentLang);
+      localStorage.setItem("language", language);
       console.log("✅ Data saved to localStorage");
       window.location.href = "dashboard.html";
     }
