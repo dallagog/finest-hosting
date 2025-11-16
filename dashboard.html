@@ -187,6 +187,7 @@
             <button onclick="loadAccounts()">Carica Account</button>
             <button onclick="selectAll()">Seleziona Tutti</button>
             <button onclick="deselectAll()">Deseleziona Tutti</button>
+            <button onclick="testPDFEndpoint()" style="background: #666;">Test PDF Endpoint</button>
             <button onclick="loadPDF()" id="loadPdfBtn">Visualizza Report PDF</button>
             <button onclick="logout()">Logout</button>
         </div>
@@ -234,7 +235,7 @@
             token: 'test_token_123'
         };
         let accountsData = [];
-        let pdfBlob = null;
+        let pdfBase64 = null;
 
         // Inizializzazione
         document.getElementById('username').textContent = currentUser.username;
@@ -253,6 +254,8 @@
         // Carica gli account
         async function loadAccounts() {
             try {
+                showMessage('Caricamento account in corso...', 'loading');
+
                 const response = await fetch(`${API_URL}/getAccountList`, {
                     method: 'POST',
                     headers: {
@@ -265,13 +268,22 @@
                 
                 if (data.status === 'ok' && data.accounts) {
                     accountsData = data.accounts;
-                    // Conta il numero di account nell'oggetto
-                    const accountCount = Object.keys(data.accounts[0]).length;
+                    
+                    // Verifica struttura dati
+                    let accountCount = 0;
+                    if (Array.isArray(accountsData) && accountsData.length > 0) {
+                        // Se è un array con un oggetto contenente gli account
+                        accountCount = Object.keys(accountsData[0]).length;
+                    } else if (typeof accountsData === 'object') {
+                        // Se è direttamente un oggetto
+                        accountCount = Object.keys(accountsData).length;
+                    }
+                    
                     renderAccountTable(accountsData);
                     showMessage(`${accountCount} account caricati con successo`, 'success');
                     document.getElementById('tableContainer').style.display = 'block';
                 } else {
-                    showMessage('Errore nel caricamento degli account', 'error');
+                    showMessage(data.message || 'Errore nel caricamento degli account', 'error');
                 }
             } catch (error) {
                 console.error('Errore:', error);
@@ -284,9 +296,18 @@
             const tbody = document.getElementById('accountTableBody');
             tbody.innerHTML = '';
 
-            // La struttura è un array con un oggetto contenente tutti gli account
-            // accounts = [{ "0527779": {...}, "0527779C": {...}, ... }]
-            const accountsObj = accounts[0]; // Prendi il primo (e unico) elemento dell'array
+            let accountsObj;
+            
+            // Gestisci sia il caso di array che di oggetto diretto
+            if (Array.isArray(accounts) && accounts.length > 0) {
+                accountsObj = accounts[0];
+            } else if (typeof accounts === 'object') {
+                accountsObj = accounts;
+            } else {
+                console.error('Formato accounts non valido:', accounts);
+                showMessage('Formato dati non valido', 'error');
+                return;
+            }
             
             // Itera su tutte le chiavi dell'oggetto
             Object.keys(accountsObj).forEach(accountId => {
@@ -297,10 +318,10 @@
                     <td style="text-align: center;">
                         <input type="checkbox" 
                                class="account-checkbox" 
-                               data-account-id="${account.id_account}"
+                               data-account-id="${account.id_account || accountId}"
                                onchange="updateSelectedCount()">
                     </td>
-                    <td><strong>${account.id_account || '-'}</strong></td>
+                    <td><strong>${account.id_account || accountId || '-'}</strong></td>
                     <td>${account.name || '-'}</td>
                     <td>${account.surname || '-'}</td>
                     <td>${account.type || '-'}</td>
@@ -350,6 +371,9 @@
         async function loadPDF() {
             try {
                 showMessage('Caricamento PDF in corso...', 'loading');
+                
+                console.log('Chiamata API:', `${API_URL}/getReportPDF`);
+                console.log('User data:', currentUser);
 
                 const response = await fetch(`${API_URL}/getReportPDF`, {
                     method: 'POST',
@@ -359,18 +383,32 @@
                     body: JSON.stringify(currentUser)
                 });
 
+                console.log('Response status:', response.status);
+                console.log('Response headers:', [...response.headers.entries()]);
+
                 if (!response.ok) {
-                    throw new Error(`Errore HTTP: ${response.status}`);
+                    const errorText = await response.text();
+                    console.error('Error response:', errorText);
+                    throw new Error(`Errore HTTP: ${response.status} - ${errorText}`);
                 }
 
-                // Verifica che la risposta sia effettivamente un PDF
-                const contentType = response.headers.get('content-type');
-                if (!contentType || !contentType.includes('application/pdf')) {
-                    throw new Error(`Tipo di contenuto non valido: ${contentType}`);
+                const data = await response.json();
+                
+                if (data.status !== 'ok' || !data.pdf_data) {
+                    throw new Error(data.message || 'PDF non disponibile');
                 }
 
-                // Ottieni il PDF come blob
-                pdfBlob = await response.pdf_data;
+                // Salva i dati base64
+                pdfBase64 = data.pdf_data;
+                
+                // Converti base64 in blob
+                const byteCharacters = atob(pdfBase64);
+                const byteNumbers = new Array(byteCharacters.length);
+                for (let i = 0; i < byteCharacters.length; i++) {
+                    byteNumbers[i] = byteCharacters.charCodeAt(i);
+                }
+                const byteArray = new Uint8Array(byteNumbers);
+                const pdfBlob = new Blob([byteArray], { type: 'application/pdf' });
                 
                 // Verifica che il blob contenga dati
                 if (pdfBlob.size === 0) {
@@ -384,7 +422,7 @@
                 const pdfFrame = document.getElementById('pdfFrame');
                 pdfFrame.src = pdfUrl;
                 
-                // Gestisci errori di caricamento dell'iframe
+                // Gestisci eventi di caricamento
                 pdfFrame.onload = function() {
                     showMessage('PDF caricato con successo', 'success');
                 };
@@ -406,21 +444,35 @@
 
         // Download PDF
         function downloadPDF() {
-            if (!pdfBlob) {
+            if (!pdfBase64) {
                 showMessage('Nessun PDF caricato', 'error');
                 return;
             }
 
-            const url = URL.createObjectURL(pdfBlob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'report_' + new Date().toISOString().split('T')[0] + '.pdf';
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-            
-            showMessage('Download avviato', 'success');
+            try {
+                // Converti base64 in blob
+                const byteCharacters = atob(pdfBase64);
+                const byteNumbers = new Array(byteCharacters.length);
+                for (let i = 0; i < byteCharacters.length; i++) {
+                    byteNumbers[i] = byteCharacters.charCodeAt(i);
+                }
+                const byteArray = new Uint8Array(byteNumbers);
+                const pdfBlob = new Blob([byteArray], { type: 'application/pdf' });
+                
+                const url = URL.createObjectURL(pdfBlob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'report_' + new Date().toISOString().split('T')[0] + '.pdf';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                
+                showMessage('Download avviato', 'success');
+            } catch (error) {
+                console.error('Errore download PDF:', error);
+                showMessage('Errore nel download del PDF: ' + error.message, 'error');
+            }
         }
 
         // Logout
