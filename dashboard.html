@@ -187,7 +187,6 @@
             <button onclick="loadAccounts()">Carica Account</button>
             <button onclick="selectAll()">Seleziona Tutti</button>
             <button onclick="deselectAll()">Deseleziona Tutti</button>
-            <button onclick="testPDFEndpoint()" style="background: #666;">Test PDF Endpoint</button>
             <button onclick="loadPDF()" id="loadPdfBtn">Visualizza Report PDF</button>
             <button onclick="logout()">Logout</button>
         </div>
@@ -363,58 +362,6 @@
             return Array.from(checkboxes).map(cb => cb.dataset.accountId);
         }
 
-        // Test endpoint PDF
-        async function testPDFEndpoint() {
-            try {
-                console.log('=== TEST ENDPOINT PDF ===');
-                console.log('API_URL:', API_URL);
-                console.log('Current user:', currentUser);
-                
-                // Test 0: Health check
-                console.log('Test 0: GET /health');
-                try {
-                    const healthCheck = await fetch(`${API_URL}/health`);
-                    console.log('Health status:', healthCheck.status);
-                    console.log('Health response:', await healthCheck.json());
-                } catch (e) {
-                    console.error('Health check failed:', e);
-                }
-                
-                try {
-                    const testOptions = await fetch(`${API_URL}/getreport`, {
-                        method: 'OPTIONS',
-                        headers: {
-                            'Access-Control-Request-Method': 'POST',
-                            'Access-Control-Request-Headers': 'content-type'
-                        }
-                    });
-                    console.log('OPTIONS status:', testOptions.status);
-                    console.log('OPTIONS headers:', [...testOptions.headers.entries()]);
-                } catch (e) {
-                    console.error('OPTIONS test failed:', e);
-                }
-                            
-                // Test 5: Check if it's reaching FastAPI or being blocked
-                try {
-                    const testWorking = await fetch(`${API_URL}/getaccounts`, {
-                        method: 'POST',
-                        headers: {'Content-Type': 'application/json'},
-                        body: JSON.stringify(currentUser)
-                    });
-                    console.log('Working endpoint status:', testWorking.status);
-                    const workingResponse = await testWorking.json();
-                    console.log('Working endpoint response:', workingResponse.status);
-                } catch (e) {
-                    console.error('Working endpoint failed:', e);
-                }
-                
-                showMessage('Test completato - controlla console (F12)', 'success');
-            } catch (error) {
-                console.error('Test error:', error);
-                showMessage('Errore test: ' + error.message, 'error');
-            }
-        }
-
         // Carica PDF
         async function loadPDF() {
             try {
@@ -427,7 +374,7 @@
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify(currentUser)
+                    body: JSON.stringify(username)
                 });
 
                 console.log('Response status:', response.status);
@@ -459,7 +406,7 @@
                             reject(new Error('Network error'));
                         };
                         
-                        xhr.send(JSON.stringify(currentUser));
+                        xhr.send(JSON.stringify(username));
                     });
                     
                     if (result.status === 'ok' && result.pdf_data) {
@@ -581,7 +528,7 @@
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify(currentUser)
+                    body: JSON.stringify(username)
                 });
 
                 const data = await response.json();
