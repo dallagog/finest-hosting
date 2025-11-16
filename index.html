@@ -345,7 +345,7 @@
             console.log("🔐 Processing login...");
             await loadTranslations(currentLang);
             
-            if (data.info && (!data.info.email || !data.info.language || !data.info.currency)) {
+            if (data.info && (!data.info.email || !data.info.language || !data.info.timezone || !data.info.currency)) {
               console.log("ℹ️ Missing user info, requesting completion");
               requestMissingInfo(data.info, username, password);
             } else {
@@ -419,6 +419,21 @@ Type: ${err.constructor.name}
           </select>
         </div>
         <div class="input-group">
+          <i class="fa fa-timezone"></i>
+          <select id="timezone">
+            <option value="">${getTranslation('int.select.timezone') || 'Select Timezone'}</option>
+            <option value="UTC" ${info.timezone === 'UTC' ? 'selected' : ''}>UTC (GMT+0)</option>
+            <option value="CET" ${info.timezone === 'CET' ? 'selected' : ''}>CET (GMT+1)</option>
+            <option value="CEST" ${info.timezone === 'CEST' ? 'selected' : ''}>CEST (GMT+2)</option>
+            <option value="EST" ${info.timezone === 'EST' ? 'selected' : ''}>EST (GMT-5)</option>
+            <option value="EDT" ${info.timezone === 'EDT' ? 'selected' : ''}>EDT (GMT-4)</option>
+            <option value="PST" ${info.timezone === 'PST' ? 'selected' : ''}>PST (GMT-8)</option>
+            <option value="PDT" ${info.timezone === 'PDT' ? 'selected' : ''}>PDT (GMT-7)</option>
+            <option value="JST" ${info.timezone === 'JST' ? 'selected' : ''}>JST (GMT+9)</option>
+            <option value="AEST" ${info.timezone === 'AEST' ? 'selected' : ''}>AEST (GMT+10)</option>
+            <option value="NZST" ${info.timezone === 'NZST' ? 'selected' : ''}>NZST (GMT+12)</option>          </select>
+        </div>
+        <div class="input-group">
           <i class="fa fa-coins"></i>
           <select id="currency">
             <option value="">${getTranslation('int.select.currency')}</option>
@@ -435,10 +450,11 @@ Type: ${err.constructor.name}
         const email = document.getElementById("email").value.trim();
         const language = document.getElementById("language").value.trim();
         const currency = document.getElementById("currency").value.trim();
+        const timezone = document.getElementById("timezone").value.trim();
 
-        console.log("Data to save:", { email, language, currency });
+        console.log("Data to save:", { email, language, currency, timezone });
 
-        if (!email || !language || !currency) {
+        if (!email || !language || !currency || !timezone) {
           console.warn("⚠️ Incomplete fields");
           alert(getTranslation('int.complete.all.fields') || "Please complete all fields.");
           return;
@@ -449,7 +465,7 @@ Type: ${err.constructor.name}
           const response = await fetch(`${apiBaseUser}/update`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ username, password, email, language, currency })
+            body: JSON.stringify({ username, password, email, language, currency, timezone })
           });
 
           console.log("Update response status:", response.status);
