@@ -256,7 +256,7 @@
             try {
                 showMessage('Caricamento account in corso...', 'loading');
 
-                const response = await fetch(`${API_URL}/getAccountList`, {
+                const response = await fetch(`${API_URL}/getaccounts`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -384,34 +384,8 @@
                     console.error('Health check failed:', e);
                 }
                 
-                // Test 1: GET
-                console.log('Test 1: GET /test-pdf');
                 try {
-                    const testGet = await fetch(`${API_URL}/test-pdf`);
-                    console.log('GET status:', testGet.status);
-                    console.log('GET response:', await testGet.text());
-                } catch (e) {
-                    console.error('GET test failed:', e);
-                }
-                
-                // Test 2: POST to test endpoint
-                console.log('Test 2: POST /test-pdf');
-                try {
-                    const testPost = await fetch(`${API_URL}/test-pdf`, {
-                        method: 'POST',
-                        headers: {'Content-Type': 'application/json'},
-                        body: JSON.stringify(currentUser)
-                    });
-                    console.log('POST test status:', testPost.status);
-                    console.log('POST test response:', await testPost.text());
-                } catch (e) {
-                    console.error('POST test failed:', e);
-                }
-                
-                // Test 3: OPTIONS (CORS preflight)
-                console.log('Test 3: OPTIONS /getReportPDF');
-                try {
-                    const testOptions = await fetch(`${API_URL}/getReportPDF`, {
+                    const testOptions = await fetch(`${API_URL}/getreport`, {
                         method: 'OPTIONS',
                         headers: {
                             'Access-Control-Request-Method': 'POST',
@@ -423,27 +397,10 @@
                 } catch (e) {
                     console.error('OPTIONS test failed:', e);
                 }
-                
-                // Test 4: POST /getReportPDF
-                console.log('Test 4: POST /getReportPDF');
-                try {
-                    const testReal = await fetch(`${API_URL}/getReportPDF`, {
-                        method: 'POST',
-                        headers: {'Content-Type': 'application/json'},
-                        body: JSON.stringify(currentUser)
-                    });
-                    console.log('Real endpoint status:', testReal.status);
-                    console.log('Real endpoint headers:', [...testReal.headers.entries()]);
-                    const responseText = await testReal.text();
-                    console.log('Real endpoint response:', responseText);
-                } catch (e) {
-                    console.error('Real endpoint failed:', e);
-                }
-                
+                            
                 // Test 5: Check if it's reaching FastAPI or being blocked
-                console.log('Test 5: POST /getAccountList (known working)');
                 try {
-                    const testWorking = await fetch(`${API_URL}/getAccountList`, {
+                    const testWorking = await fetch(`${API_URL}/getaccounts`, {
                         method: 'POST',
                         headers: {'Content-Type': 'application/json'},
                         body: JSON.stringify(currentUser)
@@ -467,13 +424,9 @@
             try {
                 showMessage('Caricamento PDF in corso...', 'loading');
                 
-                console.log('=== LOAD PDF ===');
-                console.log('Chiamata API:', `${API_URL}/getReportPDF`);
-                console.log('User data:', currentUser);
-
                 // Prova 1: Fetch normale
                 console.log('Tentativo 1: Fetch POST standard');
-                let response = await fetch(`${API_URL}/getReportPDF`, {
+                let response = await fetch(`${API_URL}/getreport`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -489,7 +442,7 @@
                     console.log('Tentativo 2: XMLHttpRequest');
                     const result = await new Promise((resolve, reject) => {
                         const xhr = new XMLHttpRequest();
-                        xhr.open('POST', `${API_URL}/getReportPDF`, true);
+                        xhr.open('POST', `${API_URL}/getreport`, true);
                         xhr.setRequestHeader('Content-Type', 'application/json');
                         
                         xhr.onload = function() {
