@@ -172,70 +172,137 @@
             color: #1976d2;
             font-weight: 600;
         }
+
+        .auth-error {
+            background: #fff3cd;
+            border: 2px solid #ffc107;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .auth-error h3 {
+            color: #856404;
+            margin-bottom: 10px;
+        }
+
+        .auth-error button {
+            margin-top: 15px;
+            background: #ffc107;
+            color: #000;
+        }
+
+        .auth-error button:hover {
+            background: #e0a800;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>Gestione Account e Report</h1>
 
-        <div class="info">
-            <strong>Utente:</strong> <span id="username">-</span> | 
-            <strong>Selezionati:</strong> <span class="selected-count" id="selectedCount">0</span> account
+        <div id="authCheck" style="display: none;" class="auth-error">
+            <h3>⚠️ Sessione non valida</h3>
+            <p>Non sei autenticato o la sessione è scaduta.</p>
+            <button onclick="redirectToLogin()">Torna al Login</button>
         </div>
 
-        <div class="controls">
-            <button onclick="loadAccounts()">Carica Account</button>
-            <button onclick="selectAll()">Seleziona Tutti</button>
-            <button onclick="deselectAll()">Deseleziona Tutti</button>
-            <button onclick="loadPDF()" id="loadPdfBtn">Visualizza Report PDF</button>
-            <button onclick="logout()">Logout</button>
-        </div>
-
-        <div id="message"></div>
-
-        <div class="table-container" id="tableContainer" style="display: none;">
-            <table id="accountTable">
-                <thead>
-                    <tr>
-                        <th style="width: 50px;">Sel.</th>
-                        <th>ID Account</th>
-                        <th>Nome</th>
-                        <th>Cognome</th>
-                        <th>Tipo</th>
-                        <th>Settore</th>
-                        <th>Livello</th>
-                        <th>Tipo Account</th>
-                        <th>Data Nascita</th>
-                        <th>Genere</th>
-                        <th>Paese</th>
-                        <th>Indirizzo</th>
-                        <th>Data Accesso</th>
-                    </tr>
-                </thead>
-                <tbody id="accountTableBody">
-                </tbody>
-            </table>
-        </div>
-
-        <div class="pdf-viewer" id="pdfViewer" style="display: none;">
-            <div class="pdf-header">
-                <h3>Report PDF</h3>
-                <button onclick="downloadPDF()">Download PDF</button>
+        <div id="mainContent" style="display: none;">
+            <div class="info">
+                <strong>Utente:</strong> <span id="usernameDisplay">-</span> | 
+                <strong>Lingua:</strong> <span id="languageDisplay">-</span> |
+                <strong>Selezionati:</strong> <span class="selected-count" id="selectedCount">0</span> account
             </div>
-            <iframe id="pdfFrame" class="pdf-content"></iframe>
+
+            <div class="controls">
+                <button onclick="loadAccounts()">Carica Account</button>
+                <button onclick="selectAll()">Seleziona Tutti</button>
+                <button onclick="deselectAll()">Deseleziona Tutti</button>
+                <button onclick="loadPDF()" id="loadPdfBtn">Visualizza Report PDF</button>
+                <button onclick="logout()">Logout</button>
+            </div>
+
+            <div id="message"></div>
+
+            <div class="table-container" id="tableContainer" style="display: none;">
+                <table id="accountTable">
+                    <thead>
+                        <tr>
+                            <th style="width: 50px;">Sel.</th>
+                            <th>ID Account</th>
+                            <th>Nome</th>
+                            <th>Cognome</th>
+                            <th>Tipo</th>
+                            <th>Settore</th>
+                            <th>Livello</th>
+                            <th>Tipo Account</th>
+                            <th>Data Nascita</th>
+                            <th>Genere</th>
+                            <th>Paese</th>
+                            <th>Indirizzo</th>
+                            <th>Data Accesso</th>
+                        </tr>
+                    </thead>
+                    <tbody id="accountTableBody">
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="pdf-viewer" id="pdfViewer" style="display: none;">
+                <div class="pdf-header">
+                    <h3>Report PDF</h3>
+                    <button onclick="downloadPDF()">Download PDF</button>
+                </div>
+                <iframe id="pdfFrame" class="pdf-content"></iframe>
+            </div>
         </div>
     </div>
 
     <script>
-        // Configurazione
         const API_URL = "https://feweb-tunnel.fe-web.eu";
         let accountsData = [];
         let pdfBase64 = null;
+        let credentials = {
+            username: '',
+            token: ''
+        };
 
-        const username = document.getElementById('username');
-        const password = document.getElementById('password');
+        // Verifica autenticazione e recupera credenziali da localStorage
+        function checkAuthentication() {
+            console.log("🔐 Checking authentication...");
+            
+            const username = localStorage.getItem("username");
+            const token = localStorage.getItem("token");
+            const language = localStorage.getItem("language");
+            
+            console.log("Retrieved from localStorage:", { username, token: token ? "***" + token.slice(-10) : null, language });
 
-        // Funzione per mostrare messaggi
+            if (!username || !token) {
+                console.error("❌ Missing credentials in localStorage");
+                document.getElementById('authCheck').style.display = 'block';
+                document.getElementById('mainContent').style.display = 'none';
+                return false;
+            }
+
+            credentials.username = username;
+            credentials.token = token;
+            
+            document.getElementById('usernameDisplay').textContent = username;
+            document.getElementById('languageDisplay').textContent = language || 'N/A';
+            document.getElementById('authCheck').style.display = 'none';
+            document.getElementById('mainContent').style.display = 'block';
+            
+            console.log("✅ Authentication verified");
+            return true;
+        }
+
+        function redirectToLogin() {
+            console.log("🔄 Redirecting to login page");
+            localStorage.clear();
+            window.location.href = "index.html";
+        }
+
         function showMessage(text, type = 'info') {
             const msgDiv = document.getElementById('message');
             msgDiv.className = type;
@@ -250,38 +317,52 @@
         async function loadAccounts() {
             try {
                 showMessage('Caricamento account in corso...', 'loading');
+                
+                const payload = {
+                    username: credentials.username,
+                    token: credentials.token
+                };
+                
+                console.log('📤 POST /getaccounts');
+                console.log('Payload:', { username: payload.username, token: "***" + payload.token.slice(-10) });
 
                 const response = await fetch(`${API_URL}/getaccounts`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify(username)
+                    body: JSON.stringify(payload)
                 });
 
+                console.log('📥 Response status:', response.status);
+
+                if (!response.ok) {
+                    if (response.status === 401 || response.status === 403) {
+                        showMessage('Sessione scaduta. Effettua nuovamente il login.', 'error');
+                        setTimeout(redirectToLogin, 2000);
+                        return;
+                    }
+                    throw new Error(`HTTP ${response.status}`);
+                }
+
                 const data = await response.json();
+                console.log('Response data:', data);
                 
-                console.info(data.accounts)
                 if (data.status === 'ok' && data.accounts) {
                     accountsData = data.accounts;
-                    
-                    // Verifica struttura dati
-                    let accountCount = 0;
-                    if (Array.isArray(accountsData) && accountsData.length > 0) {
-                        // Se è un array con un oggetto contenente gli account
-                        accountCount = Object.keys(accountsData[0]).length;
-                    } else if (typeof accountsData === 'object') {
-                        // Se è direttamente un oggetto
-                        accountCount = Object.keys(accountsData).length;
-                    }
-                    
                     renderAccountTable(accountsData);
                     document.getElementById('tableContainer').style.display = 'block';
+                    
+                    const accountCount = Array.isArray(accountsData) && accountsData.length > 0 
+                        ? Object.keys(accountsData[0]).length 
+                        : (typeof accountsData === 'object' ? Object.keys(accountsData).length : 0);
+                    
+                    showMessage(`${accountCount} account caricati con successo`, 'success');
                 } else {
                     showMessage(data.message || 'Errore nel caricamento degli account', 'error');
                 }
             } catch (error) {
-                console.error('Errore:', error);
+                console.error('❌ Error:', error);
                 showMessage('Errore di connessione: ' + error.message, 'error');
             }
         }
@@ -291,20 +372,14 @@
             const tbody = document.getElementById('accountTableBody');
             tbody.innerHTML = '';
 
-            let accountsObj;
+            let accountsObj = Array.isArray(accounts) && accounts.length > 0 ? accounts[0] : accounts;
             
-            // Gestisci sia il caso di array che di oggetto diretto
-            if (Array.isArray(accounts) && accounts.length > 0) {
-                accountsObj = accounts[0];
-            } else if (typeof accounts === 'object') {
-                accountsObj = accounts;
-            } else {
-                console.error('Formato accounts non valido:', accounts);
+            if (!accountsObj || typeof accountsObj !== 'object') {
+                console.error('Invalid accounts format:', accounts);
                 showMessage('Formato dati non valido', 'error');
                 return;
             }
             
-            // Itera su tutte le chiavi dell'oggetto
             Object.keys(accountsObj).forEach(accountId => {
                 const account = accountsObj[accountId];
 
@@ -335,31 +410,22 @@
             updateSelectedCount();
         }
 
-        // Aggiorna conteggio selezionati
         function updateSelectedCount() {
             const checkboxes = document.querySelectorAll('.account-checkbox');
             const selected = Array.from(checkboxes).filter(cb => cb.checked);
             document.getElementById('selectedCount').textContent = selected.length;
         }
 
-        // Seleziona tutti
         function selectAll() {
             const checkboxes = document.querySelectorAll('.account-checkbox');
             checkboxes.forEach(cb => cb.checked = true);
             updateSelectedCount();
         }
 
-        // Deseleziona tutti
         function deselectAll() {
             const checkboxes = document.querySelectorAll('.account-checkbox');
             checkboxes.forEach(cb => cb.checked = false);
             updateSelectedCount();
-        }
-
-        // Ottieni account selezionati
-        function getSelectedAccounts() {
-            const checkboxes = document.querySelectorAll('.account-checkbox:checked');
-            return Array.from(checkboxes).map(cb => cb.dataset.accountId);
         }
 
         // Carica PDF
@@ -367,84 +433,51 @@
             try {
                 showMessage('Caricamento PDF in corso...', 'loading');
                 
-                // Prova 1: Fetch normale
-                console.log('Tentativo 1: Fetch POST standard');
-                let response = await fetch(`${API_URL}/getreport`, {
+                const payload = {
+                    username: credentials.username,
+                    token: credentials.token
+                };
+                
+                console.log('📤 POST /getreport');
+
+                const response = await fetch(`${API_URL}/getreport`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify(username)
+                    body: JSON.stringify(payload)
                 });
 
-                console.log('Response status:', response.status);
-                console.log('Response headers:', [...response.headers.entries()]);
-
-                // Se ricevi 405, prova con XMLHttpRequest
-                if (response.status === 405) {
-                    console.log('Tentativo 2: XMLHttpRequest');
-                    const result = await new Promise((resolve, reject) => {
-                        const xhr = new XMLHttpRequest();
-                        xhr.open('POST', `${API_URL}/getreport`, true);
-                        xhr.setRequestHeader('Content-Type', 'application/json');
-                        
-                        xhr.onload = function() {
-                            console.log('XHR status:', xhr.status);
-                            console.log('XHR response:', xhr.responseText);
-                            if (xhr.status >= 200 && xhr.status < 300) {
-                                try {
-                                    resolve(JSON.parse(xhr.responseText));
-                                } catch (e) {
-                                    reject(new Error('Invalid JSON response'));
-                                }
-                            } else {
-                                reject(new Error(`HTTP ${xhr.status}: ${xhr.responseText}`));
-                            }
-                        };
-                        
-                        xhr.onerror = function() {
-                            reject(new Error('Network error'));
-                        };
-                        
-                        xhr.send(JSON.stringify(username));
-                    });
-                    
-                    if (result.status === 'ok' && result.pdf_data) {
-                        displayPDF(result.pdf_data);
-                        return;
-                    }
-                }
+                console.log('📥 Response status:', response.status);
 
                 if (!response.ok) {
-                    const errorText = await response.text();
-                    console.error('Error response:', errorText);
-                    throw new Error(`Errore HTTP: ${response.status} - ${errorText.substring(0, 200)}`);
+                    if (response.status === 401 || response.status === 403) {
+                        showMessage('Sessione scaduta. Effettua nuovamente il login.', 'error');
+                        setTimeout(redirectToLogin, 2000);
+                        return;
+                    }
+                    throw new Error(`HTTP ${response.status}`);
                 }
 
                 const data = await response.json();
-                console.log('Response data keys:', Object.keys(data));
                 
                 if (data.status !== 'ok' || !data.pdf_data) {
                     throw new Error(data.message || 'PDF non disponibile');
                 }
 
                 displayPDF(data.pdf_data);
+                console.log('✅ PDF loaded, size:', data.pdf_data.length);
 
             } catch (error) {
-                console.error('Errore caricamento PDF:', error);
+                console.error('❌ PDF loading error:', error);
                 showMessage('Errore nel caricamento del PDF: ' + error.message, 'error');
             }
         }
 
-        // Funzione separata per visualizzare il PDF
         function displayPDF(pdfBase64Data) {
             try {
-                // Salva i dati base64
                 pdfBase64 = pdfBase64Data;
                 
-                console.log('PDF base64 length:', pdfBase64.length);
-                
-                // Converti base64 in blob
                 const byteCharacters = atob(pdfBase64);
                 const byteNumbers = new Array(byteCharacters.length);
                 for (let i = 0; i < byteCharacters.length; i++) {
@@ -453,41 +486,26 @@
                 const byteArray = new Uint8Array(byteNumbers);
                 const pdfBlob = new Blob([byteArray], { type: 'application/pdf' });
                 
-                console.log('PDF blob size:', pdfBlob.size);
-                
-                // Verifica che il blob contenga dati
                 if (pdfBlob.size === 0) {
                     throw new Error('Il file PDF è vuoto');
                 }
                 
-                // Crea URL per visualizzare il PDF
                 const pdfUrl = URL.createObjectURL(pdfBlob);
-                console.log('PDF URL created:', pdfUrl);
-                
-                // Mostra il PDF nell'iframe
                 const pdfFrame = document.getElementById('pdfFrame');
                 pdfFrame.src = pdfUrl;
                 
-                // Gestisci eventi di caricamento
                 pdfFrame.onload = function() {
                     showMessage('PDF caricato con successo', 'success');
                 };
                 
-                pdfFrame.onerror = function() {
-                    showMessage('Errore nella visualizzazione del PDF', 'error');
-                };
-                
                 document.getElementById('pdfViewer').style.display = 'block';
-
-                // Scroll alla sezione PDF
                 document.getElementById('pdfViewer').scrollIntoView({ behavior: 'smooth' });
             } catch (error) {
-                console.error('Errore display PDF:', error);
+                console.error('Error displaying PDF:', error);
                 throw error;
             }
         }
 
-        // Download PDF
         function downloadPDF() {
             if (!pdfBase64) {
                 showMessage('Nessun PDF caricato', 'error');
@@ -495,7 +513,6 @@
             }
 
             try {
-                // Converti base64 in blob
                 const byteCharacters = atob(pdfBase64);
                 const byteNumbers = new Array(byteCharacters.length);
                 for (let i = 0; i < byteCharacters.length; i++) {
@@ -515,41 +532,51 @@
                 
                 showMessage('Download avviato', 'success');
             } catch (error) {
-                console.error('Errore download PDF:', error);
+                console.error('Download error:', error);
                 showMessage('Errore nel download del PDF: ' + error.message, 'error');
             }
         }
 
-        // Logout
         async function logout() {
             try {
+                const payload = {
+                    username: credentials.username,
+                    token: credentials.token
+                };
+
                 const response = await fetch(`${API_URL}/logout`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify(username)
+                    body: JSON.stringify(payload)
                 });
 
                 const data = await response.json();
                 
                 if (data.status === 'ok') {
                     showMessage('Logout effettuato con successo', 'success');
+                    localStorage.clear();
                     setTimeout(() => {
-                        window.location.href = '/login';
+                        window.location.href = 'index.html';
                     }, 1000);
                 } else {
                     showMessage('Errore durante il logout', 'error');
                 }
             } catch (error) {
-                console.error('Errore:', error);
+                console.error('Logout error:', error);
                 showMessage('Errore di connessione: ' + error.message, 'error');
             }
         }
 
-        // Carica automaticamente gli account all'avvio
+        // Inizializzazione all'avvio
         window.addEventListener('load', () => {
-            loadAccounts();
+            console.log("=== Account Manager Started ===");
+            
+            if (checkAuthentication()) {
+                console.log("✅ User authenticated, loading accounts...");
+                loadAccounts();
+            }
         });
     </script>
 </body>
