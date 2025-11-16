@@ -233,8 +233,8 @@
         let accountsData = [];
         let pdfBase64 = null;
 
-        // Inizializzazione
-        document.getElementById('username').textContent = currentUser.username;
+        const username = document.getElementById('username');
+        const password = document.getElementById('password');
 
         // Funzione per mostrare messaggi
         function showMessage(text, type = 'info') {
@@ -257,7 +257,7 @@
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify(currentUser)
+                    body: JSON.stringify(username)
                 });
 
                 const data = await response.json();
@@ -277,7 +277,6 @@
                     }
                     
                     renderAccountTable(accountsData);
-                    showMessage(`${accountCount} account caricati con successo`, 'success');
                     document.getElementById('tableContainer').style.display = 'block';
                 } else {
                     showMessage(data.message || 'Errore nel caricamento degli account', 'error');
