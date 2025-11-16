@@ -367,15 +367,113 @@
             return Array.from(checkboxes).map(cb => cb.dataset.accountId);
         }
 
+        // Test endpoint PDF
+        async function testPDFEndpoint() {
+            try {
+                console.log('=== TEST ENDPOINT PDF ===');
+                console.log('API_URL:', API_URL);
+                console.log('Current user:', currentUser);
+                
+                // Test 0: Health check
+                console.log('Test 0: GET /health');
+                try {
+                    const healthCheck = await fetch(`${API_URL}/health`);
+                    console.log('Health status:', healthCheck.status);
+                    console.log('Health response:', await healthCheck.json());
+                } catch (e) {
+                    console.error('Health check failed:', e);
+                }
+                
+                // Test 1: GET
+                console.log('Test 1: GET /test-pdf');
+                try {
+                    const testGet = await fetch(`${API_URL}/test-pdf`);
+                    console.log('GET status:', testGet.status);
+                    console.log('GET response:', await testGet.text());
+                } catch (e) {
+                    console.error('GET test failed:', e);
+                }
+                
+                // Test 2: POST to test endpoint
+                console.log('Test 2: POST /test-pdf');
+                try {
+                    const testPost = await fetch(`${API_URL}/test-pdf`, {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify(currentUser)
+                    });
+                    console.log('POST test status:', testPost.status);
+                    console.log('POST test response:', await testPost.text());
+                } catch (e) {
+                    console.error('POST test failed:', e);
+                }
+                
+                // Test 3: OPTIONS (CORS preflight)
+                console.log('Test 3: OPTIONS /getReportPDF');
+                try {
+                    const testOptions = await fetch(`${API_URL}/getReportPDF`, {
+                        method: 'OPTIONS',
+                        headers: {
+                            'Access-Control-Request-Method': 'POST',
+                            'Access-Control-Request-Headers': 'content-type'
+                        }
+                    });
+                    console.log('OPTIONS status:', testOptions.status);
+                    console.log('OPTIONS headers:', [...testOptions.headers.entries()]);
+                } catch (e) {
+                    console.error('OPTIONS test failed:', e);
+                }
+                
+                // Test 4: POST /getReportPDF
+                console.log('Test 4: POST /getReportPDF');
+                try {
+                    const testReal = await fetch(`${API_URL}/getReportPDF`, {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify(currentUser)
+                    });
+                    console.log('Real endpoint status:', testReal.status);
+                    console.log('Real endpoint headers:', [...testReal.headers.entries()]);
+                    const responseText = await testReal.text();
+                    console.log('Real endpoint response:', responseText);
+                } catch (e) {
+                    console.error('Real endpoint failed:', e);
+                }
+                
+                // Test 5: Check if it's reaching FastAPI or being blocked
+                console.log('Test 5: POST /getAccountList (known working)');
+                try {
+                    const testWorking = await fetch(`${API_URL}/getAccountList`, {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify(currentUser)
+                    });
+                    console.log('Working endpoint status:', testWorking.status);
+                    const workingResponse = await testWorking.json();
+                    console.log('Working endpoint response:', workingResponse.status);
+                } catch (e) {
+                    console.error('Working endpoint failed:', e);
+                }
+                
+                showMessage('Test completato - controlla console (F12)', 'success');
+            } catch (error) {
+                console.error('Test error:', error);
+                showMessage('Errore test: ' + error.message, 'error');
+            }
+        }
+
         // Carica PDF
         async function loadPDF() {
             try {
                 showMessage('Caricamento PDF in corso...', 'loading');
                 
+                console.log('=== LOAD PDF ===');
                 console.log('Chiamata API:', `${API_URL}/getReportPDF`);
                 console.log('User data:', currentUser);
 
-                const response = await fetch(`${API_URL}/getReportPDF`, {
+                // Prova 1: Fetch normale
+                console.log('Tentativo 1: Fetch POST standard');
+                let response = await fetch(`${API_URL}/getReportPDF`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -386,20 +484,75 @@
                 console.log('Response status:', response.status);
                 console.log('Response headers:', [...response.headers.entries()]);
 
+                // Se ricevi 405, prova con XMLHttpRequest
+                if (response.status === 405) {
+                    console.log('Tentativo 2: XMLHttpRequest');
+                    const result = await new Promise((resolve, reject) => {
+                        const xhr = new XMLHttpRequest();
+                        xhr.open('POST', `${API_URL}/getReportPDF`, true);
+                        xhr.setRequestHeader('Content-Type', 'application/json');
+                        
+                        xhr.onload = function() {
+                            console.log('XHR status:', xhr.status);
+                            console.log('XHR response:', xhr.responseText);
+                            if (xhr.status >= 200 && xhr.status < 300) {
+                                try {
+                                    resolve(JSON.parse(xhr.responseText));
+                                } catch (e) {
+                                    reject(new Error('Invalid JSON response'));
+                                }
+                            } else {
+                                reject(new Error(`HTTP ${xhr.status}: ${xhr.responseText}`));
+                            }
+                        };
+                        
+                        xhr.onerror = function() {
+                            reject(new Error('Network error'));
+                        };
+                        
+                        xhr.send(JSON.stringify(currentUser));
+                    });
+                    
+                    if (result.status === 'ok' && result.pdf_data) {
+                        displayPDF(result.pdf_data);
+                        return;
+                    }
+                }
+
                 if (!response.ok) {
                     const errorText = await response.text();
                     console.error('Error response:', errorText);
-                    throw new Error(`Errore HTTP: ${response.status} - ${errorText}`);
+                    throw new Error(`Errore HTTP: ${response.status} - ${errorText.substring(0, 200)}`);
                 }
 
                 const data = await response.json();
+                console.log('Response data keys:', Object.keys(data));
                 
                 if (data.status !== 'ok' || !data.pdf_data) {
                     throw new Error(data.message || 'PDF non disponibile');
                 }
 
+                displayPDF(data.pdf_data);
+
+            } catch (error) {
+                console.error('Errore caricamento PDF:', error);
+                showMessage('Errore nel caricamento del PDF: ' + error.message, 'error');
+            }
+        }
+
+        // Funzione separata per visualizzare il PDF
+        function displayPDF(pdfBase64Data) {
+            try {
                 // Salva i dati base64
-                pdfBase64 = data.pdf_data;
+                pdfBase64 = pdfBase64Data;
+                
+        // Funzione separata per visualizzare il PDF
+        function displayPDF(pdfBase64Data) {
+            try {
+                // Salva i dati base64
+                pdfBase64 = pdfBase64Data;
+                
+                console.log('PDF base64 length:', pdfBase64.length);
                 
                 // Converti base64 in blob
                 const byteCharacters = atob(pdfBase64);
@@ -410,6 +563,8 @@
                 const byteArray = new Uint8Array(byteNumbers);
                 const pdfBlob = new Blob([byteArray], { type: 'application/pdf' });
                 
+                console.log('PDF blob size:', pdfBlob.size);
+                
                 // Verifica che il blob contenga dati
                 if (pdfBlob.size === 0) {
                     throw new Error('Il file PDF è vuoto');
@@ -417,6 +572,7 @@
                 
                 // Crea URL per visualizzare il PDF
                 const pdfUrl = URL.createObjectURL(pdfBlob);
+                console.log('PDF URL created:', pdfUrl);
                 
                 // Mostra il PDF nell'iframe
                 const pdfFrame = document.getElementById('pdfFrame');
@@ -435,10 +591,9 @@
 
                 // Scroll alla sezione PDF
                 document.getElementById('pdfViewer').scrollIntoView({ behavior: 'smooth' });
-
             } catch (error) {
-                console.error('Errore caricamento PDF:', error);
-                showMessage('Errore nel caricamento del PDF: ' + error.message, 'error');
+                console.error('Errore display PDF:', error);
+                throw error;
             }
         }
 
