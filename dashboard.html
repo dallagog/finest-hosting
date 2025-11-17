@@ -555,7 +555,7 @@
 
             credentials.username = username;
             credentials.token = token;
-            credentials.language = language;
+            credentials.language = language || credentials.language;
             
             document.getElementById('usernameDisplay').textContent = username;
             document.getElementById('headerBar').style.display = 'flex';
@@ -563,7 +563,7 @@
             document.getElementById('mainContent').style.display = 'block';
             
             // Carica le traduzioni
-            TranslationManager.loadTranslations(language).then(() => {
+            TranslationManager.loadTranslations(language || credentials.language).then(() => {
                 updatePageTranslations();
             });
             
@@ -697,7 +697,7 @@
                 const payload = {
                     username: credentials.username,
                     token: credentials.token,
-                    language: credentials.language
+                    language: language || credentials.language
                 };
                 
                 console.log('📤 POST /getaccounts for reports list');
@@ -756,7 +756,7 @@
                 const li = document.createElement('li');
                 li.className = 'report-item';
                 
-                const reportName = `${account.name || ''} ${account.surname || ''} - ${account.id_account || accountId}`.trim();
+                const reportName = `${account.id_account || accountId} - ${account.type}`.trim();
                 li.textContent = reportName || `Report ${accountId}`;
                 
                 li.addEventListener('click', () => {
@@ -786,7 +786,7 @@
                 const payload = {
                     username: credentials.username,
                     token: credentials.token,
-                    language: credentials.language
+                    language: language || credentials.language
                 };
                 
                 console.log('📤 POST /getaccounts');
@@ -898,7 +898,7 @@
                 const payload = {
                     username: credentials.username,
                     token: credentials.token,
-                    language: credentials.language
+                    language: language || credentials.language
                 };
                 
                 console.log('📤 POST /getreport');
@@ -1005,7 +1005,7 @@
                 const payload = {
                     username: credentials.username,
                     token: credentials.token,
-                    language: credentials.language
+                    language: language || credentials.language
                 };
 
                 const response = await fetch(`${API_URL}/logout`, {
