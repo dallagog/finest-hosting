@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>FinEst, ver. 0.32 beta</title>
+  <title>FinEst, ver. 0.29 beta</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
   <style>
     body {
@@ -213,44 +213,29 @@
 
     console.log("=== FinEst Login v0.29 ===");
 
-    // Scopri i file di lingua dalla cartella /lang leggendo l'HTML del directory listing
-    async function discoverLanguageFiles() {
-      console.log("🔍 Discovering language files from /lang...");
-      const langFiles = [];
-
+    // Leggi l'elenco delle lingue dal manifest
+    async function loadLanguageManifest() {
+      console.log("📋 Loading language manifest...");
       try {
-        const response = await fetch('lang/');
+        const response = await fetch('lang/manifest.json');
         if (!response.ok) {
-          console.error("Cannot access /lang directory");
-          return langFiles;
+          console.error("Cannot load manifest.json");
+          return [];
         }
 
-        const html = await response.text();
-        console.log("📁 Directory listing fetched");
-
-        // Regex per trovare file con pattern xx_YY.json (es: it_IT.json, en_UK.json)
-        const regex = /([a-z]{2}_[A-Z]{2})\.json/g;
-        let match;
-
-        while ((match = regex.exec(html)) !== null) {
-          const fileName = match[0];
-          if (!langFiles.includes(fileName)) {
-            langFiles.push(fileName);
-          }
-        }
-
-        console.log("📄 Found language files:", langFiles);
+        const manifest = await response.json();
+        console.log("✅ Manifest loaded:", manifest.languages);
+        return manifest.languages || [];
       } catch (error) {
-        console.error("Error discovering language files:", error);
+        console.error("Error loading manifest:", error);
+        return [];
       }
-
-      return langFiles;
     }
 
     // Carica un singolo file di lingua
     async function loadLanguageFile(fileName) {
       try {
-        const response = await fetch(`lang/${fileName}`);
+        const response = await fetch(`lang/${fileName}.json`);
         if (!response.ok) {
           console.warn(`File not found: lang/${fileName}`);
           return null;
@@ -279,10 +264,10 @@
     async function initializeLanguages() {
       console.log("🌍 Initializing languages...");
 
-      const langFiles = await discoverLanguageFiles();
+      const langCodes = await loadLanguageManifest();
 
-      for (const fileName of langFiles) {
-        const langData = await loadLanguageFile(fileName);
+      for (const langCode of langCodes) {
+        const langData = await loadLanguageFile(langCode);
         if (langData) {
           availableLanguages.push(langData);
           console.log(`✅ Language loaded: ${langData.code}`);
