@@ -25,68 +25,25 @@
       z-index: 1000;
     }
 
-    .language-selector-title {
-      font-size: 14px;
-      color: #555;
-      margin-bottom: 12px;
-      display: block;
-      font-weight: bold;
-    }
-
-    .language-grid {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-      background: white;
-      padding: 8px;
-      border-radius: 8px;
+    #languageCombo {
+      padding: 8px 12px;
       border: 2px solid #007bff;
-      box-shadow: 0 2px 8px rgba(0, 123, 255, 0.2);
-      max-height: 300px;
-      overflow-y: auto;
-    }
-
-    .language-option {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      padding: 10px 12px;
-      border: 2px solid #ddd;
       border-radius: 6px;
+      background: white;
       cursor: pointer;
-      transition: 0.3s;
-      text-align: left;
       font-size: 14px;
+      outline: none;
+      transition: 0.3s;
     }
 
-    .language-option:hover {
-      border-color: #007bff;
-      background: #f0f7ff;
+    #languageCombo:hover {
+      border-color: #0056b3;
+      box-shadow: 0 2px 8px rgba(0, 123, 255, 0.2);
     }
 
-    .language-option.active {
-      border-color: #007bff;
-      background: #007bff;
-      color: white;
-    }
-
-    .language-flag {
-      font-size: 24px;
-      flex-shrink: 0;
-      line-height: 1;
-    }
-
-    .language-code {
-      font-weight: bold;
-      font-size: 13px;
-      min-width: 60px;
-      flex-shrink: 0;
-    }
-
-    .language-description {
-      font-size: 12px;
-      opacity: 0.8;
-      flex-grow: 1;
+    #languageCombo:focus {
+      border-color: #0056b3;
+      box-shadow: 0 0 8px rgba(0, 123, 255, 0.3);
     }
 
     .container {
@@ -176,10 +133,9 @@
 
 <body>
   <div class="language-selector">
-    <label class="language-selector-title" id="lang-selector-title">Choose language</label>
-    <div class="language-grid" id="languageGrid">
-      <div style="padding: 20px; color: #999;">Loading...</div>
-    </div>
+    <select id="languageCombo">
+      <option value="">Choose language</option>
+    </select>
   </div>
 
   <div class="container" id="app-container">
@@ -233,11 +189,11 @@
     }
 
     // Carica un singolo file di lingua
-    async function loadLanguageFile(fileName) {
+    async function loadLanguageFile(langCode) {
       try {
-        const response = await fetch(`lang/${fileName}.json`);
+        const response = await fetch(`lang/${langCode}.json`);
         if (!response.ok) {
-          console.warn(`File not found: lang/${fileName}`);
+          console.warn(`File not found: lang/${langCode}.json`);
           return null;
         }
 
@@ -251,11 +207,11 @@
             flag: data['img.language.flag']
           };
         } else {
-          console.warn(`Invalid structure in ${fileName}`);
+          console.warn(`Invalid structure in ${langCode}.json`);
           return null;
         }
       } catch (error) {
-        console.error(`Error loading ${fileName}:`, error);
+        console.error(`Error loading ${langCode}.json:`, error);
         return null;
       }
     }
@@ -277,29 +233,27 @@
       availableLanguages.sort((a, b) => a.code.localeCompare(b.code));
       console.log("✅ Languages initialized:", availableLanguages.length);
 
-      updateLanguageGrid();
+      updateLanguageCombo();
     }
 
-    // Aggiorna griglia lingue
-    function updateLanguageGrid() {
-      const grid = document.getElementById('languageGrid');
-      grid.innerHTML = '';
+    // Aggiorna combobox lingue
+    function updateLanguageCombo() {
+      const combo = document.getElementById('languageCombo');
+      combo.innerHTML = '<option value="">Choose language</option>';
 
       if (availableLanguages.length === 0) {
-        grid.innerHTML = '<div style="padding: 20px; color: #999; grid-column: 1/-1;">No languages available</div>';
+        console.warn("No languages available");
         return;
       }
 
       availableLanguages.forEach(lang => {
-        const option = document.createElement('div');
-        option.className = `language-option ${lang.code === language ? 'active' : ''}`;
-        option.innerHTML = `
-          <div class="language-flag">${lang.flag}</div>
-          <div class="language-code">${lang.code}</div>
-          <div class="language-description">${lang.description}</div>
-        `;
-        option.addEventListener('click', () => changeLanguage(lang.code));
-        grid.appendChild(option);
+        const option = document.createElement('option');
+        option.value = lang.code;
+        option.textContent = `${lang.flag} ${lang.code} - ${lang.description}`;
+        if (lang.code === language) {
+          option.selected = true;
+        }
+        combo.appendChild(option);
       });
     }
 
@@ -308,9 +262,16 @@
       console.log("🌍 Changing language to:", langCode);
       language = langCode;
       await loadTranslations(language);
-      updateLanguageGrid();
+      updateLanguageCombo();
       updatePageTranslations();
     }
+
+    // Event listener per combobox lingue
+    document.getElementById('languageCombo').addEventListener('change', (e) => {
+      if (e.target.value) {
+        changeLanguage(e.target.value);
+      }
+    });
 
     // Carica traduzioni
     async function loadTranslations(lang) {
@@ -361,8 +322,10 @@
 
     // Aggiorna traduzioni pagina
     function updatePageTranslations() {
-      const langTitle = document.getElementById('lang-selector-title');
-      if (langTitle) langTitle.textContent = getTranslation('int.choose.language') || 'Choose language';
+      const combo = document.getElementById('languageCombo');
+      if (combo && combo.options[0]) {
+        combo.options[0].textContent = getTranslation('int.choose.language') || 'Choose language';
+      }
 
       const formTitle = document.getElementById('form-title');
       if (formTitle) formTitle.textContent = isLogin ? getTranslation('int.login') : getTranslation('int.registration');
