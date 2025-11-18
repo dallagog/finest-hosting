@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>FinEst, ver. 0.31 beta</title>
+  <title>FinEst, ver. 0.32 beta</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
   <style>
     body {
@@ -34,29 +34,29 @@
     }
 
     .language-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
-      gap: 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
       background: white;
-      padding: 12px;
+      padding: 8px;
       border-radius: 8px;
       border: 2px solid #007bff;
       box-shadow: 0 2px 8px rgba(0, 123, 255, 0.2);
-      max-width: 500px;
+      max-height: 300px;
+      overflow-y: auto;
     }
 
     .language-option {
       display: flex;
-      flex-direction: column;
       align-items: center;
-      justify-content: center;
-      padding: 12px 8px;
+      gap: 10px;
+      padding: 10px 12px;
       border: 2px solid #ddd;
       border-radius: 6px;
       cursor: pointer;
       transition: 0.3s;
-      text-align: center;
-      font-size: 12px;
+      text-align: left;
+      font-size: 14px;
     }
 
     .language-option:hover {
@@ -71,21 +71,22 @@
     }
 
     .language-flag {
-      font-size: 32px;
-      margin-bottom: 4px;
+      font-size: 24px;
+      flex-shrink: 0;
       line-height: 1;
     }
 
     .language-code {
       font-weight: bold;
-      font-size: 12px;
-      margin-bottom: 2px;
+      font-size: 13px;
+      min-width: 60px;
+      flex-shrink: 0;
     }
 
     .language-description {
-      font-size: 11px;
+      font-size: 12px;
       opacity: 0.8;
-      word-break: break-word;
+      flex-grow: 1;
     }
 
     .container {
@@ -477,21 +478,24 @@
 
     // Richiesta info mancanti
     function requestMissingInfo(info, username, password) {
+      // Nascondi il selettore lingue durante l'inserimento info
+      document.querySelector('.language-selector').style.display = 'none';
+      
       const container = document.getElementById("app-container");
 
       let currencyOptions = `<option value="">${getTranslation('int.select.currency')}</option>`;
       currencies.forEach(curr => {
-        currencyOptions += `<option value="${curr.currency}">${curr['img.currency.flag']} ${curr.currency}</option>`;
+        currencyOptions += `<option value="${curr.currency}">${curr['img.currency.flag']} ${curr.currency} - ${curr.description}</option>`;
       });
 
       let timezoneOptions = `<option value="">${getTranslation('int.select.timezone')}</option>`;
       timezones.forEach(tz => {
-        timezoneOptions += `<option value="${tz.timezone}">${tz.timezone}</option>`;
+        timezoneOptions += `<option value="${tz.timezone}">${tz.timezone} (GMT${tz.offset_from_gmt}) - ${tz.reference_city}</option>`;
       });
 
       let languageOptions = `<option value="">${getTranslation('int.select.language')}</option>`;
       availableLanguages.forEach(lang => {
-        languageOptions += `<option value="${lang.code}">${lang.flag} ${lang.code}</option>`;
+        languageOptions += `<option value="${lang.code}">${lang.flag} ${lang.code} - ${lang.description}</option>`;
       });
 
       container.innerHTML = `
@@ -536,6 +540,8 @@
           const data = await response.json();
           if (response.ok && data.status === "ok") {
             alert(getTranslation('int.info.saved'));
+            // Mostra il selettore lingue al ritorno al login
+            document.querySelector('.language-selector').style.display = 'block';
             window.location.href = "index.html";
           } else {
             alert(getTranslation("int.error.update"));
