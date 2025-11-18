@@ -25,23 +25,24 @@
       z-index: 1000;
     }
 
-    .language-selector-label {
+    .language-selector-title {
       font-size: 14px;
       color: #555;
-      margin-bottom: 8px;
+      margin-bottom: 12px;
       display: block;
+      font-weight: bold;
     }
 
     .language-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
       gap: 8px;
       background: white;
       padding: 12px;
       border-radius: 8px;
       border: 2px solid #007bff;
       box-shadow: 0 2px 8px rgba(0, 123, 255, 0.2);
-      max-width: 400px;
+      max-width: 500px;
     }
 
     .language-option {
@@ -72,17 +73,19 @@
     .language-flag {
       font-size: 32px;
       margin-bottom: 4px;
+      line-height: 1;
     }
 
     .language-code {
       font-weight: bold;
-      font-size: 13px;
+      font-size: 12px;
       margin-bottom: 2px;
     }
 
     .language-description {
       font-size: 11px;
       opacity: 0.8;
+      word-break: break-word;
     }
 
     .container {
@@ -173,8 +176,10 @@
 <body>
   <!-- Selettore lingua in alto a destra -->
   <div class="language-selector">
-    <label class="language-selector-label" id="int.choose.language">Choose language</label>
-    <div class="language-grid" id="languageGrid"></div>
+    <label class="language-selector-title" id="lang-selector-title">Choose language</label>
+    <div class="language-grid" id="languageGrid">
+      <div style="padding: 20px; color: #999;">Loading languages...</div>
+    </div>
   </div>
 
   <div class="container" id="app-container">
@@ -203,290 +208,260 @@
     let translations = {};
     let currencies = [];
     let timezones = [];
-    let languages = [];
+    let availableLanguages = [];
     let isLogin = true;
 
     console.log("=== FinEst Login v0.29 - Debug Mode ===");
     console.log("Initial language:", language);
 
-    // Caricamento traduzioni dai file JSON
-    async function loadTranslations(lang) {
-      console.log("📚 Loading translations for:", lang);
-      try {
-        const response = await fetch(`lang/${lang}.json`);
-        console.log("Translation fetch response:", response.status, response.ok);
-        if (!response.ok) throw new Error((getTranslation("int.error.loading") || "Loading error:") + lang);
-        translations = await response.json();
-        console.log("✅ Translations loaded successfully:", Object.keys(translations).length, "keys");
-        
-        // Carica le valute per la lingua corrente
-        await loadCurrencies(lang);
-        // Carica le lingue per la lingua corrente
-        await loadLanguages(lang);
-        
-        updatePageTranslations();
-      } catch (error) {
-        console.error('❌ Errore caricamento traduzioni:', error);
-      }
-    }
+    // ====== CARICAMENTO LINGUE DISPONIBILI ======
+    async function discoverAvailableLanguages() {
+      console.log("🔍 Discovering available languages from /lang directory...");
+      availableLanguages = [];
 
-    // Caricamento valute specifiche per lingua
-    async function loadCurrencies(lang) {
-      console.log("💰 Loading currencies for:", lang);
+      // Tenta diversi approcci per scoprire i file
       try {
-        const response = await fetch(`currency/${lang}.json`);
-        if (!response.ok) throw new Error("Currency loading error");
-        currencies = await response.json();
-        console.log("✅ Currencies loaded:", currencies.length);
-      } catch (error) {
-        console.error('❌ Errore caricamento valute:', error);
-        currencies = [];
-      }
-    }
-
-    // Caricamento timezone
-    async function loadTimezones() {
-      console.log("🌍 Loading timezones...");
-      try {
-        const response = await fetch(`timezone/timezone.json`);
-        if (!response.ok) throw new Error("Timezone loading error");
-        timezones = await response.json();
-        console.log("✅ Timezones loaded:", timezones.length);
-      } catch (error) {
-        console.error('❌ Errore caricamento timezone:', error);
-        timezones = [];
-      }
-    }
-
-    // Caricamento lingue specifiche per lingua - AGGIORNATO
-    async function loadLanguages(lang) {
-      console.log("🗣️ Loading languages for:", lang);
-      try {
-        const response = await fetch(`lang/${lang}.json`);
-        if (!response.ok) throw new Error("Language loading error");
-        const data = await response.json();
-        // Estrai solo gli elementi che hanno la struttura lingua (language, description, img.language.flag)
-        languages = Array.isArray(data) ? data : [];
-        console.log("✅ Languages loaded:", languages.length);
-        updateLanguageGrid();
-      } catch (error) {
-        console.error('❌ Errore caricamento lingue:', error);
-        languages = [];
-      }
-    }
-
-    // Carica tutte le lingue disponibili dalla cartella /lang
-    async function loadAllAvailableLanguages() {
-      console.log("🗣️ Loading all available languages from /lang...");
-      languages = [];
-      
-      try {
-        // Recupera l'elenco dei file dalla cartella /lang (richiede supporto server)
-        const response = await fetch('lang/');
-        if (!response.ok) {
-          console.error("❌ Cannot access lang directory, status:", response.status);
-          throw new Error("Directory listing not available");
-        }
-        
-        const html = await response.text();
-        // Estrai i file .json dal listing HTML (pattern per Apache, Nginx, etc.)
-        const fileRegex = /(?:href|name)=["']?([a-zA-Z0-9_]+\.json)["']?/gi;
-        const files = new Set();
-        let match;
-        
-        while ((match = fileRegex.exec(html)) !== null) {
-          files.add(match[1]);
-        }
-        
-        if (files.size === 0) {
-          throw new Error("No JSON files found in directory listing");
-        }
-        
-        console.log("📁 Found language files:", Array.from(files));
-        
-        // Carica ogni file di lingua trovato
-        for (const file of files) {
-          if (!file.endsWith('.json')) continue;
+        // Approach 1: Fetch directory listing (funziona con alcuni server)
+        const dirResponse = await fetch('lang/');
+        if (dirResponse.ok) {
+          const html = await dirResponse.text();
+          console.log("📁 Directory listing received, parsing...");
           
-          try {
-            const langResponse = await fetch(`lang/${file}`);
-            if (!langResponse.ok) continue;
-            const data = await langResponse.json();
-            
-            if (data['int.language.code'] && data['int.language.description'] && data['img.language.flag']) {
-              languages.push({
-                code: data['int.language.code'],
-                description: data['int.language.description'],
-                flag: data['img.language.flag']
-              });
+          // Regex per trovare file .json nel listing HTML
+          const fileRegex = /["\']([a-zA-Z0-9_-]+\.json)["\']/g;
+          let match;
+          const files = new Set();
+          
+          while ((match = fileRegex.exec(html)) !== null) {
+            if (match[1].endsWith('.json')) {
+              files.add(match[1]);
             }
-          } catch (error) {
-            console.error(`Error loading language file ${file}:`, error);
+          }
+          
+          console.log("📄 Files found:", Array.from(files));
+          
+          for (const fileName of files) {
+            await loadLanguageFile(fileName);
           }
         }
-        
-        if (languages.length === 0) {
-          throw new Error("No valid language files loaded");
-        }
-        
       } catch (error) {
-        console.error("❌ Error loading languages:", error.message);
-        console.warn("⚠️ Unable to load language list from /lang directory");
+        console.warn("⚠️ Directory listing failed:", error.message);
       }
+
+      // Se non trovato nulla, prova a caricare file comuni
+      if (availableLanguages.length === 0) {
+        console.log("📋 No languages found, trying common language files...");
+        const commonFiles = ['en_UK.json', 'it_IT.json', 'de_DE.json', 'fr_FR.json', 'es_ES.json', 'zh_CN.json', 'ar_SA.json'];
+        
+        for (const fileName of commonFiles) {
+          await loadLanguageFile(fileName);
+        }
+      }
+
+      console.log("✅ Available languages discovered:", availableLanguages.length);
+      availableLanguages.sort((a, b) => a.code.localeCompare(b.code));
       
-      console.log("✅ All available languages loaded:", languages.length);
       updateLanguageGrid();
     }
 
-    // Aggiorna la griglia delle lingue
+    // Carica un singolo file di lingua
+    async function loadLanguageFile(fileName) {
+      try {
+        const response = await fetch(`lang/${fileName}`);
+        if (!response.ok) {
+          console.log(`⏭️ File not found: lang/${fileName}`);
+          return;
+        }
+
+        const data = await response.json();
+        
+        // Verifica che abbia i campi richiesti
+        if (data['int.language.code'] && data['int.language.description'] && data['img.language.flag']) {
+          const lang = {
+            code: data['int.language.code'],
+            description: data['int.language.description'],
+            flag: data['img.language.flag']
+          };
+          
+          // Evita duplicati
+          if (!availableLanguages.some(l => l.code === lang.code)) {
+            availableLanguages.push(lang);
+            console.log(`✅ Language loaded: ${lang.code} - ${lang.description}`);
+          }
+        } else {
+          console.warn(`⚠️ Invalid structure in ${fileName}`);
+        }
+      } catch (error) {
+        console.error(`❌ Error loading ${fileName}:`, error.message);
+      }
+    }
+
+    // ====== AGGIORNAMENTO GRIGLIA LINGUE ======
     function updateLanguageGrid() {
       const grid = document.getElementById('languageGrid');
       grid.innerHTML = '';
-      
-      languages.forEach(lang => {
+
+      if (availableLanguages.length === 0) {
+        grid.innerHTML = '<div style="padding: 20px; color: #999; grid-column: 1/-1;">No languages available</div>';
+        return;
+      }
+
+      availableLanguages.forEach(lang => {
         const option = document.createElement('div');
         option.className = `language-option ${lang.code === language ? 'active' : ''}`;
         option.innerHTML = `
-          <div class="language-flag">${lang.flag || '🌐'}</div>
+          <div class="language-flag">${lang.flag}</div>
           <div class="language-code">${lang.code}</div>
-          <div class="language-description">${lang.description || ''}</div>
+          <div class="language-description">${lang.description}</div>
         `;
-        option.addEventListener('click', () => {
-          console.log("🌍 Language changed to:", lang.code);
-          language = lang.code;
-          loadTranslations(language);
-          updateLanguageGrid();
-        });
+        option.addEventListener('click', () => changeLanguage(lang.code));
         grid.appendChild(option);
       });
     }
 
+    // ====== CAMBIO LINGUA ======
+    async function changeLanguage(langCode) {
+      console.log("🌍 Changing language to:", langCode);
+      language = langCode;
+      await loadTranslations(language);
+      updateLanguageGrid();
+      updatePageTranslations();
+    }
+
+    // ====== CARICAMENTO TRADUZIONI ======
+    async function loadTranslations(lang) {
+      console.log("📚 Loading translations for:", lang);
+      try {
+        const response = await fetch(`lang/${lang}.json`);
+        if (!response.ok) throw new Error("Translation file not found");
+        translations = await response.json();
+        console.log("✅ Translations loaded:", Object.keys(translations).length, "keys");
+        
+        await loadCurrencies(lang);
+        await loadTimezones();
+        
+      } catch (error) {
+        console.error('❌ Error loading translations:', error);
+      }
+    }
+
+    // ====== CARICAMENTO VALUTE ======
+    async function loadCurrencies(lang) {
+      console.log("💰 Loading currencies for:", lang);
+      try {
+        const response = await fetch(`currency/${lang}.json`);
+        if (!response.ok) throw new Error("Currency file not found");
+        currencies = await response.json();
+        console.log("✅ Currencies loaded:", currencies.length);
+      } catch (error) {
+        console.error('❌ Error loading currencies:', error);
+        currencies = [];
+      }
+    }
+
+    // ====== CARICAMENTO TIMEZONE ======
+    async function loadTimezones() {
+      console.log("🌍 Loading timezones...");
+      try {
+        const response = await fetch(`timezone/timezone.json`);
+        if (!response.ok) throw new Error("Timezone file not found");
+        timezones = await response.json();
+        console.log("✅ Timezones loaded:", timezones.length);
+      } catch (error) {
+        console.error('❌ Error loading timezones:', error);
+        timezones = [];
+      }
+    }
+
+    // ====== HELPER TRADUZIONI ======
     function getTranslation(key) {
       const value = translations[key] || key;
-      console.log(`🔤 Translation [${key}]:`, value);
       return value;
     }
 
+    // ====== AGGIORNAMENTO PAGINA ======
     function updatePageTranslations() {
-      console.log("🔄 Updating page translations, isLogin:", isLogin);
+      console.log("🔄 Updating page translations");
       
-      // Aggiorna titolo form
+      // Titolo selector lingue
+      const langTitle = document.getElementById('lang-selector-title');
+      if (langTitle) {
+        langTitle.textContent = getTranslation('int.choose.language') || 'Choose language';
+      }
+
+      // Titolo form
       const formTitle = document.getElementById('form-title');
       if (formTitle) {
         formTitle.textContent = isLogin ? getTranslation('int.login') : getTranslation('int.registration');
       }
 
-      // Aggiorna placeholder
+      // Placeholder input
       const usernameInput = document.getElementById('username');
       const passwordInput = document.getElementById('password');
       if (usernameInput) usernameInput.placeholder = getTranslation('int.username');
       if (passwordInput) passwordInput.placeholder = getTranslation('int.password');
 
-      // Aggiorna bottone
+      // Bottone
       const submitBtn = document.getElementById('submit-btn');
       if (submitBtn) {
         submitBtn.textContent = isLogin ? getTranslation('int.signin') : getTranslation('int.create.account');
       }
 
-      // Aggiorna link
+      // Link
       const forgotPassword = document.getElementById('forgot-password');
       const switchForm = document.getElementById('switch-form');
       if (forgotPassword) forgotPassword.textContent = getTranslation('int.forgot.password');
       if (switchForm) {
         switchForm.textContent = isLogin ? getTranslation('int.no.account') : getTranslation('int.have.account');
       }
-
-      // Aggiorna etichetta selettore lingue
-      const langLabel = document.getElementById('int.choose.language');
-      if (langLabel) langLabel.textContent = getTranslation('int.choose.language');
     }
 
-    // Carica tutte le lingue disponibili al primo avvio
-    loadAllAvailableLanguages();
-    
-    // Carica lingua di default e timezone
-    loadTranslations(language);
-    loadTimezones();
-
-    async function checkHealth() {
-      console.log("🏥 Checking service health...");
-      try {
-        const resUser = await fetch(`${apiBaseUser}/health`, { cache: "no-cache" });
-        const resNew = await fetch(`${apiBaseNew}/health`, { cache: "no-cache" });
-        console.log("User service health:", resUser.status, resUser.ok);
-        console.log("New user service health:", resNew.status, resNew.ok);
-        
-        if (!resUser.ok || !resNew.ok) throw new Error("HTTP error");
-        
-        const dataUser = await resUser.json();
-        const dataNew = await resNew.json();
-        console.log("User service data:", dataUser);
-        console.log("New user service data:", dataNew);
-        
-        if (dataUser.status !== "ok" || dataNew.status !== "ok") throw new Error("Service not OK");
-        console.log("✅ All services are healthy");
-      } catch (err) {
-        console.error("❌ Service check failed:", err);
-        document.body.innerHTML = `
-        <div style="display:flex;justify-content:center;align-items:center;height:100vh;">
-          <img src="images/off-line.jpeg" alt="Offline" class="offline">
-        </div>
-      `;
-      }
-    }
-    checkHealth();
-
-    // === LOGIN / REGISTRAZIONE SWITCH ===
-    const switchForm = document.getElementById("switch-form");
-
-    switchForm.addEventListener("click", () => {
+    // ====== SWITCH LOGIN/REGISTRATION ======
+    document.getElementById("switch-form").addEventListener("click", () => {
       isLogin = !isLogin;
       console.log("🔄 Switched form mode to:", isLogin ? "LOGIN" : "REGISTRATION");
       updatePageTranslations();
       document.getElementById("forgot-password").style.display = isLogin ? "block" : "none";
     });
 
-    // === LOGIN / REGISTER ===
+    // ====== HEALTH CHECK ======
+    async function checkHealth() {
+      console.log("🏥 Checking service health...");
+      try {
+        const resUser = await fetch(`${apiBaseUser}/health`, { cache: "no-cache" });
+        const resNew = await fetch(`${apiBaseNew}/health`, { cache: "no-cache" });
+        
+        if (!resUser.ok || !resNew.ok) throw new Error("Service unavailable");
+        
+        const dataUser = await resUser.json();
+        const dataNew = await resNew.json();
+        
+        if (dataUser.status !== "ok" || dataNew.status !== "ok") throw new Error("Service not OK");
+        console.log("✅ All services are healthy");
+      } catch (err) {
+        console.error("❌ Service check failed:", err);
+        document.body.innerHTML = `
+          <div style="display:flex;justify-content:center;align-items:center;height:100vh;">
+            <img src="images/off-line.jpeg" alt="Offline" class="offline">
+          </div>
+        `;
+      }
+    }
+
+    // ====== SUBMIT LOGIN/REGISTRATION ======
     document.getElementById('submit-btn').addEventListener("click", async () => {
-      console.log("\n=== SUBMIT BUTTON CLICKED ===");
-      console.log("Mode:", isLogin ? "LOGIN" : "REGISTRATION");
-      
       const username = document.getElementById("username").value.trim();
       const password = document.getElementById("password").value.trim();
       
-      console.log("Username:", username);
-      console.log("Password:", password ? "***" + password.slice(-2) : "(empty)");
-      console.log("Current language:", language);
-      
       if (!username || !password) {
-        console.warn("⚠️ Missing username or password");
         alert(getTranslation("int.complete.all.fields") || "Please fill in all fields");
         return;
       }
 
       const apiUrl = isLogin ? `${apiBaseUser}/login` : `${apiBaseNew}/create`;
-      const payload = { username, password, language};
-
-      console.log("📤 API URL:", apiUrl);
-      console.log("📤 Payload:", { username, password: "***", language });
+      const payload = { username, password, language };
 
       try {
-        console.log("🌐 Sending fetch request...");
-        console.log("🔍 Testing endpoint reachability first...");
-        
-        // Test preliminare: prova una semplice GET
-        try {
-          const testResponse = await fetch(apiUrl.replace('/login', '/health').replace('/create', '/health'), {
-            method: "GET",
-            mode: "cors"
-          });
-          console.log("✅ Health check response:", testResponse.status);
-        } catch (testErr) {
-          console.error("❌ Health check failed:", testErr.message);
-          console.error("This suggests the server is not reachable or CORS is blocking");
-        }
-        
-        console.log("📤 Now attempting actual request with mode and credentials...");
         const response = await fetch(apiUrl, {
           method: "POST",
           mode: "cors",
@@ -498,108 +473,69 @@
           body: JSON.stringify(payload)
         });
 
-        console.log("📥 Response received:");
-        console.log("  - Status:", response.status);
-        console.log("  - Status Text:", response.statusText);
-        console.log("  - OK:", response.ok);
-        console.log("  - Headers:", [...response.headers.entries()]);
-
         const contentType = response.headers.get("content-type");
-        console.log("  - Content-Type:", contentType);
-        
         let data;
         if (contentType && contentType.includes("application/json")) {
           data = await response.json();
-          console.log("📄 Response data (JSON):", data);
         } else {
           data = await response.text();
-          console.log("📄 Response data (TEXT):", data);
         }
 
         if (response.ok) {
-          console.log("✅ Request successful");
           if (isLogin) {
-            console.log("🔐 Processing login...");
-            
             await loadTranslations(data.language || language);
             if (data.info && (!data.info.email || !data.info.language || !data.info.timezone || !data.info.currency)) {
-              console.log("ℹ️ Missing user info, requesting completion");
               requestMissingInfo(data.info, username, password);
             } else {
-              console.log("✅ User info complete, opening dashboard with language: "+data.language);
               openDashboard(username, data.token, data.language);
             }
           } else {
-            console.log("✅ Registration successful");
-            alert(getTranslation('int.creation.success') || "Account created successfully! Please log in.");
+            alert(getTranslation('int.creation.success') || "Account created successfully!");
             isLogin = true;
             updatePageTranslations();
             document.getElementById("username").value = username;
             document.getElementById("password").value = "";
           }
         } else {
-          console.error("❌ Request failed");
           if (isLogin) {
-            console.error("Login failed with status:", response.status);
             alert(getTranslation('int.login.failed') || "Login failed");
           } else {
-            console.error("Registration failed with status:", response.status);
-            const errorMsg = getTranslation('int.creation.failed') || "Creation failed";
-            const detailMsg = typeof data === 'object' ? (data.message || JSON.stringify(data)) : data;
-            alert(errorMsg + "\n\nStatus: " + response.status + "\nDetails: " + detailMsg);
+            alert(getTranslation('int.creation.failed') || "Registration failed");
           }
         }
       } catch (err) {
-        console.error("❌ Exception caught:", err);
-        console.error("Error name:", err.name);
-        console.error("Error message:", err.message);
-        console.error("Error stack:", err.stack);
-        console.error("Full error object:", err);
-        
-        // Mostra anche nell'alert maggiori dettagli
-        const errorDetails = `
-Name: ${err.name}
-Message: ${err.message}
-Type: ${err.constructor.name}
-        `.trim();
-        
-        alert((getTranslation('int.connection.error') || "Connection error:") + "\n\n" + errorDetails);
+        alert((getTranslation('int.connection.error') || "Connection error") + ": " + err.message);
       }
     });
 
-    // === FORGOT PASSWORD ===
+    // ====== FORGOT PASSWORD ======
     document.getElementById("forgot-password").addEventListener("click", () => {
-      console.log("🔑 Forgot password clicked");
-      const email = prompt(getTranslation('int.enter.email') || "Enter your email to reset password:");
-      console.log("Email entered:", email);
-      if (!email) return;
-      alert(getTranslation('int.reset.email.sent') || "If this email is registered, you will receive a password reset link.");
+      const email = prompt(getTranslation('int.enter.email') || "Enter your email:");
+      if (email) {
+        alert(getTranslation('int.reset.email.sent') || "Email sent!");
+      }
     });
 
-    // === UPDATE INFO E RITORNO AL LOGIN ===
+    // ====== RICHIESTA INFORMAZIONI MANCANTI ======
     function requestMissingInfo(info, username, password) {
-      console.log("📝 Requesting missing info:", info);
       const container = document.getElementById("app-container");
       
-      // Crea le opzioni per le valute
       let currencyOptions = `<option value="">${getTranslation('int.select.currency')}</option>`;
       currencies.forEach(curr => {
         const selected = info.currency === curr.currency ? 'selected' : '';
-        currencyOptions += `<option value="${curr.currency}" ${selected}>${curr['img.currency.flag']} ${curr.currency} - ${curr.description}</option>`;
+        currencyOptions += `<option value="${curr.currency}" ${selected}>${curr['img.currency.flag']} ${curr.currency}</option>`;
       });
       
-      // Crea le opzioni per i timezone
-      let timezoneOptions = `<option value="">${getTranslation('int.select.timezone') || 'Select Timezone'}</option>`;
+      let timezoneOptions = `<option value="">${getTranslation('int.select.timezone')}</option>`;
       timezones.forEach(tz => {
         const selected = info.timezone === tz.timezone ? 'selected' : '';
-        timezoneOptions += `<option value="${tz.timezone}" ${selected}>${tz.timezone} (GMT${tz.offset_from_gmt}) - ${tz.reference_city}</option>`;
+        timezoneOptions += `<option value="${tz.timezone}" ${selected}>${tz.timezone}</option>`;
       });
       
-      // Crea le opzioni per le lingue - AGGIORNATO per usare il grid
       let languageOptions = `<option value="">${getTranslation('int.select.language')}</option>`;
-      languages.forEach(lang => {
+      availableLanguages.forEach(lang => {
         const selected = info.language === lang.code ? 'selected' : '';
-        languageOptions += `<option value="${lang.code}" ${selected}>${lang.flag} ${lang.code} - ${lang.description}</option>`;
+        languageOptions += `<option value="${lang.code}" ${selected}>${lang.flag} ${lang.code}</option>`;
       });
       
       container.innerHTML = `
@@ -610,76 +546,67 @@ Type: ${err.constructor.name}
         </div>
         <div class="input-group">
           <i class="fa fa-language"></i>
-          <select id="language">
-            ${languageOptions}
-          </select>
+          <select id="language">${languageOptions}</select>
         </div>
         <div class="input-group">
           <i class="fa fa-clock"></i>
-          <select id="timezone">
-            ${timezoneOptions}
-          </select>
+          <select id="timezone">${timezoneOptions}</select>
         </div>
         <div class="input-group">
           <i class="fa fa-coins"></i>
-          <select id="currency">
-            ${currencyOptions}
-          </select>
+          <select id="currency">${currencyOptions}</select>
         </div>
         <button id="save-info">${getTranslation('int.update')}</button>
       `;
 
       document.getElementById("save-info").addEventListener("click", async () => {
-        console.log("💾 Save info clicked");
         const email = document.getElementById("email").value.trim();
-        const language = document.getElementById("language").value.trim();
+        const lang = document.getElementById("language").value.trim();
         const currency = document.getElementById("currency").value.trim();
-        const timezone = document.getElementById("timezone").value.trim();
+        const tz = document.getElementById("timezone").value.trim();
 
-        console.log("Data to save:", { email, language, currency, timezone });
-
-        if (!email || !language || !currency || !timezone) {
-          console.warn("⚠️ Incomplete fields");
-          alert(getTranslation('int.complete.all.fields') || "Please complete all fields.");
+        if (!email || !lang || !currency || !tz) {
+          alert(getTranslation('int.complete.all.fields'));
           return;
         }
 
         try {
-          console.log("📤 Sending update request...");
           const response = await fetch(`${apiBaseUser}/update`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ username, password, email, language, currency, timezone })
+            body: JSON.stringify({ username, password, email, language: lang, currency, timezone: tz })
           });
 
-          console.log("Update response status:", response.status);
           const data = await response.json();
-          console.log("Update response data:", data);
-
           if (response.ok && data.status === "ok") {
-            console.log("✅ Info saved successfully");
-            alert(getTranslation('int.info.saved') || "Information saved successfully! Please log in again.");
+            alert(getTranslation('int.info.saved'));
             window.location.href = "index.html";
           } else {
-            console.error("❌ Update failed");
-            alert((getTranslation("int.error.update") || "Update failed: ") + data.message);
+            alert(getTranslation("int.error.update"));
           }
         } catch (err) {
-          console.error("❌ Error saving info:", err);
-          alert((getTranslation("int.error.saving") || "Error saving info: ") + err.message);
+          alert(getTranslation("int.error.saving"));
         }
       });
     }
 
-    function openDashboard(username, token, language) {
-      console.log("🚪 Opening dashboard for user:", username);
-      console.log("Token:", token ? "***" + token.slice(-10) : "(none)");
+    // ====== APERTURA DASHBOARD ======
+    function openDashboard(username, token, lang) {
       localStorage.setItem("username", username);
       localStorage.setItem("token", token);
-      localStorage.setItem("language", language);
-      console.log("✅ Data saved to localStorage");
+      localStorage.setItem("language", lang);
       window.location.href = "dashboard.html";
     }
+
+    // ====== INIZIALIZZAZIONE ======
+    async function init() {
+      await discoverAvailableLanguages();
+      await loadTranslations(language);
+      updatePageTranslations();
+      checkHealth();
+    }
+
+    init();
   </script>
 </body>
 
