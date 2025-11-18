@@ -563,9 +563,10 @@
             document.getElementById('mainContent').style.display = 'block';
             
             // Carica le traduzioni
+            console.log("dashboard.html: set language: "+language);
             TranslationManager.loadTranslations(language || credentials.language).then(() => {
                 updatePageTranslations();
-                console.log("dashboard.html: updated translations:", {language});
+                console.log("dashboard.html: updated translations");
             });
             
             console.log("✅ Authentication verified");
@@ -1099,9 +1100,9 @@
             console.log("=== FinEst Dashboard Started ===");
             
             if (checkAuthentication()) {
-                console.log("✅ User authenticated");
+                console.log("✅ User authenticated. Language: "+ language);
                 loadMenu();
-                loadReports(language);
+                loadReports(language || credentials.language);
                 
                 // Auto-espandi le sezioni principali
                 document.querySelectorAll('.collapsible-header').forEach(header => {

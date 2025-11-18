@@ -167,6 +167,7 @@
     let translations = {};
     let currencies = [];
     let timezones = [];
+    let languages = [];
     let isLogin = true;
 
     console.log("=== FinEst Login v0.29 - Debug Mode ===");
@@ -184,6 +185,8 @@
         
         // Carica le valute per la lingua corrente
         await loadCurrencies(lang);
+        // Carica le lingue per la lingua corrente
+        await loadLanguages(lang);
         
         updatePageTranslations();
       } catch (error) {
@@ -216,6 +219,22 @@
       } catch (error) {
         console.error('❌ Errore caricamento timezone:', error);
         timezones = [];
+      }
+    }
+
+    // Caricamento lingue specifiche per lingua
+    async function loadLanguages(lang) {
+      console.log("🗣️ Loading languages for:", lang);
+      try {
+        const response = await fetch(`lang/${lang}.json`);
+        if (!response.ok) throw new Error("Language loading error");
+        const data = await response.json();
+        // Estrai solo gli elementi che hanno la struttura lingua (language, description, img.language.flag)
+        languages = Array.isArray(data) ? data : [];
+        console.log("✅ Languages loaded:", languages.length);
+      } catch (error) {
+        console.error('❌ Errore caricamento lingue:', error);
+        languages = [];
       }
     }
 
@@ -453,6 +472,13 @@ Type: ${err.constructor.name}
         timezoneOptions += `<option value="${tz.timezone}" ${selected}>${tz.timezone} (GMT${tz.offset_from_gmt}) - ${tz.reference_city}</option>`;
       });
       
+      // Crea le opzioni per le lingue
+      let languageOptions = `<option value="">${getTranslation('int.select.language')}</option>`;
+      languages.forEach(lang => {
+        const selected = info.language === lang.language ? 'selected' : '';
+        languageOptions += `<option value="${lang.language}" ${selected}>${lang['img.language.flag']} ${lang.language} - ${lang.description}</option>`;
+      });
+      
       container.innerHTML = `
         <h2>${getTranslation('int.complete.profile')}</h2>
         <div class="input-group">
@@ -462,10 +488,7 @@ Type: ${err.constructor.name}
         <div class="input-group">
           <i class="fa fa-language"></i>
           <select id="language">
-            <option value="">${getTranslation('int.select.language')}</option>
-            <option value="en_UK" ${info.language === 'en_UK' ? 'selected' : ''}>English</option>
-            <option value="it_IT" ${info.language === 'it_IT' ? 'selected' : ''}>Italiano</option>
-            <option value="fr_FR" ${info.language === 'fr_FR' ? 'selected' : ''}>Français</option>
+            ${languageOptions}
           </select>
         </div>
         <div class="input-group">
