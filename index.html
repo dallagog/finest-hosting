@@ -25,20 +25,64 @@
       z-index: 1000;
     }
 
-    .language-selector select {
-      padding: 8px 12px;
-      border: 2px solid #007bff;
-      border-radius: 6px;
-      background: white;
-      cursor: pointer;
+    .language-selector-label {
       font-size: 14px;
-      outline: none;
-      transition: 0.3s;
+      color: #555;
+      margin-bottom: 8px;
+      display: block;
     }
 
-    .language-selector select:hover {
-      border-color: #0056b3;
+    .language-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+      gap: 8px;
+      background: white;
+      padding: 12px;
+      border-radius: 8px;
+      border: 2px solid #007bff;
       box-shadow: 0 2px 8px rgba(0, 123, 255, 0.2);
+      max-width: 400px;
+    }
+
+    .language-option {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 12px 8px;
+      border: 2px solid #ddd;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: 0.3s;
+      text-align: center;
+      font-size: 12px;
+    }
+
+    .language-option:hover {
+      border-color: #007bff;
+      background: #f0f7ff;
+    }
+
+    .language-option.active {
+      border-color: #007bff;
+      background: #007bff;
+      color: white;
+    }
+
+    .language-flag {
+      font-size: 32px;
+      margin-bottom: 4px;
+    }
+
+    .language-code {
+      font-weight: bold;
+      font-size: 13px;
+      margin-bottom: 2px;
+    }
+
+    .language-description {
+      font-size: 11px;
+      opacity: 0.8;
     }
 
     .container {
@@ -129,16 +173,8 @@
 <body>
   <!-- Selettore lingua in alto a destra -->
   <div class="language-selector">
-    <label for="languageSelector" id="int.choose.language"></label>
-    <select id="languageSelector">
-      <option value="en_UK">🇬🇧 English</option>
-      <option value="it_IT">🇮🇹 Italiano</option>
-      <option value="de_DE">🇩🇪 Deutsch</option>
-      <option value="fr_FR">🇫🇷 Français</option>
-      <option value="es_ES">🇪🇸 Español</option>
-      <option value="zh_CN">🇨🇳 中文</option>
-      <option value="ar_SA">🇸🇦 العربية</option>
-    </select>
+    <label class="language-selector-label" id="int.choose.language">Choose language</label>
+    <div class="language-grid" id="languageGrid"></div>
   </div>
 
   <div class="container" id="app-container">
@@ -163,7 +199,7 @@
     const apiBaseNew = "https://new-user-tunnel.fe-web.eu";
     const apiBaseUser = "https://user-tunnel.fe-web.eu";
 
-    let language= 'en_UK';
+    let language = 'en_UK';
     let translations = {};
     let currencies = [];
     let timezones = [];
@@ -222,7 +258,7 @@
       }
     }
 
-    // Caricamento lingue specifiche per lingua
+    // Caricamento lingue specifiche per lingua - AGGIORNATO
     async function loadLanguages(lang) {
       console.log("🗣️ Loading languages for:", lang);
       try {
@@ -232,10 +268,97 @@
         // Estrai solo gli elementi che hanno la struttura lingua (language, description, img.language.flag)
         languages = Array.isArray(data) ? data : [];
         console.log("✅ Languages loaded:", languages.length);
+        updateLanguageGrid();
       } catch (error) {
         console.error('❌ Errore caricamento lingue:', error);
         languages = [];
       }
+    }
+
+    // Carica tutte le lingue disponibili dalla cartella /lang
+    async function loadAllAvailableLanguages() {
+      console.log("🗣️ Loading all available languages from /lang...");
+      languages = [];
+      
+      try {
+        // Recupera l'elenco dei file dalla cartella /lang (richiede supporto server)
+        const response = await fetch('lang/');
+        if (!response.ok) {
+          console.error("❌ Cannot access lang directory, status:", response.status);
+          throw new Error("Directory listing not available");
+        }
+        
+        const html = await response.text();
+        // Estrai i file .json dal listing HTML (pattern per Apache, Nginx, etc.)
+        const fileRegex = /(?:href|name)=["']?([a-zA-Z0-9_]+\.json)["']?/gi;
+        const files = new Set();
+        let match;
+        
+        while ((match = fileRegex.exec(html)) !== null) {
+          files.add(match[1]);
+        }
+        
+        if (files.size === 0) {
+          throw new Error("No JSON files found in directory listing");
+        }
+        
+        console.log("📁 Found language files:", Array.from(files));
+        
+        // Carica ogni file di lingua trovato
+        for (const file of files) {
+          if (!file.endsWith('.json')) continue;
+          
+          try {
+            const langResponse = await fetch(`lang/${file}`);
+            if (!langResponse.ok) continue;
+            const data = await langResponse.json();
+            
+            if (data['int.language.code'] && data['int.language.description'] && data['img.language.flag']) {
+              languages.push({
+                code: data['int.language.code'],
+                description: data['int.language.description'],
+                flag: data['img.language.flag']
+              });
+            }
+          } catch (error) {
+            console.error(`Error loading language file ${file}:`, error);
+          }
+        }
+        
+        if (languages.length === 0) {
+          throw new Error("No valid language files loaded");
+        }
+        
+      } catch (error) {
+        console.error("❌ Error loading languages:", error.message);
+        console.warn("⚠️ Unable to load language list from /lang directory");
+      }
+      
+      console.log("✅ All available languages loaded:", languages.length);
+      updateLanguageGrid();
+    }
+
+    // Aggiorna la griglia delle lingue
+    function updateLanguageGrid() {
+      const grid = document.getElementById('languageGrid');
+      grid.innerHTML = '';
+      
+      languages.forEach(lang => {
+        const option = document.createElement('div');
+        option.className = `language-option ${lang.code === language ? 'active' : ''}`;
+        option.innerHTML = `
+          <div class="language-flag">${lang.flag || '🌐'}</div>
+          <div class="language-code">${lang.code}</div>
+          <div class="language-description">${lang.description || ''}</div>
+        `;
+        option.addEventListener('click', () => {
+          console.log("🌍 Language changed to:", lang.code);
+          language = lang.code;
+          loadTranslations(language);
+          updateLanguageGrid();
+        });
+        grid.appendChild(option);
+      });
     }
 
     function getTranslation(key) {
@@ -272,15 +395,15 @@
       if (switchForm) {
         switchForm.textContent = isLogin ? getTranslation('int.no.account') : getTranslation('int.have.account');
       }
+
+      // Aggiorna etichetta selettore lingue
+      const langLabel = document.getElementById('int.choose.language');
+      if (langLabel) langLabel.textContent = getTranslation('int.choose.language');
     }
 
-    // Cambio lingua
-    document.getElementById('languageSelector').addEventListener('change', (e) => {
-      console.log("🌍 Language changed to:", e.target.value);
-      language = e.target.value;
-      loadTranslations(language);
-    });
-
+    // Carica tutte le lingue disponibili al primo avvio
+    loadAllAvailableLanguages();
+    
     // Carica lingua di default e timezone
     loadTranslations(language);
     loadTimezones();
@@ -472,11 +595,11 @@ Type: ${err.constructor.name}
         timezoneOptions += `<option value="${tz.timezone}" ${selected}>${tz.timezone} (GMT${tz.offset_from_gmt}) - ${tz.reference_city}</option>`;
       });
       
-      // Crea le opzioni per le lingue
+      // Crea le opzioni per le lingue - AGGIORNATO per usare il grid
       let languageOptions = `<option value="">${getTranslation('int.select.language')}</option>`;
       languages.forEach(lang => {
-        const selected = info.language === lang.language ? 'selected' : '';
-        languageOptions += `<option value="${lang.language}" ${selected}>${lang['img.language.flag']} ${lang.language} - ${lang.description}</option>`;
+        const selected = info.language === lang.code ? 'selected' : '';
+        languageOptions += `<option value="${lang.code}" ${selected}>${lang.flag} ${lang.code} - ${lang.description}</option>`;
       });
       
       container.innerHTML = `
