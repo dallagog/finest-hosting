@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>FinEst, ver. 0.30 beta</title>
+  <title>FinEst, ver. 0.31 beta</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
   <style>
     body {
@@ -212,58 +212,85 @@
 
     console.log("=== FinEst Login v0.29 ===");
 
-    // Leggi file manifest con elenco lingue
-    async function loadLanguageManifest() {
-      console.log("📋 Loading language manifest...");
+    // Scopri i file di lingua dalla cartella /lang leggendo l'HTML del directory listing
+    async function discoverLanguageFiles() {
+      console.log("🔍 Discovering language files from /lang...");
+      const langFiles = [];
+
       try {
-        const response = await fetch('lang/manifest.json');
-        if (!response.ok) throw new Error("Manifest not found");
-        const manifest = await response.json();
-        console.log("✅ Manifest loaded:", manifest.languages);
-        return manifest.languages || [];
+        const response = await fetch('lang/');
+        if (!response.ok) {
+          console.error("Cannot access /lang directory");
+          return langFiles;
+        }
+
+        const html = await response.text();
+        console.log("📁 Directory listing fetched");
+
+        // Regex per trovare file con pattern xx_YY.json (es: it_IT.json, en_UK.json)
+        const regex = /([a-z]{2}_[A-Z]{2})\.json/g;
+        let match;
+
+        while ((match = regex.exec(html)) !== null) {
+          const fileName = match[0];
+          if (!langFiles.includes(fileName)) {
+            langFiles.push(fileName);
+          }
+        }
+
+        console.log("📄 Found language files:", langFiles);
       } catch (error) {
-        console.error("❌ Error loading manifest:", error);
-        return [];
+        console.error("Error discovering language files:", error);
       }
+
+      return langFiles;
     }
 
-    // Carica file di lingua
-    async function loadLanguageFile(langCode) {
+    // Carica un singolo file di lingua
+    async function loadLanguageFile(fileName) {
       try {
-        const response = await fetch(`lang/${langCode}.json`);
-        if (!response.ok) throw new Error(`File not found: ${langCode}.json`);
-        
+        const response = await fetch(`lang/${fileName}`);
+        if (!response.ok) {
+          console.warn(`File not found: lang/${fileName}`);
+          return null;
+        }
+
         const data = await response.json();
-        
+
+        // Verifica i campi richiesti
         if (data['int.language.code'] && data['int.language.description'] && data['img.language.flag']) {
           return {
             code: data['int.language.code'],
             description: data['int.language.description'],
             flag: data['img.language.flag']
           };
+        } else {
+          console.warn(`Invalid structure in ${fileName}`);
+          return null;
         }
       } catch (error) {
-        console.error(`Error loading ${langCode}.json:`, error);
+        console.error(`Error loading ${fileName}:`, error);
+        return null;
       }
-      return null;
     }
 
     // Inizializza le lingue
     async function initializeLanguages() {
       console.log("🌍 Initializing languages...");
-      
-      const langCodes = await loadLanguageManifest();
-      
-      for (const code of langCodes) {
-        const langData = await loadLanguageFile(code);
+
+      const langFiles = await discoverLanguageFiles();
+
+      for (const fileName of langFiles) {
+        const langData = await loadLanguageFile(fileName);
         if (langData) {
           availableLanguages.push(langData);
+          console.log(`✅ Language loaded: ${langData.code}`);
         }
       }
 
       availableLanguages.sort((a, b) => a.code.localeCompare(b.code));
       console.log("✅ Languages initialized:", availableLanguages.length);
-      
+
       updateLanguageGrid();
     }
 
@@ -271,6 +298,11 @@
     function updateLanguageGrid() {
       const grid = document.getElementById('languageGrid');
       grid.innerHTML = '';
+
+      if (availableLanguages.length === 0) {
+        grid.innerHTML = '<div style="padding: 20px; color: #999; grid-column: 1/-1;">No languages available</div>';
+        return;
+      }
 
       availableLanguages.forEach(lang => {
         const option = document.createElement('div');
@@ -302,7 +334,7 @@
         if (!response.ok) throw new Error("Translation file not found");
         translations = await response.json();
         console.log("✅ Translations loaded");
-        
+
         await loadCurrencies(lang);
         await loadTimezones();
       } catch (error) {
@@ -375,7 +407,7 @@
       try {
         const resUser = await fetch(`${apiBaseUser}/health`, { cache: "no-cache" });
         const resNew = await fetch(`${apiBaseNew}/health`, { cache: "no-cache" });
-        
+
         if (!resUser.ok || !resNew.ok) throw new Error("Services unavailable");
         console.log("✅ Services healthy");
       } catch (err) {
@@ -388,7 +420,7 @@
     document.getElementById('submit-btn').addEventListener("click", async () => {
       const username = document.getElementById("username").value.trim();
       const password = document.getElementById("password").value.trim();
-      
+
       if (!username || !password) {
         alert(getTranslation("int.complete.all.fields") || "Please fill in all fields");
         return;
@@ -446,22 +478,22 @@
     // Richiesta info mancanti
     function requestMissingInfo(info, username, password) {
       const container = document.getElementById("app-container");
-      
+
       let currencyOptions = `<option value="">${getTranslation('int.select.currency')}</option>`;
       currencies.forEach(curr => {
         currencyOptions += `<option value="${curr.currency}">${curr['img.currency.flag']} ${curr.currency}</option>`;
       });
-      
+
       let timezoneOptions = `<option value="">${getTranslation('int.select.timezone')}</option>`;
       timezones.forEach(tz => {
         timezoneOptions += `<option value="${tz.timezone}">${tz.timezone}</option>`;
       });
-      
+
       let languageOptions = `<option value="">${getTranslation('int.select.language')}</option>`;
       availableLanguages.forEach(lang => {
         languageOptions += `<option value="${lang.code}">${lang.flag} ${lang.code}</option>`;
       });
-      
+
       container.innerHTML = `
         <h2>${getTranslation('int.complete.profile')}</h2>
         <div class="input-group">
