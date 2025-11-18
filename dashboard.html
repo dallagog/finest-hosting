@@ -76,14 +76,22 @@
             display: flex;
             gap: 20px;
             margin-bottom: 20px;
+            flex-wrap: wrap;
         }
 
         #filters-column {
-            flex: 0 0 350px;
+            flex: 1;
+            min-width: 280px;
+        }
+
+        #reports-column {
+            flex: 1;
+            min-width: 280px;
         }
 
         #menu-column {
             flex: 1;
+            min-width: 280px;
         }
 
         .collapsible-container {
@@ -286,6 +294,7 @@
             border-radius: 6px;
             overflow: hidden;
             background: white;
+            display: none;
         }
 
         .pdf-header {
@@ -376,13 +385,6 @@
             content: "📄";
             margin-right: 8px;
         }
-
-        .controls {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 20px;
-            flex-wrap: wrap;
-        }
     </style>
 </head>
 <body>
@@ -406,10 +408,12 @@
         </div>
 
         <div id="mainContent" style="display: none;">
+            <div id="message" class="message"></div>
+
+            <!-- TRE MENU AFFIANCATI -->
             <div id="columns">
-                <!-- FILTRI A SINISTRA -->
+                <!-- FILTRI -->
                 <div id="filters-column">
-                    <!-- Filtri Periodo -->
                     <div class="collapsible-container">
                         <div class="collapsible-header" onclick="toggleCollapsible(this)">
                             <h2 id="filtersPeriodTitle">Filtri Periodo</h2>
@@ -444,8 +448,10 @@
                             <button id="apply-filters">Applica Filtri</button>
                         </div>
                     </div>
+                </div>
 
-                    <!-- Rapporti -->
+                <!-- RAPPORTI -->
+                <div id="reports-column">
                     <div class="collapsible-container">
                         <div class="collapsible-header" onclick="toggleCollapsible(this)">
                             <h2 id="reportsTitle">Rapporti</h2>
@@ -459,7 +465,7 @@
                     </div>
                 </div>
 
-                <!-- MENU A DESTRA -->
+                <!-- MENU -->
                 <div id="menu-column">
                     <div class="collapsible-container">
                         <div class="collapsible-header" onclick="toggleCollapsible(this)">
@@ -473,8 +479,7 @@
                 </div>
             </div>
 
-            <div id="message" class="message"></div>
-
+            <!-- TABELLA ACCOUNT -->
             <div class="table-container" id="tableContainer" style="display: none;">
                 <table id="accountTable">
                     <thead>
@@ -499,9 +504,10 @@
                 </table>
             </div>
 
-            <div class="pdf-viewer" id="pdfViewer" style="display: none;">
+            <!-- PDF VIEWER IN BASSO -->
+            <div class="pdf-viewer" id="pdfViewer">
                 <div class="pdf-header">
-                    <h3>Report PDF</h3>
+                    <h3>Report PDF - template.pdf</h3>
                     <button onclick="downloadPDF()">
                         <i class="fa fa-download"></i> Download PDF
                     </button>
@@ -538,7 +544,7 @@
 
         // Verifica autenticazione
         function checkAuthentication() {
-            console.log("🔐 Checking authentication...");
+            console.log("🔍 Checking authentication...");
             
             const username = localStorage.getItem("username");
             const token = localStorage.getItem("token");
@@ -546,12 +552,12 @@
 
             console.log("dashboard.html: retrieved from localStorage:", { username, token: token ? "***" + token.slice(-10) : null, language });
 
-            if (!username || !token) {
-                console.error("❌ Missing credentials in localStorage");
-                document.getElementById('authCheck').style.display = 'block';
-                document.getElementById('mainContent').style.display = 'none';
-                return false;
-            }
+            //if (!username || !token) {
+            //    console.error("❌ Missing credentials in localStorage");
+            //    document.getElementById('authCheck').style.display = 'block';
+            //    document.getElementById('mainContent').style.display = 'none';
+            //    return false;
+            //}
 
             credentials.username = username;
             credentials.token = token;
@@ -563,8 +569,8 @@
             document.getElementById('mainContent').style.display = 'block';
             
             // Carica le traduzioni
-            console.log("dashboard.html: set language: "+language);
-            TranslationManager.loadTranslations(language || credentials.language).then(() => {
+            console.log("dashboard.html: set language: " + credentials.language);
+            TranslationManager.loadTranslations(credentials.language).then(() => {
                 updatePageTranslations();
                 console.log("dashboard.html: updated translations");
             });
@@ -676,7 +682,7 @@
         }
 
         function redirectToLogin() {
-            console.log("🔄 Redirecting to login page");
+            console.log("📄 Redirecting to login page");
             localStorage.clear();
             window.location.href = "index.html";
         }
@@ -694,12 +700,12 @@
         }
 
         // Carica elenco rapporti
-        async function loadReports(language) {
+        async function loadReports() {
             try {
                 const payload = {
                     username: credentials.username,
                     token: credentials.token,
-                    language: (language || credentials.language)
+                    language: credentials.language
                 };
                 
                 console.log('📤 POST /getaccounts for reports list');
@@ -763,7 +769,6 @@
                 
                 li.addEventListener('click', () => {
                     showMessage(`Apertura rapporto: ${reportName}`, 'success');
-                    // Qui puoi aggiungere la logica per visualizzare il rapporto specifico
                 });
                 
                 ul.appendChild(li);
@@ -788,7 +793,7 @@
                 const payload = {
                     username: credentials.username,
                     token: credentials.token,
-                    language: language || credentials.language
+                    language: credentials.language
                 };
                 
                 console.log('📤 POST /getaccounts');
@@ -826,7 +831,6 @@
                     
                     showMessage(`${accountCount} account caricati con successo`, 'success');
                     
-                    // Ricarica anche l'elenco rapporti
                     renderReportsList(accountsData);
                 } else {
                     showMessage(data.message || 'Errore nel caricamento degli account', 'error');
@@ -879,7 +883,7 @@
         }
 
         function updateSelectedCount() {
-            // Funzione mantenuta per compatibilità ma non più utilizzata nell'UI
+            // Funzione mantenuta per compatibilità
         }
 
         function selectAll() {
@@ -900,7 +904,7 @@
                 const payload = {
                     username: credentials.username,
                     token: credentials.token,
-                    language: language || credentials.language
+                    language: credentials.language
                 };
                 
                 console.log('📤 POST /getreport');
@@ -989,7 +993,7 @@
                 const url = URL.createObjectURL(pdfBlob);
                 const a = document.createElement('a');
                 a.href = url;
-                a.download = 'report_' + new Date().toISOString().split('T')[0] + '.pdf';
+                a.download = 'template.pdf';
                 document.body.appendChild(a);
                 a.click();
                 document.body.removeChild(a);
@@ -1007,7 +1011,7 @@
                 const payload = {
                     username: credentials.username,
                     token: credentials.token,
-                    language: language || credentials.language
+                    language: credentials.language
                 };
 
                 const response = await fetch(`${API_URL}/logout`, {
@@ -1053,7 +1057,6 @@
                             const li = document.createElement('li');
 
                             const link = document.createElement('a');
-                            // Traduce la descrizione usando la chiave come fallback
                             const translatedDesc = getTranslation(item.description);
                             link.textContent = translatedDesc !== item.description ? translatedDesc : item.description;
                             link.href = item.html;
@@ -1100,9 +1103,10 @@
             console.log("=== FinEst Dashboard Started ===");
             
             if (checkAuthentication()) {
-                console.log("✅ User authenticated. Language: "+ language);
+                console.log("✅ User authenticated. Language: " + credentials.language);
                 loadMenu();
-                loadReports(language || credentials.language);
+                loadReports();
+                loadPDF();
                 
                 // Auto-espandi le sezioni principali
                 document.querySelectorAll('.collapsible-header').forEach(header => {
