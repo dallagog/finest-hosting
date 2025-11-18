@@ -165,9 +165,11 @@
 
     let language= 'en_UK';
     let translations = {};
+    let currencies = [];
+    let timezones = [];
     let isLogin = true;
 
-    console.log("=== FinEst Login v0.24 - Debug Mode ===");
+    console.log("=== FinEst Login v0.29 - Debug Mode ===");
     console.log("Initial language:", language);
 
     // Caricamento traduzioni dai file JSON
@@ -179,9 +181,41 @@
         if (!response.ok) throw new Error((getTranslation("int.error.loading") || "Loading error:") + lang);
         translations = await response.json();
         console.log("✅ Translations loaded successfully:", Object.keys(translations).length, "keys");
+        
+        // Carica le valute per la lingua corrente
+        await loadCurrencies(lang);
+        
         updatePageTranslations();
       } catch (error) {
         console.error('❌ Errore caricamento traduzioni:', error);
+      }
+    }
+
+    // Caricamento valute specifiche per lingua
+    async function loadCurrencies(lang) {
+      console.log("💰 Loading currencies for:", lang);
+      try {
+        const response = await fetch(`currency/${lang}.json`);
+        if (!response.ok) throw new Error("Currency loading error");
+        currencies = await response.json();
+        console.log("✅ Currencies loaded:", currencies.length);
+      } catch (error) {
+        console.error('❌ Errore caricamento valute:', error);
+        currencies = [];
+      }
+    }
+
+    // Caricamento timezone
+    async function loadTimezones() {
+      console.log("🌍 Loading timezones...");
+      try {
+        const response = await fetch(`timezone/timezone.json`);
+        if (!response.ok) throw new Error("Timezone loading error");
+        timezones = await response.json();
+        console.log("✅ Timezones loaded:", timezones.length);
+      } catch (error) {
+        console.error('❌ Errore caricamento timezone:', error);
+        timezones = [];
       }
     }
 
@@ -228,8 +262,9 @@
       loadTranslations(language);
     });
 
-    // Carica lingua di default
+    // Carica lingua di default e timezone
     loadTranslations(language);
+    loadTimezones();
 
     async function checkHealth() {
       console.log("🏥 Checking service health...");
@@ -342,9 +377,6 @@
         if (response.ok) {
           console.log("✅ Request successful");
           if (isLogin) {
-            if (isLogin) {
-              language = data.language
-            }
             console.log("🔐 Processing login...");
             
             await loadTranslations(data.language || language);
@@ -352,7 +384,7 @@
               console.log("ℹ️ Missing user info, requesting completion");
               requestMissingInfo(data.info, username, password);
             } else {
-              console.log("✅ User info complete, opening dashboard");
+              console.log("✅ User info complete, opening dashboard with language: "+data.language);
               openDashboard(username, data.token, data.language);
             }
           } else {
@@ -406,6 +438,21 @@ Type: ${err.constructor.name}
     function requestMissingInfo(info, username, password) {
       console.log("📝 Requesting missing info:", info);
       const container = document.getElementById("app-container");
+      
+      // Crea le opzioni per le valute
+      let currencyOptions = `<option value="">${getTranslation('int.select.currency')}</option>`;
+      currencies.forEach(curr => {
+        const selected = info.currency === curr.currency ? 'selected' : '';
+        currencyOptions += `<option value="${curr.currency}" ${selected}>${curr['img.currency.flag']} ${curr.currency} - ${curr.description}</option>`;
+      });
+      
+      // Crea le opzioni per i timezone
+      let timezoneOptions = `<option value="">${getTranslation('int.select.timezone') || 'Select Timezone'}</option>`;
+      timezones.forEach(tz => {
+        const selected = info.timezone === tz.timezone ? 'selected' : '';
+        timezoneOptions += `<option value="${tz.timezone}" ${selected}>${tz.timezone} (GMT${tz.offset_from_gmt}) - ${tz.reference_city}</option>`;
+      });
+      
       container.innerHTML = `
         <h2>${getTranslation('int.complete.profile')}</h2>
         <div class="input-group">
@@ -422,27 +469,15 @@ Type: ${err.constructor.name}
           </select>
         </div>
         <div class="input-group">
-          <i class="fa fa-timezone"></i>
+          <i class="fa fa-clock"></i>
           <select id="timezone">
-            <option value="">${getTranslation('int.select.timezone') || 'Select Timezone'}</option>
-            <option value="UTC" ${info.timezone === 'UTC' ? 'selected' : ''}>UTC (GMT+0)</option>
-            <option value="CET" ${info.timezone === 'CET' ? 'selected' : ''}>CET (GMT+1)</option>
-            <option value="CEST" ${info.timezone === 'CEST' ? 'selected' : ''}>CEST (GMT+2)</option>
-            <option value="EST" ${info.timezone === 'EST' ? 'selected' : ''}>EST (GMT-5)</option>
-            <option value="EDT" ${info.timezone === 'EDT' ? 'selected' : ''}>EDT (GMT-4)</option>
-            <option value="PST" ${info.timezone === 'PST' ? 'selected' : ''}>PST (GMT-8)</option>
-            <option value="PDT" ${info.timezone === 'PDT' ? 'selected' : ''}>PDT (GMT-7)</option>
-            <option value="JST" ${info.timezone === 'JST' ? 'selected' : ''}>JST (GMT+9)</option>
-            <option value="AEST" ${info.timezone === 'AEST' ? 'selected' : ''}>AEST (GMT+10)</option>
-            <option value="NZST" ${info.timezone === 'NZST' ? 'selected' : ''}>NZST (GMT+12)</option>          </select>
+            ${timezoneOptions}
+          </select>
         </div>
         <div class="input-group">
           <i class="fa fa-coins"></i>
           <select id="currency">
-            <option value="">${getTranslation('int.select.currency')}</option>
-            <option value="EUR" ${info.currency === 'EUR' ? 'selected' : ''}>EUR</option>
-            <option value="USD" ${info.currency === 'USD' ? 'selected' : ''}>USD</option>
-            <option value="GBP" ${info.currency === 'GBP' ? 'selected' : ''}>GBP</option>
+            ${currencyOptions}
           </select>
         </div>
         <button id="save-info">${getTranslation('int.update')}</button>
