@@ -222,7 +222,7 @@
     <script>
         const API_URL = "https://feweb-tunnel.fe-web.eu";
         let filterData = null; // conterrà l'intero filter.json caricato da /getfilter
-        let credentials = { username: '', token: '', language: '' };
+        let credentials = { username: '', token: '', language: '', filter: '' };
         let pdfBase64 = null;
 
         // Toggle collapsible
@@ -250,6 +250,7 @@
             const username = localStorage.getItem("username");
             const token = localStorage.getItem("token");
             const language = localStorage.getItem("language") || 'it_IT';
+            const filter = localStorage.getItem("filter");
 
             //if (!username || !token) {
             //    document.getElementById('authCheck').style.display = 'block';
@@ -260,6 +261,7 @@
             credentials.username = username;
             credentials.token = token;
             credentials.language = language;
+            credentials.filter = filter;
 
             document.getElementById('usernameDisplay').textContent = username;
             document.getElementById('headerBar').style.display = 'flex';
@@ -340,7 +342,8 @@
                 const payload = {
                     username: credentials.username,
                     token: credentials.token,
-                    language: credentials.language
+                    language: credentials.language,
+                    filter: credentials.filter
                 };
 
                 console.log('📤 POST /getfilter', payload);
@@ -566,7 +569,8 @@
                 const payload = {
                     username: credentials.username,
                     token: credentials.token,
-                    language: credentials.language
+                    language: credentials.language,
+                    filter: credentials.filter
                 };
 
                 const response = await fetch(`${API_URL}/getreport`, {
@@ -635,7 +639,7 @@
 
         async function logout() {
             try {
-                const payload = { username: credentials.username, token: credentials.token, language: credentials.language };
+                const payload = { username: credentials.username, token: credentials.token, language: credentials.language, filter: credentials.filter };
                 const response = await fetch(`${API_URL}/logout`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
