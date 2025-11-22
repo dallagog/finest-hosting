@@ -724,12 +724,20 @@
 
                 showMessage(getTranslation('int.sending.filters') || 'Invio filtri al server...', 'loading');
 
-                console.log('📤 POST /putfilter', filterData);
+                // AGGIUNGI LE CREDENZIALI AL PAYLOAD
+                const payload = {
+                    ...filterData,
+                    username: credentials.username,
+                    token: credentials.token,
+                    language: credentials.language
+                };
+
+                console.log('📤 POST /putfilter', payload);
 
                 const response = await fetch(`${API_URL}/putfilter`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(filterData)
+                    body: JSON.stringify(payload)
                 });
 
                 console.log('📥 status', response.status);
