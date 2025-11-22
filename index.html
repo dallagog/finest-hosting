@@ -232,7 +232,7 @@
         }
       }
 
-      availableLanguages.sort((a, b) => a.code.localeCompare(b.code));
+      // Mantieni l'ordine dal manifest (non ordinare alfabeticamente)
       console.log("✅ Languages initialized:", availableLanguages.length);
     }
 
@@ -309,7 +309,7 @@
 
     // Aggiorna traduzioni pagina
     function updatePageTranslations() {
-      console.log("🔄 Updating page translations for language:", language);
+      console.log("📄 Updating page translations for language:", language);
 
       const formTitle = document.getElementById('form-title');
       if (formTitle) {
@@ -340,6 +340,7 @@
       
       language = langCode;
       
+      // Carica SEMPRE le traduzioni, anche se è la stessa lingua
       await loadTranslations(langCode);
       updateLanguageCombo();
       updatePageTranslations();
@@ -347,14 +348,24 @@
       console.log("✅ Language changed successfully to", langCode);
     }
 
-    // Event listener per combobox lingue
-    document.getElementById('languageCombo').addEventListener('change', async (e) => {
+    // Event listener per combobox lingue - usa 'input' per catturare anche i clic sulla stessa opzione
+    document.getElementById('languageCombo').addEventListener('input', async (e) => {
       const selectedLang = e.target.value;
-      console.log("🔄 Language selector changed to:", selectedLang);
+      console.log("📝 Language selector changed to:", selectedLang);
       
       if (selectedLang) {
         await changeLanguage(selectedLang);
       }
+    });
+    
+    // Fallback con 'click' per assicurare che catturi sempre la selezione
+    document.getElementById('languageCombo').addEventListener('click', async (e) => {
+      const selectedLang = e.target.value;
+      setTimeout(async () => {
+        if (selectedLang && selectedLang !== language) {
+          await changeLanguage(selectedLang);
+        }
+      }, 10);
     });
 
     // ========== LOGIN/REGISTRATION LOGIC ==========
