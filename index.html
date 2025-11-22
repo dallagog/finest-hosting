@@ -134,7 +134,7 @@
 <body>
   <div class="language-selector">
     <select id="languageCombo">
-      <option value="">Choose language</option>
+      <option value="">Loading...</option>
     </select>
   </div>
 
@@ -167,7 +167,7 @@
     let availableLanguages = [];
     let isLogin = true;
 
-    console.log("=== FinEst Login v0.29 ===");
+    console.log("=== FinEst Login v0.30 ===");
 
     // Leggi l'elenco delle lingue dal manifest
     async function loadLanguageManifest() {
@@ -239,17 +239,18 @@
     // Aggiorna combobox lingue
     function updateLanguageCombo() {
       const combo = document.getElementById('languageCombo');
-      combo.innerHTML = '<option value="">Choose language</option>';
+      combo.innerHTML = '';
 
       if (availableLanguages.length === 0) {
         console.warn("No languages available");
+        combo.innerHTML = '<option value="">No languages</option>';
         return;
       }
 
       availableLanguages.forEach(lang => {
         const option = document.createElement('option');
         option.value = lang.code;
-        option.textContent = `${lang.flag} ${lang.code} - ${lang.description}`;
+        option.textContent = `${lang.flag} ${lang.description}`;
         if (lang.code === language) {
           option.selected = true;
         }
@@ -262,7 +263,6 @@
       console.log("🌍 Changing language to:", langCode);
       language = langCode;
       await loadTranslations(language);
-      updateLanguageCombo();
       updatePageTranslations();
     }
 
@@ -322,10 +322,8 @@
 
     // Aggiorna traduzioni pagina
     function updatePageTranslations() {
-      const combo = document.getElementById('languageCombo');
-      if (combo && combo.options[0]) {
-        combo.options[0].textContent = getTranslation('int.choose.language') || 'Choose language';
-      }
+      // Aggiorna il combobox per riflettere la selezione corrente
+      updateLanguageCombo();
 
       const formTitle = document.getElementById('form-title');
       if (formTitle) formTitle.textContent = isLogin ? getTranslation('int.login') : getTranslation('int.registration');
@@ -443,7 +441,7 @@
 
       let languageOptions = `<option value="">${getTranslation('int.select.language')}</option>`;
       availableLanguages.forEach(lang => {
-        languageOptions += `<option value="${lang.code}">${lang.flag} ${lang.code} - ${lang.description}</option>`;
+        languageOptions += `<option value="${lang.code}">${lang.flag} ${lang.description}</option>`;
       });
 
       container.innerHTML = `
