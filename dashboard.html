@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>Dashboard</title>
+    <title>FinEst, Dashboard</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -19,7 +19,23 @@
             display:flex; justify-content: space-between; align-items: center;
             margin-bottom: 30px; padding-bottom: 15px; border-bottom: 2px solid #333;
         }
-        .user-info-left { flex:1; text-align:left; font-size:16px; color:#555; }
+        .user-info-left { 
+            flex:1; 
+            text-align:left; 
+            font-size:16px; 
+            color:#555; 
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        .user-info-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .flag-icon {
+            font-size: 20px;
+        }
         h1 { flex:1; text-align:center; margin:0; font-weight:400; font-size:2.2em; }
         .logout-container { flex:1; text-align:right; }
 
@@ -27,7 +43,7 @@
             padding: 8px 16px; background: #333; color:white; border:none; border-radius:4px; cursor:pointer;
         }
 
-        /* Layout: una sola riga con tre sezioni */
+        /* Layout: due colonne */
         #columns {
             display: flex;
             gap: 20px;
@@ -35,9 +51,14 @@
             align-items: flex-start;
         }
 
-        /* Ogni colonna prende 1/3 dello spazio */
-        #filters-column, #reports-column, #menu-column {
-            flex: 1 1 0;
+        /* Filtri prende più spazio */
+        #filters-column {
+            flex: 2;
+            min-width: 400px;
+        }
+
+        #menu-column {
+            flex: 1;
             min-width: 260px;
         }
 
@@ -68,6 +89,13 @@
         button:hover { background:#555; }
         button:disabled { background:#ccc; cursor:not-allowed; }
 
+        .button-secondary {
+            background: #666;
+        }
+        .button-secondary:hover {
+            background: #888;
+        }
+
         ul { list-style:none; padding-left:0; margin:0; }
         li { margin:8px 0; cursor:pointer; font-size:15px; line-height:1.5; position:relative; padding-left:20px; }
         li::before { content: "•"; font-size:18px; position:absolute; left:0; color:#333; }
@@ -80,16 +108,6 @@
 
         .toggle { font-weight:bold; cursor:pointer; margin-right:8px; color:#555; font-style:normal; }
         li.has-submenu::before { content:""; }
-
-        /* Table */
-        .table-container { overflow-x:auto; margin-bottom:30px; border:1px solid #ddd; background:white; border-radius:6px; }
-        table { width:100%; border-collapse:collapse; font-size:13px; }
-        thead { background:#f8f8f8; position:sticky; top:0; }
-        th { padding:12px 8px; text-align:left; font-weight:600; border-bottom:2px solid #333; border-right:1px solid #ddd; }
-        td { padding:10px 8px; border-bottom:1px solid #eee; border-right:1px solid #eee; }
-        tr:hover { background:#f9f9f9; }
-        tr.selected { background:#e3f2fd; }
-        input[type="checkbox"] { cursor:pointer; width:16px; height:16px; }
 
         .pdf-viewer { margin-top:20px; border:1px solid #ddd; border-radius:6px; overflow:hidden; background:white; display:none; }
         .pdf-header { background:#f8f8f8; padding:15px; border-bottom:1px solid #ddd; display:flex; justify-content:space-between; align-items:center; }
@@ -105,21 +123,49 @@
         .auth-error button { margin-top:15px; background:#ffc107; color:#000; }
         .auth-error button:hover { background:#e0a800; }
 
-        li.report-item { padding:8px 12px; background:#f9f9f9; border:1px solid #e0e0e0; border-radius:4px; margin:8px 0; cursor:pointer; transition: background 0.2s; }
-        li.report-item:hover { background:#e3f2fd; border-color:#1976d2; }
-        li.report-item::before { content: "📄"; margin-right:8px; position: static; padding-right:6px; }
-        
-        .account-checkbox-item { padding:6px 10px; background:#f9f9f9; border:1px solid #e0e0e0; border-radius:4px; margin:6px 0; display:flex; align-items:center; gap:8px; }
+        .account-checkbox-item { 
+            padding:6px 10px; 
+            background:#f9f9f9; 
+            border:1px solid #e0e0e0; 
+            border-radius:4px; 
+            margin:6px 0; 
+            display:flex; 
+            align-items:center; 
+            gap:8px; 
+        }
         .account-checkbox-item:hover { background:#f0f0f0; }
         .account-checkbox-item input[type="checkbox"] { margin:0; }
         .account-checkbox-item label { cursor:pointer; margin:0; font-size:13px; flex:1; }
+
+        .reports-section {
+            margin-top: 20px;
+            padding-top: 15px;
+            border-top: 1px solid #e0e0e0;
+        }
+        .reports-section h3 {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+        .reports-controls {
+            margin-bottom: 10px;
+        }
     </style>
 </head>
 <body>
     <div class="main-container">
         <div class="header-bar" id="headerBar" style="display:none;">
             <div class="user-info-left">
-                <strong id="userLabel">Utente:</strong> <span id="usernameDisplay">-</span>
+                <div class="user-info-row">
+                    <strong id="userLabel">Utente:</strong> 
+                    <span id="usernameDisplay">-</span>
+                </div>
+                <div class="user-info-row">
+                    <span class="flag-icon" id="languageFlag"></span>
+                    <span id="languageDisplay">-</span>
+                    <span style="margin: 0 5px;">|</span>
+                    <span id="currencyDisplay">-</span>
+                </div>
             </div>
             <h1 id="dashboardTitle">Dashboard</h1>
             <div class="logout-container">
@@ -138,9 +184,9 @@
         <div id="mainContent" style="display:none;">
             <div id="message" class="message"></div>
 
-            <!-- TRE SEZIONI SU UNA RIGA: PERIODO (SX), RAPPORTI (CENTRO), MENU (DX) -->
+            <!-- DUE COLONNE: FILTRI (SX) E MENU (DX) -->
             <div id="columns">
-                <!-- PERIODO -->
+                <!-- FILTRI CON RAPPORTI -->
                 <div id="filters-column">
                     <div class="collapsible-container">
                         <div class="collapsible-header" onclick="toggleCollapsible(this)">
@@ -164,23 +210,28 @@
                             </div>
                             <div class="filter-group">
                                 <label id="profitabilityLabel">Redditività:</label>
-                                <select id="profitability" multiple size="3" style="height:auto;">
+                                <select id="profitability">
+                                    <option value="" id="selectOption2">-- seleziona --</option>
                                 </select>
                             </div>
-                            <button id="apply-filters">Applica Filtri</button>
-                        </div>
-                    </div>
-                </div>
 
-                <!-- RAPPORTI (centro) -->
-                <div id="reports-column">
-                    <div class="collapsible-container">
-                        <div class="collapsible-header" onclick="toggleCollapsible(this)">
-                            <h2 id="reportsTitle">Rapporti</h2>
-                            <span class="toggle-btn">-</span>
-                        </div>
-                        <div class="collapsible-content active" id="reports-list">
-                            <p style="color:#999;" id="reportsLoading">Caricamento rapporti in corso...</p>
+                            <!-- RAPPORTI DENTRO FILTRI -->
+                            <div class="reports-section">
+                                <h3 id="reportsTitle">Rapporti</h3>
+                                <div class="reports-controls">
+                                    <button class="button-secondary" id="selectAllBtn" onclick="selectAllReports()">
+                                        <span id="selectAllText">Seleziona tutti</span>
+                                    </button>
+                                    <button class="button-secondary" id="deselectAllBtn" onclick="deselectAllReports()">
+                                        <span id="deselectAllText">Deseleziona tutti</span>
+                                    </button>
+                                </div>
+                                <div id="reports-list">
+                                    <p style="color:#999;" id="reportsLoading">Caricamento rapporti in corso...</p>
+                                </div>
+                            </div>
+
+                            <button id="apply-filters" style="margin-top:15px; width:100%;">Applica Filtri</button>
                         </div>
                     </div>
                 </div>
@@ -218,8 +269,64 @@
         let credentials = { username: '', token: '', language: '', filter: '' };
         let pdfBase64 = null;
         let translations = {};
+        let availableLanguages = [];
+        let currencies = [];
 
         // ========== TRANSLATION SYSTEM ==========
+        async function loadLanguageManifest() {
+            try {
+                const response = await fetch('lang/manifest.json');
+                if (!response.ok) return [];
+                const manifest = await response.json();
+                return manifest.languages || [];
+            } catch (error) {
+                console.error("Error loading manifest:", error);
+                return [];
+            }
+        }
+
+        async function loadLanguageFile(langCode) {
+            try {
+                const response = await fetch(`lang/${langCode}.json`);
+                if (!response.ok) return null;
+                const data = await response.json();
+                if (data['int.language.code'] && data['int.language.description'] && data['img.language.flag']) {
+                    return {
+                        code: data['int.language.code'],
+                        description: data['int.language.description'],
+                        flag: data['img.language.flag']
+                    };
+                }
+                return null;
+            } catch (error) {
+                console.error(`Error loading ${langCode}.json:`, error);
+                return null;
+            }
+        }
+
+        async function initializeLanguages() {
+            const langCodes = await loadLanguageManifest();
+            for (const langCode of langCodes) {
+                const langData = await loadLanguageFile(langCode);
+                if (langData) {
+                    availableLanguages.push(langData);
+                }
+            }
+            availableLanguages.sort((a, b) => a.code.localeCompare(b.code));
+        }
+
+        async function loadCurrencies(lang) {
+            try {
+                const response = await fetch(`currency/${lang}.json`);
+                if (!response.ok) throw new Error(`Currency file not found currency/${lang}.json`);
+                currencies = await response.json();
+                console.log("✅ Currencies loaded:", currencies.length);
+            } catch (error) {
+                console.error('❌ Error loading currencies:', error);
+                currencies = [];
+            }
+        }
+
         async function loadTranslations(lang) {
             console.log("📚 Loading translations for:", lang);
             try {
@@ -227,6 +334,7 @@
                 if (!response.ok) throw new Error(`Translation file not found lang/${lang}.json`);
                 translations = await response.json();
                 console.log("✅ Translations loaded");
+                await loadCurrencies(lang);
             } catch (error) {
                 console.error('❌ Error loading translations:', error);
             }
@@ -267,7 +375,9 @@
             const selectOpt = getTranslation('int.select.option'); 
             if (selectOpt !== 'int.select.option') {
                 const opt = document.getElementById('selectOption');
+                const opt2 = document.getElementById('selectOption2');
                 if (opt) opt.textContent = selectOpt;
+                if (opt2) opt2.textContent = selectOpt;
             }
             
             const applyFilters = getTranslation('int.apply.filters'); 
@@ -287,6 +397,12 @@
             
             const downloadPdf = getTranslation('int.download.pdf');
             if (downloadPdf !== 'int.download.pdf') document.getElementById('downloadPdfText').textContent = downloadPdf;
+
+            const selectAll = getTranslation('int.select.all');
+            if (selectAll !== 'int.select.all') document.getElementById('selectAllText').textContent = selectAll;
+
+            const deselectAll = getTranslation('int.deselect.all');
+            if (deselectAll !== 'int.deselect.all') document.getElementById('deselectAllText').textContent = deselectAll;
         }
 
         // ========== UTILITY FUNCTIONS ==========
@@ -329,6 +445,33 @@
             document.getElementById('mainContent').style.display = 'block';
 
             return true;
+        }
+
+        function updateUserInfo() {
+            if (!filterData || !filterData.Filter) return;
+
+            const f = filterData.Filter;
+            
+            // Language
+            if (f.language) {
+                const langData = availableLanguages.find(l => l.code === f.language);
+                if (langData) {
+                    document.getElementById('languageFlag').textContent = langData.flag;
+                    document.getElementById('languageDisplay').textContent = f.language;
+                } else {
+                    document.getElementById('languageDisplay').textContent = f.language;
+                }
+            }
+
+            // Currency
+            if (f.currency) {
+                const currData = currencies.find(c => c.currency === f.currency);
+                if (currData && currData['img.currency.flag']) {
+                    document.getElementById('currencyDisplay').textContent = `${currData['img.currency.flag']} ${f.currency}`;
+                } else {
+                    document.getElementById('currencyDisplay').textContent = f.currency;
+                }
+            }
         }
 
         // ========== MENU ==========
@@ -431,6 +574,7 @@
 
                 populateFilterUI();
                 renderReportsList();
+                updateUserInfo();
 
                 showMessage(getTranslation('int.filters.loaded') || 'Filtri e account caricati', 'success');
             } catch (error) {
@@ -447,7 +591,7 @@
             if (f.date_start) document.getElementById('date-start').value = f.date_start;
             if (f.date_end) document.getElementById('date-end').value = f.date_end;
             
-            // Portfolio (select singolo)
+            // Portfolio (combobox singolo)
             const portfolioSelect = document.getElementById('portfolio');
             portfolioSelect.innerHTML = `<option value="">${getTranslation('int.select.option') || '-- seleziona --'}</option>`;
             
@@ -461,9 +605,9 @@
                 });
             }
             
-            // Yield/Profitability (select multiplo)
+            // Yield/Profitability (combobox singolo)
             const profitabilitySelect = document.getElementById('profitability');
-            profitabilitySelect.innerHTML = '';
+            profitabilitySelect.innerHTML = `<option value="">${getTranslation('int.select.option') || '-- seleziona --'}</option>`;
             
             if (Array.isArray(f.yield)) {
                 f.yield.forEach(y => {
@@ -518,6 +662,28 @@
             container.appendChild(summary);
         }
 
+        function selectAllReports() {
+            if (!filterData || !filterData.Account || !filterData.Account.list) return;
+            
+            filterData.Account.list.forEach(item => {
+                item.selected = true;
+            });
+            
+            renderReportsList();
+            showMessage(getTranslation('int.all.selected') || 'Tutti i rapporti selezionati', 'success');
+        }
+
+        function deselectAllReports() {
+            if (!filterData || !filterData.Account || !filterData.Account.list) return;
+            
+            filterData.Account.list.forEach(item => {
+                item.selected = false;
+            });
+            
+            renderReportsList();
+            showMessage(getTranslation('int.all.deselected') || 'Tutti i rapporti deselezionati', 'success');
+        }
+
         // ========== APPLY FILTERS ==========
         async function applyFiltersAndSave() {
             try {
@@ -545,9 +711,8 @@
 
                 // Aggiorna yield
                 if (Array.isArray(filterData.Filter.yield)) {
-                    const selectedYields = Array.from(profitabilitySelect.selectedOptions).map(opt => opt.value);
                     filterData.Filter.yield.forEach(y => {
-                        y.selected = selectedYields.includes(y.value);
+                        y.selected = (y.value === profitabilitySelect.value);
                     });
                 }
 
@@ -705,6 +870,7 @@
         // ========== INITIALIZATION ==========
         window.addEventListener('load', async () => {
             if (checkAuthentication()) {
+                await initializeLanguages();
                 await loadTranslations(credentials.language);
                 updatePageTranslations();
                 loadMenu();
