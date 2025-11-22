@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>FinEst, Dashboard</title>
+    <title>Dashboard</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -345,64 +345,70 @@
         }
 
         function updatePageTranslations() {
-            const dashTitle = getTranslation('int.dashboard.title'); 
-            if (dashTitle !== 'int.dashboard.title') document.getElementById('dashboardTitle').textContent = dashTitle;
-            
-            const userLabel = getTranslation('int.user.label'); 
-            if (userLabel !== 'int.user.label') document.getElementById('userLabel').textContent = userLabel;
-            
-            const filtersPeriod = getTranslation('int.filters.period.title'); 
-            if (filtersPeriod !== 'int.filters.period.title') document.getElementById('filtersPeriodTitle').textContent = filtersPeriod;
-            
-            const reportsTitle = getTranslation('int.reports.title'); 
-            if (reportsTitle !== 'int.reports.title') document.getElementById('reportsTitle').textContent = reportsTitle;
-            
-            const menuTitle = getTranslation('int.menu.title'); 
-            if (menuTitle !== 'int.menu.title') document.getElementById('menuTitle').textContent = menuTitle;
-            
-            const dateStart = getTranslation('int.date.start'); 
-            if (dateStart !== 'int.date.start') document.getElementById('dateStartLabel').textContent = dateStart;
-            
-            const dateEnd = getTranslation('int.date.end'); 
-            if (dateEnd !== 'int.date.end') document.getElementById('dateEndLabel').textContent = dateEnd;
-            
-            const portfolio = getTranslation('int.portfolio'); 
-            if (portfolio !== 'int.portfolio') document.getElementById('portfolioLabel').textContent = portfolio;
-            
-            const profitability = getTranslation('int.profitability'); 
-            if (profitability !== 'int.profitability') document.getElementById('profitabilityLabel').textContent = profitability;
-            
-            const selectOpt = getTranslation('int.select.option'); 
+            // Traduci tutti gli elementi della pagina
+            const translations_map = {
+                'dashboardTitle': 'int.dashboard.title',
+                'userLabel': 'int.user.label',
+                'filtersPeriodTitle': 'int.filters.period.title',
+                'reportsTitle': 'int.reports.title',
+                'menuTitle': 'int.menu.title',
+                'dateStartLabel': 'int.date.start',
+                'dateEndLabel': 'int.date.end',
+                'portfolioLabel': 'int.portfolio',
+                'profitabilityLabel': 'int.profitability',
+                'sessionInvalidTitle': 'int.session.invalid',
+                'sessionInvalidMsg': 'int.session.expired',
+                'backToLoginBtn': 'int.back.to.login',
+                'menuLoading': 'int.loading.menu',
+                'reportsLoading': 'int.loading.reports',
+                'pdfViewerTitle': 'int.pdf.viewer.title'
+            };
+
+            // Aggiorna tutti i testi
+            Object.keys(translations_map).forEach(elementId => {
+                const element = document.getElementById(elementId);
+                if (element) {
+                    const translated = getTranslation(translations_map[elementId]);
+                    if (translated !== translations_map[elementId]) {
+                        element.textContent = translated;
+                    }
+                }
+            });
+
+            // Gestione speciale per elementi con contenuto HTML
+            const logoutText = getTranslation('int.logout');
+            if (logoutText !== 'int.logout') {
+                document.getElementById('logoutText').textContent = logoutText;
+            }
+
+            const downloadPdfText = getTranslation('int.download.pdf');
+            if (downloadPdfText !== 'int.download.pdf') {
+                document.getElementById('downloadPdfText').textContent = downloadPdfText;
+            }
+
+            const selectAllText = getTranslation('int.select.all');
+            if (selectAllText !== 'int.select.all') {
+                document.getElementById('selectAllText').textContent = selectAllText;
+            }
+
+            const deselectAllText = getTranslation('int.deselect.all');
+            if (deselectAllText !== 'int.deselect.all') {
+                document.getElementById('deselectAllText').textContent = deselectAllText;
+            }
+
+            const applyFiltersText = getTranslation('int.apply.filters');
+            if (applyFiltersText !== 'int.apply.filters') {
+                document.getElementById('apply-filters').textContent = applyFiltersText;
+            }
+
+            // Aggiorna le opzioni dei select
+            const selectOpt = getTranslation('int.select.option');
             if (selectOpt !== 'int.select.option') {
-                const opt = document.getElementById('selectOption');
+                const opt1 = document.getElementById('selectOption');
                 const opt2 = document.getElementById('selectOption2');
-                if (opt) opt.textContent = selectOpt;
+                if (opt1) opt1.textContent = selectOpt;
                 if (opt2) opt2.textContent = selectOpt;
             }
-            
-            const applyFilters = getTranslation('int.apply.filters'); 
-            if (applyFilters !== 'int.apply.filters') document.getElementById('apply-filters').textContent = applyFilters;
-            
-            const logout = getTranslation('int.logout'); 
-            if (logout !== 'int.logout') document.getElementById('logoutText').textContent = logout;
-            
-            const sessionInvalid = getTranslation('int.session.invalid');
-            if (sessionInvalid !== 'int.session.invalid') document.getElementById('sessionInvalidTitle').textContent = sessionInvalid;
-            
-            const sessionExpired = getTranslation('int.session.expired');
-            if (sessionExpired !== 'int.session.expired') document.getElementById('sessionInvalidMsg').textContent = sessionExpired;
-            
-            const backToLogin = getTranslation('int.back.to.login');
-            if (backToLogin !== 'int.back.to.login') document.getElementById('backToLoginBtn').textContent = backToLogin;
-            
-            const downloadPdf = getTranslation('int.download.pdf');
-            if (downloadPdf !== 'int.download.pdf') document.getElementById('downloadPdfText').textContent = downloadPdf;
-
-            const selectAll = getTranslation('int.select.all');
-            if (selectAll !== 'int.select.all') document.getElementById('selectAllText').textContent = selectAll;
-
-            const deselectAll = getTranslation('int.deselect.all');
-            if (deselectAll !== 'int.deselect.all') document.getElementById('deselectAllText').textContent = deselectAll;
         }
 
         // ========== UTILITY FUNCTIONS ==========

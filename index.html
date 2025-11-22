@@ -233,6 +233,7 @@
       availableLanguages.sort((a, b) => a.code.localeCompare(b.code));
       console.log("✅ Languages initialized:", availableLanguages.length);
 
+      // Dopo aver caricato le lingue, aggiorna il combo
       updateLanguageCombo();
     }
 
@@ -256,20 +257,34 @@
         }
         combo.appendChild(option);
       });
+
+      console.log("✅ Language combo updated, current language:", language);
     }
 
     // Cambia lingua
     async function changeLanguage(langCode) {
+      if (!langCode) {
+        console.warn("⚠️ Empty language code");
+        return;
+      }
+      
       console.log("🌍 Changing language to:", langCode);
       language = langCode;
+      
       await loadTranslations(language);
+      updateLanguageCombo();
       updatePageTranslations();
+      
+      console.log("✅ Language changed and page translated");
     }
 
     // Event listener per combobox lingue
-    document.getElementById('languageCombo').addEventListener('change', (e) => {
-      if (e.target.value) {
-        changeLanguage(e.target.value);
+    document.getElementById('languageCombo').addEventListener('change', async (e) => {
+      const selectedLang = e.target.value;
+      console.log("🔄 Language selector changed to:", selectedLang);
+      
+      if (selectedLang && selectedLang !== language) {
+        await changeLanguage(selectedLang);
       }
     });
 
