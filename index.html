@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>FinEst, ver. 0.34 beta</title>
+  <title>FinEst, ver. 0.40 beta</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
   <style>
     body {
@@ -160,15 +160,18 @@
     const apiBaseNew = "https://new-user-tunnel.fe-web.eu";
     const apiBaseUser = "https://user-tunnel.fe-web.eu";
 
-    let language = 'en_UK';
+    let language = 'en_UK'; // Lingua di default
     let translations = {};
     let currencies = [];
     let timezones = [];
     let availableLanguages = [];
     let isLogin = true;
 
-    console.log("=== FinEst Login v0.30 ===");
+    console.log("=== FinEst Login v0.31 ===");
+    console.log("🌍 Default language:", language);
 
+    // ========== LANGUAGE SYSTEM ==========
+    
     // Leggi l'elenco delle lingue dal manifest
     async function loadLanguageManifest() {
       console.log("📋 Loading language manifest...");
@@ -199,7 +202,6 @@
 
         const data = await response.json();
 
-        // Verifica i campi richiesti
         if (data['int.language.code'] && data['int.language.description'] && data['img.language.flag']) {
           return {
             code: data['int.language.code'],
@@ -232,9 +234,6 @@
 
       availableLanguages.sort((a, b) => a.code.localeCompare(b.code));
       console.log("✅ Languages initialized:", availableLanguages.length);
-
-      // Dopo aver caricato le lingue, aggiorna il combo
-      updateLanguageCombo();
     }
 
     // Aggiorna combobox lingue
@@ -258,35 +257,8 @@
         combo.appendChild(option);
       });
 
-      console.log("✅ Language combo updated, current language:", language);
+      console.log("✅ Language combo updated. Selected:", language);
     }
-
-    // Cambia lingua
-    async function changeLanguage(langCode) {
-      if (!langCode) {
-        console.warn("⚠️ Empty language code");
-        return;
-      }
-      
-      console.log("🌍 Changing language to:", langCode);
-      language = langCode;
-      
-      await loadTranslations(language);
-      updateLanguageCombo();
-      updatePageTranslations();
-      
-      console.log("✅ Language changed and page translated");
-    }
-
-    // Event listener per combobox lingue
-    document.getElementById('languageCombo').addEventListener('change', async (e) => {
-      const selectedLang = e.target.value;
-      console.log("🔄 Language selector changed to:", selectedLang);
-      
-      if (selectedLang && selectedLang !== language) {
-        await changeLanguage(selectedLang);
-      }
-    });
 
     // Carica traduzioni
     async function loadTranslations(lang) {
@@ -295,7 +267,7 @@
         const response = await fetch(`lang/${lang}.json`);
         if (!response.ok) throw new Error(`Translation file not found lang/${lang}.json`);
         translations = await response.json();
-        console.log("✅ Translations loaded");
+        console.log("✅ Translations loaded for", lang);
 
         await loadCurrencies(lang);
         await loadTimezones();
@@ -337,11 +309,12 @@
 
     // Aggiorna traduzioni pagina
     function updatePageTranslations() {
-      // Aggiorna il combobox per riflettere la selezione corrente
-      updateLanguageCombo();
+      console.log("🔄 Updating page translations for language:", language);
 
       const formTitle = document.getElementById('form-title');
-      if (formTitle) formTitle.textContent = isLogin ? getTranslation('int.login') : getTranslation('int.registration');
+      if (formTitle) {
+        formTitle.textContent = isLogin ? getTranslation('int.login') : getTranslation('int.registration');
+      }
 
       const usernameInput = document.getElementById('username');
       const passwordInput = document.getElementById('password');
@@ -349,13 +322,42 @@
       if (passwordInput) passwordInput.placeholder = getTranslation('int.password');
 
       const submitBtn = document.getElementById('submit-btn');
-      if (submitBtn) submitBtn.textContent = isLogin ? getTranslation('int.signin') : getTranslation('int.create.account');
+      if (submitBtn) {
+        submitBtn.textContent = isLogin ? getTranslation('int.signin') : getTranslation('int.create.account');
+      }
 
       const forgotPassword = document.getElementById('forgot-password');
       const switchForm = document.getElementById('switch-form');
       if (forgotPassword) forgotPassword.textContent = getTranslation('int.forgot.password');
       if (switchForm) switchForm.textContent = isLogin ? getTranslation('int.no.account') : getTranslation('int.have.account');
+
+      console.log("✅ Page translations updated");
     }
+
+    // Cambia lingua
+    async function changeLanguage(langCode) {
+      console.log("🌍 Changing language from", language, "to", langCode);
+      
+      language = langCode;
+      
+      await loadTranslations(langCode);
+      updateLanguageCombo();
+      updatePageTranslations();
+      
+      console.log("✅ Language changed successfully to", langCode);
+    }
+
+    // Event listener per combobox lingue
+    document.getElementById('languageCombo').addEventListener('change', async (e) => {
+      const selectedLang = e.target.value;
+      console.log("🔄 Language selector changed to:", selectedLang);
+      
+      if (selectedLang) {
+        await changeLanguage(selectedLang);
+      }
+    });
+
+    // ========== LOGIN/REGISTRATION LOGIC ==========
 
     // Switch login/registration
     document.getElementById("switch-form").addEventListener("click", () => {
@@ -439,7 +441,6 @@
 
     // Richiesta info mancanti
     function requestMissingInfo(info, username, password) {
-      // Nascondi il selettore lingue durante l'inserimento info
       document.querySelector('.language-selector').style.display = 'none';
       
       const container = document.getElementById("app-container");
@@ -501,7 +502,6 @@
           const data = await response.json();
           if (response.ok && data.status === "ok") {
             alert(getTranslation('int.info.saved'));
-            // Mostra il selettore lingue al ritorno al login
             document.querySelector('.language-selector').style.display = 'block';
             window.location.href = "index.html";
           } else {
@@ -521,12 +521,26 @@
       window.location.href = "dashboard.html";
     }
 
-    // Inizializzazione
+    // ========== INITIALIZATION ==========
     async function init() {
+      console.log("🚀 Initializing application...");
+      
+      // 1. Inizializza le lingue disponibili
       await initializeLanguages();
+      
+      // 2. Carica le traduzioni per la lingua di default
       await loadTranslations(language);
+      
+      // 3. Aggiorna il combo per mostrare la lingua di default selezionata
+      updateLanguageCombo();
+      
+      // 4. Traduci la pagina
       updatePageTranslations();
+      
+      // 5. Health check
       checkHealth();
+      
+      console.log("✅ Application initialized successfully");
     }
 
     init();
