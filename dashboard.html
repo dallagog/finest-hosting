@@ -1391,7 +1391,7 @@
                         localStorage.setItem('classificationMap', JSON.stringify(classificationMap));
                     }
 
-                    // Parse Portfolio: [[Symbol, {data}], ...] -> [{Symbol: Symbol, ...data}]
+                    // Parse Portfolio: [[Symbol, {data}], ...] -> [{Ticker: Symbol, ...data}]
                     portfolioData = [];
                     const rawPortfolio = data.portfolio || [];
 
@@ -1400,7 +1400,7 @@
                             if (Array.isArray(entry) && entry.length === 2) {
                                 const symbol = entry[0];
                                 const details = entry[1];
-                                const flatItem = { Symbol: symbol };
+                                const flatItem = { Ticker: symbol };
 
                                 // Parse details
                                 Object.keys(details).forEach(key => {
@@ -1426,7 +1426,7 @@
                     if (portfolioData.length > 0) {
                         // Determine columns from first item, ensuring Symbol is first
                         const keys = Object.keys(portfolioData[0]);
-                        tableColumns = ['Symbol', ...keys.filter(k => k !== 'Symbol')];
+                        tableColumns = ['Ticker', ...keys.filter(k => k !== 'Ticker')];
                     }
 
                     populateGroupingSelect(data.classification);
@@ -1514,7 +1514,7 @@
             const calculateTotals = (items) => {
                 const totals = {};
                 tableColumns.forEach(col => {
-                    if (col === 'Symbol') {
+                    if (col === 'Ticker') {
                         totals[col] = 'TOTAL';
                         return;
                     }
@@ -1539,7 +1539,7 @@
                 const groups = {};
                 displayData.forEach(item => {
                     let groupVal = 'Altro';
-                    const symbol = item.Symbol;
+                    const symbol = item.Ticker;
                     // Lookup in classification map
                     if (symbol && classificationMap[symbol]) {
                         const classObj = classificationMap[symbol];
@@ -1592,7 +1592,7 @@
                 const td = document.createElement('td');
                 let val = item[col];
 
-                if (col === 'Symbol' && !isTotal) {
+                if (col === 'Ticker' && !isTotal) {
                     const span = document.createElement('span');
                     span.textContent = val;
                     span.style.textDecoration = 'underline';
@@ -1710,7 +1710,7 @@
                             if (Array.isArray(entry) && entry.length === 2) {
                                 const symbol = entry[0];
                                 const details = entry[1];
-                                const flatItem = { Symbol: symbol };
+                                const flatItem = { Ticker: symbol };
 
                                 // Parse details
                                 Object.keys(details).forEach(key => {
@@ -1743,7 +1743,7 @@
 
                     if (profitabilityData.length > 0) {
                         const keys = Object.keys(profitabilityData[0]);
-                        profitabilityTableColumns = ['Symbol', ...keys.filter(k => k !== 'Symbol')];
+                        profitabilityTableColumns = ['Ticker', ...keys.filter(k => k !== 'Ticker')];
                     }
 
                     populateProfitabilityGroupingSelect(data.classification);
@@ -1825,7 +1825,7 @@
             const calculateTotals = (items) => {
                 const totals = {};
                 profitabilityTableColumns.forEach(col => {
-                    if (col === 'Symbol') {
+                    if (col === 'Ticker') {
                         totals[col] = 'TOTAL';
                         return;
                     }
@@ -1849,7 +1849,7 @@
                 const groups = {};
                 displayData.forEach(item => {
                     let groupVal = 'Altro';
-                    const symbol = item.Symbol;
+                    const symbol = item.Ticker;
                     if (symbol && classificationMap[symbol]) {
                         const classObj = classificationMap[symbol];
                         if (classObj[currentProfitabilityGroup]) {
@@ -1897,7 +1897,7 @@
                 const td = document.createElement('td');
                 let val = item[col];
 
-                if (col === 'Symbol' && !isTotal) {
+                if (col === 'Ticker' && !isTotal) {
                     const span = document.createElement('span');
                     span.textContent = val;
                     span.style.textDecoration = 'underline';
