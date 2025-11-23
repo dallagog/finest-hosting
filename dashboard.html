@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Dashboard 1.0</title>
+    <title>Dashboard 0.1</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&display=swap');
@@ -1478,7 +1478,7 @@
                         totals[col] = 'TOTAL';
                         return;
                     }
-                    if (isPercentageColumn(col)) {
+                    if (isPercentageColumn(col) || col.toLowerCase().includes('yield')) {
                         totals[col] = '';
                         return;
                     }
@@ -1545,13 +1545,26 @@
                 tr.style.background = isGrandTotal ? 'rgba(0, 243, 255, 0.15)' : 'rgba(0, 102, 255, 0.1)';
                 tr.style.borderTop = isGrandTotal ? '2px solid var(--neon-cyan)' : '1px solid var(--neon-blue)';
             } else {
-                tr.onclick = () => selectRow(tr, item);
+                // tr.onclick = () => selectRow(tr, item); // Removed row click, moved to symbol click
             }
 
             tableColumns.forEach(col => {
                 const td = document.createElement('td');
                 let val = item[col];
-                if (val !== undefined) {
+
+                if (col === 'Symbol' && !isTotal) {
+                    const span = document.createElement('span');
+                    span.textContent = val;
+                    span.style.textDecoration = 'underline';
+                    span.style.cursor = 'pointer';
+                    span.style.color = 'var(--neon-cyan)';
+                    span.onclick = (e) => {
+                        e.stopPropagation();
+                        selectRow(tr, item); // Highlight row
+                        openTradeDetails(val);
+                    };
+                    td.appendChild(span);
+                } else if (val !== undefined) {
                     // Format numbers
                     if (typeof val === 'number') {
                         td.textContent = val.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -1597,30 +1610,16 @@
         async function selectRow(tr, item) {
             document.querySelectorAll('#portfolio-body tr').forEach(r => r.classList.remove('selected'));
             tr.classList.add('selected');
-            console.log('Selected row:', item);
+        }
 
-            // Call /gettrade
-            try {
-                const payload = {
-                    username: credentials.username,
-                    token: credentials.token,
-                    language: credentials.language,
-                    item: item // Pass selected item
-                };
-                console.log('📤 POST /gettrade', payload);
-                // Uncomment when endpoint is ready
-                /*
-                const response = await fetch(`${API_URL}/gettrade`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-                const data = await response.json();
-                console.log('/gettrade response:', data);
-                */
-            } catch (e) {
-                console.error(e);
-            }
+        function openTradeDetails(symbol) {
+            console.log('Open trade details for:', symbol);
+            window.open(`movements.html?code=${encodeURIComponent(symbol)}&type=trade`, '_blank');
+        }
+
+        function openTradeYieldDetails(symbol) {
+            console.log('Open trade yield details for:', symbol);
+            window.open(`movements.html?code=${encodeURIComponent(symbol)}&type=yield`, '_blank');
         }
 
         // ========== PROFITABILITY TABLE ==========
@@ -1788,7 +1787,7 @@
                         totals[col] = 'TOTAL';
                         return;
                     }
-                    if (isPercentageColumn(col)) {
+                    if (isPercentageColumn(col) || col.toLowerCase().includes('yield')) {
                         totals[col] = '';
                         return;
                     }
@@ -1849,13 +1848,26 @@
                 tr.style.background = isGrandTotal ? 'rgba(0, 243, 255, 0.15)' : 'rgba(0, 102, 255, 0.1)';
                 tr.style.borderTop = isGrandTotal ? '2px solid var(--neon-cyan)' : '1px solid var(--neon-blue)';
             } else {
-                tr.onclick = () => selectProfitabilityRow(tr, item);
+                // tr.onclick = () => selectProfitabilityRow(tr, item); // Removed row click
             }
 
             profitabilityTableColumns.forEach(col => {
                 const td = document.createElement('td');
                 let val = item[col];
-                if (val !== undefined) {
+
+                if (col === 'Symbol' && !isTotal) {
+                    const span = document.createElement('span');
+                    span.textContent = val;
+                    span.style.textDecoration = 'underline';
+                    span.style.cursor = 'pointer';
+                    span.style.color = 'var(--neon-cyan)';
+                    span.onclick = (e) => {
+                        e.stopPropagation();
+                        selectProfitabilityRow(tr, item);
+                        openTradeYieldDetails(val);
+                    };
+                    td.appendChild(span);
+                } else if (val !== undefined) {
                     if (typeof val === 'number') {
                         td.textContent = val.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
                         td.style.textAlign = 'right';
@@ -1903,39 +1915,9 @@
         async function selectProfitabilityRow(tr, item) {
             document.querySelectorAll('#profitability-body tr').forEach(r => r.classList.remove('selected'));
             tr.classList.add('selected');
-            console.log('Selected profitability row:', item);
-
-            try {
-                const payload = {
-                    username: credentials.username,
-                    token: credentials.token,
-                    language: credentials.language,
-                    item: item
-                };
-                console.log('📤 POST /gettrade', payload);
-
-                const response = await fetch(`${API_URL}/gettrade`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-                const data = await response.json();
-                console.log('/gettrade response:', data);
-
-                if (data.status === 'ok' && data.trade) {
-                    // Show trade details
-                    // For now, let's just alert or log, or maybe show in a modal if I had one.
-                    // The user said "sarà visualizzato". I'll create a simple modal or alert.
-                    alert('Trade Details:\n' + JSON.stringify(data.trade, null, 2));
-                } else {
-                    // alert('No trade details found or error.');
-                    console.warn('No trade details found');
-                }
-
-            } catch (e) {
-                console.error(e);
-            }
         }
+
+
 
         // ========== LOGOUT ==========
         async function logout() {
