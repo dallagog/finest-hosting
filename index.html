@@ -4,18 +4,32 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>FinEst, ver. 0.40 beta</title>
+  <title>FinEst ver 1.0</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
   <style>
+    @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&display=swap');
+
+    :root {
+      --bg-color: #050505;
+      --neon-cyan: #00f3ff;
+      --neon-blue: #0066ff;
+      --glass-bg: rgba(0, 20, 40, 0.85);
+      --text-color: #e0f7fa;
+    }
+
     body {
-      font-family: Arial, sans-serif;
-      background: #f5f5f5;
+      font-family: 'Orbitron', sans-serif;
+      background-color: var(--bg-color);
+      background-image:
+        linear-gradient(rgba(0, 243, 255, 0.1) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0, 243, 255, 0.1) 1px, transparent 1px);
+      background-size: 50px 50px;
       display: flex;
       justify-content: center;
       align-items: center;
       height: 100vh;
       margin: 0;
-      position: relative;
+      color: var(--text-color);
     }
 
     .language-selector {
@@ -27,41 +41,40 @@
 
     #languageCombo {
       padding: 8px 12px;
-      border: 2px solid #007bff;
-      border-radius: 6px;
-      background: white;
+      border: 1px solid var(--neon-blue);
+      border-radius: 4px;
+      background: rgba(0, 0, 0, 0.8);
+      color: var(--neon-cyan);
       cursor: pointer;
-      font-size: 14px;
+      font-family: 'Orbitron', sans-serif;
       outline: none;
-      transition: 0.3s;
-    }
-
-    #languageCombo:hover {
-      border-color: #0056b3;
-      box-shadow: 0 2px 8px rgba(0, 123, 255, 0.2);
-    }
-
-    #languageCombo:focus {
-      border-color: #0056b3;
-      box-shadow: 0 0 8px rgba(0, 123, 255, 0.3);
     }
 
     .container {
-      background: white;
+      background: var(--glass-bg);
       padding: 40px;
+      border: 1px solid var(--neon-cyan);
+      box-shadow: 0 0 20px rgba(0, 243, 255, 0.2);
       border-radius: 12px;
-      box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
-      width: 320px;
+      width: 350px;
       text-align: center;
+      position: relative;
     }
 
     .logo {
       width: 100px;
       margin-bottom: 15px;
+      filter: drop-shadow(0 0 5px var(--neon-cyan));
+      border-radius: 50%;
+      /* Optional */
     }
 
     h2 {
       margin-bottom: 30px;
+      color: var(--neon-cyan);
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      text-shadow: 0 0 10px var(--neon-cyan);
     }
 
     .input-group {
@@ -72,61 +85,73 @@
 
     .input-group i {
       position: absolute;
-      top: 10px;
-      left: 0;
-      color: #555;
+      top: 12px;
+      left: 10px;
+      color: var(--neon-blue);
     }
 
     .input-group input,
     .input-group select {
       width: 100%;
-      padding: 10px 10px 10px 30px;
-      border: none;
-      border-bottom: 2px solid #ccc;
-      outline: none;
-      transition: 0.3s;
+      padding: 10px 10px 10px 35px;
+      background: rgba(0, 0, 0, 0.5);
+      border: 1px solid var(--neon-blue);
+      color: #fff;
+      font-family: 'Orbitron', sans-serif;
+      border-radius: 4px;
       box-sizing: border-box;
     }
 
     .input-group input:focus,
     .input-group select:focus {
-      border-bottom-color: #007bff;
+      outline: none;
+      border-color: var(--neon-cyan);
+      box-shadow: 0 0 8px var(--neon-cyan);
     }
 
     button {
       width: 100%;
-      padding: 10px;
-      border: none;
-      background: #007bff;
-      color: white;
+      padding: 12px;
+      border: 1px solid var(--neon-blue);
+      background: rgba(0, 102, 255, 0.2);
+      color: var(--neon-cyan);
       font-size: 16px;
-      border-radius: 6px;
+      font-weight: bold;
+      font-family: 'Orbitron', sans-serif;
+      border-radius: 4px;
       cursor: pointer;
       transition: 0.3s;
+      text-transform: uppercase;
     }
 
     button:hover {
-      background: #0056b3;
+      background: var(--neon-blue);
+      color: #fff;
+      box-shadow: 0 0 15px var(--neon-blue);
     }
 
     .switch,
     .forgot {
       text-align: center;
-      margin-top: 15px;
-      font-size: 14px;
-      color: #555;
+      margin-top: 20px;
+      font-size: 12px;
+      color: #aaa;
       cursor: pointer;
+      transition: color 0.3s;
     }
 
     .forgot:hover,
     .switch:hover {
+      color: var(--neon-cyan);
       text-decoration: underline;
+      text-shadow: 0 0 5px var(--neon-cyan);
     }
 
     .offline {
       width: 300px;
       border-radius: 12px;
-      box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
+      box-shadow: 0 0 15px rgba(255, 0, 0, 0.5);
+      border: 1px solid red;
     }
   </style>
 </head>
@@ -171,7 +196,7 @@
     console.log("🌍 Default language:", language);
 
     // ========== LANGUAGE SYSTEM ==========
-    
+
     // Leggi l'elenco delle lingue dal manifest
     async function loadLanguageManifest() {
       console.log("📋 Loading language manifest...");
@@ -337,14 +362,14 @@
     // Cambia lingua
     async function changeLanguage(langCode) {
       console.log("🌍 Changing language from", language, "to", langCode);
-      
+
       language = langCode;
-      
+
       // Carica SEMPRE le traduzioni, anche se è la stessa lingua
       await loadTranslations(langCode);
       updateLanguageCombo();
       updatePageTranslations();
-      
+
       console.log("✅ Language changed successfully to", langCode);
     }
 
@@ -352,12 +377,12 @@
     document.getElementById('languageCombo').addEventListener('input', async (e) => {
       const selectedLang = e.target.value;
       console.log("📝 Language selector changed to:", selectedLang);
-      
+
       if (selectedLang) {
         await changeLanguage(selectedLang);
       }
     });
-    
+
     // Fallback con 'click' per assicurare che catturi sempre la selezione
     document.getElementById('languageCombo').addEventListener('click', async (e) => {
       const selectedLang = e.target.value;
@@ -453,7 +478,7 @@
     // Richiesta info mancanti
     function requestMissingInfo(info, username, password) {
       document.querySelector('.language-selector').style.display = 'none';
-      
+
       const container = document.getElementById("app-container");
 
       let currencyOptions = `<option value="">${getTranslation('int.select.currency')}</option>`;
@@ -535,22 +560,22 @@
     // ========== INITIALIZATION ==========
     async function init() {
       console.log("🚀 Initializing application...");
-      
+
       // 1. Inizializza le lingue disponibili
       await initializeLanguages();
-      
+
       // 2. Carica le traduzioni per la lingua di default
       await loadTranslations(language);
-      
+
       // 3. Aggiorna il combo per mostrare la lingua di default selezionata
       updateLanguageCombo();
-      
+
       // 4. Traduci la pagina
       updatePageTranslations();
-      
+
       // 5. Health check
       checkHealth();
-      
+
       console.log("✅ Application initialized successfully");
     }
 
