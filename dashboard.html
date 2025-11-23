@@ -1282,6 +1282,229 @@
             }
         }
 
+        // ========== PORTFOLIO TABLE ==========
+        let portfolioData = [];
+        let classificationData = {};
+        let tableColumns = [];
+        let currentSort = { column: null, direction: 'asc' };
+        let currentGroup = null;
+
+        async function loadPortfolio() {
+            try {
+                const payload = {
+                    username: credentials.username,
+                    token: credentials.token,
+                    language: credentials.language,
+                    filter: credentials.filter
+                };
+
+                const response = await fetch(`${API_URL}/getportfolio`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) throw new Error('HTTP ' + response.status);
+                const data = await response.json();
+
+                if (data.status === 'ok') {
+                    portfolioData = data.portfolio || [];
+                    classificationData = data.classification || {};
+
+                    if (portfolioData.length > 0 && tableColumns.length === 0) {
+                        tableColumns = Object.keys(portfolioData[0]);
+                    }
+
+                    populateGroupingSelect();
+                    renderTable();
+                    document.getElementById('portfolio-section').style.display = 'block';
+                } else {
+                    console.error('Portfolio error:', data);
+                }
+            } catch (error) {
+                console.error('Error loading portfolio:', error);
+            }
+        }
+
+        function populateGroupingSelect() {
+            const select = document.getElementById('grouping-select');
+            select.innerHTML = '<option value="">Nessun raggruppamento</option>';
+            // Add options from classificationData keys or columns
+            // Assuming classificationData keys are the grouping criteria
+            if (classificationData) {
+                Object.keys(classificationData).forEach(key => {
+                    const opt = document.createElement('option');
+                    opt.value = key;
+                    opt.textContent = key;
+                    select.appendChild(opt);
+                });
+            }
+            // Also allow grouping by columns present in data if needed, but user specified classification.json
+        }
+
+        function updateTableGrouping() {
+            currentGroup = document.getElementById('grouping-select').value;
+            renderTable();
+        }
+
+        function renderTable() {
+            const thead = document.getElementById('portfolio-header-row');
+            const tbody = document.getElementById('portfolio-body');
+            thead.innerHTML = '';
+            tbody.innerHTML = '';
+
+            // Headers
+            tableColumns.forEach((col, index) => {
+                const th = document.createElement('th');
+                th.draggable = true;
+                th.ondragstart = (e) => handleDragStart(e, index);
+                th.ondragover = (e) => handleDragOver(e);
+                th.ondrop = (e) => handleDrop(e, index);
+                th.onclick = () => sortPortfolio(col);
+
+                const handle = document.createElement('span');
+                handle.className = 'drag-handle';
+                handle.textContent = '⋮';
+                th.appendChild(handle);
+
+                const text = document.createTextNode(col);
+                th.appendChild(text);
+
+                if (currentSort.column === col) {
+                    th.classList.add(currentSort.direction === 'asc' ? 'sort-asc' : 'sort-desc');
+                }
+                thead.appendChild(th);
+            });
+
+            // Data
+            let displayData = [...portfolioData];
+
+            // Sort
+            if (currentSort.column) {
+                displayData.sort((a, b) => {
+                    const valA = a[currentSort.column];
+                    const valB = b[currentSort.column];
+                    if (valA < valB) return currentSort.direction === 'asc' ? -1 : 1;
+                    if (valA > valB) return currentSort.direction === 'asc' ? 1 : -1;
+                    return 0;
+                });
+            }
+
+            // Group
+            if (currentGroup) {
+                const groups = {};
+                displayData.forEach(item => {
+                    // Logic to determine group. 
+                    // If classificationData[currentGroup] is an object mapping ID -> Group, use it.
+                    // Else if it's just a column name, use item[currentGroup].
+                    // We'll try to use classificationData first if structure matches, else fallback to item property.
+
+                    let groupVal = 'Altro';
+
+                    // Check if classificationData has this group key and if it's a map
+                    // Since we don't know the exact structure, we'll assume for now that if the key exists in classificationData, 
+                    // we might need to lookup the item there. 
+                    // BUT, typically "classification" implies adding a field to the item. 
+                    // Let's assume for this implementation that we group by the selected key, 
+                    // looking it up in the item properties (assuming the backend enriched the data OR classificationData is used to lookup).
+
+                    // Simplest approach: Group by item property matching the selected key.
+                    if (item[currentGroup] !== undefined) {
+                        groupVal = item[currentGroup];
+                    } else if (classificationData[currentGroup]) {
+                        // Maybe classificationData[currentGroup] is the map?
+                        // Let's assume item has an 'id' or 'symbol' to lookup.
+                        const id = item.id || item.isin || item.symbol; // Try common IDs
+                        if (id && classificationData[currentGroup][id]) {
+                            groupVal = classificationData[currentGroup][id];
+                        }
+                    }
+
+                    if (!groups[groupVal]) groups[groupVal] = [];
+                    groups[groupVal].push(item);
+                });
+
+                Object.keys(groups).sort().forEach(group => {
+                    const trGroup = document.createElement('tr');
+                    trGroup.className = 'group-header';
+                    trGroup.innerHTML = `<td colspan="${tableColumns.length}">${group} (${groups[group].length})</td>`;
+                    tbody.appendChild(trGroup);
+
+                    groups[group].forEach(item => renderRow(item, tbody));
+                });
+
+            } else {
+                displayData.forEach(item => renderRow(item, tbody));
+            }
+        }
+
+        function renderRow(item, tbody) {
+            const tr = document.createElement('tr');
+            tr.onclick = () => selectRow(tr, item);
+            tableColumns.forEach(col => {
+                const td = document.createElement('td');
+                td.textContent = item[col] !== undefined ? item[col] : '';
+                tr.appendChild(td);
+            });
+            tbody.appendChild(tr);
+        }
+
+        function sortPortfolio(col) {
+            if (currentSort.column === col) {
+                currentSort.direction = currentSort.direction === 'asc' ? 'desc' : 'asc';
+            } else {
+                currentSort.column = col;
+                currentSort.direction = 'asc';
+            }
+            renderTable();
+        }
+
+        let draggedColIndex = null;
+        function handleDragStart(e, index) {
+            draggedColIndex = index;
+            e.dataTransfer.effectAllowed = 'move';
+        }
+        function handleDragOver(e) {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+        }
+        function handleDrop(e, index) {
+            e.preventDefault();
+            if (draggedColIndex === index) return;
+            const col = tableColumns.splice(draggedColIndex, 1)[0];
+            tableColumns.splice(index, 0, col);
+            renderTable();
+        }
+
+        async function selectRow(tr, item) {
+            document.querySelectorAll('#portfolio-body tr').forEach(r => r.classList.remove('selected'));
+            tr.classList.add('selected');
+            console.log('Selected row:', item);
+
+            // Call /gettrade
+            try {
+                const payload = {
+                    username: credentials.username,
+                    token: credentials.token,
+                    language: credentials.language,
+                    item: item // Pass selected item
+                };
+                console.log('📤 POST /gettrade', payload);
+                // Uncomment when endpoint is ready
+                /*
+                const response = await fetch(`${API_URL}/gettrade`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await response.json();
+                console.log('/gettrade response:', data);
+                */
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
         // ========== LOGOUT ==========
         async function logout() {
             try {
@@ -1323,6 +1546,7 @@
                 updatePageTranslations();
                 loadMenu();
                 loadFilter();
+                loadPortfolio();
                 loadPDF();
             }
         });
