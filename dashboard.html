@@ -2,9 +2,9 @@
 <html lang="it">
 
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TRON Dashboard</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dashboard - Tron Edition</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&display=swap');
@@ -14,21 +14,26 @@
             --neon-cyan: #00f3ff;
             --neon-blue: #0066ff;
             --glass-bg: rgba(0, 20, 40, 0.85);
-            --border-color: var(--neon-cyan);
             --text-color: #e0f7fa;
+            --border-color: var(--neon-cyan);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
 
         body {
-            margin: 0;
-            min-height: 100vh;
+            font-family: 'Orbitron', sans-serif;
             background-color: var(--bg-color);
             background-image:
                 linear-gradient(rgba(0, 243, 255, 0.1) 1px, transparent 1px),
                 linear-gradient(90deg, rgba(0, 243, 255, 0.1) 1px, transparent 1px);
             background-size: 50px 50px;
-            font-family: 'Orbitron', sans-serif;
-            color: var(--text-color);
             padding: 20px;
+            color: var(--text-color);
+            min-height: 100vh;
         }
 
         /* Scrollbar */
@@ -68,32 +73,48 @@
         }
 
         .user-info-left {
+            flex: 1;
+            text-align: left;
+            font-size: 14px;
+            color: var(--neon-cyan);
             display: flex;
             flex-direction: column;
             gap: 5px;
-            color: var(--neon-cyan);
         }
 
         .user-info-row {
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 8px;
+        }
+
+        .flag-icon {
+            font-size: 18px;
         }
 
         h1 {
+            flex: 1;
+            text-align: center;
             margin: 0;
             font-weight: 700;
             text-transform: uppercase;
             letter-spacing: 2px;
             text-shadow: 0 0 10px var(--neon-cyan);
             color: #fff;
+            font-size: 2em;
+        }
+
+        .logout-container {
+            flex: 1;
+            text-align: right;
         }
 
         .logout-btn {
+            padding: 8px 16px;
             background: rgba(255, 0, 0, 0.2);
             border: 1px solid #ff3333;
             color: #ff3333;
-            padding: 8px 16px;
+            border-radius: 4px;
             cursor: pointer;
             font-family: 'Orbitron', sans-serif;
             transition: all 0.3s;
@@ -108,6 +129,7 @@
         #columns {
             display: flex;
             gap: 20px;
+            margin-bottom: 20px;
             align-items: flex-start;
         }
 
@@ -121,23 +143,47 @@
             min-width: 260px;
         }
 
-        /* Panels */
-        .panel {
+        /* Collapsible / Panels */
+        .collapsible-container {
             background: var(--glass-bg);
             border: 1px solid var(--neon-cyan);
-            box-shadow: 0 0 10px rgba(0, 243, 255, 0.2);
             padding: 20px;
             margin-bottom: 20px;
             border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 243, 255, 0.2);
         }
 
-        h2,
-        h3 {
+        .collapsible-header {
+            display: flex;
+            justify-content: space-between;
+            cursor: pointer;
+            user-select: none;
+            align-items: center;
+        }
+
+        .collapsible-header h2 {
+            font-size: 18px;
+            font-weight: 600;
             color: var(--neon-cyan);
-            border-bottom: 1px solid var(--neon-blue);
-            padding-bottom: 10px;
-            margin-top: 0;
             text-shadow: 0 0 5px var(--neon-cyan);
+            margin: 0;
+        }
+
+        .toggle-btn {
+            font-size: 20px;
+            font-weight: bold;
+            color: var(--neon-blue);
+        }
+
+        .collapsible-content {
+            display: none;
+            margin-top: 15px;
+            border-top: 1px solid var(--neon-blue);
+            padding-top: 15px;
+        }
+
+        .collapsible-content.active {
+            display: block;
         }
 
         /* Forms */
@@ -145,15 +191,15 @@
             margin-bottom: 15px;
         }
 
-        label {
+        .filter-group label {
             display: block;
             margin-bottom: 5px;
             color: var(--neon-blue);
             font-size: 0.9rem;
         }
 
-        input,
-        select {
+        .filter-group input,
+        .filter-group select {
             width: 100%;
             padding: 10px;
             background: rgba(0, 0, 0, 0.7);
@@ -163,8 +209,8 @@
             border-radius: 4px;
         }
 
-        input:focus,
-        select:focus {
+        .filter-group input:focus,
+        .filter-group select:focus {
             outline: none;
             border-color: var(--neon-cyan);
             box-shadow: 0 0 8px var(--neon-cyan);
@@ -176,15 +222,26 @@
             border: 1px solid var(--neon-blue);
             color: var(--neon-cyan);
             font-family: 'Orbitron', sans-serif;
+            border-radius: 4px;
             cursor: pointer;
-            transition: all 0.3s;
+            font-size: 14px;
             font-weight: bold;
+            transition: all 0.3s;
+            margin-right: 10px;
+            margin-bottom: 10px;
         }
 
         button:hover {
             background: var(--neon-blue);
             color: #fff;
             box-shadow: 0 0 15px var(--neon-blue);
+        }
+
+        button:disabled {
+            background: #333;
+            border-color: #555;
+            color: #888;
+            cursor: not-allowed;
         }
 
         .button-secondary {
@@ -197,44 +254,21 @@
             background: rgba(255, 255, 255, 0.2);
         }
 
-        /* Reports List */
-        .account-checkbox-item {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 8px;
-            border-bottom: 1px solid rgba(0, 243, 255, 0.1);
-            transition: background 0.2s;
-        }
-
-        .account-checkbox-item:hover {
-            background: rgba(0, 243, 255, 0.1);
-        }
-
-        .account-checkbox-item input {
-            width: auto;
-            margin: 0;
-        }
-
-        .account-checkbox-item label {
-            margin: 0;
-            cursor: pointer;
-            flex: 1;
-            color: var(--text-color);
-        }
-
-        /* Menu */
+        /* Menu List */
         ul {
             list-style: none;
-            padding: 0;
+            padding-left: 0;
             margin: 0;
         }
 
         li {
             margin: 10px 0;
+            cursor: pointer;
+            font-size: 15px;
+            position: relative;
         }
 
-        li a {
+        li>a {
             display: block;
             padding: 10px;
             background: rgba(0, 0, 0, 0.5);
@@ -244,7 +278,7 @@
             transition: all 0.3s;
         }
 
-        li a:hover {
+        li>a:hover {
             background: rgba(0, 243, 255, 0.1);
             border-left-color: var(--neon-cyan);
             padding-left: 15px;
@@ -253,12 +287,12 @@
 
         .submenu {
             margin-left: 20px;
+            display: none;
             border-left: 1px solid rgba(0, 243, 255, 0.2);
             padding-left: 10px;
-            display: none;
         }
 
-        li.open>.submenu {
+        .open>.submenu {
             display: block;
         }
 
@@ -266,13 +300,43 @@
             float: right;
             cursor: pointer;
             color: var(--neon-cyan);
+            margin-right: 10px;
+            font-weight: bold;
+        }
+
+        /* PDF Viewer */
+        .pdf-viewer {
+            margin-top: 20px;
+            border: 1px solid var(--neon-cyan);
+            border-radius: 8px;
+            overflow: hidden;
+            background: #fff;
+            display: none;
+            height: 800px;
+        }
+
+        .pdf-header {
+            background: #eee;
+            padding: 15px;
+            border-bottom: 1px solid #ccc;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: #333;
+            font-family: sans-serif;
+        }
+
+        .pdf-content {
+            width: 100%;
+            height: 100%;
+            border: none;
         }
 
         /* Messages */
         .message {
             padding: 15px;
-            margin: 10px 0;
             border-radius: 4px;
+            margin: 10px 0;
             display: none;
         }
 
@@ -297,212 +361,229 @@
             display: block;
         }
 
-        /* Auth Overlay */
-        .auth-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.95);
-            z-index: 1000;
-            display: none;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-        }
-
-        /* PDF Viewer */
-        .pdf-viewer {
-            margin-top: 20px;
-            background: #fff;
-            height: 600px;
+        .auth-error {
+            background: rgba(255, 193, 7, 0.1);
+            border: 1px solid #ffc107;
+            padding: 20px;
             border-radius: 8px;
-            overflow: hidden;
-            display: none;
+            text-align: center;
+            margin: 20px 0;
         }
 
-        .pdf-header {
-            background: #eee;
-            padding: 10px;
+        .auth-error h3 {
+            color: #ffc107;
+            margin-bottom: 10px;
+        }
+
+        .auth-error button {
+            margin-top: 15px;
+            background: rgba(255, 193, 7, 0.2);
+            border-color: #ffc107;
+            color: #ffc107;
+        }
+
+        .auth-error button:hover {
+            background: #ffc107;
+            color: #000;
+        }
+
+        /* Reports List */
+        .reports-section {
+            margin-top: 20px;
+            padding-top: 15px;
+            border-top: 1px solid var(--neon-blue);
+        }
+
+        .reports-section h3 {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: var(--neon-cyan);
+        }
+
+        .reports-controls {
+            margin-bottom: 10px;
+        }
+
+        .account-checkbox-item {
+            padding: 8px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(0, 243, 255, 0.1);
+            border-radius: 4px;
+            margin: 6px 0;
             display: flex;
-            justify-content: space-between;
             align-items: center;
-            color: #333;
-            font-family: sans-serif;
+            gap: 8px;
+            transition: background 0.2s;
         }
 
-        iframe {
-            width: 100%;
-            height: 100%;
-            border: none;
+        .account-checkbox-item:hover {
+            background: rgba(0, 243, 255, 0.1);
+        }
+
+        .account-checkbox-item input[type="checkbox"] {
+            width: auto;
+            margin: 0;
+        }
+
+        .account-checkbox-item label {
+            cursor: pointer;
+            margin: 0;
+            font-size: 13px;
+            flex: 1;
+            color: var(--text-color);
         }
     </style>
 </head>
 
 <body>
-
-    <div class="auth-overlay" id="authCheck">
-        <h3 style="color: var(--neon-cyan); font-size: 2rem;">⚠️ ACCESS DENIED</h3>
-        <p style="color: #fff; margin-bottom: 20px;">Session invalid or expired.</p>
-        <button onclick="redirectToLogin()">RETURN TO LOGIN</button>
-    </div>
-
-    <div class="main-container" id="mainContent" style="display: none;">
-
-        <!-- HEADER -->
-        <div class="header-bar">
+    <div class="main-container">
+        <div class="header-bar" id="headerBar" style="display:none;">
             <div class="user-info-left">
                 <div class="user-info-row">
-                    <i class="fa fa-user"></i> <span id="usernameDisplay">-</span>
+                    <strong id="userLabel">Utente:</strong>
+                    <span id="usernameDisplay">-</span>
                 </div>
                 <div class="user-info-row">
-                    <span id="languageFlag"></span> <span id="languageDisplay">-</span>
+                    <span class="flag-icon" id="languageFlag"></span>
+                    <span id="languageDisplay">-</span>
                     <span style="margin: 0 5px;">|</span>
                     <span id="currencyDisplay">-</span>
                 </div>
             </div>
-            <h1>TRON DASHBOARD</h1>
-            <button class="logout-btn" onclick="logout()">
-                <i class="fa fa-power-off"></i> LOGOUT
-            </button>
+            <h1 id="dashboardTitle">Dashboard</h1>
+            <div class="logout-container">
+                <button class="logout-btn" onclick="logout()">
+                    <i class="fa fa-sign-out"></i> <span id="logoutText">Logout</span>
+                </button>
+            </div>
         </div>
 
-        <div id="globalMessage" class="message"></div>
+        <div id="authCheck" style="display:none;" class="auth-error">
+            <h3>⚠️ <span id="sessionInvalidTitle">Sessione non valida</span></h3>
+            <p id="sessionInvalidMsg">Non sei autenticato o la sessione è scaduta.</p>
+            <button onclick="redirectToLogin()" id="backToLoginBtn">Torna al Login</button>
+        </div>
 
-        <div id="columns">
+        <div id="mainContent" style="display:none;">
+            <div id="message" class="message"></div>
 
-            <!-- LEFT: FILTERS & REPORTS -->
-            <div id="filters-column">
-                <div class="panel">
-                    <h2 id="filtersPeriodTitle">Filtri Periodo</h2>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
-                        <div class="filter-group">
-                            <label id="dateStartLabel">Data iniziale</label>
-                            <input type="date" id="date-start">
+            <!-- DUE COLONNE: FILTRI (SX) E MENU (DX) -->
+            <div id="columns">
+                <!-- FILTRI CON RAPPORTI -->
+                <div id="filters-column">
+                    <div class="collapsible-container">
+                        <div class="collapsible-header" onclick="toggleCollapsible(this)">
+                            <h2 id="filtersPeriodTitle">Filtri Periodo</h2>
+                            <span class="toggle-btn">-</span>
                         </div>
-                        <div class="filter-group">
-                            <label id="dateEndLabel">Data finale</label>
-                            <input type="date" id="date-end">
+                        <div class="collapsible-content active">
+                            <div class="filter-group">
+                                <label id="dateStartLabel">Data iniziale:</label>
+                                <input type="date" id="date-start">
+                            </div>
+                            <div class="filter-group">
+                                <label id="dateEndLabel">Data finale:</label>
+                                <input type="date" id="date-end">
+                            </div>
+                            <div class="filter-group">
+                                <label id="portfolioLabel">Portafoglio:</label>
+                                <select id="portfolio">
+                                    <option value="" id="selectOption">-- seleziona --</option>
+                                </select>
+                            </div>
+                            <div class="filter-group">
+                                <label id="profitabilityLabel">Redditività:</label>
+                                <select id="profitability">
+                                    <option value="" id="selectOption2">-- seleziona --</option>
+                                </select>
+                            </div>
+
+                            <!-- RAPPORTI DENTRO FILTRI -->
+                            <div class="reports-section">
+                                <h3 id="reportsTitle">Rapporti</h3>
+                                <div class="reports-controls">
+                                    <button class="button-secondary" id="selectAllBtn" onclick="selectAllReports()">
+                                        <span id="selectAllText">Seleziona tutti</span>
+                                    </button>
+                                    <button class="button-secondary" id="deselectAllBtn" onclick="deselectAllReports()">
+                                        <span id="deselectAllText">Deseleziona tutti</span>
+                                    </button>
+                                </div>
+                                <div id="reports-list">
+                                    <p style="color:var(--neon-blue);" id="reportsLoading">Caricamento rapporti in
+                                        corso...</p>
+                                </div>
+                            </div>
+
+                            <button id="apply-filters" style="margin-top:15px; width:100%;">Applica Filtri</button>
                         </div>
                     </div>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
-                        <div class="filter-group">
-                            <label id="portfolioLabel">Portafoglio</label>
-                            <select id="portfolio">
-                                <option value="">--</option>
-                            </select>
-                        </div>
-                        <div class="filter-group">
-                            <label id="profitabilityLabel">Redditività</label>
-                            <select id="profitability">
-                                <option value="">--</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <button id="apply-filters" onclick="applyFiltersAndSave()"
-                        style="width: 100%; margin-top: 10px;">APPLICA FILTRI</button>
                 </div>
 
-                <div class="panel">
-                    <div
-                        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                        <h3 id="reportsTitle" style="margin:0; border:none;">Rapporti</h3>
-                        <div>
-                            <button class="button-secondary" onclick="selectAllReports()"
-                                style="padding: 5px 10px; font-size: 0.8rem;">ALL</button>
-                            <button class="button-secondary" onclick="deselectAllReports()"
-                                style="padding: 5px 10px; font-size: 0.8rem;">NONE</button>
+                <!-- MENU (destra) -->
+                <div id="menu-column">
+                    <div class="collapsible-container">
+                        <div class="collapsible-header" onclick="toggleCollapsible(this)">
+                            <h2 id="menuTitle">Menu</h2>
+                            <span class="toggle-btn">-</span>
+                        </div>
+                        <div class="collapsible-content active" id="menu-container">
+                            <p style="color:var(--neon-blue);" id="menuLoading">Caricamento menu in corso...</p>
                         </div>
                     </div>
-                    <div id="reports-list">
-                        <p style="color: var(--neon-blue);">Caricamento...</p>
+
+                    <!-- PDF CONTROLS -->
+                    <div class="collapsible-container">
+                        <div class="collapsible-header" onclick="toggleCollapsible(this)">
+                            <h2 id="pdfControlsTitle">Report PDF</h2>
+                            <span class="toggle-btn">-</span>
+                        </div>
+                        <div class="collapsible-content active">
+                            <button onclick="loadPDF()" style="width:100%; margin-bottom:10px;">
+                                <i class="fa fa-refresh"></i> <span id="generatePdfText">Genera PDF</span>
+                            </button>
+                            <button onclick="downloadPDF()" class="button-secondary" style="width:100%;">
+                                <i class="fa fa-download"></i> <span id="downloadPdfBtnText">Download PDF</span>
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <!-- RIGHT: MENU -->
-            <div id="menu-column">
-                <div class="panel">
-                    <h2 id="menuTitle">Menu</h2>
-                    <div id="menu-container">
-                        <p style="color: var(--neon-blue);">Caricamento...</p>
-                    </div>
+            <!-- PDF VIEWER IN BASSO -->
+            <div class="pdf-viewer" id="pdfViewer">
+                <div class="pdf-header">
+                    <h3 id="pdfViewerTitle">Report PDF - template.pdf</h3>
+                    <button onclick="downloadPDF()">
+                        <i class="fa fa-download"></i> <span id="downloadPdfText">Download PDF</span>
+                    </button>
                 </div>
-
-                <div class="panel">
-                    <h3 id="pdfViewerTitle">Report PDF</h3>
-                    <button onclick="loadPDF()" style="width: 100%; margin-bottom: 10px;">GENERA PDF</button>
-                    <button onclick="downloadPDF()" class="button-secondary" style="width: 100%;">DOWNLOAD PDF</button>
-                </div>
+                <iframe id="pdfFrame" class="pdf-content"></iframe>
             </div>
         </div>
-
-        <!-- PDF VIEWER (Hidden by default, shown if needed) -->
-        <div class="pdf-viewer" id="pdfViewer">
-            <div class="pdf-header">
-                <span>Report Preview</span>
-                <button onclick="document.getElementById('pdfViewer').style.display='none'"
-                    style="background:none; border:none; color:#333; font-size:1.2rem;">&times;</button>
-            </div>
-            <iframe id="pdfFrame"></iframe>
-        </div>
-
     </div>
 
     <script>
         const API_URL = "https://feweb-tunnel.fe-web.eu";
-        let filter = null;
+        let filterData = null;
         let credentials = { username: '', token: '', language: '', filter: '' };
+        let pdfBase64 = null;
         let translations = {};
         let availableLanguages = [];
         let currencies = [];
 
-        // --- AUTH ---
-        function checkAuthentication() {
-            const username = localStorage.getItem("username");
-            const token = localStorage.getItem("token");
-            const language = localStorage.getItem("language") || 'it_IT';
-            const filterVal = localStorage.getItem("filter");
-
-            if (!username || !token) {
-                document.getElementById('authCheck').style.display = 'flex';
-                return false;
-            }
-
-            credentials.username = username;
-            credentials.token = token;
-            credentials.language = language;
-            credentials.filter = filterVal;
-
-            document.getElementById('usernameDisplay').textContent = username;
-            document.getElementById('mainContent').style.display = 'block';
-            return true;
-        }
-
-        function redirectToLogin() { window.location.href = 'index.html'; }
-        function logout() {
-            localStorage.removeItem("token");
-            localStorage.removeItem("username");
-            redirectToLogin();
-        }
-
-        function showMessage(text, type = 'info') {
-            const msgDiv = document.getElementById('globalMessage');
-            msgDiv.className = 'message ' + type;
-            msgDiv.textContent = text;
-            if (type !== 'loading') setTimeout(() => { msgDiv.style.display = 'none'; }, 5000);
-        }
-
-        // --- TRANSLATIONS ---
+        // ========== TRANSLATION SYSTEM ==========
         async function loadLanguageManifest() {
             try {
                 const response = await fetch('lang/manifest.json');
                 if (!response.ok) return [];
                 const manifest = await response.json();
                 return manifest.languages || [];
-            } catch (error) { return []; }
+            } catch (error) {
+                console.error("Error loading manifest:", error);
+                return [];
+            }
         }
 
         async function loadLanguageFile(langCode) {
@@ -510,7 +591,7 @@
                 const response = await fetch(`lang/${langCode}.json`);
                 if (!response.ok) return null;
                 const data = await response.json();
-                if (data['int.language.code']) {
+                if (data['int.language.code'] && data['int.language.description'] && data['img.language.flag']) {
                     return {
                         code: data['int.language.code'],
                         description: data['int.language.description'],
@@ -518,14 +599,19 @@
                     };
                 }
                 return null;
-            } catch (error) { return null; }
+            } catch (error) {
+                console.error(`Error loading ${langCode}.json:`, error);
+                return null;
+            }
         }
 
         async function initializeLanguages() {
             const langCodes = await loadLanguageManifest();
             for (const langCode of langCodes) {
                 const langData = await loadLanguageFile(langCode);
-                if (langData) availableLanguages.push(langData);
+                if (langData) {
+                    availableLanguages.push(langData);
+                }
             }
             availableLanguages.sort((a, b) => a.code.localeCompare(b.code));
         }
@@ -533,26 +619,37 @@
         async function loadCurrencies(lang) {
             try {
                 const response = await fetch(`currency/${lang}.json`);
-                if (response.ok) currencies = await response.json();
-            } catch (error) { }
+                if (!response.ok) throw new Error(`Currency file not found currency/${lang}.json`);
+                currencies = await response.json();
+                console.log("✅ Currencies loaded:", currencies.length);
+            } catch (error) {
+                console.error('❌ Error loading currencies:', error);
+                currencies = [];
+            }
         }
 
         async function loadTranslations(lang) {
+            console.log("📚 Loading translations for:", lang);
             try {
                 const response = await fetch(`lang/${lang}.json`);
-                if (response.ok) {
-                    translations = await response.json();
-                    await loadCurrencies(lang);
-                    updatePageTranslations();
-                }
-            } catch (error) { }
+                if (!response.ok) throw new Error(`Translation file not found lang/${lang}.json`);
+                translations = await response.json();
+                console.log("✅ Translations loaded");
+                await loadCurrencies(lang);
+            } catch (error) {
+                console.error('❌ Error loading translations:', error);
+            }
         }
 
-        function getTranslation(key) { return translations[key] || key; }
+        function getTranslation(key) {
+            return translations[key] || key;
+        }
 
         function updatePageTranslations() {
-            // Basic translation mapping
-            const map = {
+            // Traduci tutti gli elementi della pagina
+            const translations_map = {
+                'dashboardTitle': 'int.dashboard.title',
+                'userLabel': 'int.user.label',
                 'filtersPeriodTitle': 'int.filters.period.title',
                 'reportsTitle': 'int.reports.title',
                 'menuTitle': 'int.menu.title',
@@ -560,19 +657,131 @@
                 'dateEndLabel': 'int.date.end',
                 'portfolioLabel': 'int.portfolio',
                 'profitabilityLabel': 'int.profitability',
-                'pdfViewerTitle': 'int.pdf.viewer.title',
-                'apply-filters': 'int.apply.filters'
+                'sessionInvalidTitle': 'int.session.invalid',
+                'sessionInvalidMsg': 'int.session.expired',
+                'backToLoginBtn': 'int.back.to.login',
+                'menuLoading': 'int.loading.menu',
+                'reportsLoading': 'int.loading.reports',
+                'pdfViewerTitle': 'int.pdf.viewer.title'
             };
-            for (const [id, key] of Object.entries(map)) {
-                const el = document.getElementById(id);
-                if (el) {
-                    const text = getTranslation(key);
-                    if (text !== key) el.textContent = text;
+
+            // Aggiorna tutti i testi
+            Object.keys(translations_map).forEach(elementId => {
+                const element = document.getElementById(elementId);
+                if (element) {
+                    const translated = getTranslation(translations_map[elementId]);
+                    if (translated !== translations_map[elementId]) {
+                        element.textContent = translated;
+                    }
+                }
+            });
+
+            // Gestione speciale per elementi con contenuto HTML
+            const logoutText = getTranslation('int.logout');
+            if (logoutText !== 'int.logout') {
+                document.getElementById('logoutText').textContent = logoutText;
+            }
+
+            const downloadPdfText = getTranslation('int.download.pdf');
+            if (downloadPdfText !== 'int.download.pdf') {
+                document.getElementById('downloadPdfText').textContent = downloadPdfText;
+            }
+
+            const selectAllText = getTranslation('int.select.all');
+            if (selectAllText !== 'int.select.all') {
+                document.getElementById('selectAllText').textContent = selectAllText;
+            }
+
+            const deselectAllText = getTranslation('int.deselect.all');
+            if (deselectAllText !== 'int.deselect.all') {
+                document.getElementById('deselectAllText').textContent = deselectAllText;
+            }
+
+            const applyFiltersText = getTranslation('int.apply.filters');
+            if (applyFiltersText !== 'int.apply.filters') {
+                document.getElementById('apply-filters').textContent = applyFiltersText;
+            }
+
+            // Aggiorna le opzioni dei select
+            const selectOpt = getTranslation('int.select.option');
+            if (selectOpt !== 'int.select.option') {
+                const opt1 = document.getElementById('selectOption');
+                const opt2 = document.getElementById('selectOption2');
+                if (opt1) opt1.textContent = selectOpt;
+                if (opt2) opt2.textContent = selectOpt;
+            }
+        }
+
+        // ========== UTILITY FUNCTIONS ==========
+        function toggleCollapsible(header) {
+            const content = header.nextElementSibling;
+            const toggleBtn = header.querySelector('.toggle-btn');
+            if (content.classList.contains('active')) {
+                content.classList.remove('active');
+                toggleBtn.textContent = '+';
+            } else {
+                content.classList.add('active');
+                toggleBtn.textContent = '-';
+            }
+        }
+
+        function showMessage(text, type = 'info') {
+            const msgDiv = document.getElementById('message');
+            msgDiv.className = 'message ' + type;
+            msgDiv.textContent = text;
+            if (type !== 'loading') {
+                setTimeout(() => { msgDiv.className = 'message'; }, 5000);
+            }
+        }
+
+        // ========== AUTHENTICATION ==========
+        function checkAuthentication() {
+            const username = localStorage.getItem("username");
+            const token = localStorage.getItem("token");
+            const language = localStorage.getItem("language") || 'it_IT';
+            const filter = localStorage.getItem("filter");
+
+            credentials.username = username;
+            credentials.token = token;
+            credentials.language = language;
+            credentials.filter = filter;
+
+            document.getElementById('usernameDisplay').textContent = username || '-';
+            document.getElementById('headerBar').style.display = 'flex';
+            document.getElementById('authCheck').style.display = 'none';
+            document.getElementById('mainContent').style.display = 'block';
+
+            return true;
+        }
+
+        function updateUserInfo() {
+            if (!filterData || !filterData.Filter) return;
+
+            const f = filterData.Filter;
+
+            // Language
+            if (f.language) {
+                const langData = availableLanguages.find(l => l.code === f.language);
+                if (langData) {
+                    document.getElementById('languageFlag').textContent = langData.flag;
+                    document.getElementById('languageDisplay').textContent = f.language;
+                } else {
+                    document.getElementById('languageDisplay').textContent = f.language;
+                }
+            }
+
+            // Currency
+            if (f.currency) {
+                const currData = currencies.find(c => c.currency === f.currency);
+                if (currData && currData['img.currency.flag']) {
+                    document.getElementById('currencyDisplay').textContent = `${currData['img.currency.flag']} ${f.currency}`;
+                } else {
+                    document.getElementById('currencyDisplay').textContent = f.currency;
                 }
             }
         }
 
-        // --- MENU ---
+        // ========== MENU ==========
         async function loadMenu() {
             try {
                 const response = await fetch('menu.json');
@@ -584,28 +793,26 @@
                     const ul = document.createElement('ul');
                     items.filter(i => i.status === "ok").sort((a, b) => a.id.localeCompare(b.id)).forEach(item => {
                         const li = document.createElement('li');
+                        if (item.submenu && item.submenu.length) {
+                            const toggle = document.createElement('span');
+                            toggle.textContent = '+';
+                            toggle.classList.add('toggle');
+                            toggle.addEventListener('click', (e) => {
+                                e.stopPropagation();
+                                li.classList.toggle('open');
+                                toggle.textContent = li.classList.contains('open') ? '-' : '+';
+                            });
+                            li.appendChild(toggle);
+                            li.classList.add('has-submenu');
+                        }
                         const link = document.createElement('a');
                         const translatedDesc = getTranslation(item.description);
                         link.textContent = translatedDesc !== item.description ? translatedDesc : item.description;
                         link.href = item.html || '#';
-
-                        if (item.submenu && item.submenu.length) {
-                            const toggle = document.createElement('span');
-                            toggle.className = 'toggle';
-                            toggle.textContent = '+';
-                            toggle.onclick = (e) => {
-                                e.preventDefault(); e.stopPropagation();
-                                li.classList.toggle('open');
-                                toggle.textContent = li.classList.contains('open') ? '-' : '+';
-                            };
-                            link.appendChild(toggle);
-                        }
-
                         li.appendChild(link);
-
                         if (item.submenu && item.submenu.length) {
                             const subUl = createMenuList(item.submenu);
-                            subUl.className = 'submenu';
+                            subUl.classList.add('submenu');
                             li.appendChild(subUl);
                         }
                         ul.appendChild(li);
@@ -616,14 +823,16 @@
                 const menuList = createMenuList(data.menu || []);
                 container.appendChild(menuList);
             } catch (error) {
-                document.getElementById('menu-container').innerHTML = '<p style="color:red;">Errore menu</p>';
+                console.error('Errore caricamento menu', error);
+                document.getElementById('menu-container').innerHTML = '<p style="color:red;">Errore caricamento menu</p>';
             }
         }
 
-        // --- FILTERS ---
+        // ========== FILTER & ACCOUNTS ==========
         async function loadFilter() {
             try {
-                showMessage('Loading filters...', 'loading');
+                showMessage(getTranslation('int.loading.filters') || 'Caricamento filtri e account in corso...', 'loading');
+
                 const payload = {
                     username: credentials.username,
                     token: credentials.token,
@@ -631,17 +840,28 @@
                     filter: credentials.filter
                 };
 
+                console.log('📤 POST /getfilter', payload);
+
                 const response = await fetch(`${API_URL}/getfilter`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
                 });
 
-                if (!response.ok) throw new Error('HTTP ' + response.status);
+                console.log('📥 status', response.status);
+
+                if (!response.ok) {
+                    if (response.status === 401 || response.status === 403) {
+                        showMessage(getTranslation('int.session.expired') || 'Sessione scaduta. Effettua nuovamente il login.', 'error');
+                        setTimeout(redirectToLogin, 2000);
+                        return;
+                    }
+                    throw new Error('HTTP ' + response.status);
+                }
 
                 const data = await response.json();
+                console.log('getfilter response:', data);
 
-                // Robust parsing logic
                 let loaded = null;
                 if (data && data.Filter && data.Account) {
                     loaded = data;
@@ -653,107 +873,167 @@
                     loaded = data;
                 }
 
-                if (!loaded || !loaded.Filter) throw new Error('Invalid Data Structure');
+                if (!loaded || !loaded.Filter) {
+                    throw new Error('Formato filter.json non valido');
+                }
 
-                filter = loaded;
+                filterData = loaded;
+
                 populateFilterUI();
                 renderReportsList();
                 updateUserInfo();
-                showMessage('Filters Loaded', 'success');
 
+                showMessage(getTranslation('int.filters.loaded') || 'Filtri e account caricati', 'success');
             } catch (error) {
-                console.error(error);
-                showMessage('Error loading filters: ' + error.message, 'error');
+                console.error('Errore loadFilter', error);
+                showMessage((getTranslation('int.error.loading.filters') || 'Errore nel caricamento dei filtri') + ': ' + (error.message || error), 'error');
+                document.getElementById('reports-list').innerHTML = '<p style="color:#c33;">Errore nel caricamento dei rapporti</p>';
             }
         }
 
         function populateFilterUI() {
-            const f = filter?.Filter || {};
+            const f = filterData.Filter || {};
+
+            // Date
             if (f.date_start) document.getElementById('date-start').value = f.date_start;
             if (f.date_end) document.getElementById('date-end').value = f.date_end;
 
-            const populateSelect = (id, items) => {
-                const sel = document.getElementById(id);
-                sel.innerHTML = `<option value="">--</option>`;
-                if (Array.isArray(items)) {
-                    items.forEach(i => {
-                        const opt = document.createElement('option');
-                        opt.value = i.value;
-                        opt.textContent = i.value;
-                        opt.selected = i.selected;
-                        sel.appendChild(opt);
-                    });
-                }
-            };
+            // Portfolio (combobox singolo)
+            const portfolioSelect = document.getElementById('portfolio');
+            portfolioSelect.innerHTML = `<option value="">${getTranslation('int.select.option') || '-- seleziona --'}</option>`;
 
-            populateSelect('portfolio', f.portfolio);
-            populateSelect('profitability', f.yield);
+            if (Array.isArray(f.portfolio)) {
+                f.portfolio.forEach(p => {
+                    const opt = document.createElement('option');
+                    opt.value = p.value;
+                    opt.textContent = p.value;
+                    opt.selected = p.selected;
+                    portfolioSelect.appendChild(opt);
+                });
+            }
+
+            // Yield/Profitability (combobox singolo)
+            const profitabilitySelect = document.getElementById('profitability');
+            profitabilitySelect.innerHTML = `<option value="">${getTranslation('int.select.option') || '-- seleziona --'}</option>`;
+
+            if (Array.isArray(f.yield)) {
+                f.yield.forEach(y => {
+                    const opt = document.createElement('option');
+                    opt.value = y.value;
+                    opt.textContent = y.value;
+                    opt.selected = y.selected;
+                    profitabilitySelect.appendChild(opt);
+                });
+            }
         }
 
         function renderReportsList() {
             const container = document.getElementById('reports-list');
             container.innerHTML = '';
-            const list = filter?.Account?.list || [];
 
-            if (list.length === 0) {
-                container.innerHTML = '<p>No reports available</p>';
+            const accountsList = (filterData.Account && filterData.Account.list) ? filterData.Account.list : [];
+
+            if (!Array.isArray(accountsList) || accountsList.length === 0) {
+                container.innerHTML = `<p style="color:#999;">${getTranslation('int.no.reports') || 'Nessun rapporto trovato'}</p>`;
                 return;
             }
 
-            list.forEach(item => {
+            accountsList.forEach(item => {
                 const div = document.createElement('div');
                 div.className = 'account-checkbox-item';
 
                 const checkbox = document.createElement('input');
                 checkbox.type = 'checkbox';
-                checkbox.id = `acc-${item.id_account}`;
+                checkbox.id = `account-${item.id_account}`;
                 checkbox.checked = item.selected || false;
-                checkbox.addEventListener('change', () => { item.selected = checkbox.checked; });
+                checkbox.addEventListener('change', () => {
+                    item.selected = checkbox.checked;
+                });
 
                 const label = document.createElement('label');
-                label.htmlFor = `acc-${item.id_account}`;
-                label.textContent = `${item.id_account} - ${item.description_account || ''}`;
+                label.htmlFor = `account-${item.id_account}`;
+                const id = item.id_account || item.account_id || 'N/A';
+                const desc = item.description_account || item.description || '';
+                label.textContent = `${id}${desc ? ' - ' + desc : ''}`;
 
                 div.appendChild(checkbox);
                 div.appendChild(label);
                 container.appendChild(div);
             });
+
+            const summary = document.createElement('p');
+            summary.style.marginTop = '15px';
+            summary.style.color = '#555';
+            summary.style.fontSize = '13px';
+            summary.innerHTML = `<strong>${accountsList.length}</strong> ${getTranslation('int.reports.available') || 'rapporti disponibili'}`;
+            container.appendChild(summary);
         }
 
-        function updateUserInfo() {
-            if (!filter?.Filter) return;
-            const f = filter.Filter;
-            if (f.language) {
-                const lang = availableLanguages.find(l => l.code === f.language);
-                document.getElementById('languageDisplay').textContent = f.language;
-                if (lang) document.getElementById('languageFlag').textContent = lang.flag;
-            }
-            if (f.currency) document.getElementById('currencyDisplay').textContent = f.currency;
+        function selectAllReports() {
+            if (!filterData || !filterData.Account || !filterData.Account.list) return;
+
+            filterData.Account.list.forEach(item => {
+                item.selected = true;
+            });
+
+            renderReportsList();
+            showMessage(getTranslation('int.all.selected') || 'Tutti i rapporti selezionati', 'success');
         }
 
+        function deselectAllReports() {
+            if (!filterData || !filterData.Account || !filterData.Account.list) return;
+
+            filterData.Account.list.forEach(item => {
+                item.selected = false;
+            });
+
+            renderReportsList();
+            showMessage(getTranslation('int.all.deselected') || 'Tutti i rapporti deselezionati', 'success');
+        }
+
+        // ========== APPLY FILTERS ==========
         async function applyFiltersAndSave() {
             try {
-                if (!filter || !filter.Filter) throw new Error('Filters not loaded');
+                if (!filterData) {
+                    showMessage(getTranslation('int.error.no.data') || 'Impossibile applicare filtri: dati non caricati', 'error');
+                    return;
+                }
 
-                showMessage('Saving...', 'loading');
+                const dateStart = document.getElementById('date-start').value;
+                const dateEnd = document.getElementById('date-end').value;
+                const portfolioSelect = document.getElementById('portfolio');
+                const profitabilitySelect = document.getElementById('profitability');
 
-                // Update filter object
-                filter.Filter.date_start = document.getElementById('date-start').value;
-                filter.Filter.date_end = document.getElementById('date-end').value;
+                // Aggiorna Filter
+                if (!filterData.Filter) filterData.Filter = {};
+                filterData.Filter.date_start = dateStart || filterData.Filter.date_start || '';
+                filterData.Filter.date_end = dateEnd || filterData.Filter.date_end || '';
 
-                const updateSelect = (id, arr) => {
-                    const val = document.getElementById(id).value;
-                    if (Array.isArray(arr)) arr.forEach(i => i.selected = (i.value === val));
-                };
-                updateSelect('portfolio', filter.Filter.portfolio);
-                updateSelect('profitability', filter.Filter.yield);
+                // Aggiorna portfolio
+                if (Array.isArray(filterData.Filter.portfolio)) {
+                    filterData.Filter.portfolio.forEach(p => {
+                        p.selected = (p.value === portfolioSelect.value);
+                    });
+                }
 
+                // Aggiorna yield
+                if (Array.isArray(filterData.Filter.yield)) {
+                    filterData.Filter.yield.forEach(y => {
+                        y.selected = (y.value === profitabilitySelect.value);
+                    });
+                }
+
+                showMessage(getTranslation('int.sending.filters') || 'Invio filtri al server...', 'loading');
+
+                // AGGIUNGI LE CREDENZIALI AL PAYLOAD
                 const payload = {
-                    filterData: filter, // CORRECT KEY
+                    filterData,
                     username: credentials.username,
                     token: credentials.token,
                     language: credentials.language
                 };
+
+                console.log('📤 POST /putfilter', payload);
 
                 const response = await fetch(`${API_URL}/putfilter`, {
                     method: 'POST',
@@ -761,34 +1041,35 @@
                     body: JSON.stringify(payload)
                 });
 
-                if (!response.ok) throw new Error('HTTP ' + response.status);
+                console.log('📥 status', response.status);
 
-                showMessage('Filters Saved!', 'success');
+                if (!response.ok) {
+                    if (response.status === 401 || response.status === 403) {
+                        showMessage(getTranslation('int.session.expired') || 'Sessione scaduta. Effettua nuovamente il login.', 'error');
+                        setTimeout(redirectToLogin, 2000);
+                        return;
+                    }
+                    const text = await response.text().catch(() => null);
+                    throw new Error(`HTTP ${response.status} ${text ? '- ' + text : ''}`);
+                }
+
+                const respJson = await response.json().catch(() => null);
+                console.log('putfilter response', respJson);
+
+                showMessage(getTranslation('int.filters.updated') || 'Filtri aggiornati e inviati correttamente', 'success');
+
                 await loadFilter();
-
             } catch (error) {
-                console.error(error);
-                showMessage('Error saving: ' + error.message, 'error');
+                console.error('Errore applyFiltersAndSave', error);
+                showMessage((getTranslation('int.error.sending.filters') || 'Errore nell\'invio dei filtri') + ': ' + (error.message || error), 'error');
             }
         }
 
-        function selectAllReports() {
-            if (filter?.Account?.list) {
-                filter.Account.list.forEach(i => i.selected = true);
-                renderReportsList();
-            }
-        }
-        function deselectAllReports() {
-            if (filter?.Account?.list) {
-                filter.Account.list.forEach(i => i.selected = false);
-                renderReportsList();
-            }
-        }
-
-        // --- PDF ---
+        // ========== PDF ==========
         async function loadPDF() {
             try {
-                showMessage('Generating PDF...', 'loading');
+                showMessage(getTranslation('int.loading.pdf') || 'Caricamento PDF in corso...', 'loading');
+
                 const payload = {
                     username: credentials.username,
                     token: credentials.token,
@@ -802,46 +1083,121 @@
                     body: JSON.stringify(payload)
                 });
 
-                if (!response.ok) throw new Error('HTTP ' + response.status);
-                const data = await response.json();
-
-                if (data.status === 'ok' && data.pdf_data) {
-                    window.pdfData = data.pdf_data;
-                    // Show in iframe
-                    const viewer = document.getElementById('pdfViewer');
-                    const frame = document.getElementById('pdfFrame');
-                    frame.src = 'data:application/pdf;base64,' + data.pdf_data;
-                    viewer.style.display = 'block';
-                    showMessage('PDF Generated', 'success');
-                } else {
-                    throw new Error(data.message || 'No PDF data');
+                if (!response.ok) {
+                    if (response.status === 401 || response.status === 403) {
+                        showMessage(getTranslation('int.session.expired') || 'Sessione scaduta. Effettua nuovamente il login.', 'error');
+                        setTimeout(redirectToLogin, 2000);
+                        return;
+                    }
+                    throw new Error('HTTP ' + response.status);
                 }
+
+                const data = await response.json();
+                if (!data || data.status !== 'ok' || !data.pdf_data) throw new Error(data && data.message ? data.message : 'PDF non disponibile');
+
+                displayPDF(data.pdf_data);
             } catch (error) {
-                showMessage('Error PDF: ' + error.message, 'error');
+                console.error('Errore loadPDF', error);
+                showMessage((getTranslation('int.error.loading.pdf') || 'Errore nel caricamento del PDF') + ': ' + (error.message || error), 'error');
+            }
+        }
+
+        function displayPDF(pdfBase64Data) {
+            try {
+                pdfBase64 = pdfBase64Data;
+                const byteCharacters = atob(pdfBase64);
+                const byteNumbers = new Array(byteCharacters.length);
+                for (let i = 0; i < byteCharacters.length; i++) byteNumbers[i] = byteCharacters.charCodeAt(i);
+                const byteArray = new Uint8Array(byteNumbers);
+                const pdfBlob = new Blob([byteArray], { type: 'application/pdf' });
+                if (pdfBlob.size === 0) throw new Error('PDF vuoto');
+                const pdfUrl = URL.createObjectURL(pdfBlob);
+                const pdfFrame = document.getElementById('pdfFrame');
+                pdfFrame.src = pdfUrl;
+                pdfFrame.onload = () => showMessage(getTranslation('int.pdf.loaded') || 'PDF caricato con successo', 'success');
+                document.getElementById('pdfViewer').style.display = 'block';
+                document.getElementById('pdfViewer').scrollIntoView({ behavior: 'smooth' });
+            } catch (error) {
+                console.error('displayPDF error', error);
+                showMessage((getTranslation('int.error.display.pdf') || 'Errore nel display del PDF') + ': ' + (error.message || error), 'error');
             }
         }
 
         function downloadPDF() {
-            if (window.pdfData) {
-                const link = document.createElement('a');
-                link.href = 'data:application/pdf;base64,' + window.pdfData;
-                link.download = 'report.pdf';
-                link.click();
-            } else {
-                alert('Generate PDF first!');
+            if (!pdfBase64) {
+                showMessage(getTranslation('int.no.pdf') || 'Nessun PDF caricato', 'error');
+                return;
+            }
+            try {
+                const byteCharacters = atob(pdfBase64);
+                const byteNumbers = new Array(byteCharacters.length);
+                for (let i = 0; i < byteCharacters.length; i++) byteNumbers[i] = byteCharacters.charCodeAt(i);
+                const byteArray = new Uint8Array(byteNumbers);
+                const pdfBlob = new Blob([byteArray], { type: 'application/pdf' });
+                const url = URL.createObjectURL(pdfBlob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'template.pdf';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                showMessage(getTranslation('int.download.started') || 'Download avviato', 'success');
+            } catch (error) {
+                console.error('downloadPDF error', error);
+                showMessage((getTranslation('int.error.download.pdf') || 'Errore nel download del PDF') + ': ' + (error.message || error), 'error');
             }
         }
 
-        // --- INIT ---
-        (async function init() {
+        // ========== LOGOUT ==========
+        async function logout() {
+            try {
+                const payload = {
+                    username: credentials.username,
+                    token: credentials.token,
+                    language: credentials.language,
+                    filter: credentials.filter
+                };
+                const response = await fetch(`${API_URL}/logout`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await response.json().catch(() => null);
+                if (data && data.status === 'ok') {
+                    showMessage(getTranslation('int.logout.success') || 'Logout effettuato con successo', 'success');
+                    localStorage.clear();
+                    setTimeout(() => { window.location.href = 'index.html'; }, 1000);
+                } else {
+                    showMessage(getTranslation('int.error.logout') || 'Errore durante il logout', 'error');
+                }
+            } catch (error) {
+                console.error('logout error', error);
+                showMessage((getTranslation('int.connection.error') || 'Errore di connessione') + ': ' + (error.message || error), 'error');
+            }
+        }
+
+        function redirectToLogin() {
+            localStorage.clear();
+            window.location.href = 'index.html';
+        }
+
+        // ========== INITIALIZATION ==========
+        window.addEventListener('load', async () => {
             if (checkAuthentication()) {
                 await initializeLanguages();
                 await loadTranslations(credentials.language);
-                await loadMenu();
-                await loadFilter();
+                updatePageTranslations();
+                loadMenu();
+                loadFilter();
+                loadPDF();
             }
-        })();
+        });
 
+        document.getElementById('apply-filters')?.addEventListener('click', (e) => {
+            e.preventDefault();
+            applyFiltersAndSave();
+        });
     </script>
 </body>
 
