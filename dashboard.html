@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Dashboard - Tron Edition</title>
+    <title>Dashboard</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&display=swap');
@@ -433,6 +433,111 @@
             flex: 1;
             color: var(--text-color);
         }
+
+        /* Portfolio Table */
+        #portfolio-section {
+            margin-top: 20px;
+        }
+
+        .portfolio-controls {
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .portfolio-controls label {
+            color: var(--neon-cyan);
+            font-size: 14px;
+        }
+
+        .portfolio-controls select {
+            width: auto;
+            min-width: 200px;
+        }
+
+        #portfolio-table-container {
+            overflow-x: auto;
+        }
+
+        #portfolio-table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 800px;
+        }
+
+        #portfolio-table th,
+        #portfolio-table td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid rgba(0, 243, 255, 0.2);
+            color: var(--text-color);
+        }
+
+        #portfolio-table th {
+            background: rgba(0, 102, 255, 0.1);
+            color: var(--neon-cyan);
+            font-weight: 600;
+            cursor: pointer;
+            user-select: none;
+            position: relative;
+            white-space: nowrap;
+        }
+
+        #portfolio-table th:hover {
+            background: rgba(0, 102, 255, 0.2);
+        }
+
+        #portfolio-table th.sort-asc::after {
+            content: ' ▲';
+            font-size: 0.8em;
+        }
+
+        #portfolio-table th.sort-desc::after {
+            content: ' ▼';
+            font-size: 0.8em;
+        }
+
+        #portfolio-table tbody tr {
+            transition: background 0.2s;
+            cursor: pointer;
+        }
+
+        #portfolio-table tbody tr:hover {
+            background: rgba(0, 243, 255, 0.1);
+        }
+
+        #portfolio-table tbody tr.selected {
+            background: rgba(0, 243, 255, 0.2);
+            box-shadow: inset 0 0 10px rgba(0, 243, 255, 0.1);
+            border-left: 3px solid var(--neon-cyan);
+        }
+
+        /* Grouping Headers */
+        tr.group-header {
+            background: rgba(0, 102, 255, 0.15);
+            font-weight: bold;
+            cursor: default;
+        }
+
+        tr.group-header td {
+            color: var(--neon-cyan);
+            padding-top: 15px;
+            padding-bottom: 15px;
+        }
+
+        tr.group-header:hover {
+            background: rgba(0, 102, 255, 0.15);
+        }
+
+        /* Drag Handle */
+        .drag-handle {
+            display: inline-block;
+            width: 10px;
+            cursor: grab;
+            color: var(--neon-blue);
+            margin-right: 5px;
+        }
     </style>
 </head>
 
@@ -547,6 +652,34 @@
                                 <i class="fa fa-download"></i> <span id="downloadPdfBtnText">Download PDF</span>
                             </button>
                         </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PORTFOLIO TABLE SECTION -->
+            <div id="portfolio-section" class="collapsible-container" style="display:none;">
+                <div class="collapsible-header" onclick="toggleCollapsible(this)">
+                    <h2 id="portfolioTitle">Portafoglio</h2>
+                    <span class="toggle-btn">-</span>
+                </div>
+                <div class="collapsible-content active">
+                    <div class="portfolio-controls">
+                        <label for="grouping-select">Raggruppa per:</label>
+                        <select id="grouping-select" onchange="updateTableGrouping()">
+                            <option value="">Nessun raggruppamento</option>
+                        </select>
+                    </div>
+                    <div id="portfolio-table-container">
+                        <table id="portfolio-table">
+                            <thead>
+                                <tr id="portfolio-header-row">
+                                    <!-- Headers will be injected here -->
+                                </tr>
+                            </thead>
+                            <tbody id="portfolio-body">
+                                <!-- Rows will be injected here -->
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>
