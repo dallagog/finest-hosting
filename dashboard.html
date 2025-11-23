@@ -1284,7 +1284,7 @@
 
         // ========== PORTFOLIO TABLE ==========
         let portfolioData = [];
-        let classificationData = {};
+        let classificationMap = {}; // Map id_instrument -> classification object
         let tableColumns = [];
         let currentSort = { column: null, direction: 'asc' };
         let currentGroup = null;
@@ -1308,14 +1308,55 @@
                 const data = await response.json();
 
                 if (data.status === 'ok') {
-                    portfolioData = data.portfolio || [];
-                    classificationData = data.classification || {};
-
-                    if (portfolioData.length > 0 && tableColumns.length === 0) {
-                        tableColumns = Object.keys(portfolioData[0]);
+                    // Parse Classification
+                    classificationMap = {};
+                    if (Array.isArray(data.classification)) {
+                        data.classification.forEach(item => {
+                            if (item.id_instrument) {
+                                classificationMap[item.id_instrument] = item;
+                            }
+                        });
                     }
 
-                    populateGroupingSelect();
+                    // Parse Portfolio: [[Symbol, {data}], ...] -> [{Symbol: Symbol, ...data}]
+                    portfolioData = [];
+                    const rawPortfolio = data.portfolio || [];
+
+                    if (Array.isArray(rawPortfolio)) {
+                        rawPortfolio.forEach(entry => {
+                            if (Array.isArray(entry) && entry.length === 2) {
+                                const symbol = entry[0];
+                                const details = entry[1];
+                                const flatItem = { Symbol: symbol };
+
+                                // Parse details
+                                Object.keys(details).forEach(key => {
+                                    let val = details[key];
+                                    // Handle "123.45:EUR" -> 123.45
+                                    if (typeof val === 'string' && val.includes(':')) {
+                                        const parts = val.split(':');
+                                        // Check if first part is numeric
+                                        if (!isNaN(parseFloat(parts[0]))) {
+                                            flatItem[key] = parseFloat(parts[0]);
+                                        } else {
+                                            flatItem[key] = val;
+                                        }
+                                    } else {
+                                        flatItem[key] = val;
+                                    }
+                                });
+                                portfolioData.push(flatItem);
+                            }
+                        });
+                    }
+
+                    if (portfolioData.length > 0) {
+                        // Determine columns from first item, ensuring Symbol is first
+                        const keys = Object.keys(portfolioData[0]);
+                        tableColumns = ['Symbol', ...keys.filter(k => k !== 'Symbol')];
+                    }
+
+                    populateGroupingSelect(data.classification);
                     renderTable();
                     document.getElementById('portfolio-section').style.display = 'block';
                 } else {
@@ -1326,25 +1367,31 @@
             }
         }
 
-        function populateGroupingSelect() {
+        function populateGroupingSelect(classificationList) {
             const select = document.getElementById('grouping-select');
             select.innerHTML = '<option value="">Nessun raggruppamento</option>';
-            // Add options from classificationData keys or columns
-            // Assuming classificationData keys are the grouping criteria
-            if (classificationData) {
-                Object.keys(classificationData).forEach(key => {
-                    const opt = document.createElement('option');
-                    opt.value = key;
-                    opt.textContent = key;
-                    select.appendChild(opt);
+
+            // Use keys from the first classification item
+            if (Array.isArray(classificationList) && classificationList.length > 0) {
+                const sample = classificationList[0];
+                Object.keys(sample).forEach(key => {
+                    if (key !== 'id_instrument') { // Skip ID
+                        const opt = document.createElement('option');
+                        opt.value = key;
+                        opt.textContent = key;
+                        select.appendChild(opt);
+                    }
                 });
             }
-            // Also allow grouping by columns present in data if needed, but user specified classification.json
         }
 
         function updateTableGrouping() {
             currentGroup = document.getElementById('grouping-select').value;
             renderTable();
+        }
+
+        function isPercentageColumn(colName) {
+            return colName.toLowerCase().includes('per') || colName.includes('%');
         }
 
         function renderTable() {
@@ -1390,33 +1437,41 @@
                 });
             }
 
+            // Calculate Totals Helper
+            const calculateTotals = (items) => {
+                const totals = {};
+                tableColumns.forEach(col => {
+                    if (col === 'Symbol') {
+                        totals[col] = 'TOTAL';
+                        return;
+                    }
+                    if (isPercentageColumn(col)) {
+                        totals[col] = '';
+                        return;
+                    }
+                    // Check if column is numeric (based on first item)
+                    const isNumeric = items.length > 0 && typeof items[0][col] === 'number';
+                    if (isNumeric) {
+                        const sum = items.reduce((acc, curr) => acc + (curr[col] || 0), 0);
+                        totals[col] = parseFloat(sum.toFixed(2));
+                    } else {
+                        totals[col] = '';
+                    }
+                });
+                return totals;
+            };
+
             // Group
             if (currentGroup) {
                 const groups = {};
                 displayData.forEach(item => {
-                    // Logic to determine group. 
-                    // If classificationData[currentGroup] is an object mapping ID -> Group, use it.
-                    // Else if it's just a column name, use item[currentGroup].
-                    // We'll try to use classificationData first if structure matches, else fallback to item property.
-
                     let groupVal = 'Altro';
-
-                    // Check if classificationData has this group key and if it's a map
-                    // Since we don't know the exact structure, we'll assume for now that if the key exists in classificationData, 
-                    // we might need to lookup the item there. 
-                    // BUT, typically "classification" implies adding a field to the item. 
-                    // Let's assume for this implementation that we group by the selected key, 
-                    // looking it up in the item properties (assuming the backend enriched the data OR classificationData is used to lookup).
-
-                    // Simplest approach: Group by item property matching the selected key.
-                    if (item[currentGroup] !== undefined) {
-                        groupVal = item[currentGroup];
-                    } else if (classificationData[currentGroup]) {
-                        // Maybe classificationData[currentGroup] is the map?
-                        // Let's assume item has an 'id' or 'symbol' to lookup.
-                        const id = item.id || item.isin || item.symbol; // Try common IDs
-                        if (id && classificationData[currentGroup][id]) {
-                            groupVal = classificationData[currentGroup][id];
+                    const symbol = item.Symbol;
+                    // Lookup in classification map
+                    if (symbol && classificationMap[symbol]) {
+                        const classObj = classificationMap[symbol];
+                        if (classObj[currentGroup]) {
+                            groupVal = classObj[currentGroup];
                         }
                     }
 
@@ -1425,25 +1480,55 @@
                 });
 
                 Object.keys(groups).sort().forEach(group => {
+                    const groupItems = groups[group];
                     const trGroup = document.createElement('tr');
                     trGroup.className = 'group-header';
-                    trGroup.innerHTML = `<td colspan="${tableColumns.length}">${group} (${groups[group].length})</td>`;
+                    trGroup.innerHTML = `<td colspan="${tableColumns.length}">${group} (${groupItems.length})</td>`;
                     tbody.appendChild(trGroup);
 
-                    groups[group].forEach(item => renderRow(item, tbody));
+                    groupItems.forEach(item => renderRow(item, tbody));
+
+                    // Group Total
+                    const groupTotal = calculateTotals(groupItems);
+                    renderRow(groupTotal, tbody, true);
                 });
+
+                // Grand Total
+                const grandTotal = calculateTotals(displayData);
+                renderRow(grandTotal, tbody, true, true);
 
             } else {
                 displayData.forEach(item => renderRow(item, tbody));
+                // Grand Total
+                const grandTotal = calculateTotals(displayData);
+                renderRow(grandTotal, tbody, true, true);
             }
         }
 
-        function renderRow(item, tbody) {
+        function renderRow(item, tbody, isTotal = false, isGrandTotal = false) {
             const tr = document.createElement('tr');
-            tr.onclick = () => selectRow(tr, item);
+            if (isTotal) {
+                tr.style.fontWeight = 'bold';
+                tr.style.background = isGrandTotal ? 'rgba(0, 243, 255, 0.15)' : 'rgba(0, 102, 255, 0.1)';
+                tr.style.borderTop = isGrandTotal ? '2px solid var(--neon-cyan)' : '1px solid var(--neon-blue)';
+            } else {
+                tr.onclick = () => selectRow(tr, item);
+            }
+
             tableColumns.forEach(col => {
                 const td = document.createElement('td');
-                td.textContent = item[col] !== undefined ? item[col] : '';
+                let val = item[col];
+                if (val !== undefined) {
+                    // Format numbers
+                    if (typeof val === 'number') {
+                        td.textContent = val.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                        td.style.textAlign = 'right';
+                    } else {
+                        td.textContent = val;
+                    }
+                } else {
+                    td.textContent = '';
+                }
                 tr.appendChild(td);
             });
             tbody.appendChild(tr);
@@ -1547,7 +1632,7 @@
                 loadMenu();
                 loadFilter();
                 loadPortfolio();
-                loadPDF();
+                // loadPDF(); // Manual load only
             }
         });
 
