@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="it">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dashboard Trade Yield</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&display=swap');
+
+        :root {
+            --bg-color: #050505;
+            --neon-cyan: #00f3ff;
+            --neon-blue: #0066ff;
+            --glass-bg: rgba(0, 20, 40, 0.85);
+            --text-color: #e0f7fa;
+            --border-color: var(--neon-cyan);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Orbitron', sans-serif;
+            background-color: var(--bg-color);
+            background-image:
+                linear-gradient(rgba(0, 243, 255, 0.1) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 243, 255, 0.1) 1px, transparent 1px);
+            background-size: 50px 50px;
+            padding: 20px;
+            color: var(--text-color);
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            background: var(--glass-bg);
+            border: 1px solid var(--neon-blue);
+            box-shadow: 0 0 15px rgba(0, 102, 255, 0.3);
+            border-radius: 8px;
+            padding: 20px;
+        }
+
+        h1 {
+            text-align: center;
+            color: var(--neon-cyan);
+            margin-bottom: 20px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            text-shadow: 0 0 10px var(--neon-cyan);
+        }
+
+        .info-bar {
+            margin-bottom: 20px;
+            padding: 10px;
+            border-bottom: 1px solid var(--neon-blue);
+            display: flex;
+            justify-content: space-between;
+            font-size: 1.2rem;
+        }
+
+        .symbol-link {
+            color: var(--neon-cyan);
+            text-decoration: underline;
+            cursor: pointer;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            font-size: 0.9rem;
+        }
+
+        th,
+        td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid rgba(0, 243, 255, 0.2);
+        }
+
+        th {
+            background-color: rgba(0, 102, 255, 0.2);
+            color: var(--neon-cyan);
+            text-transform: uppercase;
+            font-weight: 600;
+            letter-spacing: 1px;
+            cursor: pointer;
+            user-select: none;
+            position: relative;
+        }
+
+        th:hover {
+            background-color: rgba(0, 102, 255, 0.4);
+        }
+
+        th.sort-asc::after {
+            content: ' ▲';
+            font-size: 0.8em;
+        }
+
+        th.sort-desc::after {
+            content: ' ▼';
+            font-size: 0.8em;
+        }
+
+        tr:hover {
+            background-color: rgba(0, 243, 255, 0.05);
+        }
+
+        .error-msg {
+            color: #ff3333;
+            text-align: center;
+            margin-top: 20px;
+            font-weight: bold;
+        }
+
+        .loading {
+            text-align: center;
+            margin-top: 20px;
+            font-style: italic;
+            color: var(--neon-blue);
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+        <h1>Trade Yield Details</h1>
+        <div class="info-bar">
+            <span id="symbolDisplay">Symbol: -</span>
+            <span>Type: Yield</span>
+        </div>
+        <div id="loading" class="loading">Loading data...</div>
+        <div id="error" class="error-msg" style="display: none;"></div>
+
+        <div style="overflow-x: auto;">
+            <table id="tradeTable">
+                <thead>
+                    <tr id="tableHeader">
+                        <!-- Headers will be injected here -->
+                    </tr>
+                </thead>
+                <tbody id="tableBody">
+                    <!-- Rows will be injected here -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'https://feweb-tunnel.fe-web.eu';
+
+        // Get URL params
+        const urlParams = new URLSearchParams(window.location.search);
+        const code = urlParams.get('code');
+
+        // Get Auth from LocalStorage
+        const username = localStorage.getItem("username");
+        const token = localStorage.getItem("token");
+        const language = localStorage.getItem("language") || 'it_IT';
+
+        const symbolDisplay = document.getElementById('symbolDisplay');
+        if (code) {
+            symbolDisplay.innerHTML = 'Symbol: <span class="symbol-link" onclick="openInstrumentDetails(\'' + code + '\')">' + code + '</span>';
+        }
+
+        let tableData = [];
+        let tableColumns = [];
+        let currentSort = { column: null, direction: 'asc' };
+
+        async function loadData() {
+            if (!code || !username) {
+                showError("Missing parameters or authentication.");
+                return;
+            }
+
+            const payload = {
+                username: username,
+                token: token,
+                language: language,
+                code: code
+            };
+
+            try {
+                const response = await fetch(`${API_URL}/gettradeyield`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await response.json();
+
+                if (data.status === 'ok') {
+                    if (data.tradeyield && Array.isArray(data.tradeyield) && data.tradeyield.length > 0) {
+                        tableData = data.tradeyield;
+                        tableColumns = Object.keys(tableData[0]);
+                        renderTable();
+                    } else {
+                        showError("No data found.");
+                    }
+                } else {
+                    showError(data.msg || "Error fetching data.");
+                }
+            } catch (e) {
+                console.error(e);
+                showError("Network or server error.");
+            } finally {
+                document.getElementById('loading').style.display = 'none';
+            }
+        }
+
+        function renderTable() {
+            const thead = document.getElementById('tableHeader');
+            const tbody = document.getElementById('tableBody');
+            thead.innerHTML = '';
+            tbody.innerHTML = '';
+
+            // Headers
+            tableColumns.forEach((col, index) => {
+                const th = document.createElement('th');
+                th.textContent = col;
+                th.draggable = true;
+                th.ondragstart = (e) => handleDragStart(e, index);
+                th.ondragover = (e) => handleDragOver(e);
+                th.ondrop = (e) => handleDrop(e, index);
+                th.onclick = () => sortTable(col);
+
+                if (currentSort.column === col) {
+                    th.classList.add(currentSort.direction === 'asc' ? 'sort-asc' : 'sort-desc');
+                }
+                thead.appendChild(th);
+            });
+
+            // Sort Data
+            let displayData = [...tableData];
+            if (currentSort.column) {
+                displayData.sort((a, b) => {
+                    const valA = a[currentSort.column];
+                    const valB = b[currentSort.column];
+                    if (valA < valB) return currentSort.direction === 'asc' ? -1 : 1;
+                    if (valA > valB) return currentSort.direction === 'asc' ? 1 : -1;
+                    return 0;
+                });
+            }
+
+            // Rows
+            displayData.forEach(item => {
+                const tr = document.createElement('tr');
+                tableColumns.forEach(col => {
+                    const td = document.createElement('td');
+                    let val = item[col];
+                    if (typeof val === 'number') {
+                        td.textContent = val.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                        td.style.textAlign = 'right';
+                    } else {
+                        td.textContent = val !== undefined ? val : '';
+                    }
+                    tr.appendChild(td);
+                });
+                tbody.appendChild(tr);
+            });
+        }
+
+        function sortTable(col) {
+            if (currentSort.column === col) {
+                currentSort.direction = currentSort.direction === 'asc' ? 'desc' : 'asc';
+            } else {
+                currentSort.column = col;
+                currentSort.direction = 'asc';
+            }
+            renderTable();
+        }
+
+        let draggedColIndex = null;
+        function handleDragStart(e, index) {
+            draggedColIndex = index;
+            e.dataTransfer.effectAllowed = 'move';
+        }
+        function handleDragOver(e) {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+        }
+        function handleDrop(e, index) {
+            e.preventDefault();
+            if (draggedColIndex === index) return;
+            const col = tableColumns.splice(draggedColIndex, 1)[0];
+            tableColumns.splice(index, 0, col);
+            renderTable();
+        }
+
+        function openInstrumentDetails(symbol) {
+            window.open(`dashboard-instrument.html?code=${encodeURIComponent(symbol)}`, '_blank');
+        }
+
+        function showError(msg) {
+            const errDiv = document.getElementById('error');
+            errDiv.textContent = msg;
+            errDiv.style.display = 'block';
+            document.getElementById('loading').style.display = 'none';
+        }
+
+        // Init
+        loadData();
+
+    </script>
+</body>
+
+</html>

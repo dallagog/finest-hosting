@@ -1349,6 +1349,7 @@
                                 classificationMap[item.id_instrument] = item;
                             }
                         });
+                        localStorage.setItem('classificationMap', JSON.stringify(classificationMap));
                     }
 
                     // Parse Portfolio: [[Symbol, {data}], ...] -> [{Symbol: Symbol, ...data}]
@@ -1614,12 +1615,12 @@
 
         function openTradeDetails(symbol) {
             console.log('Open trade details for:', symbol);
-            window.open(`movements.html?code=${encodeURIComponent(symbol)}&type=trade`, '_blank');
+            window.open(`dashboard-trade.html?code=${encodeURIComponent(symbol)}`, '_blank');
         }
 
         function openTradeYieldDetails(symbol) {
             console.log('Open trade yield details for:', symbol);
-            window.open(`movements.html?code=${encodeURIComponent(symbol)}&type=yield`, '_blank');
+            window.open(`dashboard-tradeyield.html?code=${encodeURIComponent(symbol)}`, '_blank');
         }
 
         // ========== PROFITABILITY TABLE ==========
@@ -1650,13 +1651,15 @@
                     //console.info('web profitability classification : ', data.classification);
                     //console.info('web portfolioyield: ', data.portfolioyield);
 
-                    // Update Classification Map (merge if needed, or just use same map)
+                    // Parse Classification
+                    classificationMap = {};
                     if (Array.isArray(data.classification)) {
                         data.classification.forEach(item => {
                             if (item.id_instrument) {
                                 classificationMap[item.id_instrument] = item;
                             }
                         });
+                        localStorage.setItem('classificationMap', JSON.stringify(classificationMap));
                     }
 
                     // Parse Profitability Data
