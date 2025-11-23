@@ -465,7 +465,7 @@
 
         // --- DASHBOARD LOGIC MERGED ---
         const API_URL = "https://feweb-tunnel.fe-web.eu";
-        let filterData = null;
+        let filter = null;
         let credentials = { username: '', token: '', language: '', filter: '' };
         let translations = {};
         let availableLanguages = [];
@@ -674,7 +674,7 @@
 
                 if (!loaded || !loaded.Filter) throw new Error('Invalid Data');
 
-                filterData = loaded;
+                filter = loaded;
                 populateFilterUI();
                 renderReportsList();
                 updateUserInfo();
@@ -687,7 +687,7 @@
         }
 
         function populateFilterUI() {
-            const f = filterData.Filter || {};
+            const f = filter.Filter || {};
             if (f.date_start) document.getElementById('date-start').value = f.date_start;
             if (f.date_end) document.getElementById('date-end').value = f.date_end;
 
@@ -712,7 +712,7 @@
         function renderReportsList() {
             const container = document.getElementById('reports-list');
             container.innerHTML = '';
-            const list = filterData?.Account?.list || [];
+            const list = filter.Account?.list || [];
 
             if (list.length === 0) {
                 container.innerHTML = '<p>No reports</p>';
@@ -740,8 +740,8 @@
         }
 
         function updateUserInfo() {
-            if (!filterData?.Filter) return;
-            const f = filterData.Filter;
+            if (!filter?.Filter) return;
+            const f = filter.Filter;
 
             if (f.language) {
                 const lang = availableLanguages.find(l => l.code === f.language);
@@ -757,19 +757,19 @@
             try {
                 showMessage('Sending...', 'loading');
 
-                // Update filterData object from UI
-                filterData.Filter.date_start = document.getElementById('date-start').value;
-                filterData.Filter.date_end = document.getElementById('date-end').value;
+                // Update filter object from UI
+                filter.Filter.date_start = document.getElementById('date-start').value;
+                filter.Filter.date_end = document.getElementById('date-end').value;
 
                 const updateSelect = (id, arr) => {
                     const val = document.getElementById(id).value;
                     if (Array.isArray(arr)) arr.forEach(i => i.selected = (i.value === val));
                 };
-                updateSelect('portfolio', filterData.Filter.portfolio);
-                updateSelect('profitability', filterData.Filter.yield);
+                updateSelect('portfolio', filter.Filter.portfolio);
+                updateSelect('profitability', filter.Filter.yield);
 
                 const payload = {
-                    filterData, // Fixed key: filterData instead of filter
+                    filter,
                     username: credentials.username,
                     token: credentials.token,
                     language: credentials.language
@@ -794,14 +794,14 @@
         }
 
         function selectAllReports() {
-            if (filterData?.Account?.list) {
-                filterData.Account.list.forEach(i => i.selected = true);
+            if (filter?.Account?.list) {
+                filter.Account.list.forEach(i => i.selected = true);
                 renderReportsList();
             }
         }
         function deselectAllReports() {
-            if (filterData?.Account?.list) {
-                filterData.Account.list.forEach(i => i.selected = false);
+            if (filter?.Account?.list) {
+                filter.Account.list.forEach(i => i.selected = false);
                 renderReportsList();
             }
         }
