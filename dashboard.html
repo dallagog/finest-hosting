@@ -126,22 +126,7 @@
         }
 
         /* Layout Columns */
-        #columns {
-            display: flex;
-            gap: 20px;
-            margin-bottom: 20px;
-            align-items: flex-start;
-        }
 
-        #filters-column {
-            flex: 2;
-            min-width: 400px;
-        }
-
-        #menu-column {
-            flex: 1;
-            min-width: 260px;
-        }
 
         /* Collapsible / Panels */
         .collapsible-container {
@@ -573,86 +558,79 @@
         <div id="mainContent" style="display:none;">
             <div id="message" class="message"></div>
 
-            <!-- DUE COLONNE: FILTRI (SX) E MENU (DX) -->
-            <div id="columns">
-                <!-- FILTRI CON RAPPORTI -->
-                <div id="filters-column">
-                    <div class="collapsible-container">
-                        <div class="collapsible-header" onclick="toggleCollapsible(this)">
-                            <h2 id="filtersPeriodTitle">Filtri Periodo</h2>
-                            <span class="toggle-btn">-</span>
-                        </div>
-                        <div class="collapsible-content active">
-                            <div class="filter-group">
-                                <label id="dateStartLabel">Data iniziale:</label>
-                                <input type="date" id="date-start">
-                            </div>
-                            <div class="filter-group">
-                                <label id="dateEndLabel">Data finale:</label>
-                                <input type="date" id="date-end">
-                            </div>
-                            <div class="filter-group">
-                                <label id="portfolioLabel">Portafoglio:</label>
-                                <select id="portfolio">
-                                    <option value="" id="selectOption">-- seleziona --</option>
-                                </select>
-                            </div>
-                            <div class="filter-group">
-                                <label id="profitabilityLabel">Redditività:</label>
-                                <select id="profitability">
-                                    <option value="" id="selectOption2">-- seleziona --</option>
-                                </select>
-                            </div>
-
-                            <!-- RAPPORTI DENTRO FILTRI -->
-                            <div class="reports-section">
-                                <h3 id="reportsTitle">Rapporti</h3>
-                                <div class="reports-controls">
-                                    <button class="button-secondary" id="selectAllBtn" onclick="selectAllReports()">
-                                        <span id="selectAllText">Seleziona tutti</span>
-                                    </button>
-                                    <button class="button-secondary" id="deselectAllBtn" onclick="deselectAllReports()">
-                                        <span id="deselectAllText">Deseleziona tutti</span>
-                                    </button>
-                                </div>
-                                <div id="reports-list">
-                                    <p style="color:var(--neon-blue);" id="reportsLoading">Caricamento rapporti in
-                                        corso...</p>
-                                </div>
-                            </div>
-
-                            <button id="apply-filters" style="margin-top:15px; width:100%;">Applica Filtri</button>
-                        </div>
-                    </div>
+            <!-- MENU (Top) -->
+            <div class="collapsible-container">
+                <div class="collapsible-header" onclick="toggleCollapsible(this)">
+                    <h2 id="menuTitle">Menu</h2>
+                    <span class="toggle-btn">+</span>
                 </div>
+                <div class="collapsible-content" id="menu-container">
+                    <p style="color:var(--neon-blue);" id="menuLoading">Caricamento menu in corso...</p>
+                </div>
+            </div>
 
-                <!-- MENU (destra) -->
-                <div id="menu-column">
-                    <div class="collapsible-container">
-                        <div class="collapsible-header" onclick="toggleCollapsible(this)">
-                            <h2 id="menuTitle">Menu</h2>
-                            <span class="toggle-btn">-</span>
+            <!-- FILTRI CON RAPPORTI -->
+            <div class="collapsible-container">
+                <div class="collapsible-header" onclick="toggleCollapsible(this)">
+                    <h2 id="filtersPeriodTitle">Filtri Periodo</h2>
+                    <span class="toggle-btn">-</span>
+                </div>
+                <div class="collapsible-content active">
+                    <div class="filter-group">
+                        <label id="dateStartLabel">Data iniziale:</label>
+                        <input type="date" id="date-start">
+                    </div>
+                    <div class="filter-group">
+                        <label id="dateEndLabel">Data finale:</label>
+                        <input type="date" id="date-end">
+                    </div>
+                    <div class="filter-group">
+                        <label id="portfolioLabel">Portafoglio:</label>
+                        <select id="portfolio">
+                            <option value="" id="selectOption">-- seleziona --</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label id="profitabilityLabel">Redditività:</label>
+                        <select id="profitability">
+                            <option value="" id="selectOption2">-- seleziona --</option>
+                        </select>
+                    </div>
+
+                    <!-- RAPPORTI DENTRO FILTRI -->
+                    <div class="reports-section">
+                        <h3 id="reportsTitle">Rapporti</h3>
+                        <div class="reports-controls">
+                            <button class="button-secondary" id="selectAllBtn" onclick="selectAllReports()">
+                                <span id="selectAllText">Seleziona tutti</span>
+                            </button>
+                            <button class="button-secondary" id="deselectAllBtn" onclick="deselectAllReports()">
+                                <span id="deselectAllText">Deseleziona tutti</span>
+                            </button>
                         </div>
-                        <div class="collapsible-content active" id="menu-container">
-                            <p style="color:var(--neon-blue);" id="menuLoading">Caricamento menu in corso...</p>
+                        <div id="reports-list">
+                            <p style="color:var(--neon-blue);" id="reportsLoading">Caricamento rapporti in
+                                corso...</p>
                         </div>
                     </div>
 
-                    <!-- PDF CONTROLS -->
-                    <div class="collapsible-container">
-                        <div class="collapsible-header" onclick="toggleCollapsible(this)">
-                            <h2 id="pdfControlsTitle">Report PDF</h2>
-                            <span class="toggle-btn">-</span>
-                        </div>
-                        <div class="collapsible-content active">
-                            <button onclick="loadPDF()" style="width:100%; margin-bottom:10px;">
-                                <i class="fa fa-refresh"></i> <span id="generatePdfText">Genera PDF</span>
-                            </button>
-                            <button onclick="downloadPDF()" class="button-secondary" style="width:100%;">
-                                <i class="fa fa-download"></i> <span id="downloadPdfBtnText">Download PDF</span>
-                            </button>
-                        </div>
-                    </div>
+                    <button id="apply-filters" style="margin-top:15px; width:100%;">Applica Filtri</button>
+                </div>
+            </div>
+
+            <!-- PDF CONTROLS (Below Filters) -->
+            <div class="collapsible-container">
+                <div class="collapsible-header" onclick="toggleCollapsible(this)">
+                    <h2 id="pdfControlsTitle">Report PDF</h2>
+                    <span class="toggle-btn">-</span>
+                </div>
+                <div class="collapsible-content active">
+                    <button onclick="loadPDF()" style="width:100%; margin-bottom:10px;">
+                        <i class="fa fa-refresh"></i> <span id="generatePdfText">Genera PDF</span>
+                    </button>
+                    <button onclick="downloadPDF()" class="button-secondary" style="width:100%;">
+                        <i class="fa fa-download"></i> <span id="downloadPdfBtnText">Download PDF</span>
+                    </button>
                 </div>
             </div>
 
