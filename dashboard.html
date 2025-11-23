@@ -660,7 +660,7 @@
                 const data = await response.json();
                 console.log('🔍 loadFilter RESPONSE:', JSON.stringify(data, null, 2));
 
-                // Robust parsing logic restored from original dashboard.html
+                // Robust parsing logic
                 let loaded = null;
                 if (data && data.Filter && data.Account) {
                     loaded = data;
@@ -672,7 +672,11 @@
                     loaded = data;
                 }
 
-                if (!loaded || !loaded.Filter) throw new Error('Invalid Data');
+                if (!loaded || !loaded.Filter) {
+                    // DEBUG: Alert the user with the structure received to help debugging
+                    alert('DEBUG ERROR: Invalid Data received.\n\nResponse keys: ' + Object.keys(data || {}).join(', ') + '\n\nCheck console for full details.');
+                    throw new Error('Invalid Data');
+                }
 
                 filter = loaded;
                 populateFilterUI();
@@ -682,12 +686,12 @@
 
             } catch (error) {
                 console.error(error);
-                showMessage('Error loading filters', 'error');
+                showMessage('Error loading filters: ' + error.message, 'error');
             }
         }
 
         function populateFilterUI() {
-            const f = filter.Filter || {};
+            const f = filter?.Filter || {};
             if (f.date_start) document.getElementById('date-start').value = f.date_start;
             if (f.date_end) document.getElementById('date-end').value = f.date_end;
 
@@ -712,7 +716,7 @@
         function renderReportsList() {
             const container = document.getElementById('reports-list');
             container.innerHTML = '';
-            const list = filter.Account?.list || [];
+            const list = filter?.Account?.list || [];
 
             if (list.length === 0) {
                 container.innerHTML = '<p>No reports</p>';
@@ -755,6 +759,10 @@
 
         async function applyFiltersAndSave() {
             try {
+                if (!filter || !filter.Filter) {
+                    throw new Error('Filtri non caricati dal server. Impossibile salvare.');
+                }
+
                 showMessage('Sending...', 'loading');
 
                 // Update filter object from UI
@@ -789,7 +797,8 @@
                 await loadFilter(); // Reload to confirm
 
             } catch (error) {
-                showMessage('Error saving', 'error');
+                console.error(error);
+                showMessage('Error saving: ' + error.message, 'error');
             }
         }
 
