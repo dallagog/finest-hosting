@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Dashboard 0.3</title>
+    <title>Dashboard 0.5</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&display=swap');
@@ -504,13 +504,14 @@
 
         .data-table th,
         .data-table td {
-            padding: 12px 15px;
+            padding: 8px 15px;
+            /* Reduced padding */
             text-align: right;
             /* Align headers and data to right */
             border-bottom: 1px solid rgba(0, 243, 255, 0.2);
             color: var(--text-color);
-            height: 50px;
-            /* Fixed row height */
+            height: 35px;
+            /* Reduced fixed row height */
         }
 
         /* First column alignment override (usually text/description) */
@@ -1411,17 +1412,22 @@
                         if (details && typeof details === 'object') {
                             Object.keys(details).forEach(key => {
                                 let val = details[key];
-                                // Try to convert to number if it's a numeric string
                                 if (typeof val === 'string' && val.trim() !== '') {
-                                    // Remove currency symbols or non-numeric chars if needed, 
-                                    // but parseFloat usually handles "100 EUR" as 100 if it starts with number.
-                                    // However, "100 EUR" -> 100. "1,000.50" might be tricky depending on locale.
-                                    // For now, simple parseFloat.
-                                    const numVal = parseFloat(val);
-                                    if (!isNaN(numVal)) {
-                                        flatItem[key] = numVal;
+                                    // Regex for strict number: optional minus, digits, optional dot+digits
+                                    const numberRegex = /^-?\d+(\.\d+)?$/;
+                                    // Regex for number:currency or number currency
+                                    // Matches: number, then optional space, then colon OR space, then optional space, then currency (letters)
+                                    const currencyRegex = /^(-?\d+(\.\d+)?)\s*[:\s]\s*[a-zA-Z]+$/;
+
+                                    if (numberRegex.test(val)) {
+                                        flatItem[key] = parseFloat(val);
                                     } else {
-                                        flatItem[key] = val;
+                                        const match = val.match(currencyRegex);
+                                        if (match) {
+                                            flatItem[key] = parseFloat(match[1]);
+                                        } else {
+                                            flatItem[key] = val;
+                                        }
                                     }
                                 } else {
                                     flatItem[key] = val;
@@ -1444,13 +1450,14 @@
                     }
 
                     if (portfolioData.length > 0) {
-                        // Determine columns from first item
-                        const keys = Object.keys(portfolioData[0]);
-                        // Remove Ticker from visible columns if present in keys (it was added manually before)
-                        // But wait, I am adding it manually in parsePortfolioItem.
-                        // The user wants to REMOVE Ticker column.
-                        // So I should NOT add it to tableColumns.
-                        // But I need to keep it in the object for the click handler.
+                        // Determine columns from all items
+                        const allKeys = new Set();
+                        portfolioData.forEach(item => {
+                            Object.keys(item).forEach(k => allKeys.add(k));
+                        });
+                        const keys = Array.from(allKeys);
+
+                        // Remove Ticker from visible columns if present
                         tableColumns = keys.filter(k => k !== 'Ticker');
 
                         console.log('✅ Portfolio Data parsed:', portfolioData.length, 'items');
@@ -1743,11 +1750,20 @@
                             Object.keys(details).forEach(key => {
                                 let val = details[key];
                                 if (typeof val === 'string' && val.trim() !== '') {
-                                    const numVal = parseFloat(val);
-                                    if (!isNaN(numVal)) {
-                                        flatItem[key] = numVal;
+                                    // Regex for strict number: optional minus, digits, optional dot+digits
+                                    const numberRegex = /^-?\d+(\.\d+)?$/;
+                                    // Regex for number:currency or number currency
+                                    const currencyRegex = /^(-?\d+(\.\d+)?)\s*[:\s]\s*[a-zA-Z]+$/;
+
+                                    if (numberRegex.test(val)) {
+                                        flatItem[key] = parseFloat(val);
                                     } else {
-                                        flatItem[key] = val;
+                                        const match = val.match(currencyRegex);
+                                        if (match) {
+                                            flatItem[key] = parseFloat(match[1]);
+                                        } else {
+                                            flatItem[key] = val;
+                                        }
                                     }
                                 } else {
                                     flatItem[key] = val;
@@ -1770,8 +1786,16 @@
                     }
 
                     if (profitabilityData.length > 0) {
-                        const keys = Object.keys(profitabilityData[0]);
+                        // Collect all unique keys from all items to ensure no columns are missed
+                        const allKeys = new Set();
+                        profitabilityData.forEach(item => {
+                            Object.keys(item).forEach(k => allKeys.add(k));
+                        });
+
+                        // Convert to array and filter out Ticker
+                        const keys = Array.from(allKeys);
                         profitabilityTableColumns = keys.filter(k => k !== 'Ticker');
+
                         console.log('✅ Profitability Data parsed:', profitabilityData.length, 'items');
                         console.log('✅ Profitability Columns:', profitabilityTableColumns);
                     } else {
