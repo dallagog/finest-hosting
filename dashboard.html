@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Dashboard 0.1</title>
+    <title>Dashboard 0.2</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&display=swap');
@@ -1435,9 +1435,19 @@
                     }
 
                     if (portfolioData.length > 0) {
-                        // Determine columns from first item, ensuring Symbol is first
+                        // Determine columns from first item
                         const keys = Object.keys(portfolioData[0]);
-                        tableColumns = ['Ticker', ...keys.filter(k => k !== 'Ticker')];
+                        // Remove Ticker from visible columns if present in keys (it was added manually before)
+                        // But wait, I am adding it manually in parsePortfolioItem.
+                        // The user wants to REMOVE Ticker column.
+                        // So I should NOT add it to tableColumns.
+                        // But I need to keep it in the object for the click handler.
+                        tableColumns = keys.filter(k => k !== 'Ticker');
+
+                        console.log('✅ Portfolio Data parsed:', portfolioData.length, 'items');
+                        console.log('✅ Table Columns:', tableColumns);
+                    } else {
+                        console.warn('⚠️ Portfolio Data is empty after parsing');
                     }
 
                     populateGroupingSelect(data.classification);
@@ -1529,6 +1539,7 @@
                         totals[col] = 'TOTAL';
                         return;
                     }
+                    // Skip totals for percentage columns
                     if (isPercentageColumn(col) || col.toLowerCase().includes('yield')) {
                         totals[col] = '';
                         return;
@@ -1596,24 +1607,24 @@
                 tr.style.background = isGrandTotal ? 'rgba(0, 243, 255, 0.15)' : 'rgba(0, 102, 255, 0.1)';
                 tr.style.borderTop = isGrandTotal ? '2px solid var(--neon-cyan)' : '1px solid var(--neon-blue)';
             } else {
-                // tr.onclick = () => selectRow(tr, item); // Removed row click, moved to symbol click
+                // Make the whole row clickable to open details
+                tr.onclick = () => {
+                    selectRow(tr, item);
+                    if (item.Ticker) openTradeDetails(item.Ticker);
+                };
             }
 
-            tableColumns.forEach(col => {
+            tableColumns.forEach((col, index) => {
                 const td = document.createElement('td');
                 let val = item[col];
 
-                if (col === 'Ticker' && !isTotal) {
+                // If it's the first column and not a total row, style it like a link/primary column
+                if (index === 0 && !isTotal) {
                     const span = document.createElement('span');
-                    span.textContent = val;
+                    span.textContent = val !== undefined ? val : '';
                     span.style.textDecoration = 'underline';
                     span.style.cursor = 'pointer';
                     span.style.color = 'var(--neon-cyan)';
-                    span.onclick = (e) => {
-                        e.stopPropagation();
-                        selectRow(tr, item); // Highlight row
-                        openTradeDetails(val);
-                    };
                     td.appendChild(span);
                 } else if (val !== undefined) {
                     // Format numbers
@@ -1751,7 +1762,11 @@
 
                     if (profitabilityData.length > 0) {
                         const keys = Object.keys(profitabilityData[0]);
-                        profitabilityTableColumns = ['Ticker', ...keys.filter(k => k !== 'Ticker')];
+                        profitabilityTableColumns = keys.filter(k => k !== 'Ticker');
+                        console.log('✅ Profitability Data parsed:', profitabilityData.length, 'items');
+                        console.log('✅ Profitability Columns:', profitabilityTableColumns);
+                    } else {
+                        console.warn('⚠️ Profitability Data is empty after parsing');
                     }
 
                     populateProfitabilityGroupingSelect(data.classification);
@@ -1837,6 +1852,7 @@
                         totals[col] = 'TOTAL';
                         return;
                     }
+                    // Skip totals for percentage columns
                     if (isPercentageColumn(col) || col.toLowerCase().includes('yield')) {
                         totals[col] = '';
                         return;
@@ -1898,24 +1914,24 @@
                 tr.style.background = isGrandTotal ? 'rgba(0, 243, 255, 0.15)' : 'rgba(0, 102, 255, 0.1)';
                 tr.style.borderTop = isGrandTotal ? '2px solid var(--neon-cyan)' : '1px solid var(--neon-blue)';
             } else {
-                // tr.onclick = () => selectProfitabilityRow(tr, item); // Removed row click
+                // Make the whole row clickable
+                tr.onclick = () => {
+                    selectProfitabilityRow(tr, item);
+                    if (item.Ticker) openTradeYieldDetails(item.Ticker);
+                };
             }
 
-            profitabilityTableColumns.forEach(col => {
+            profitabilityTableColumns.forEach((col, index) => {
                 const td = document.createElement('td');
                 let val = item[col];
 
-                if (col === 'Ticker' && !isTotal) {
+                // If it's the first column and not a total row, style it like a link
+                if (index === 0 && !isTotal) {
                     const span = document.createElement('span');
-                    span.textContent = val;
+                    span.textContent = val !== undefined ? val : '';
                     span.style.textDecoration = 'underline';
                     span.style.cursor = 'pointer';
                     span.style.color = 'var(--neon-cyan)';
-                    span.onclick = (e) => {
-                        e.stopPropagation();
-                        selectProfitabilityRow(tr, item);
-                        openTradeYieldDetails(val);
-                    };
                     td.appendChild(span);
                 } else if (val !== undefined) {
                     if (typeof val === 'number') {
