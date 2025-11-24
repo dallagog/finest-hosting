@@ -1405,13 +1405,14 @@
                                 // Parse details
                                 Object.keys(details).forEach(key => {
                                     let val = details[key];
-                                    // Handle "123.45:EUR" -> 123.45
-                                    if (typeof val === 'string' && val.includes(':')) {
-                                        const parts = val.split(':');
-                                        // Check if first part is numeric
-                                        if (!isNaN(parseFloat(parts[0]))) {
-                                            flatItem[key] = parseFloat(parts[0]);
+
+                                    // Try to convert to number if it's a numeric string
+                                    if (typeof val === 'string' && val.trim() !== '') {
+                                        const numVal = parseFloat(val);
+                                        if (!isNaN(numVal)) {
+                                            flatItem[key] = numVal;
                                         } else {
+                                            // Not convertible to number, keep as string
                                             flatItem[key] = val;
                                         }
                                     } else {
@@ -1715,21 +1716,14 @@
                                 // Parse details
                                 Object.keys(details).forEach(key => {
                                     let val = details[key];
-                                    // Handle "numero:XXX" -> XXX (numeric)
-                                    if (typeof val === 'string' && val.startsWith('numero:')) {
-                                        const numStr = val.replace('numero:', '');
-                                        if (!isNaN(parseFloat(numStr))) {
-                                            flatItem[key] = parseFloat(numStr);
+
+                                    // Try to convert to number if it's a numeric string
+                                    if (typeof val === 'string' && val.trim() !== '') {
+                                        const numVal = parseFloat(val);
+                                        if (!isNaN(numVal)) {
+                                            flatItem[key] = numVal;
                                         } else {
-                                            flatItem[key] = val;
-                                        }
-                                    }
-                                    // Handle "123.45:EUR" -> 123.45 (reuse logic if needed, but user specified numero:XXX)
-                                    else if (typeof val === 'string' && val.includes(':')) {
-                                        const parts = val.split(':');
-                                        if (!isNaN(parseFloat(parts[0]))) {
-                                            flatItem[key] = parseFloat(parts[0]);
-                                        } else {
+                                            // Not convertible to number, keep as string
                                             flatItem[key] = val;
                                         }
                                     } else {
