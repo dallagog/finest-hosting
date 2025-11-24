@@ -1393,34 +1393,44 @@
 
                     // Parse Portfolio: [[Symbol, {data}], ...] -> [{Ticker: Symbol, ...data}]
                     portfolioData = [];
-                    const rawPortfolio = data.portfolio || [];
+                    // Parse Portfolio: Object { Ticker: {details} } or Array [[Ticker, {details}]]
+                    portfolioData = [];
+                    const rawPortfolio = data.portfolio || {};
+
+                    const parsePortfolioItem = (symbol, details) => {
+                        const flatItem = { Ticker: symbol };
+                        if (details && typeof details === 'object') {
+                            Object.keys(details).forEach(key => {
+                                let val = details[key];
+                                // Try to convert to number if it's a numeric string
+                                if (typeof val === 'string' && val.trim() !== '') {
+                                    // Remove currency symbols or non-numeric chars if needed, 
+                                    // but parseFloat usually handles "100 EUR" as 100 if it starts with number.
+                                    // However, "100 EUR" -> 100. "1,000.50" might be tricky depending on locale.
+                                    // For now, simple parseFloat.
+                                    const numVal = parseFloat(val);
+                                    if (!isNaN(numVal)) {
+                                        flatItem[key] = numVal;
+                                    } else {
+                                        flatItem[key] = val;
+                                    }
+                                } else {
+                                    flatItem[key] = val;
+                                }
+                            });
+                        }
+                        return flatItem;
+                    };
 
                     if (Array.isArray(rawPortfolio)) {
                         rawPortfolio.forEach(entry => {
                             if (Array.isArray(entry) && entry.length === 2) {
-                                const symbol = entry[0];
-                                const details = entry[1];
-                                const flatItem = { Ticker: symbol };
-
-                                // Parse details
-                                Object.keys(details).forEach(key => {
-                                    let val = details[key];
-
-                                    // Try to convert to number if it's a numeric string
-                                    if (typeof val === 'string' && val.trim() !== '') {
-                                        const numVal = parseFloat(val);
-                                        if (!isNaN(numVal)) {
-                                            flatItem[key] = numVal;
-                                        } else {
-                                            // Not convertible to number, keep as string
-                                            flatItem[key] = val;
-                                        }
-                                    } else {
-                                        flatItem[key] = val;
-                                    }
-                                });
-                                portfolioData.push(flatItem);
+                                portfolioData.push(parsePortfolioItem(entry[0], entry[1]));
                             }
+                        });
+                    } else if (typeof rawPortfolio === 'object' && rawPortfolio !== null) {
+                        Object.keys(rawPortfolio).forEach(symbol => {
+                            portfolioData.push(parsePortfolioItem(symbol, rawPortfolio[symbol]));
                         });
                     }
 
@@ -1703,35 +1713,39 @@
                     }
 
                     // Parse Profitability Data
+                    // Parse Profitability Data
                     profitabilityData = [];
-                    const rawYield = data.portfolioyield || [];
+                    const rawYield = data.portfolioyield || {};
+
+                    const parseYieldItem = (symbol, details) => {
+                        const flatItem = { Ticker: symbol };
+                        if (details && typeof details === 'object') {
+                            Object.keys(details).forEach(key => {
+                                let val = details[key];
+                                if (typeof val === 'string' && val.trim() !== '') {
+                                    const numVal = parseFloat(val);
+                                    if (!isNaN(numVal)) {
+                                        flatItem[key] = numVal;
+                                    } else {
+                                        flatItem[key] = val;
+                                    }
+                                } else {
+                                    flatItem[key] = val;
+                                }
+                            });
+                        }
+                        return flatItem;
+                    };
 
                     if (Array.isArray(rawYield)) {
                         rawYield.forEach(entry => {
                             if (Array.isArray(entry) && entry.length === 2) {
-                                const symbol = entry[0];
-                                const details = entry[1];
-                                const flatItem = { Ticker: symbol };
-
-                                // Parse details
-                                Object.keys(details).forEach(key => {
-                                    let val = details[key];
-
-                                    // Try to convert to number if it's a numeric string
-                                    if (typeof val === 'string' && val.trim() !== '') {
-                                        const numVal = parseFloat(val);
-                                        if (!isNaN(numVal)) {
-                                            flatItem[key] = numVal;
-                                        } else {
-                                            // Not convertible to number, keep as string
-                                            flatItem[key] = val;
-                                        }
-                                    } else {
-                                        flatItem[key] = val;
-                                    }
-                                });
-                                profitabilityData.push(flatItem);
+                                profitabilityData.push(parseYieldItem(entry[0], entry[1]));
                             }
+                        });
+                    } else if (typeof rawYield === 'object' && rawYield !== null) {
+                        Object.keys(rawYield).forEach(symbol => {
+                            profitabilityData.push(parseYieldItem(symbol, rawYield[symbol]));
                         });
                     }
 
