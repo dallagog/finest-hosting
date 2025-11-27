@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Dashboard 0.5</title>
+    <title>Dashboard 0.6</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&display=swap');
@@ -187,11 +187,16 @@
         .filter-group select {
             width: 100%;
             padding: 10px;
-            background: rgba(0, 0, 0, 0.7);
+            background: rgba(0, 243, 255, 0.1);
             border: 1px solid var(--neon-blue);
-            color: var(--neon-cyan);
+            color: var(--neon-blue);
             font-family: 'Orbitron', sans-serif;
             border-radius: 4px;
+        }
+
+        .filter-group select option {
+            background: #000;
+            color: var(--neon-cyan);
         }
 
         .filter-group input:focus,
@@ -783,6 +788,9 @@
         let translations = {};
         let availableLanguages = [];
         let currencies = [];
+        let classificationFilter = [];
+        let portfolioColumns = [];
+        let profitabilityColumns = [];
 
         // ========== TRANSLATION SYSTEM ==========
         async function loadLanguageManifest() {
@@ -790,6 +798,15 @@
                 const response = await fetch('lang/manifest.json');
                 if (!response.ok) return [];
                 const manifest = await response.json();
+                if (manifest.classification && Array.isArray(manifest.classification)) {
+                    classificationFilter = manifest.classification;
+                }
+                if (manifest.portfolio && Array.isArray(manifest.portfolio)) {
+                    portfolioColumns = manifest.portfolio;
+                }
+                if (manifest.portfolio_yield && Array.isArray(manifest.portfolio_yield)) {
+                    profitabilityColumns = manifest.portfolio_yield;
+                }
                 return manifest.languages || [];
             } catch (error) {
                 console.error("Error loading manifest:", error);
@@ -1442,14 +1459,19 @@
 
                     if (portfolioData.length > 0) {
                         // Determine columns from all items
-                        const allKeys = new Set();
-                        portfolioData.forEach(item => {
-                            Object.keys(item).forEach(k => allKeys.add(k));
-                        });
-                        const keys = Array.from(allKeys);
-
-                        // Remove Ticker from visible columns if present
-                        tableColumns = keys.filter(k => k !== 'Ticker');
+                        if (portfolioColumns.length > 0) {
+                            // Use columns from manifest
+                            tableColumns = [...portfolioColumns];
+                        } else {
+                            // Fallback: dynamic discovery
+                            const allKeys = new Set();
+                            portfolioData.forEach(item => {
+                                Object.keys(item).forEach(k => allKeys.add(k));
+                            });
+                            const keys = Array.from(allKeys);
+                            // Remove Ticker from visible columns if present
+                            tableColumns = keys.filter(k => k !== 'Ticker');
+                        }
 
                         console.log('✅ Portfolio Data parsed:', portfolioData.length, 'items');
                         console.log('✅ Table Columns:', tableColumns);
@@ -1470,13 +1492,17 @@
 
         function populateGroupingSelect(classificationList) {
             const select = document.getElementById('grouping-select');
-            select.innerHTML = '<option value="">Nessun raggruppamento</option>';
+            select.innerHTML = '<option value="">' + (getTranslation('int.noselection') || 'Nessun raggruppamento') + '</option>';
 
             // Use keys from the first classification item
             if (Array.isArray(classificationList) && classificationList.length > 0) {
                 const sample = classificationList[0];
                 Object.keys(sample).forEach(key => {
                     if (key !== 'id_instrument') { // Skip ID
+                        // Filter by classificationFilter if present
+                        if (classificationFilter.length > 0 && !classificationFilter.includes(key)) {
+                            return;
+                        }
                         const opt = document.createElement('option');
                         opt.value = key;
                         opt.textContent = key;
@@ -1492,7 +1518,8 @@
         }
 
         function isPercentageColumn(colName) {
-            return colName.toLowerCase().includes('per') || colName.includes('%');
+            const lower = colName.toLowerCase();
+            return lower.includes('per') || lower.includes('%') || lower.includes('rendite') || lower.includes('yield');
         }
 
         function renderTable() {
@@ -1770,14 +1797,17 @@
 
                     if (profitabilityData.length > 0) {
                         // Collect all unique keys from all items to ensure no columns are missed
-                        const allKeys = new Set();
-                        profitabilityData.forEach(item => {
-                            Object.keys(item).forEach(k => allKeys.add(k));
-                        });
-
-                        // Convert to array and filter out Ticker
-                        const keys = Array.from(allKeys);
-                        profitabilityTableColumns = keys.filter(k => k !== 'Ticker');
+                        if (profitabilityColumns.length > 0) {
+                            profitabilityTableColumns = [...profitabilityColumns];
+                        } else {
+                            const allKeys = new Set();
+                            profitabilityData.forEach(item => {
+                                Object.keys(item).forEach(k => allKeys.add(k));
+                            });
+                            // Convert to array and filter out Ticker
+                            const keys = Array.from(allKeys);
+                            profitabilityTableColumns = keys.filter(k => k !== 'Ticker');
+                        }
 
                         console.log('✅ Profitability Data parsed:', profitabilityData.length, 'items');
                         console.log('✅ Profitability Columns:', profitabilityTableColumns);
@@ -1798,11 +1828,15 @@
 
         function populateProfitabilityGroupingSelect(classificationList) {
             const select = document.getElementById('profitability-grouping-select');
-            select.innerHTML = '<option value="">Nessun raggruppamento</option>';
+            select.innerHTML = '<option value="">' + (getTranslation('int.noselection') || 'Nessun raggruppamento') + '</option>';
             if (Array.isArray(classificationList) && classificationList.length > 0) {
                 const sample = classificationList[0];
                 Object.keys(sample).forEach(key => {
                     if (key !== 'id_instrument') {
+                        // Filter by classificationFilter if present
+                        if (classificationFilter.length > 0 && !classificationFilter.includes(key)) {
+                            return;
+                        }
                         const opt = document.createElement('option');
                         opt.value = key;
                         opt.textContent = key;
