@@ -173,11 +173,63 @@
 
         let tableData = [];
         let tableColumns = [];
+        let tradeYieldColumns = [];
         let currentSort = { column: null, direction: 'asc' };
+        let translations = {};
+
+        // ========== TRANSLATION SYSTEM ==========
+        async function loadLanguageManifest() {
+            try {
+                const response = await fetch('lang/manifest.json');
+                if (!response.ok) return { languages: [], columns: [] };
+                const manifest = await response.json();
+                return {
+                    languages: manifest.languages || [],
+                    columns: manifest['dashboard-tradeyield'] || []
+                };
+            } catch (error) {
+                console.error("Error loading manifest:", error);
+                return { languages: [], columns: [] };
+            }
+        }
+
+        async function loadTranslations(langCode) {
+            try {
+                const response = await fetch(`lang/${langCode}.json`);
+                if (!response.ok) return {};
+                return await response.json();
+            } catch (error) {
+                console.error(`Error loading ${langCode}.json:`, error);
+                return {};
+            }
+        }
+
+        function getTranslation(key) {
+            return translations[key] || key;
+        }
+
+        // ========== DATA FLATTENING ==========
+        function flattenObject(obj, prefix = '') {
+            let result = {};
+            for (const key in obj) {
+                if (obj.hasOwnProperty(key)) {
+                    const value = obj[key];
+                    const newKey = prefix ? `${prefix}_${key}` : key;
+
+                    if (value !== null && typeof value === 'object' && !Array.isArray(value)) {
+                        // Recursively flatten nested objects
+                        Object.assign(result, flattenObject(value, newKey));
+                    } else {
+                        result[newKey] = value;
+                    }
+                }
+            }
+            return result;
+        }
 
         async function loadData() {
             if (!code || !username) {
-                showError("Missing parameters or authentication.");
+                showError(getTranslation("int.error.missing.params") || "Missing parameters or authentication.");
                 return;
             }
 
@@ -198,18 +250,30 @@
 
                 if (data.status === 'ok') {
                     if (data.tradeyield && Array.isArray(data.tradeyield) && data.tradeyield.length > 0) {
-                        tableData = data.tradeyield;
-                        tableColumns = Object.keys(tableData[0]);
+                        // Flatten nested objects
+                        tableData = data.tradeyield.map(item => flattenObject(item));
+
+                        // Use columns from manifest if available, otherwise discover from data
+                        if (tradeYieldColumns.length > 0) {
+                            tableColumns = [...tradeYieldColumns];
+                        } else {
+                            const allKeys = new Set();
+                            tableData.forEach(item => {
+                                Object.keys(item).forEach(k => allKeys.add(k));
+                            });
+                            tableColumns = Array.from(allKeys);
+                        }
+
                         renderTable();
                     } else {
-                        showError("No data found.");
+                        showError(getTranslation("int.no.data") || "No data found.");
                     }
                 } else {
-                    showError(data.msg || "Error fetching data.");
+                    showError(data.msg || getTranslation("int.error.fetch") || "Error fetching data.");
                 }
             } catch (e) {
                 console.error(e);
-                showError("Network or server error.");
+                showError(getTranslation("int.error.network") || "Network or server error.");
             } finally {
                 document.getElementById('loading').style.display = 'none';
             }
@@ -224,7 +288,7 @@
             // Headers
             tableColumns.forEach((col, index) => {
                 const th = document.createElement('th');
-                th.textContent = col;
+                th.textContent = getTranslation(col) || col;
                 th.draggable = true;
                 th.ondragstart = (e) => handleDragStart(e, index);
                 th.ondragover = (e) => handleDragOver(e);
@@ -306,7 +370,12 @@
         }
 
         // Init
-        loadData();
+        (async function init() {
+            const manifest = await loadLanguageManifest();
+            tradeYieldColumns = manifest.columns;
+            translations = await loadTranslations(language);
+            await loadData();
+        })();
 
     </script>
 </body>
