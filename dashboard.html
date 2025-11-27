@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Dashboard 0.7</title>
+    <title>Dashboard 0.8</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&display=swap');
@@ -1166,6 +1166,13 @@
                 return;
             }
 
+            // Sort accounts by description
+            accountsList.sort((a, b) => {
+                const descA = (a.description_account || a.description || '').toLowerCase();
+                const descB = (b.description_account || b.description || '').toLowerCase();
+                return descA.localeCompare(descB);
+            });
+
             accountsList.forEach(item => {
                 const div = document.createElement('div');
                 div.className = 'account-checkbox-item';
@@ -1613,9 +1620,11 @@
                     const groupItems = groups[group];
                     const trGroup = document.createElement('tr');
                     trGroup.className = 'group-header';
-                    trGroup.innerHTML = `<td colspan="${tableColumns.length}">${group} (${groupItems.length})</td>`;
+                    const tdGroup = document.createElement('td');
+                    tdGroup.colSpan = tableColumns.length;
+                    tdGroup.textContent = `${currentGroup}: ${getTranslation(group) || group} (${groupItems.length})`;
+                    trGroup.appendChild(tdGroup);
                     tbody.appendChild(trGroup);
-
                     groupItems.forEach(item => renderRow(item, tbody));
 
                     // Group Total
@@ -1939,7 +1948,10 @@
                     const groupItems = groups[group];
                     const trGroup = document.createElement('tr');
                     trGroup.className = 'group-header';
-                    trGroup.innerHTML = `<td colspan="${profitabilityTableColumns.length}">${group} (${groupItems.length})</td>`;
+                    const tdGroup = document.createElement('td');
+                    tdGroup.colSpan = profitabilityTableColumns.length;
+                    tdGroup.textContent = `${currentProfitabilityGroup}: ${getTranslation(group) || group} (${groupItems.length})`;
+                    trGroup.appendChild(tdGroup);
                     tbody.appendChild(trGroup);
 
                     groupItems.forEach(item => renderProfitabilityRow(item, tbody));

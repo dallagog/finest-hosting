@@ -253,15 +253,21 @@
                         // Flatten nested objects
                         tableData = data.trade.map(item => flattenObject(item));
 
+                        // Debug: log first flattened item to see structure
+                        console.log('Flattened trade item sample:', tableData[0]);
+                        console.log('Available keys:', Object.keys(tableData[0]));
+
                         // Use columns from manifest if available, otherwise discover from data
                         if (tradeColumns.length > 0) {
                             tableColumns = [...tradeColumns];
+                            console.log('Using manifest columns:', tableColumns);
                         } else {
                             const allKeys = new Set();
                             tableData.forEach(item => {
                                 Object.keys(item).forEach(k => allKeys.add(k));
                             });
                             tableColumns = Array.from(allKeys);
+                            console.log('Discovered columns:', tableColumns);
                         }
 
                         renderTable();
@@ -314,8 +320,11 @@
             }
 
             // Rows
-            displayData.forEach(item => {
+            displayData.forEach((item, idx) => {
                 const tr = document.createElement('tr');
+                tr.style.cursor = 'pointer';
+                tr.onclick = () => showTradeDetails(idx);
+
                 tableColumns.forEach(col => {
                     const td = document.createElement('td');
                     let val = item[col];
@@ -329,6 +338,10 @@
                 });
                 tbody.appendChild(tr);
             });
+        }
+
+        function showTradeDetails(index) {
+            window.open(`dashboard-trade-details.html?code=${encodeURIComponent(code)}&index=${index}`, '_blank');
         }
 
         function sortTable(col) {
