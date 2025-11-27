@@ -2049,6 +2049,29 @@
 
 
         // ========== LOGOUT ==========
+        async function loadPDF() {
+            try {
+                const pdfPath = `pdf/${credentials.username}/template.pdf`;
+
+                // Check if PDF exists and display it
+                const response = await fetch(pdfPath);
+                if (response.ok) {
+                    const blob = await response.blob();
+                    const url = URL.createObjectURL(blob);
+
+                    // Open PDF in new window
+                    window.open(url, '_blank');
+
+                    showMessage(getTranslation('int.pdf.loaded') || 'PDF caricato con successo', 'success');
+                } else {
+                    showMessage(getTranslation('int.pdf.notfound') || 'PDF non trovato', 'error');
+                }
+            } catch (error) {
+                console.error('Errore loadPDF', error);
+                showMessage((getTranslation('int.error.pdf') || 'Errore nel caricamento del PDF') + ': ' + (error.message || error), 'error');
+            }
+        }
+
         async function logout() {
             try {
                 const payload = {
