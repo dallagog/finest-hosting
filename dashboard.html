@@ -1514,22 +1514,21 @@
             const select = document.getElementById('grouping-select');
             select.innerHTML = '<option value="">' + (getTranslation('int.noselection') || 'Nessun raggruppamento') + '</option>';
 
-            // Use keys from the first classification item
-            if (Array.isArray(classificationList) && classificationList.length > 0) {
-                const sample = classificationList[0];
-                Object.keys(sample).forEach(key => {
-                    if (key !== 'id_instrument') { // Skip ID
-                        // Filter by classificationFilter if present
-                        if (classificationFilter.length > 0 && !classificationFilter.includes(key)) {
-                            return;
-                        }
-                        const opt = document.createElement('option');
-                        opt.value = key;
-                        opt.textContent = getTranslation(key) || key;
-                        select.appendChild(opt);
-                    }
-                });
+            let keys = [];
+            // Use classificationFilter from manifest if available
+            if (classificationFilter && classificationFilter.length > 0) {
+                keys = classificationFilter;
+            } else if (Array.isArray(classificationList) && classificationList.length > 0) {
+                // Fallback to keys from the first classification item
+                keys = Object.keys(classificationList[0]).filter(k => k !== 'id_instrument');
             }
+
+            keys.forEach(key => {
+                const opt = document.createElement('option');
+                opt.value = key;
+                opt.textContent = getTranslation(key) || key;
+                select.appendChild(opt);
+            });
         }
 
         function updateTableGrouping() {
@@ -1859,21 +1858,22 @@
         function populateProfitabilityGroupingSelect(classificationList) {
             const select = document.getElementById('profitability-grouping-select');
             select.innerHTML = '<option value="">' + (getTranslation('int.noselection') || 'Nessun raggruppamento') + '</option>';
-            if (Array.isArray(classificationList) && classificationList.length > 0) {
-                const sample = classificationList[0];
-                Object.keys(sample).forEach(key => {
-                    if (key !== 'id_instrument') {
-                        // Filter by classificationFilter if present
-                        if (classificationFilter.length > 0 && !classificationFilter.includes(key)) {
-                            return;
-                        }
-                        const opt = document.createElement('option');
-                        opt.value = key;
-                        opt.textContent = getTranslation(key) || key;
-                        select.appendChild(opt);
-                    }
-                });
+
+            let keys = [];
+            // Use classificationFilter from manifest if available
+            if (classificationFilter && classificationFilter.length > 0) {
+                keys = classificationFilter;
+            } else if (Array.isArray(classificationList) && classificationList.length > 0) {
+                // Fallback to keys from the first classification item
+                keys = Object.keys(classificationList[0]).filter(k => k !== 'id_instrument');
             }
+
+            keys.forEach(key => {
+                const opt = document.createElement('option');
+                opt.value = key;
+                opt.textContent = getTranslation(key) || key;
+                select.appendChild(opt);
+            });
         }
 
         function updateProfitabilityGrouping() {
