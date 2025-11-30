@@ -646,9 +646,9 @@
             <div class="collapsible-container">
                 <div class="collapsible-header" onclick="toggleCollapsible(this)">
                     <h2 id="filtersPeriodTitle">Filtri Periodo</h2>
-                    <span class="toggle-btn">-</span>
+                    <span class="toggle-btn">+</span>
                 </div>
-                <div class="collapsible-content active">
+                <div class="collapsible-content">
                     <div style="display: flex; gap: 15px;">
                         <div class="filter-group" style="flex: 1;">
                             <label id="dateStartLabel">Data iniziale:</label>
@@ -697,9 +697,9 @@
             <div class="collapsible-container">
                 <div class="collapsible-header" onclick="toggleCollapsible(this)">
                     <h2 id="pdfControlsTitle">Report PDF</h2>
-                    <span class="toggle-btn">-</span>
+                    <span class="toggle-btn">+</span>
                 </div>
-                <div class="collapsible-content active">
+                <div class="collapsible-content">
                     <div style="display: flex; gap: 15px;">
                         <button onclick="loadPDF()" style="flex: 1;">
                             <i class="fa fa-refresh"></i> <span id="generatePdfText">Genera PDF</span>
@@ -746,9 +746,9 @@
             <div id="profitability-section" class="collapsible-container" style="display:none;">
                 <div class="collapsible-header" onclick="toggleCollapsible(this)">
                     <h2 id="profitabilityTableTitle">Redditività</h2>
-                    <span class="toggle-btn">-</span>
+                    <span class="toggle-btn">+</span>
                 </div>
-                <div class="collapsible-content active">
+                <div class="collapsible-content">
                     <div class="portfolio-controls">
                         <label for="profitability-grouping-select">Raggruppa per:</label>
                         <select id="profitability-grouping-select" onchange="updateProfitabilityGrouping()">
@@ -1585,22 +1585,33 @@
             }
 
             // Calculate Totals Helper
-            const calculateTotals = (items) => {
+            const calculateTotals = (items, columns) => {
                 const totals = {};
-                tableColumns.forEach(col => {
+                columns.forEach(col => {
                     if (col === 'Ticker') {
                         totals[col] = 'TOTAL';
                         return;
                     }
-                    // Skip totals for percentage columns
-                    if (isPercentageColumn(col) || col.toLowerCase().includes('yield')) {
+
+                    // Check translated description for exclusion (contains % or &)
+                    const desc = getTranslation(col) || col;
+                    if (desc.includes('%')) {
                         totals[col] = '';
                         return;
                     }
-                    // Check if column is numeric (based on first item)
-                    const isNumeric = items.length > 0 && typeof items[0][col] === 'number';
+
+                    // Check if column is numeric (scan all items to be sure)
+                    const isNumeric = items.some(item => {
+                        const val = item[col];
+                        return typeof val === 'number' || (typeof val === 'string' && /^-?\d+(\.\d+)?$/.test(val));
+                    });
+
                     if (isNumeric) {
-                        const sum = items.reduce((acc, curr) => acc + (curr[col] || 0), 0);
+                        const sum = items.reduce((acc, curr) => {
+                            let val = curr[col];
+                            if (typeof val === 'string') val = parseFloat(val);
+                            return acc + (val || 0);
+                        }, 0);
                         totals[col] = parseFloat(sum.toFixed(2));
                     } else {
                         totals[col] = '';
@@ -1639,18 +1650,18 @@
                     groupItems.forEach(item => renderRow(item, tbody));
 
                     // Group Total
-                    const groupTotal = calculateTotals(groupItems);
+                    const groupTotal = calculateTotals(groupItems, tableColumns);
                     renderRow(groupTotal, tbody, true);
                 });
 
                 // Grand Total
-                const grandTotal = calculateTotals(displayData);
+                const grandTotal = calculateTotals(displayData, tableColumns);
                 renderRow(grandTotal, tbody, true, true);
 
             } else {
                 displayData.forEach(item => renderRow(item, tbody));
                 // Grand Total
-                const grandTotal = calculateTotals(displayData);
+                const grandTotal = calculateTotals(displayData, tableColumns);
                 renderRow(grandTotal, tbody, true, true);
             }
         }
@@ -1925,21 +1936,33 @@
             }
 
             // Calculate Totals Helper
-            const calculateTotals = (items) => {
+            const calculateTotals = (items, columns) => {
                 const totals = {};
-                profitabilityTableColumns.forEach(col => {
+                columns.forEach(col => {
                     if (col === 'Ticker') {
                         totals[col] = 'TOTAL';
                         return;
                     }
-                    // Skip totals for percentage columns
-                    if (isPercentageColumn(col) || col.toLowerCase().includes('yield')) {
+                    // Skip totals for percentage columns containing "per@" or "%"
+                    // We allow "yield" and "rendite" to be summed as per user request
+                    const lower = col.toLowerCase();
+                    if (lower.includes('per@') || lower.includes('%')) {
                         totals[col] = '';
                         return;
                     }
-                    const isNumeric = items.length > 0 && typeof items[0][col] === 'number';
+
+                    // Check if column is numeric (scan all items to be sure)
+                    const isNumeric = items.some(item => {
+                        const val = item[col];
+                        return typeof val === 'number' || (typeof val === 'string' && /^-?\d+(\.\d+)?$/.test(val));
+                    });
+
                     if (isNumeric) {
-                        const sum = items.reduce((acc, curr) => acc + (curr[col] || 0), 0);
+                        const sum = items.reduce((acc, curr) => {
+                            let val = curr[col];
+                            if (typeof val === 'string') val = parseFloat(val);
+                            return acc + (val || 0);
+                        }, 0);
                         totals[col] = parseFloat(sum.toFixed(2));
                     } else {
                         totals[col] = '';
@@ -1976,16 +1999,16 @@
 
                     groupItems.forEach(item => renderProfitabilityRow(item, tbody));
 
-                    const groupTotal = calculateTotals(groupItems);
+                    const groupTotal = calculateTotals(groupItems, profitabilityTableColumns);
                     renderProfitabilityRow(groupTotal, tbody, true);
                 });
 
-                const grandTotal = calculateTotals(displayData);
+                const grandTotal = calculateTotals(displayData, profitabilityTableColumns);
                 renderProfitabilityRow(grandTotal, tbody, true, true);
 
             } else {
                 displayData.forEach(item => renderProfitabilityRow(item, tbody));
-                const grandTotal = calculateTotals(displayData);
+                const grandTotal = calculateTotals(displayData, profitabilityTableColumns);
                 renderProfitabilityRow(grandTotal, tbody, true, true);
             }
         }
