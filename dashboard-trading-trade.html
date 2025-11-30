@@ -171,7 +171,7 @@
             <h1 id="tradeTitle">Trade Details</h1>
             <div class="close-container">
                 <button class="close-btn" onclick="window.close()">
-                    <i class="fa fa-times"></i> Chiudi
+                    <i class="fa fa-times"></i> <span id="closeText">Chiudi</span>
                 </button>
             </div>
         </div>
@@ -219,6 +219,22 @@
     <script>
         let credentials = { username: '', token: '', language: '' };
         let recordData = null;
+        let translations = {};
+
+        function getTranslation(key) {
+            return translations[key] || key;
+        }
+
+        async function loadTranslations(lang) {
+            try {
+                const response = await fetch(`lang/${lang}.json`);
+                if (!response.ok) throw new Error('Translation file not found');
+                translations = await response.json();
+                document.getElementById('closeText').textContent = getTranslation('int.close');
+            } catch (error) {
+                console.error('Error loading translations:', error);
+            }
+        }
 
         function getDataFromURL() {
             const params = new URLSearchParams(window.location.search);
@@ -248,8 +264,9 @@
             }
         }
 
-        window.addEventListener('load', () => {
+        window.addEventListener('load', async () => {
             getDataFromURL();
+            await loadTranslations(credentials.language);
         });
     </script>
 </body>
