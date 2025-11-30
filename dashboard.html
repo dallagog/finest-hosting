@@ -723,6 +723,9 @@
                         <select id="grouping-select" onchange="updateTableGrouping()">
                             <option value="">Nessun raggruppamento</option>
                         </select>
+                        <button onclick="openTradingDashboard()" style="margin-left: auto;">
+                            <i class="fa fa-rocket"></i> <span id="goLiveText">Go Live</span>
+                        </button>
                     </div>
                     <div id="portfolio-table-container">
                         <table id="portfolio-table" class="data-table">
@@ -938,6 +941,13 @@
                 if (opt1) opt1.textContent = selectOpt;
                 if (opt2) opt2.textContent = selectOpt;
             }
+
+            // Go Live button
+            const goLiveText = getTranslation('int.golive');
+            if (goLiveText !== 'int.golive') {
+                const goLiveBtn = document.getElementById('goLiveText');
+                if (goLiveBtn) goLiveBtn.textContent = goLiveText;
+            }
         }
 
         // ========== UTILITY FUNCTIONS ==========
@@ -992,7 +1002,9 @@
                 const langData = availableLanguages.find(l => l.code === f.language);
                 if (langData) {
                     document.getElementById('languageFlag').textContent = langData.flag;
-                    document.getElementById('languageDisplay').textContent = f.language;
+                    // Use translated language description instead of code
+                    const langDescription = getTranslation('int.language.description');
+                    document.getElementById('languageDisplay').textContent = langDescription !== 'int.language.description' ? langDescription : f.language;
                 } else {
                     document.getElementById('languageDisplay').textContent = f.language;
                 }
@@ -1670,9 +1682,18 @@
                     span.style.color = 'var(--neon-cyan)';
                     td.appendChild(span);
                 } else if (val !== undefined) {
+                    // Check if column description contains "%" and absolute value > 5000
+                    const colDescription = getTranslation(col) || col;
+                    const isPercentageCol = colDescription.includes('%');
+
                     // Format numbers
                     if (typeof val === 'number') {
-                        td.textContent = val.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                        // Display "--" for percentage columns with absolute value > 5000
+                        if (isPercentageCol && Math.abs(val) > 5000) {
+                            td.textContent = '--';
+                        } else {
+                            td.textContent = val.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                        }
                         td.style.textAlign = 'right';
                     } else {
                         td.textContent = val;
@@ -1995,10 +2016,19 @@
                     span.style.color = 'var(--neon-cyan)';
                     td.appendChild(span);
                 } else if (val !== undefined) {
+                    // Check if column description contains "%" and absolute value > 5000
+                    const colDescription = getTranslation(col) || col;
+                    const isPercentageCol = colDescription.includes('%');
+
                     if (typeof val === 'number') {
-                        td.textContent = val.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                        // Display "--" for percentage columns with absolute value > 5000
+                        if (isPercentageCol && Math.abs(val) > 5000) {
+                            td.textContent = '--';
+                        } else {
+                            td.textContent = val.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                        }
                         td.style.textAlign = 'right';
-                        if (!isPercentageColumn(col)) {
+                        if (!isPercentageColumn(col)) { // This check was originally here, keep it.
                             td.title = col; // Add column name as tooltip
                         }
                     } else {
@@ -2095,6 +2125,16 @@
                 console.error('logout error', error);
                 showMessage((getTranslation('int.connection.error') || 'Errore di connessione') + ': ' + (error.message || error), 'error');
             }
+        }
+
+        function openTradingDashboard() {
+            // Open trading dashboard with credentials
+            const params = new URLSearchParams({
+                username: credentials.username,
+                token: credentials.token,
+                language: credentials.language
+            });
+            window.open(`dashboard-trading.html?${params.toString()}`, '_blank');
         }
 
         function redirectToLogin() {

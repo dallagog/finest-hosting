@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="it">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Trade Details</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&display=swap');
+
+        :root {
+            --bg-color: #050505;
+            --neon-cyan: #00f3ff;
+            --neon-blue: #0066ff;
+            --glass-bg: rgba(0, 20, 40, 0.85);
+            --text-color: #e0f7fa;
+            --border-color: var(--neon-cyan);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Orbitron', sans-serif;
+            background-color: var(--bg-color);
+            background-image:
+                linear-gradient(rgba(0, 243, 255, 0.1) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 243, 255, 0.1) 1px, transparent 1px);
+            background-size: 50px 50px;
+            padding: 20px;
+            color: var(--text-color);
+            min-height: 100vh;
+        }
+
+        .main-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: var(--glass-bg);
+            border: 1px solid var(--neon-blue);
+            box-shadow: 0 0 15px rgba(0, 102, 255, 0.3);
+            border-radius: 8px;
+        }
+
+        .user-info-left {
+            flex: 1;
+            text-align: left;
+            font-size: 14px;
+            color: var(--neon-cyan);
+        }
+
+        h1 {
+            flex: 1;
+            text-align: center;
+            margin: 0;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            text-shadow: 0 0 10px var(--neon-cyan);
+            color: #fff;
+            font-size: 2em;
+        }
+
+        .close-container {
+            flex: 1;
+            text-align: right;
+        }
+
+        button {
+            padding: 10px 20px;
+            background: rgba(0, 102, 255, 0.2);
+            border: 1px solid var(--neon-blue);
+            color: var(--neon-cyan);
+            font-family: 'Orbitron', sans-serif;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+
+        button:hover {
+            background: var(--neon-blue);
+            color: #fff;
+            box-shadow: 0 0 15px var(--neon-blue);
+        }
+
+        .close-btn {
+            background: rgba(255, 0, 0, 0.2);
+            border-color: #ff3333;
+            color: #ff3333;
+        }
+
+        .close-btn:hover {
+            background: rgba(255, 0, 0, 0.4);
+            box-shadow: 0 0 10px #ff3333;
+        }
+
+        .content-section {
+            background: var(--glass-bg);
+            border: 1px solid var(--neon-cyan);
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 243, 255, 0.2);
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .info-item {
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(0, 243, 255, 0.2);
+            border-radius: 4px;
+        }
+
+        .info-label {
+            color: var(--neon-blue);
+            font-size: 0.9em;
+            margin-bottom: 5px;
+        }
+
+        .info-value {
+            color: var(--neon-cyan);
+            font-size: 1.1em;
+            font-weight: bold;
+        }
+
+        .placeholder-message {
+            text-align: center;
+            padding: 40px;
+            color: var(--neon-cyan);
+            font-size: 1.2em;
+        }
+
+        .data-display {
+            background: rgba(0, 0, 0, 0.5);
+            padding: 15px;
+            border-radius: 4px;
+            border: 1px solid rgba(0, 243, 255, 0.3);
+            font-family: monospace;
+            color: #00ff00;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="main-container">
+        <div class="header-bar">
+            <div class="user-info-left">
+                <strong>Utente:</strong>
+                <span id="usernameDisplay">-</span>
+            </div>
+            <h1 id="tradeTitle">Trade Details</h1>
+            <div class="close-container">
+                <button class="close-btn" onclick="window.close()">
+                    <i class="fa fa-times"></i> Chiudi
+                </button>
+            </div>
+        </div>
+
+        <div class="content-section">
+            <h2 style="color: var(--neon-cyan); margin-bottom: 15px;">Informazioni Utente</h2>
+            <div class="info-grid">
+                <div class="info-item">
+                    <div class="info-label">Username</div>
+                    <div class="info-value" id="username">-</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Token</div>
+                    <div class="info-value" id="token" style="font-size: 0.8em; word-break: break-all;">-</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Language</div>
+                    <div class="info-value" id="language">-</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Ticker</div>
+                    <div class="info-value" id="ticker">-</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="content-section" id="recordSection" style="display: none;">
+            <h2 style="color: var(--neon-cyan); margin-bottom: 15px;">Dati Record</h2>
+            <div class="data-display" id="recordData">
+                <!-- Record data will be displayed here -->
+            </div>
+        </div>
+
+        <div class="content-section">
+            <div class="placeholder-message">
+                <i class="fa fa-wrench" style="font-size: 3em; margin-bottom: 20px; display: block;"></i>
+                <p>Pagina in costruzione</p>
+                <p style="font-size: 0.8em; margin-top: 10px; color: var(--text-color);">
+                    Questa pagina sarà utilizzata per l'inserimento e la gestione delle operazioni di trading
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let credentials = { username: '', token: '', language: '' };
+        let recordData = null;
+
+        function getDataFromURL() {
+            const params = new URLSearchParams(window.location.search);
+            credentials.username = params.get('username') || '';
+            credentials.token = params.get('token') || '';
+            credentials.language = params.get('language') || 'it_IT';
+
+            const ticker = params.get('ticker') || '';
+            const dataStr = params.get('data');
+
+            // Display user info
+            document.getElementById('usernameDisplay').textContent = credentials.username;
+            document.getElementById('username').textContent = credentials.username;
+            document.getElementById('token').textContent = credentials.token;
+            document.getElementById('language').textContent = credentials.language;
+            document.getElementById('ticker').textContent = ticker || 'Nuovo Stock';
+
+            // Display record data if available
+            if (dataStr) {
+                try {
+                    recordData = JSON.parse(dataStr);
+                    document.getElementById('recordSection').style.display = 'block';
+                    document.getElementById('recordData').textContent = JSON.stringify(recordData, null, 2);
+                } catch (error) {
+                    console.error('Error parsing record data:', error);
+                }
+            }
+        }
+
+        window.addEventListener('load', () => {
+            getDataFromURL();
+        });
+    </script>
+</body>
+
+</html>
