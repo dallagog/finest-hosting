@@ -690,17 +690,9 @@
                     </div>
 
                     <button id="apply-filters" style="margin-top:15px; width:100%;">Applica Filtri</button>
-                </div>
-            </div>
 
-            <!-- PDF CONTROLS (Below Filters) -->
-            <div class="collapsible-container">
-                <div class="collapsible-header" onclick="toggleCollapsible(this)">
-                    <h2 id="pdfControlsTitle">Report PDF</h2>
-                    <span class="toggle-btn">+</span>
-                </div>
-                <div class="collapsible-content">
-                    <div style="display: flex; gap: 15px;">
+                    <!-- PDF CONTROLS -->
+                    <div style="display: flex; gap: 15px; margin-top: 15px;">
                         <button onclick="loadPDF()" style="flex: 1;">
                             <i class="fa fa-refresh"></i> <span id="generatePdfText">Genera PDF</span>
                         </button>
@@ -723,7 +715,10 @@
                         <select id="grouping-select" onchange="updateTableGrouping()">
                             <option value="">Nessun raggruppamento</option>
                         </select>
-                        <button onclick="openTradingDashboard()" style="margin-left: auto;">
+                        <button id="historicalBtn" onclick="toggleHistorical()" style="margin-left: auto;">
+                            <i class="fa fa-history"></i> <span id="historicalText">Storico</span>
+                        </button>
+                        <button onclick="openTradingDashboard()">
                             <i class="fa fa-rocket"></i> <span id="goLiveText">Go Live</span>
                         </button>
                     </div>
@@ -794,6 +789,7 @@
         let classificationFilter = [];
         let portfolioColumns = [];
         let profitabilityColumns = [];
+        let showHistorical = false; // Toggle for showing zero balance rows
 
         // ========== TRANSLATION SYSTEM ==========
         async function loadLanguageManifest() {
@@ -948,9 +944,30 @@
                 const goLiveBtn = document.getElementById('goLiveText');
                 if (goLiveBtn) goLiveBtn.textContent = goLiveText;
             }
+
+            // Historical button
+            const historicalText = getTranslation('int.historical');
+            if (historicalText !== 'int.historical') {
+                const historicalBtn = document.getElementById('historicalText');
+                if (historicalBtn) historicalBtn.textContent = historicalText;
+            }
         }
 
         // ========== UTILITY FUNCTIONS ==========
+        function toggleHistorical() {
+            showHistorical = !showHistorical;
+            const btn = document.getElementById('historicalBtn');
+            if (showHistorical) {
+                btn.classList.add('active');
+                btn.style.backgroundColor = 'var(--neon-cyan)';
+                btn.style.color = '#000';
+            } else {
+                btn.classList.remove('active');
+                btn.style.backgroundColor = '';
+                btn.style.color = '';
+            }
+            renderTable(); // Re-render table with new filter
+        }
         function toggleCollapsible(header) {
             const content = header.nextElementSibling;
             const toggleBtn = header.querySelector('.toggle-btn');
@@ -1478,10 +1495,21 @@
                     }
 
                     if (portfolioData.length > 0) {
+                        // Calculate percentage column for each item: (M/P / cost_amount) * 100
+                        portfolioData.forEach(item => {
+                            const mp = item['M/P'];
+                            const cost = item['cost_amount'];
+                            if (typeof mp === 'number' && typeof cost === 'number' && cost !== 0) {
+                                item['%'] = parseFloat(((mp / cost) * 100).toFixed(1));
+                            } else {
+                                item['%'] = null;
+                            }
+                        });
+
                         // Determine columns from all items
                         if (portfolioColumns.length > 0) {
-                            // Use columns from manifest
-                            tableColumns = [...portfolioColumns];
+                            // Use columns from manifest and add % at the end
+                            tableColumns = [...portfolioColumns, '%'];
                         } else {
                             // Fallback: dynamic discovery
                             const allKeys = new Set();
@@ -1573,6 +1601,24 @@
             // Data
             let displayData = [...portfolioData];
 
+            // Filter out zero balance rows if historical mode is disabled
+            if (!showHistorical) {
+                displayData = displayData.filter(item => {
+                    const quantity = item.quantity;
+                    if (!quantity) return true; // Keep if no quantity field
+
+                    // Extract numeric value from "value:currency" format
+                    const quantityStr = String(quantity);
+                    const colonIndex = quantityStr.indexOf(':');
+                    const numericValue = colonIndex > 0
+                        ? parseFloat(quantityStr.substring(0, colonIndex))
+                        : parseFloat(quantityStr);
+
+                    // Keep row if quantity is not zero
+                    return numericValue !== 0;
+                });
+            }
+
             // Sort
             if (currentSort.column) {
                 displayData.sort((a, b) => {
@@ -1590,6 +1636,18 @@
                 columns.forEach(col => {
                     if (col === 'Ticker') {
                         totals[col] = 'TOTAL';
+                        return;
+                    }
+
+                    // Skip totals for id_account column
+                    if (col === 'id_account') {
+                        totals[col] = '';
+                        return;
+                    }
+
+                    // Skip totals for calculated % column
+                    if (col === '%') {
+                        totals[col] = '';
                         return;
                     }
 
@@ -1836,9 +1894,20 @@
                     }
 
                     if (profitabilityData.length > 0) {
+                        // Calculate percentage column for each item: (RISTOT / GIACMED) * 100
+                        profitabilityData.forEach(item => {
+                            const ristot = item['RISTOT'];
+                            const giacmed = item['GIACMED'];
+                            if (typeof ristot === 'number' && typeof giacmed === 'number' && giacmed !== 0) {
+                                item['%'] = parseFloat(((ristot / giacmed) * 100).toFixed(1));
+                            } else {
+                                item['%'] = null;
+                            }
+                        });
+
                         // Collect all unique keys from all items to ensure no columns are missed
                         if (profitabilityColumns.length > 0) {
-                            profitabilityTableColumns = [...profitabilityColumns];
+                            profitabilityTableColumns = [...profitabilityColumns, '%'];
                         } else {
                             const allKeys = new Set();
                             profitabilityData.forEach(item => {
@@ -1943,6 +2012,19 @@
                         totals[col] = 'TOTAL';
                         return;
                     }
+
+                    // Skip totals for id_account column
+                    if (col === 'id_account') {
+                        totals[col] = '';
+                        return;
+                    }
+
+                    // Skip totals for calculated % column
+                    if (col === '%') {
+                        totals[col] = '';
+                        return;
+                    }
+
                     // Skip totals for percentage columns containing "per@" or "%"
                     // We allow "yield" and "rendite" to be summed as per user request
                     const lower = col.toLowerCase();
