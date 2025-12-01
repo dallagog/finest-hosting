@@ -121,17 +121,48 @@
         const username = localStorage.getItem("username");
         const token = localStorage.getItem("token");
         const language = localStorage.getItem("language") || 'it_IT';
+        let translations = {};
+
+        async function loadTranslations(lang) {
+            try {
+                const response = await fetch(`lang/${lang}.json`);
+                if (!response.ok) throw new Error(`Translation file not found lang/${lang}.json`);
+                translations = await response.json();
+                updatePageTranslations();
+            } catch (error) {
+                console.error('❌ Error loading translations:', error);
+            }
+        }
+
+        function getTranslation(key) {
+            return translations[key] || key;
+        }
+
+        function updatePageTranslations() {
+            document.title = getTranslation('int.instrument.title');
+            document.querySelector('h1').textContent = getTranslation('int.instrument.title');
+
+            const loading = document.getElementById('loading');
+            if (loading && loading.textContent === 'Loading data...') {
+                loading.textContent = getTranslation('int.loading.data');
+            }
+
+            const closeBtn = document.getElementById('closeBtn');
+            if (closeBtn) closeBtn.textContent = getTranslation('int.close');
+        }
 
         async function loadData() {
+            await loadTranslations(language);
+
             if (!code) {
-                showError("Missing parameters.");
+                showError(getTranslation('int.error.missing.params'));
                 return;
             }
 
             try {
                 const mapStr = localStorage.getItem('classificationMap');
                 if (!mapStr) {
-                    showError("Classification data not found. Please go back to dashboard.");
+                    showError(getTranslation('int.error.classification.missing'));
                     return;
                 }
 
@@ -141,11 +172,11 @@
                 if (instrument) {
                     renderDetails(instrument);
                 } else {
-                    showError("Instrument data not found for code: " + code);
+                    showError(getTranslation('int.error.instrument.notfound') + " " + code);
                 }
             } catch (e) {
                 console.error(e);
-                showError("Error loading local data.");
+                showError(getTranslation('int.error.loading.local'));
             } finally {
                 document.getElementById('loading').style.display = 'none';
             }
@@ -161,7 +192,8 @@
 
                 const label = document.createElement('span');
                 label.className = 'detail-label';
-                label.textContent = key.replace(/_/g, ' ');
+                // Try to translate the key if possible, otherwise format it
+                label.textContent = getTranslation(key) !== key ? getTranslation(key) : key.replace(/_/g, ' ');
 
                 const val = document.createElement('span');
                 val.className = 'detail-value';

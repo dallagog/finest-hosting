@@ -135,7 +135,7 @@
         <h1>Trade Details</h1>
         <div class="info-bar">
             <span id="symbolDisplay">Symbol: -</span>
-            <span>Type: Trade</span>
+            <span id="typeDisplay">Type: Trade</span>
         </div>
         <div id="loading" class="loading">Loading data...</div>
         <div id="error" class="error-msg" style="display: none;"></div>
@@ -168,7 +168,7 @@
 
         const symbolDisplay = document.getElementById('symbolDisplay');
         if (code) {
-            symbolDisplay.innerHTML = 'Symbol: <span class="symbol-link" onclick="openInstrumentDetails(\'' + code + '\')">' + code + '</span>';
+            symbolDisplay.innerHTML = (getTranslation('int.symbol') || 'Symbol:') + ' <span class="symbol-link" onclick="openInstrumentDetails(\'' + code + '\')">' + code + '</span>';
         }
 
         let tableData = [];
@@ -206,6 +206,19 @@
 
         function getTranslation(key) {
             return translations[key] || key;
+        }
+
+        function updatePageTranslations() {
+            document.title = getTranslation('int.trade.title');
+            document.querySelector('h1').textContent = getTranslation('int.trade.title');
+
+            const typeDisplay = document.getElementById('typeDisplay');
+            if (typeDisplay) typeDisplay.textContent = getTranslation('int.type.trade');
+
+            const loading = document.getElementById('loading');
+            if (loading && loading.textContent === 'Loading data...') {
+                loading.textContent = getTranslation('int.loading.data') || 'Loading data...';
+            }
         }
 
         // ========== DATA FLATTENING ==========
@@ -387,6 +400,7 @@
             const manifest = await loadLanguageManifest();
             tradeColumns = manifest.columns;
             translations = await loadTranslations(language);
+            updatePageTranslations();
             await loadData();
         })();
 

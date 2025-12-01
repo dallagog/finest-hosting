@@ -186,7 +186,7 @@
 <body>
   <div class="language-selector">
     <select id="languageCombo">
-      <option value="">Loading...</option>
+      <option value="" id="loadingOption">Loading...</option>
     </select>
   </div>
 
@@ -194,8 +194,8 @@
     <div class="logo-header">
       <img src="images/logo-bullandbear.png" alt="Logo" class="logo">
       <div class="tron-text">
-        <div>FINANCIAL</div>
-        <div>ESTIMATES</div>
+        <div id="logo-financial">FINANCIAL</div>
+        <div id="logo-estimates">ESTIMATES</div>
       </div>
     </div>
     <h2 id="form-title">Login</h2>
@@ -389,6 +389,14 @@
       if (forgotPassword) forgotPassword.textContent = getTranslation('int.forgot.password');
       if (switchForm) switchForm.textContent = isLogin ? getTranslation('int.no.account') : getTranslation('int.have.account');
 
+      const logoFinancial = document.getElementById('logo-financial');
+      const logoEstimates = document.getElementById('logo-estimates');
+      if (logoFinancial) logoFinancial.textContent = getTranslation('int.logo.financial');
+      if (logoEstimates) logoEstimates.textContent = getTranslation('int.logo.estimates');
+
+      const loadingOption = document.getElementById('loadingOption');
+      if (loadingOption) loadingOption.textContent = getTranslation('int.loading');
+
       console.log("✅ Page translations updated");
     }
 
@@ -441,10 +449,10 @@
         const resUser = await fetch(`${apiBaseUser}/health`, { cache: "no-cache" });
         const resNew = await fetch(`${apiBaseNew}/health`, { cache: "no-cache" });
 
-        if (!resUser.ok || !resNew.ok) throw new Error("Services unavailable");
-        console.log("✅ Services healthy");
+        if (!resUser.ok || !resNew.ok) throw new Error(getTranslation('int.services.unavailable') || "Services unavailable");
+        console.log("✅ " + (getTranslation('int.services.healthy') || "Services healthy"));
       } catch (err) {
-        console.error("❌ Service check failed:", err);
+        console.error("❌ " + (getTranslation('int.service.check.failed') || "Service check failed") + ":", err);
         document.body.innerHTML = '<div style="display:flex;justify-content:center;align-items:center;height:100vh;"><img src="images/off-line.jpeg" alt="Offline" class="offline"></div>';
       }
     }
