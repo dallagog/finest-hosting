@@ -1446,8 +1446,23 @@
 
                     // Parse Classification
                     classificationMap = {};
-                    if (Array.isArray(data.classification)) {
-                        data.classification.forEach(item => {
+                    let classificationList = data.classification;
+
+                    // FIX: Handle case where classification is a string representation of a list (Python str())
+                    if (typeof classificationList === 'string') {
+                        try {
+                            // Replace single quotes with double quotes to make it valid JSON
+                            // This is a workaround for the backend bug
+                            const validJson = classificationList.replace(/'/g, '"');
+                            classificationList = JSON.parse(validJson);
+                        } catch (e) {
+                            console.error('Error parsing classification string:', e);
+                            classificationList = [];
+                        }
+                    }
+
+                    if (Array.isArray(classificationList)) {
+                        classificationList.forEach(item => {
                             if (item.id_instrument) {
                                 classificationMap[item.id_instrument] = item;
                             }
@@ -1527,7 +1542,7 @@
                         console.warn('⚠️ Portfolio Data is empty after parsing');
                     }
 
-                    populateGroupingSelect(data.classification);
+                    populateGroupingSelect(classificationList);
                     renderTable();
                     document.getElementById('portfolio-section').style.display = 'block';
                 } else {
@@ -1567,7 +1582,7 @@
 
         function isPercentageColumn(colName) {
             const lower = colName.toLowerCase();
-            return lower.includes('per') || lower.includes('%') || lower.includes('rendite') || lower.includes('yield');
+            return lower.includes('%');
         }
 
         function renderTable() {
@@ -1855,8 +1870,22 @@
 
                     // Parse Classification
                     classificationMap = {};
-                    if (Array.isArray(data.classification)) {
-                        data.classification.forEach(item => {
+                    let classificationList = data.classification;
+
+                    // FIX: Handle case where classification is a string representation of a list (Python str())
+                    if (typeof classificationList === 'string') {
+                        try {
+                            // Replace single quotes with double quotes to make it valid JSON
+                            const validJson = classificationList.replace(/'/g, '"');
+                            classificationList = JSON.parse(validJson);
+                        } catch (e) {
+                            console.error('Error parsing classification string:', e);
+                            classificationList = [];
+                        }
+                    }
+
+                    if (Array.isArray(classificationList)) {
+                        classificationList.forEach(item => {
                             if (item.id_instrument) {
                                 classificationMap[item.id_instrument] = item;
                             }
@@ -1933,7 +1962,7 @@
                         console.warn('⚠️ Profitability Data is empty after parsing');
                     }
 
-                    populateProfitabilityGroupingSelect(data.classification);
+                    populateProfitabilityGroupingSelect(classificationList);
                     renderProfitabilityTable();
                     document.getElementById('profitability-section').style.display = 'block';
                 } else {
