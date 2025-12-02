@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Dashboard 1.4</title>
+    <title>Dashboard 1.6</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&display=swap');
@@ -1212,6 +1212,7 @@
                 checkbox.checked = item.selected || false;
                 checkbox.addEventListener('change', () => {
                     item.selected = checkbox.checked;
+                    filterAndRenderTables();
                 });
 
                 const label = document.createElement('label');
@@ -1242,6 +1243,7 @@
             });
 
             renderReportsList();
+            filterAndRenderTables();
             showMessage(getTranslation('int.all.selected') || 'Tutti i rapporti selezionati', 'success');
         }
 
@@ -1253,8 +1255,29 @@
             });
 
             renderReportsList();
-            showMessage(getTranslation('int.all.deselected') || 'Tutti i rapporti deselezionati', 'success');
+            filterAndRenderTables();
+            showMessage(getTranslation('int.all.deselected') || 'Tutti i rapporti deselezionati', 'info');
         }
+
+        function getSelectedAccountIds() {
+            if (!filterData || !filterData.Account || !filterData.Account.list) return [];
+
+            const selected = filterData.Account.list
+                .filter(item => item.selected)
+                .map(item => item.id_account);
+
+            // If no accounts selected, return empty array (will show all data)
+            return selected;
+        }
+
+        function filterAndRenderTables() {
+            const selectedAccounts = getSelectedAccountIds();
+
+            // Render both tables with the account filter
+            renderTable(selectedAccounts);
+            renderProfitabilityTable(selectedAccounts);
+        }
+
 
         // ========== APPLY FILTERS ==========
         async function applyFiltersAndSave() {
@@ -1585,37 +1608,40 @@
             return lower.includes('%');
         }
 
-        function renderTable() {
+        function renderTable(accountFilter = []) {
             const thead = document.getElementById('portfolio-header-row');
             const tbody = document.getElementById('portfolio-body');
             thead.innerHTML = '';
             tbody.innerHTML = '';
 
+            // Filter data by selected accounts
+            let displayData = [...portfolioData];
+            if (accountFilter.length > 0) {
+                displayData = displayData.filter(item =>
+                    accountFilter.includes(item.id_account)
+                );
+            }
+
             // Headers
             tableColumns.forEach((col, index) => {
                 const th = document.createElement('th');
                 th.draggable = true;
-                th.ondragstart = (e) => handleDragStart(e, index);
-                th.ondragover = (e) => handleDragOver(e);
-                th.ondrop = (e) => handleDrop(e, index);
-                th.onclick = () => sortPortfolio(col);
+                th.addEventListener('dragstart', (e) => handleDragStart(e, index));
+                th.addEventListener('dragover', handleDragOver);
+                th.addEventListener('drop', (e) => handleDrop(e, index));
 
-                const handle = document.createElement('span');
-                handle.className = 'drag-handle';
-                handle.textContent = '⋮';
-                th.appendChild(handle);
+                const sortIcon = currentSort.column === col
+                    ? (currentSort.direction === 'asc' ? ' ▲' : ' ▼')
+                    : '';
 
-                const text = document.createTextNode(getTranslation(col) || col);
-                th.appendChild(text);
-
-                if (currentSort.column === col) {
-                    th.classList.add(currentSort.direction === 'asc' ? 'sort-asc' : 'sort-desc');
+                // Right-align all headers except the first one
+                if (index > 0) {
+                    th.style.textAlign = 'right';
                 }
+
+                th.innerHTML = `<span style="cursor: pointer;" onclick="sortPortfolio('${col}')">${getTranslation(col) || col}${sortIcon}</span>`;
                 thead.appendChild(th);
             });
-
-            // Data
-            let displayData = [...portfolioData];
 
             // Filter out zero balance rows if historical mode is disabled
             if (!showHistorical) {
@@ -1756,10 +1782,13 @@
                 tr.style.borderTop = isGrandTotal ? '2px solid var(--neon-cyan)' : '1px solid var(--neon-blue)';
             } else {
                 // Make the whole row clickable to open details
-                tr.onclick = () => {
-                    selectRow(tr, item);
-                    if (item.Ticker) openTradeDetails(item.Ticker);
-                };
+                tr.addEventListener('click', async () => {
+                    await selectRow(tr, item);
+                    // Open portfolio details when row is clicked
+                    if (item.id_instrument && item.id_account) {
+                        openPortfolioDetails(item.id_account, item.id_instrument);
+                    }
+                });
             }
 
             tableColumns.forEach((col, index) => {
@@ -1828,6 +1857,139 @@
         async function selectRow(tr, item) {
             document.querySelectorAll('#portfolio-body tr').forEach(r => r.classList.remove('selected'));
             tr.classList.add('selected');
+        }
+
+        async function openPortfolioDetails(idAccount, idInstrument) {
+            console.log('Open portfolio details for:', idAccount, idInstrument);
+
+            try {
+                const payload = {
+                    username: credentials.username,
+                    token: credentials.token,
+                    language: credentials.language,
+                    code: `${idAccount}:${idInstrument}`
+                };
+
+                const response = await fetch(`${API_URL}/getwallet`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) throw new Error('HTTP ' + response.status);
+                const data = await response.json();
+
+                if (data.status === 'ok' && data.wallet) {
+                    displayPortfolioDetails(data.wallet, idInstrument);
+                } else {
+                    alert('Portfolio details not available');
+                }
+            } catch (error) {
+                console.error('Error loading portfolio details:', error);
+                alert('Error loading portfolio details');
+            }
+        }
+
+        function displayPortfolioDetails(walletData, idInstrument) {
+            // Create modal overlay
+            const overlay = document.createElement('div');
+            overlay.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.8);
+                z-index: 10000;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                padding: 20px;
+            `;
+
+            // Create modal content
+            const modal = document.createElement('div');
+            modal.style.cssText = `
+                background: var(--glass-bg);
+                border: 1px solid var(--neon-cyan);
+                border-radius: 12px;
+                padding: 30px;
+                max-width: 90%;
+                max-height: 90%;
+                overflow-y: auto;
+                box-shadow: 0 0 30px rgba(0, 243, 255, 0.3);
+            `;
+
+            // Get instrument description
+            const instrumentDesc = walletData[0]?.instrument?.instrument_description || idInstrument;
+
+            // Build modal HTML
+            let html = `
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h2 style="color: var(--neon-cyan); margin: 0;">${instrumentDesc} - Transaction History</h2>
+                    <button id="close-modal" style="
+                        background: rgba(255, 0, 0, 0.2);
+                        border: 1px solid #ff0000;
+                        color: #ff0000;
+                        padding: 8px 16px;
+                        border-radius: 4px;
+                        cursor: pointer;
+                        font-family: 'Orbitron', sans-serif;
+                    ">Close</button>
+                </div>
+                <table style="width: 100%; border-collapse: collapse; color: var(--text-color);">
+                    <thead>
+                        <tr style="background: rgba(0, 243, 255, 0.1); border-bottom: 2px solid var(--neon-cyan);">
+                            <th style="padding: 10px; text-align: left;">Date</th>
+                            <th style="padding: 10px; text-align: left;">Event</th>
+                            <th style="padding: 10px; text-align: right;">Quantity</th>
+                            <th style="padding: 10px; text-align: right;">Price</th>
+                            <th style="padding: 10px; text-align: right;">Amount</th>
+                            <th style="padding: 10px; text-align: right;">Balance</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            // Add transaction rows
+            walletData.forEach((transaction, index) => {
+                const date = transaction.date_evaluation || '-';
+                const event = transaction.event?.event_description || transaction.id_event || '-';
+                const quantity = transaction.quantity || '0';
+                const price = transaction.price || '-';
+                const amount = transaction['amount:net'] || transaction.controvaloresupersecco || '-';
+                const balance = transaction.valutazioni?.saldo || '-';
+
+                html += `
+                    <tr style="border-bottom: 1px solid rgba(0, 243, 255, 0.2); ${index % 2 === 0 ? 'background: rgba(0, 243, 255, 0.05);' : ''}">
+                        <td style="padding: 10px;">${date}</td>
+                        <td style="padding: 10px;">${event}</td>
+                        <td style="padding: 10px; text-align: right;">${quantity}</td>
+                        <td style="padding: 10px; text-align: right;">${price}</td>
+                        <td style="padding: 10px; text-align: right;">${amount}</td>
+                        <td style="padding: 10px; text-align: right;">${balance}</td>
+                    </tr>
+                `;
+            });
+
+            html += `
+                    </tbody>
+                </table>
+            `;
+
+            modal.innerHTML = html;
+            overlay.appendChild(modal);
+            document.body.appendChild(overlay);
+
+            // Close modal handlers
+            document.getElementById('close-modal').addEventListener('click', () => {
+                document.body.removeChild(overlay);
+            });
+            overlay.addEventListener('click', (e) => {
+                if (e.target === overlay) {
+                    document.body.removeChild(overlay);
+                }
+            });
         }
 
         function openTradeDetails(symbol) {
@@ -1999,11 +2161,19 @@
             renderProfitabilityTable();
         }
 
-        function renderProfitabilityTable() {
+        function renderProfitabilityTable(accountFilter = []) {
             const thead = document.getElementById('profitability-header-row');
             const tbody = document.getElementById('profitability-body');
             thead.innerHTML = '';
             tbody.innerHTML = '';
+
+            // Filter data by selected accounts
+            let displayData = [...profitabilityData];
+            if (accountFilter.length > 0) {
+                displayData = displayData.filter(item =>
+                    accountFilter.includes(item.id_account)
+                );
+            }
 
             // Headers
             profitabilityTableColumns.forEach((col, index) => {
@@ -2028,8 +2198,8 @@
                 thead.appendChild(th);
             });
 
-            // Data
-            let displayData = [...profitabilityData];
+            // Data - use filtered displayData instead of profitabilityData
+            let sortedData = [...displayData];
 
             // Sort
             if (currentProfitabilitySort.column) {
