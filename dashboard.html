@@ -1686,9 +1686,17 @@
                     let groupVal = 'int.other';
                     const instrumentId = item.id_instrument;
                     // Lookup in classification map using id_instrument
-                    if (instrumentId && classificationMap[instrumentId]) {
-                        const classObj = classificationMap[instrumentId];
-                        if (classObj[currentGroup]) {
+                    // Ensure we handle both string and number types for id_instrument
+                    if (instrumentId !== undefined && instrumentId !== null) {
+                        // Try direct match first
+                        let classObj = classificationMap[instrumentId];
+                        // If not found, try converting to string (if it's a number) or number (if it's a string)
+                        if (!classObj) {
+                            // If classificationMap keys are strings (from JSON), and instrumentId is number
+                            classObj = classificationMap[String(instrumentId)];
+                        }
+
+                        if (classObj && classObj[currentGroup]) {
                             groupVal = classObj[currentGroup];
                         }
                     }
@@ -2061,9 +2069,17 @@
                     let groupVal = 'int.other';
                     const instrumentId = item.id_instrument;
                     // Lookup in classification map using id_instrument
-                    if (instrumentId && classificationMap[instrumentId]) {
-                        const classObj = classificationMap[instrumentId];
-                        if (classObj[currentProfitabilityGroup]) {
+                    // Ensure we handle both string and number types for id_instrument
+                    if (instrumentId !== undefined && instrumentId !== null) {
+                        // Try direct match first
+                        let classObj = classificationMap[instrumentId];
+                        // If not found, try converting to string (if it's a number) or number (if it's a string)
+                        if (!classObj) {
+                            // If classificationMap keys are strings (from JSON), and instrumentId is number
+                            classObj = classificationMap[String(instrumentId)];
+                        }
+
+                        if (classObj && classObj[currentProfitabilityGroup]) {
                             groupVal = classObj[currentProfitabilityGroup];
                         }
                     }
