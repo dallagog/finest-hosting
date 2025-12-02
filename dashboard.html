@@ -1139,6 +1139,8 @@
 
                 populateFilterUI();
                 renderReportsList();
+                // Trigger table render after selectedAccounts is initialized
+                filterAndRenderTables();
                 updateUserInfo();
 
                 showMessage(getTranslation('int.filters.loaded') || 'Filtri e account caricati', 'success');
@@ -1196,14 +1198,13 @@
                 return;
             }
 
-            // Initialize selectedAccounts from filterData if not already done
-            if (selectedAccounts.length === 0) {
-                accountsList.forEach(item => {
-                    if (item.selected) {
-                        selectedAccounts.push(item.id_account);
-                    }
-                });
-            }
+            // Always rebuild selectedAccounts from filterData
+            selectedAccounts = [];
+            accountsList.forEach(item => {
+                if (item.selected) {
+                    selectedAccounts.push(item.id_account);
+                }
+            });
 
             // Sort accounts by description
             accountsList.sort((a, b) => {
