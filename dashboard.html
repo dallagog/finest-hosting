@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Dashboard 1.6</title>
+    <title>Dashboard 1.7</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&display=swap');
@@ -1266,7 +1266,6 @@
                 .filter(item => item.selected)
                 .map(item => item.id_account);
 
-            // If no accounts selected, return empty array (will show all data)
             return selected;
         }
 
@@ -1616,10 +1615,14 @@
 
             // Filter data by selected accounts
             let displayData = [...portfolioData];
+            // Always filter - if accountFilter is empty, show nothing
             if (accountFilter.length > 0) {
                 displayData = displayData.filter(item =>
                     accountFilter.includes(item.id_account)
                 );
+            } else {
+                // No accounts selected = show nothing
+                displayData = [];
             }
 
             // Headers
@@ -2169,10 +2172,14 @@
 
             // Filter data by selected accounts
             let displayData = [...profitabilityData];
+            // Always filter - if accountFilter is empty, show nothing
             if (accountFilter.length > 0) {
                 displayData = displayData.filter(item =>
                     accountFilter.includes(item.id_account)
                 );
+            } else {
+                // No accounts selected = show nothing
+                displayData = [];
             }
 
             // Headers
