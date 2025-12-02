@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Dashboard 1.7</title>
+    <title>Dashboard 1.8</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&display=swap');
@@ -781,6 +781,7 @@
     <script>
         const API_URL = "https://feweb-tunnel.fe-web.eu";
         let filterData = null;
+        let selectedAccounts = []; // Array of selected account IDs
         let credentials = { username: '', token: '', language: '', filter: '' };
         let pdfBase64 = null;
         let translations = {};
@@ -1195,6 +1196,15 @@
                 return;
             }
 
+            // Initialize selectedAccounts from filterData if not already done
+            if (selectedAccounts.length === 0) {
+                accountsList.forEach(item => {
+                    if (item.selected) {
+                        selectedAccounts.push(item.id_account);
+                    }
+                });
+            }
+
             // Sort accounts by description
             accountsList.sort((a, b) => {
                 const descA = (a.description_account || a.description || '').toLowerCase();
@@ -1209,9 +1219,24 @@
                 const checkbox = document.createElement('input');
                 checkbox.type = 'checkbox';
                 checkbox.id = `account-${item.id_account}`;
-                checkbox.checked = item.selected || false;
+                // Check if this account is in selectedAccounts array
+                checkbox.checked = selectedAccounts.includes(item.id_account);
                 checkbox.addEventListener('change', () => {
+                    if (checkbox.checked) {
+                        // Add to selectedAccounts if not already there
+                        if (!selectedAccounts.includes(item.id_account)) {
+                            selectedAccounts.push(item.id_account);
+                        }
+                    } else {
+                        // Remove from selectedAccounts
+                        const index = selectedAccounts.indexOf(item.id_account);
+                        if (index > -1) {
+                            selectedAccounts.splice(index, 1);
+                        }
+                    }
+                    // Update filterData to keep in sync
                     item.selected = checkbox.checked;
+                    // Redraw tables
                     filterAndRenderTables();
                 });
 
@@ -1238,8 +1263,11 @@
         function selectAllReports() {
             if (!filterData || !filterData.Account || !filterData.Account.list) return;
 
+            // Clear and repopulate selectedAccounts with all account IDs
+            selectedAccounts = [];
             filterData.Account.list.forEach(item => {
                 item.selected = true;
+                selectedAccounts.push(item.id_account);
             });
 
             renderReportsList();
@@ -1250,6 +1278,8 @@
         function deselectAllReports() {
             if (!filterData || !filterData.Account || !filterData.Account.list) return;
 
+            // Clear selectedAccounts array
+            selectedAccounts = [];
             filterData.Account.list.forEach(item => {
                 item.selected = false;
             });
@@ -1259,20 +1289,8 @@
             showMessage(getTranslation('int.all.deselected') || 'Tutti i rapporti deselezionati', 'info');
         }
 
-        function getSelectedAccountIds() {
-            if (!filterData || !filterData.Account || !filterData.Account.list) return [];
-
-            const selected = filterData.Account.list
-                .filter(item => item.selected)
-                .map(item => item.id_account);
-
-            return selected;
-        }
-
         function filterAndRenderTables() {
-            const selectedAccounts = getSelectedAccountIds();
-
-            // Render both tables with the account filter
+            // Use the selectedAccounts array directly
             renderTable(selectedAccounts);
             renderProfitabilityTable(selectedAccounts);
         }
