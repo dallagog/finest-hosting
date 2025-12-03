@@ -1707,14 +1707,22 @@
 
             // Filter data by selected accounts
             let displayData = [...portfolioData];
+            console.log('Portfolio - accountFilter:', accountFilter);
+            console.log('Portfolio - sample items:', portfolioData.slice(0, 3));
+
             // Always filter - if accountFilter is empty, show nothing
             if (accountFilter.length > 0) {
-                displayData = displayData.filter(item =>
-                    accountFilter.includes(item.id_account)
-                );
+                displayData = displayData.filter(item => {
+                    // Convert both to string for comparison to handle type mismatches
+                    const itemAccount = String(item.id_account);
+                    const isIncluded = accountFilter.some(acc => String(acc) === itemAccount);
+                    return isIncluded;
+                });
+                console.log('Portfolio - filtered to:', displayData.length, 'items');
             } else {
                 // No accounts selected = show nothing
                 displayData = [];
+                console.log('Portfolio - no accounts selected, showing nothing');
             }
 
             // Headers
@@ -2264,14 +2272,22 @@
 
             // Filter data by selected accounts
             let displayData = [...profitabilityData];
+            console.log('Profitability - accountFilter:', accountFilter);
+            console.log('Profitability - sample items:', profitabilityData.slice(0, 3));
+
             // Always filter - if accountFilter is empty, show nothing
             if (accountFilter.length > 0) {
-                displayData = displayData.filter(item =>
-                    accountFilter.includes(item.id_account)
-                );
+                displayData = displayData.filter(item => {
+                    // Convert both to string for comparison to handle type mismatches
+                    const itemAccount = String(item.id_account);
+                    const isIncluded = accountFilter.some(acc => String(acc) === itemAccount);
+                    return isIncluded;
+                });
+                console.log('Profitability - filtered to:', displayData.length, 'items');
             } else {
                 // No accounts selected = show nothing
                 displayData = [];
+                console.log('Profitability - no accounts selected, showing nothing');
             }
 
             // Headers
