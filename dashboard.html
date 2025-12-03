@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Dashboard 3.1</title>
+    <title>Dashboard 3.2</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&display=swap');
@@ -1348,13 +1348,34 @@
             // Normalize the account ID to compare
             const normId = String(accountId).trim();
 
+            // Function to normalize account IDs (remove leading zeros for numeric part)
+            const normalizeAccountId = (id) => {
+                const str = String(id).trim();
+                // If it's purely numeric, remove leading zeros
+                if (/^\d+$/.test(str)) {
+                    return String(parseInt(str, 10));
+                }
+                // If it has letters, remove leading zeros only from numeric prefix
+                const match = str.match(/^(0*)(\d+)(.*)$/);
+                if (match) {
+                    return String(parseInt(match[2], 10)) + match[3];
+                }
+                return str;
+            };
+
+            const normalizedId = normalizeAccountId(normId);
+
             // Debug logging (rimuovi in produzione)
-            console.log('Checking account:', normId, 'against:', selectedAccounts);
+            console.log('Checking account:', normId, '→ normalized:', normalizedId, 'against:', selectedAccounts);
 
             // Check if this account is in selectedAccounts
             const isSelected = selectedAccounts.some(acc => {
-                const normAcc = String(acc).trim();
-                return normAcc === normId;
+                const normalizedAcc = normalizeAccountId(acc);
+                const match = normalizedAcc === normalizedId;
+                if (match) {
+                    console.log('✅ MATCH:', acc, '→', normalizedAcc, '===', normalizedId);
+                }
+                return match;
             });
 
             console.log('Result:', isSelected);
