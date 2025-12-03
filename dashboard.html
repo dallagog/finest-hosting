@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Dashboard 2.99</title>
+    <title>Dashboard 3</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&display=swap');
@@ -1740,26 +1740,17 @@
             tbody.innerHTML = '';
 
             // Filter data by selected accounts
-            let displayData = [...portfolioData];
-            console.log('Portfolio - selectedAccounts:', selectedAccounts);
+            let displayData = [];
 
             // Debug: check what accounts are actually in the data
             const availableAccounts = [...new Set(portfolioData.map(item => String(item.id_account).trim()))];
             console.log('Portfolio - available accounts in data:', availableAccounts);
+            console.log('Portfolio - selectedAccounts:', selectedAccounts);
 
-            // Always filter - if selectedAccounts is empty, show nothing
             if (selectedAccounts.length > 0) {
-                displayData = displayData.filter(item => {
-                    if (!item.id_account) return false;
-                    // Convert both to string, trim, and lowercase for comparison
-                    const itemAccount = String(item.id_account).trim().toLowerCase();
-                    const isIncluded = selectedAccounts.some(acc => String(acc).trim().toLowerCase() === itemAccount);
-                    return isIncluded;
-                });
+                displayData = portfolioData.filter(item => isAccountSelected(item.id_account));
                 console.log('Portfolio - filtered to:', displayData.length, 'items');
             } else {
-                // No accounts selected = show nothing
-                displayData = [];
                 console.log('Portfolio - no accounts selected, showing nothing');
             }
 
@@ -2308,26 +2299,17 @@
             tbody.innerHTML = '';
 
             // Filter data by selected accounts
-            let displayData = [...profitabilityData];
-            console.log('Profitability - selectedAccounts:', selectedAccounts);
+            let displayData = [];
 
             // Debug: check what accounts are actually in the data
             const availableAccounts = [...new Set(profitabilityData.map(item => String(item.id_account).trim()))];
             console.log('Profitability - available accounts in data:', availableAccounts);
+            console.log('Profitability - selectedAccounts:', selectedAccounts);
 
-            // Always filter - if selectedAccounts is empty, show nothing
             if (selectedAccounts.length > 0) {
-                displayData = displayData.filter(item => {
-                    if (!item.id_account) return false;
-                    // Convert both to string, trim, and lowercase for comparison
-                    const itemAccount = String(item.id_account).trim().toLowerCase();
-                    const isIncluded = selectedAccounts.some(acc => String(acc).trim().toLowerCase() === itemAccount);
-                    return isIncluded;
-                });
+                displayData = profitabilityData.filter(item => isAccountSelected(item.id_account));
                 console.log('Profitability - filtered to:', displayData.length, 'items');
             } else {
-                // No accounts selected = show nothing
-                displayData = [];
                 console.log('Profitability - no accounts selected, showing nothing');
             }
 
