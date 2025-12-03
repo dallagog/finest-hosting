@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Dashboard 2.5</title>
+    <title>Dashboard 2.6</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&display=swap');
@@ -1729,14 +1729,18 @@
             // Filter data by selected accounts
             let displayData = [...portfolioData];
             console.log('Portfolio - selectedAccounts:', selectedAccounts);
-            console.log('Portfolio - sample items:', portfolioData.slice(0, 3));
+
+            // Debug: check what accounts are actually in the data
+            const availableAccounts = [...new Set(portfolioData.map(item => String(item.id_account).trim()))];
+            console.log('Portfolio - available accounts in data:', availableAccounts);
 
             // Always filter - if selectedAccounts is empty, show nothing
             if (selectedAccounts.length > 0) {
                 displayData = displayData.filter(item => {
-                    // Convert both to string for comparison to handle type mismatches
-                    const itemAccount = String(item.id_account);
-                    const isIncluded = selectedAccounts.some(acc => String(acc) === itemAccount);
+                    if (!item.id_account) return false;
+                    // Convert both to string and trim for comparison
+                    const itemAccount = String(item.id_account).trim();
+                    const isIncluded = selectedAccounts.some(acc => String(acc).trim() === itemAccount);
                     return isIncluded;
                 });
                 console.log('Portfolio - filtered to:', displayData.length, 'items');
@@ -2294,14 +2298,18 @@
             // Filter data by selected accounts
             let displayData = [...profitabilityData];
             console.log('Profitability - selectedAccounts:', selectedAccounts);
-            console.log('Profitability - sample items:', profitabilityData.slice(0, 3));
+
+            // Debug: check what accounts are actually in the data
+            const availableAccounts = [...new Set(profitabilityData.map(item => String(item.id_account).trim()))];
+            console.log('Profitability - available accounts in data:', availableAccounts);
 
             // Always filter - if selectedAccounts is empty, show nothing
             if (selectedAccounts.length > 0) {
                 displayData = displayData.filter(item => {
-                    // Convert both to string for comparison to handle type mismatches
-                    const itemAccount = String(item.id_account);
-                    const isIncluded = selectedAccounts.some(acc => String(acc) === itemAccount);
+                    if (!item.id_account) return false;
+                    // Convert both to string and trim for comparison
+                    const itemAccount = String(item.id_account).trim();
+                    const isIncluded = selectedAccounts.some(acc => String(acc).trim() === itemAccount);
                     return isIncluded;
                 });
                 console.log('Profitability - filtered to:', displayData.length, 'items');
