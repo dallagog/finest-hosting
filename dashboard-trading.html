@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Trading Dashboard</title>
+    <title>Trading Dashboard 0.1</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&display=swap');
@@ -223,7 +223,7 @@
 
             <!-- Control Buttons -->
             <div style="display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap;">
-                <button id="historicalBtn" onclick="toggleHistorical()" disabled>
+                <button id="historicalBtn" onclick="toggleHistorical()">
                     <i class="fa fa-history"></i> <span id="historicalText">Storico</span>
                 </button>
                 <button id="buyBtn" onclick="openTradeBuy()">
@@ -262,6 +262,7 @@
         let currencies = [];
         let sortColumn = null;
         let sortAscending = true;
+        let isHistoricalActive = false;
 
         // ========== UTILITY FUNCTIONS ==========
         function showMessage(text, type = 'loading') {
@@ -496,7 +497,21 @@
             tbody.appendChild(newStockRow);
 
             // Data Rows
-            portfolioData.forEach(item => {
+            let displayData = portfolioData;
+
+            if (!isHistoricalActive) {
+                displayData = portfolioData.filter(item => {
+                    // Find quantity field (case insensitive)
+                    const qtyKey = Object.keys(item).find(k => k.toLowerCase() === 'quantity' || k.toLowerCase() === 'quantità' || k.toLowerCase() === 'qta');
+                    if (qtyKey && item[qtyKey] !== undefined) {
+                        const qty = parseFloat(item[qtyKey]);
+                        return !isNaN(qty) && Math.abs(qty) > 0.000001;
+                    }
+                    return true; // If no quantity field found, keep the row
+                });
+            }
+
+            displayData.forEach(item => {
                 const tr = document.createElement('tr');
                 tr.onclick = () => openTradeDetails(item);
 
@@ -579,8 +594,20 @@
         }
 
         function toggleHistorical() {
-            // Placeholder for historical toggle functionality
-            showMessage('Funzione Storico non ancora implementata', 'info');
+            isHistoricalActive = !isHistoricalActive;
+            const btn = document.getElementById('historicalBtn');
+
+            if (isHistoricalActive) {
+                btn.style.background = 'var(--neon-blue)';
+                btn.style.color = '#fff';
+                btn.style.boxShadow = '0 0 15px var(--neon-blue)';
+            } else {
+                btn.style.background = 'rgba(0, 102, 255, 0.2)';
+                btn.style.color = 'var(--neon-cyan)';
+                btn.style.boxShadow = 'none';
+            }
+
+            renderTable();
         }
 
         function openTradeBuy() {
