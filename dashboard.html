@@ -1374,9 +1374,9 @@
         }
 
         function filterAndRenderTables() {
-            // Use the selectedAccounts array directly
-            renderTable(selectedAccounts);
-            renderProfitabilityTable(selectedAccounts);
+            // Use the selectedAccounts array directly (global variable)
+            renderTable();
+            renderProfitabilityTable();
         }
 
         function createNewAccount() {
@@ -1720,7 +1720,7 @@
             return lower.includes('%');
         }
 
-        function renderTable(accountFilter = []) {
+        function renderTable() {
             const thead = document.getElementById('portfolio-header-row');
             const tbody = document.getElementById('portfolio-body');
             thead.innerHTML = '';
@@ -1728,15 +1728,15 @@
 
             // Filter data by selected accounts
             let displayData = [...portfolioData];
-            console.log('Portfolio - accountFilter:', accountFilter);
+            console.log('Portfolio - selectedAccounts:', selectedAccounts);
             console.log('Portfolio - sample items:', portfolioData.slice(0, 3));
 
-            // Always filter - if accountFilter is empty, show nothing
-            if (accountFilter.length > 0) {
+            // Always filter - if selectedAccounts is empty, show nothing
+            if (selectedAccounts.length > 0) {
                 displayData = displayData.filter(item => {
                     // Convert both to string for comparison to handle type mismatches
                     const itemAccount = String(item.id_account);
-                    const isIncluded = accountFilter.some(acc => String(acc) === itemAccount);
+                    const isIncluded = selectedAccounts.some(acc => String(acc) === itemAccount);
                     return isIncluded;
                 });
                 console.log('Portfolio - filtered to:', displayData.length, 'items');
@@ -2285,7 +2285,7 @@
             renderProfitabilityTable();
         }
 
-        function renderProfitabilityTable(accountFilter = []) {
+        function renderProfitabilityTable() {
             const thead = document.getElementById('profitability-header-row');
             const tbody = document.getElementById('profitability-body');
             thead.innerHTML = '';
@@ -2293,15 +2293,15 @@
 
             // Filter data by selected accounts
             let displayData = [...profitabilityData];
-            console.log('Profitability - accountFilter:', accountFilter);
+            console.log('Profitability - selectedAccounts:', selectedAccounts);
             console.log('Profitability - sample items:', profitabilityData.slice(0, 3));
 
-            // Always filter - if accountFilter is empty, show nothing
-            if (accountFilter.length > 0) {
+            // Always filter - if selectedAccounts is empty, show nothing
+            if (selectedAccounts.length > 0) {
                 displayData = displayData.filter(item => {
                     // Convert both to string for comparison to handle type mismatches
                     const itemAccount = String(item.id_account);
-                    const isIncluded = accountFilter.some(acc => String(acc) === itemAccount);
+                    const isIncluded = selectedAccounts.some(acc => String(acc) === itemAccount);
                     return isIncluded;
                 });
                 console.log('Profitability - filtered to:', displayData.length, 'items');
