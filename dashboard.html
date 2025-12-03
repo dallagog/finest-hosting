@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Dashboard 3.2</title>
+    <title>Dashboard 3.4</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&display=swap');
@@ -2288,6 +2288,18 @@
                     } else {
                         console.warn('⚠️ Profitability Data is empty after parsing');
                     }
+
+                    // Default sort: Quantity descending (items with quantity first)
+                    profitabilityData.sort((a, b) => {
+                        const getQty = (item) => {
+                            const key = Object.keys(item).find(k => k.toLowerCase() === 'quantity' || k.toLowerCase() === 'quantità' || k.toLowerCase() === 'qta');
+                            return key && item[key] ? Math.abs(parseFloat(item[key])) : 0;
+                        };
+                        const qtyA = getQty(a);
+                        const qtyB = getQty(b);
+                        // Sort descending (larger quantity first)
+                        return qtyB - qtyA;
+                    });
 
                     populateProfitabilityGroupingSelect(classificationList);
                     renderProfitabilityTable();
