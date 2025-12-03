@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Dashboard 2.0</title>
+    <title>Dashboard 2.1</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&display=swap');
@@ -1198,7 +1198,7 @@
                 return;
             }
 
-            // Always rebuild selectedAccounts from filterData
+            // Always rebuild selectedAccounts from filterData - use full id_account
             selectedAccounts = [];
             accountsList.forEach(item => {
                 if (item.selected) {
@@ -1206,22 +1206,55 @@
                 }
             });
 
-            // Sort accounts by description
+            // Sort accounts by id_account
             accountsList.sort((a, b) => {
-                const descA = (a.description_account || a.description || '').toLowerCase();
-                const descB = (b.description_account || b.description || '').toLowerCase();
-                return descA.localeCompare(descB);
+                const idA = String(a.id_account || '');
+                const idB = String(b.id_account || '');
+                return idA.localeCompare(idB);
             });
 
-            accountsList.forEach(item => {
-                const div = document.createElement('div');
-                div.className = 'account-checkbox-item';
+            // Create table
+            const table = document.createElement('table');
+            table.style.cssText = 'width: 100%; border-collapse: collapse; color: var(--text-color);';
 
+            // Table header
+            const thead = document.createElement('thead');
+            const headerRow = document.createElement('tr');
+            headerRow.style.cssText = 'background: rgba(0, 243, 255, 0.1); border-bottom: 2px solid var(--neon-cyan);';
+
+            const th1 = document.createElement('th');
+            th1.style.cssText = 'padding: 8px; text-align: left; width: 30px;';
+            th1.innerHTML = '<input type="checkbox" id="select-all-accounts" style="cursor: pointer;" />';
+            headerRow.appendChild(th1);
+
+            const th2 = document.createElement('th');
+            th2.style.cssText = 'padding: 8px; text-align: left;';
+            th2.textContent = getTranslation('int.account.code') || 'Codice';
+            headerRow.appendChild(th2);
+
+            const th3 = document.createElement('th');
+            th3.style.cssText = 'padding: 8px; text-align: left;';
+            th3.textContent = getTranslation('int.account.description') || 'Descrizione';
+            headerRow.appendChild(th3);
+
+            thead.appendChild(headerRow);
+            table.appendChild(thead);
+
+            // Table body
+            const tbody = document.createElement('tbody');
+
+            accountsList.forEach((item, index) => {
+                const tr = document.createElement('tr');
+                tr.style.cssText = `border-bottom: 1px solid rgba(0, 243, 255, 0.2); ${index % 2 === 0 ? 'background: rgba(0, 243, 255, 0.05);' : ''}`;
+
+                // Checkbox cell
+                const td1 = document.createElement('td');
+                td1.style.cssText = 'padding: 8px; text-align: center;';
                 const checkbox = document.createElement('input');
                 checkbox.type = 'checkbox';
                 checkbox.id = `account-${item.id_account}`;
-                // Check if this account is in selectedAccounts array
                 checkbox.checked = selectedAccounts.includes(item.id_account);
+                checkbox.style.cursor = 'pointer';
                 checkbox.addEventListener('change', () => {
                     if (checkbox.checked) {
                         // Add to selectedAccounts if not already there
@@ -1237,28 +1270,64 @@
                     }
                     // Update filterData to keep in sync
                     item.selected = checkbox.checked;
+                    // Update select-all checkbox state
+                    updateSelectAllCheckbox();
                     // Redraw tables
                     filterAndRenderTables();
                 });
+                td1.appendChild(checkbox);
+                tr.appendChild(td1);
 
-                const label = document.createElement('label');
-                label.htmlFor = `account-${item.id_account}`;
-                const id = item.id_account || item.account_id || 'N/A';
+                // ID Account cell
+                const td2 = document.createElement('td');
+                td2.style.cssText = 'padding: 8px;';
+                td2.textContent = item.id_account || 'N/A';
+                tr.appendChild(td2);
+
+                // Description cell
+                const td3 = document.createElement('td');
+                td3.style.cssText = 'padding: 8px;';
                 const desc = item.description_account || item.description || '';
-                const translatedDesc = desc ? getTranslation(desc) : '';
-                label.textContent = `${id}${translatedDesc ? ' - ' + translatedDesc : ''}`;
+                td3.textContent = desc ? getTranslation(desc) : '';
+                tr.appendChild(td3);
 
-                div.appendChild(checkbox);
-                div.appendChild(label);
-                container.appendChild(div);
+                tbody.appendChild(tr);
             });
 
+            table.appendChild(tbody);
+            container.appendChild(table);
+
+            // Summary
             const summary = document.createElement('p');
             summary.style.marginTop = '15px';
             summary.style.color = '#555';
             summary.style.fontSize = '13px';
             summary.innerHTML = `<strong>${accountsList.length}</strong> ${getTranslation('int.reports.available') || 'rapporti disponibili'}`;
             container.appendChild(summary);
+
+            // Setup select-all checkbox
+            const selectAllCheckbox = document.getElementById('select-all-accounts');
+            if (selectAllCheckbox) {
+                updateSelectAllCheckbox();
+                selectAllCheckbox.addEventListener('change', () => {
+                    if (selectAllCheckbox.checked) {
+                        selectAllReports();
+                    } else {
+                        deselectAllReports();
+                    }
+                });
+            }
+        }
+
+        function updateSelectAllCheckbox() {
+            const selectAllCheckbox = document.getElementById('select-all-accounts');
+            if (!selectAllCheckbox || !filterData?.Account?.list) return;
+
+            const allSelected = filterData.Account.list.every(item => item.selected);
+            const noneSelected = filterData.Account.list.every(item => !item.selected);
+
+            selectAllCheckbox.checked = allSelected;
+            selectAllCheckbox.indeterminate = !allSelected && !noneSelected;
         }
 
         function selectAllReports() {
