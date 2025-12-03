@@ -197,8 +197,16 @@
     <div class="main-container">
         <div class="header-bar">
             <div class="user-info-left">
-                <strong id="userLabel">Utente:</strong>
-                <span id="usernameDisplay">-</span>
+                <div style="margin-bottom: 5px;">
+                    <strong id="userLabel">Utente:</strong>
+                    <span id="usernameDisplay">-</span>
+                </div>
+                <div style="font-size: 12px;">
+                    <span class="flag-icon" id="languageFlag"></span>
+                    <span id="languageDisplay">-</span>
+                    <span style="margin: 0 5px;">|</span>
+                    <span id="currencyDisplay">-</span>
+                </div>
             </div>
             <h1 id="tradingTitle">Trading Dashboard</h1>
             <div class="close-container">
@@ -212,6 +220,23 @@
 
         <div class="content-section">
             <h2 style="color: var(--neon-cyan); margin-bottom: 15px;" id="portfolioTitle">Portafoglio</h2>
+
+            <!-- Control Buttons -->
+            <div style="display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap;">
+                <button id="historicalBtn" onclick="toggleHistorical()" disabled>
+                    <i class="fa fa-history"></i> <span id="historicalText">Storico</span>
+                </button>
+                <button id="buyBtn" onclick="openTradeBuy()">
+                    <i class="fa fa-arrow-up"></i> <span id="buyText">Acquista</span>
+                </button>
+                <button id="sellBtn" onclick="openTradeSell()">
+                    <i class="fa fa-arrow-down"></i> <span id="sellText">Vendi</span>
+                </button>
+                <button id="operationsBtn" onclick="openTradeOperations()">
+                    <i class="fa fa-list"></i> <span id="operationsText">Operazioni</span>
+                </button>
+            </div>
+
             <div id="portfolio-table-container">
                 <table id="portfolio-table" class="data-table">
                     <thead>
@@ -233,6 +258,10 @@
         let portfolioData = [];
         let tableColumns = [];
         let translations = {};
+        let availableLanguages = [];
+        let currencies = [];
+        let sortColumn = null;
+        let sortAscending = true;
 
         // ========== UTILITY FUNCTIONS ==========
         function showMessage(text, type = 'loading') {
@@ -281,6 +310,74 @@
             document.getElementById('userLabel').textContent = getTranslation('int.user.label');
             document.getElementById('portfolioTitle').textContent = getTranslation('int.portfolio');
             document.getElementById('closeText').textContent = getTranslation('int.close');
+            document.getElementById('historicalText').textContent = getTranslation('int.historical');
+            document.getElementById('buyText').textContent = getTranslation('int.acquista');
+            document.getElementById('sellText').textContent = getTranslation('int.vendi');
+            document.getElementById('operationsText').textContent = getTranslation('int.operazioni');
+        }
+
+        async function loadLanguageManifest() {
+            try {
+                const response = await fetch('lang/manifest.json');
+                if (!response.ok) return [];
+                const manifest = await response.json();
+                return manifest.languages || [];
+            } catch (error) {
+                return [];
+            }
+        }
+
+        async function loadLanguageFile(langCode) {
+            try {
+                const response = await fetch(`lang/${langCode}.json`);
+                if (!response.ok) return null;
+                const data = await response.json();
+                if (data['int.language.code'] && data['int.language.description'] && data['img.language.flag']) {
+                    return { code: data['int.language.code'], description: data['int.language.description'], flag: data['img.language.flag'] };
+                }
+                return null;
+            } catch (error) {
+                return null;
+            }
+        }
+
+        async function initializeLanguages() {
+            const langCodes = await loadLanguageManifest();
+            for (const langCode of langCodes) {
+                const langData = await loadLanguageFile(langCode);
+                if (langData) availableLanguages.push(langData);
+            }
+            availableLanguages.sort((a, b) => a.code.localeCompare(b.code));
+        }
+
+        async function loadCurrencies(lang) {
+            try {
+                const response = await fetch(`currency/${lang}.json`);
+                if (!response.ok) throw new Error('Currency file not found');
+                currencies = await response.json();
+            } catch (error) {
+                currencies = [];
+            }
+        }
+
+        function updateUserInfo() {
+            if (credentials.language) {
+                const langData = availableLanguages.find(l => l.code === credentials.language);
+                if (langData) {
+                    document.getElementById('languageFlag').textContent = langData.flag;
+                    const langDescription = getTranslation('int.language.description');
+                    document.getElementById('languageDisplay').textContent = langDescription !== 'int.language.description' ? langDescription : credentials.language;
+                } else {
+                    document.getElementById('languageDisplay').textContent = credentials.language;
+                }
+            }
+            const currency = localStorage.getItem('currency') || 'EUR';
+            const currData = currencies.find(c => c.currency === currency);
+            if (currData && currData['img.currency.flag']) {
+                document.getElementById('currencyDisplay').textContent = `${currData['img.currency.flag']} ${currency}`;
+            } else {
+                document.getElementById('currencyDisplay').textContent = currency;
+            }
         }
 
         // ========== PORTFOLIO DATA ==========
@@ -373,6 +470,12 @@
             tableColumns.forEach(col => {
                 const th = document.createElement('th');
                 th.textContent = getTranslation(col) || col;
+                th.style.cursor = 'pointer';
+                th.onclick = () => sortTable(col);
+                // Add sort indicator if this is the sorted column
+                if (sortColumn === col) {
+                    th.classList.add(sortAscending ? 'sort-asc' : 'sort-desc');
+                }
                 thead.appendChild(th);
             });
 
@@ -447,10 +550,61 @@
             window.open(`dashboard-trading-trade.html?${params.toString()}`, '_blank');
         }
 
+        function sortTable(column) {
+            if (sortColumn === column) {
+                sortAscending = !sortAscending;
+            } else {
+                sortColumn = column;
+                sortAscending = true;
+            }
+
+            // Sort portfolioData
+            portfolioData.sort((a, b) => {
+                const valA = a[column];
+                const valB = b[column];
+
+                if (valA === undefined || valA === null) return 1;
+                if (valB === undefined || valB === null) return -1;
+
+                if (typeof valA === 'number' && typeof valB === 'number') {
+                    return sortAscending ? valA - valB : valB - valA;
+                } else {
+                    const strA = String(valA);
+                    const strB = String(valB);
+                    return sortAscending ? strA.localeCompare(strB) : strB.localeCompare(strA);
+                }
+            });
+
+            renderTable();
+        }
+
+        function toggleHistorical() {
+            // Placeholder for historical toggle functionality
+            showMessage('Funzione Storico non ancora implementata', 'info');
+        }
+
+        function openTradeBuy() {
+            // Open trade page in buy mode
+            openTradeDetails(null);
+        }
+
+        function openTradeSell() {
+            // Open trade page in sell mode
+            openTradeDetails(null);
+        }
+
+        function openTradeOperations() {
+            // Open operations page
+            showMessage('Funzione Operazioni non ancora implementata', 'info');
+        }
+
         // ========== INITIALIZATION ==========
         window.addEventListener('load', async () => {
             if (getCredentialsFromURL()) {
+                await initializeLanguages();
                 await loadTranslations(credentials.language);
+                await loadCurrencies(credentials.language);
+                updateUserInfo();
                 await loadPortfolio();
             }
         });

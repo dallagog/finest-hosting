@@ -659,17 +659,19 @@
                             <input type="date" id="date-end">
                         </div>
                     </div>
-                    <div class="filter-group">
-                        <label id="portfolioLabel">Portafoglio:</label>
-                        <select id="portfolio">
-                            <option value="" id="selectOption">-- seleziona --</option>
-                        </select>
-                    </div>
-                    <div class="filter-group">
-                        <label id="profitabilityLabel">Redditività:</label>
-                        <select id="profitability">
-                            <option value="" id="selectOption2">-- seleziona --</option>
-                        </select>
+                    <div style="display: flex; gap: 15px;">
+                        <div class="filter-group" style="flex: 1;">
+                            <label id="portfolioLabel">Portafoglio:</label>
+                            <select id="portfolio">
+                                <option value="" id="selectOption">-- seleziona --</option>
+                            </select>
+                        </div>
+                        <div class="filter-group" style="flex: 1;">
+                            <label id="profitabilityLabel">Redditività:</label>
+                            <select id="profitability">
+                                <option value="" id="selectOption2">-- seleziona --</option>
+                            </select>
+                        </div>
                     </div>
 
                     <!-- RAPPORTI DENTRO FILTRI -->
@@ -681,6 +683,9 @@
                             </button>
                             <button class="button-secondary" id="deselectAllBtn" onclick="deselectAllReports()">
                                 <span id="deselectAllText">Deseleziona tutti</span>
+                            </button>
+                            <button class="button-secondary" id="createAccountBtn" onclick="createNewAccount()">
+                                <i class="fa fa-plus"></i> <span id="createAccountText">Crea rapporto</span>
                             </button>
                         </div>
                         <div id="reports-list">
@@ -915,14 +920,19 @@
                 document.getElementById('downloadPdfText').textContent = downloadPdfText;
             }
 
-            const selectAllText = getTranslation('int.select.all');
-            if (selectAllText !== 'int.select.all') {
+            const selectAllText = getTranslation('int.selectall');
+            if (selectAllText !== 'int.selectall') {
                 document.getElementById('selectAllText').textContent = selectAllText;
             }
 
-            const deselectAllText = getTranslation('int.deselect.all');
-            if (deselectAllText !== 'int.deselect.all') {
+            const deselectAllText = getTranslation('int.deselectall');
+            if (deselectAllText !== 'int.deselectall') {
                 document.getElementById('deselectAllText').textContent = deselectAllText;
+            }
+
+            const createAccountText = getTranslation('int.newaccount');
+            if (createAccountText !== 'int.newaccount') {
+                document.getElementById('createAccountText').textContent = createAccountText;
             }
 
             const applyFiltersText = getTranslation('int.apply.filters');
@@ -1207,11 +1217,11 @@
             });
             console.log('selectedAccounts (rebuilt from filterData):', selectedAccounts);
 
-            // Sort accounts by id_account
+            // Sort accounts by description
             accountsList.sort((a, b) => {
-                const idA = String(a.id_account || '');
-                const idB = String(b.id_account || '');
-                return idA.localeCompare(idB);
+                const descA = String(a.description || '');
+                const descB = String(b.description || '');
+                return descA.localeCompare(descB);
             });
 
             // Create table
@@ -1367,6 +1377,17 @@
             // Use the selectedAccounts array directly
             renderTable(selectedAccounts);
             renderProfitabilityTable(selectedAccounts);
+        }
+
+        function createNewAccount() {
+            // Open dashboard-account.html with credentials
+            const params = new URLSearchParams({
+                username: credentials.username,
+                token: credentials.token,
+                language: credentials.language,
+                filter: credentials.filter || ''
+            });
+            window.open(`dashboard-account.html?${params.toString()}`, '_blank');
         }
 
 
