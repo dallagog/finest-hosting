@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Dashboard 3</title>
+    <title>Dashboard 3.1</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&display=swap');
@@ -1343,9 +1343,22 @@
         }
 
         function isAccountSelected(accountId) {
-            if (!accountId) return false;
-            const normId = String(accountId).trim().toLowerCase();
-            return selectedAccounts.some(acc => String(acc).trim().toLowerCase() === normId);
+            if (!accountId && accountId !== 0) return false;
+
+            // Normalize the account ID to compare
+            const normId = String(accountId).trim();
+
+            // Debug logging (rimuovi in produzione)
+            console.log('Checking account:', normId, 'against:', selectedAccounts);
+
+            // Check if this account is in selectedAccounts
+            const isSelected = selectedAccounts.some(acc => {
+                const normAcc = String(acc).trim();
+                return normAcc === normId;
+            });
+
+            console.log('Result:', isSelected);
+            return isSelected;
         }
 
         function selectAllReports() {
