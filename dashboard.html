@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Dashboard 2.91</title>
+    <title>Dashboard 2.92</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&display=swap');
@@ -1579,6 +1579,14 @@
                     console.info('web classification : ', data.classification);
                     console.info('web portfolio: ', data.portfolio);
 
+                    const debugPortfolio = data.portfolio || {};
+                    const rawKeys = Array.isArray(debugPortfolio) ? debugPortfolio.length : Object.keys(debugPortfolio).length;
+                    console.info('📊 Portfolio items received:', rawKeys);
+                    if (rawKeys > 0) {
+                        const firstItem = Array.isArray(debugPortfolio) ? debugPortfolio[0] : debugPortfolio[Object.keys(debugPortfolio)[0]];
+                        console.info('🔍 First portfolio item structure:', firstItem);
+                    }
+
                     // Parse Classification
                     classificationMap = {};
                     let classificationList = data.classification;
@@ -1738,11 +1746,9 @@
             if (selectedAccounts.length > 0) {
                 displayData = displayData.filter(item => {
                     if (!item.id_account) return false;
-                    // Convert both to string and trim for comparison
-                    const itemAccount = String(item.id_account).trim();
-                    const isIncluded = selectedAccounts.some(acc => String(acc).trim() === itemAccount);
-                    console.log('Check account:', String(acc).trim());
-                    console.log('Check item:', itemAccount);
+                    // Convert both to string, trim, and lowercase for comparison
+                    const itemAccount = String(item.id_account).trim().toLowerCase();
+                    const isIncluded = selectedAccounts.some(acc => String(acc).trim().toLowerCase() === itemAccount);
                     return isIncluded;
                 });
                 console.log('Portfolio - filtered to:', displayData.length, 'items');
@@ -2309,9 +2315,9 @@
             if (selectedAccounts.length > 0) {
                 displayData = displayData.filter(item => {
                     if (!item.id_account) return false;
-                    // Convert both to string and trim for comparison
-                    const itemAccount = String(item.id_account).trim();
-                    const isIncluded = selectedAccounts.some(acc => String(acc).trim() === itemAccount);
+                    // Convert both to string, trim, and lowercase for comparison
+                    const itemAccount = String(item.id_account).trim().toLowerCase();
+                    const isIncluded = selectedAccounts.some(acc => String(acc).trim().toLowerCase() === itemAccount);
                     return isIncluded;
                 });
                 console.log('Profitability - filtered to:', displayData.length, 'items');
