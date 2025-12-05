@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Dashboard 1.0</title>
+    <title>Dashboard 1.1</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
@@ -2823,103 +2823,68 @@
         let dataValues = [];
         let backgroundColors = [];
 
-        // Filter data based on selected accounts (using existing 'isAccountSelected' logic if possible, otherwise use global 'selectedAccounts')
-        // We use 'portfolioData' which is the raw data source.
-        // We need to filter it same as the table:
+        // Filter active data
         let activeData = portfolioData.filter(item => isAccountSelected(item.id_account));
 
-        // Filter out zero or negative values for the chart if desired, or keep them? 
-        // Usually pie charts don't show negative values well. Let's filter > 0 for CTVMKTTQ.
-        // Also respect "Show Historical" flag? 
-        // The user requirement says: "Se il raggruppaemento non ha una selezione utilizza la descrizione e il controvalore delle righe. Se il portafgolio ha un raggruppamento usa la descrizione della selezione e il totale corrispondente del controvalore."
-
-        // Filter valid items first
         activeData = activeData.filter(item => {
-            // Basic validity check
             if (!item) return false;
-
-            // Check historical toggle logic (reusing global showHistorical variable)
             const quantity = parseFloat(item.quantity);
-            if (!showHistorical && (isNaN(quantity) || quantity === 0)) {
-                return false;
-            }
-
-            // Check if it has a value
+            if (!showHistorical && (isNaN(quantity) || quantity === 0)) return false;
             const val = parseFloat(item.CTVMKTTQ);
             return !isNaN(val) && val > 0;
         });
 
-
         if (isGrouped) {
-            // AGGREGATION LOGIC
             const groups = {};
             activeData.forEach(item => {
                 let groupLabel = 'int.other';
                 const instrumentId = item.id_instrument;
-
-                // Reset classification logic as per renderTable
                 if (instrumentId !== undefined && instrumentId !== null) {
                     let classObj = classificationMap[instrumentId];
                     if (!classObj) classObj = classificationMap[String(instrumentId)];
-
-                    if (classObj && classObj[groupValue]) {
-                        groupLabel = classObj[groupValue];
-                    }
+                    if (classObj && classObj[groupValue]) groupLabel = classObj[groupValue];
                 }
-
                 if (!groups[groupLabel]) groups[groupLabel] = 0;
                 groups[groupLabel] += parseFloat(item.CTVMKTTQ || 0);
             });
-
-            // Convert to arrays
-            const sortedGroups = Object.entries(groups).sort((a, b) => b[1] - a[1]); // Sort by value desc
-
+            const sortedGroups = Object.entries(groups).sort((a, b) => b[1] - a[1]);
             labels = sortedGroups.map(entry => getTranslation(entry[0]) || entry[0]);
             dataValues = sortedGroups.map(entry => entry[1]);
-
         } else {
-            // NO AGGREGATION - ROW LEVEL
-            // Sort by value desc for better visualization
             activeData.sort((a, b) => parseFloat(b.CTVMKTTQ || 0) - parseFloat(a.CTVMKTTQ || 0));
-
             labels = activeData.map(item => item.instrument_description || item.Ticker || "Unknown");
             dataValues = activeData.map(item => parseFloat(item.CTVMKTTQ || 0));
         }
 
-        // Generate Tron Colors
         backgroundColors = generateTronColors(dataValues.length);
 
         chartInstance = new Chart(ctx, {
-            type: 'pie', // User asked for pie chart ("grafico a torta")
+            type: 'pie',
             data: {
                 labels: labels,
                 datasets: [{
                     data: dataValues,
                     backgroundColor: backgroundColors,
                     borderColor: '#000510',
-                    borderWidth: 2
+                    borderWidth: 2,
+                    hoverOffset: 10
                 }]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
+                layout: {
+                    padding: 80 // Add padding for outside labels
+                },
                 plugins: {
                     legend: {
-                        position: 'right',
-                        labels: {
-                            color: '#00F3FF', // Neon Cyan
-                            font: {
-                                family: "'Segoe UI', Roboto, Helvetica, Arial, sans-serif"
-                            }
-                        }
+                        display: false // Hide default legend
                     },
                     tooltip: {
                         callbacks: {
                             label: function (context) {
                                 let label = context.label || '';
-                                if (label) {
-                                    label += ': ';
-                                }
+                                if (label) label += ': ';
                                 if (context.parsed !== null) {
                                     label += new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(context.parsed);
                                 }
@@ -2933,7 +2898,81 @@
                         borderWidth: 1
                     }
                 }
-            }
+            },
+            plugins: [{
+                id: 'outsideLabels',
+                afterDraw: (chart) => {
+                    const ctx = chart.ctx;
+                    ctx.save();
+                    ctx.font = '12px "Segoe UI", Roboto, sans-serif';
+
+                    const centerX = chart.chartArea.left + (chart.chartArea.right - chart.chartArea.left) / 2;
+                    const centerY = chart.chartArea.top + (chart.chartArea.bottom - chart.chartArea.top) / 2;
+
+                    chart.data.datasets.forEach((dataset, i) => {
+                        const meta = chart.getDatasetMeta(i);
+                        if (meta.hidden) return;
+
+                        meta.data.forEach((element, index) => {
+                            const { x, y } = element.tooltipPosition();
+
+                            // Angles
+                            const startAngle = element.startAngle;
+                            const endAngle = element.endAngle;
+                            const midAngle = startAngle + (endAngle - startAngle) / 2;
+
+                            // Radius calculations
+                            const outerRadius = element.outerRadius;
+                            const labelRadius = outerRadius + 30; // Distance for label
+
+                            // Line points
+                            const startX = centerX + Math.cos(midAngle) * outerRadius;
+                            const startY = centerY + Math.sin(midAngle) * outerRadius;
+
+                            const midX = centerX + Math.cos(midAngle) * (outerRadius + 15);
+                            const midY = centerY + Math.sin(midAngle) * (outerRadius + 15);
+
+                            const endX = centerX + Math.cos(midAngle) * labelRadius;
+                            const endY = centerY + Math.sin(midAngle) * labelRadius;
+
+                            // Text Content
+                            const value = dataset.data[index];
+                            const label = chart.data.labels[index];
+                            const formattedValue = new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(value);
+                            const text = `${label}: ${formattedValue}`;
+
+                            // Check alignment based on angle
+                            const isRight = midAngle < Math.PI / 2 || midAngle > 3 * Math.PI / 2;
+                            const alignDefault = isRight ? 'left' : 'right';
+
+                            // Draw Line (Tron Style)
+                            ctx.beginPath();
+                            ctx.moveTo(startX, startY);
+                            ctx.lineTo(midX, midY);
+                            ctx.lineTo(endX, endY);
+                            ctx.strokeStyle = '#00F3FF'; // Neon Cyan
+                            ctx.lineWidth = 1;
+                            ctx.shadowBlur = 4;
+                            ctx.shadowColor = '#00F3FF';
+                            ctx.stroke();
+
+                            // Draw Text
+                            ctx.fillStyle = '#00F3FF';
+                            ctx.textAlign = isRight ? 'left' : 'right';
+                            ctx.textBaseline = 'middle';
+                            ctx.shadowBlur = 0; // Removing shadow for text legibility
+                            ctx.fillText(text, isRight ? endX + 5 : endX - 5, endY);
+
+                            // Draw dot at start
+                            ctx.beginPath();
+                            ctx.arc(startX, startY, 2, 0, 2 * Math.PI);
+                            ctx.fillStyle = '#FFFFFF';
+                            ctx.fill();
+                        });
+                    });
+                    ctx.restore();
+                }
+            }]
         });
     }
 
