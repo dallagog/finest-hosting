@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Financial Estimates 1.0</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&display=swap');
+
+    :root {
+      --bg-color: #050505;
+      --neon-cyan: #00f3ff;
+      --neon-blue: #0066ff;
+      --glass-bg: rgba(0, 20, 40, 0.85);
+      --text-color: #e0f7fa;
+    }
+
+    body {
+      font-family: 'Orbitron', sans-serif;
+      background-color: var(--bg-color);
+      background-image: url('images/background.png');
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+      color: var(--text-color);
+    }
+
+    .language-selector {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      z-index: 1000;
+    }
+
+    #languageCombo {
+      padding: 8px 12px;
+      border: 1px solid var(--neon-blue);
+      border-radius: 4px;
+      background: rgba(0, 0, 0, 0.8);
+      color: var(--neon-cyan);
+      cursor: pointer;
+      font-family: 'Orbitron', sans-serif;
+      outline: none;
+    }
+
+    .container {
+      background: var(--glass-bg);
+      padding: 40px;
+      border: 1px solid var(--neon-cyan);
+      box-shadow: 0 0 20px rgba(0, 243, 255, 0.2);
+      border-radius: 12px;
+      width: 350px;
+      text-align: center;
+      position: relative;
+    }
+
+    .logo-header {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 30px;
+      margin-bottom: 30px;
+    }
+
+    .logo {
+      width: 80px;
+      filter: drop-shadow(0 0 5px var(--neon-cyan));
+      border-radius: 50%;
+    }
+
+    /* 3D Rotating Cube */
+    .cube-scene {
+      width: 80px;
+      height: 80px;
+      perspective: 400px;
+    }
+
+    .cube {
+      width: 100%;
+      height: 100%;
+      position: relative;
+      transform-style: preserve-3d;
+      animation: rotate-cube 8s infinite linear;
+    }
+
+    .cube-face {
+      position: absolute;
+      width: 80px;
+      height: 80px;
+      border: 1px solid var(--neon-cyan);
+      box-shadow: 0 0 10px rgba(0, 243, 255, 0.5), inset 0 0 10px rgba(0, 243, 255, 0.2);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: rgba(0, 20, 40, 0.8);
+      border-radius: 8px;
+    }
+
+    .cube-face img {
+      width: 60px;
+      height: 60px;
+      object-fit: contain;
+      filter: drop-shadow(0 0 5px var(--neon-cyan));
+    }
+
+    .cube-face.front {
+      transform: translateZ(40px);
+    }
+
+    .cube-face.back {
+      transform: rotateY(180deg) translateZ(40px);
+    }
+
+    .cube-face.right {
+      transform: rotateY(90deg) translateZ(40px);
+    }
+
+    .cube-face.left {
+      transform: rotateY(-90deg) translateZ(40px);
+    }
+
+    .cube-face.top {
+      transform: rotateX(90deg) translateZ(40px);
+    }
+
+    .cube-face.bottom {
+      transform: rotateX(-90deg) translateZ(40px);
+    }
+
+    @keyframes rotate-cube {
+      0% {
+        transform: rotateX(-15deg) rotateY(0deg);
+      }
+
+      100% {
+        transform: rotateX(-15deg) rotateY(360deg);
+      }
+    }
+
+    .tron-text {
+      text-align: left;
+      font-family: 'Orbitron', sans-serif;
+      font-weight: 900;
+      line-height: 1.2;
+    }
+
+    .tron-text div:first-child {
+      font-size: 1.4rem;
+      color: var(--neon-cyan);
+      text-shadow: 0 0 10px var(--neon-cyan);
+      letter-spacing: 2px;
+    }
+
+    .tron-text div:last-child {
+      font-size: 1.4rem;
+      color: var(--neon-blue);
+      text-shadow: 0 0 10px var(--neon-blue);
+      letter-spacing: 2px;
+    }
+
+    h2 {
+      margin-bottom: 30px;
+      color: var(--neon-cyan);
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      text-shadow: 0 0 10px var(--neon-cyan);
+    }
+
+    .input-group {
+      position: relative;
+      margin-bottom: 25px;
+      text-align: left;
+    }
+
+    .input-group i {
+      position: absolute;
+      top: 12px;
+      left: 10px;
+      color: var(--neon-blue);
+    }
+
+    .input-group input,
+    .input-group select {
+      width: 100%;
+      padding: 10px 10px 10px 35px;
+      background: rgba(0, 0, 0, 0.5);
+      border: 1px solid var(--neon-blue);
+      color: #fff;
+      font-family: 'Orbitron', sans-serif;
+      border-radius: 4px;
+      box-sizing: border-box;
+    }
+
+    .input-group input:focus,
+    .input-group select:focus {
+      outline: none;
+      border-color: var(--neon-cyan);
+      box-shadow: 0 0 8px var(--neon-cyan);
+    }
+
+    button {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid var(--neon-blue);
+      background: rgba(0, 102, 255, 0.2);
+      color: var(--neon-cyan);
+      font-size: 16px;
+      font-weight: bold;
+      font-family: 'Orbitron', sans-serif;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: 0.3s;
+      text-transform: uppercase;
+    }
+
+    button:hover {
+      background: var(--neon-blue);
+      color: #fff;
+      box-shadow: 0 0 15px var(--neon-blue);
+    }
+
+    .switch,
+    .forgot {
+      text-align: center;
+      margin-top: 20px;
+      font-size: 12px;
+      color: #aaa;
+      cursor: pointer;
+      transition: color 0.3s;
+    }
+
+    .forgot:hover,
+    .switch:hover {
+      color: var(--neon-cyan);
+      text-decoration: underline;
+      text-shadow: 0 0 5px var(--neon-cyan);
+    }
+
+    .offline {
+      width: 300px;
+      border-radius: 12px;
+      box-shadow: 0 0 15px rgba(255, 0, 0, 0.5);
+      border: 1px solid red;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="language-selector">
+    <select id="languageCombo">
+      <option value="" id="loadingOption">Loading...</option>
+    </select>
+  </div>
+
+  <div class="container" id="app-container">
+    <div class="logo-header">
+      <div class="cube-scene">
+        <div class="cube">
+          <div class="cube-face front"><img src="images/cube.png" alt="Logo"></div>
+          <div class="cube-face back"><img src="images/cube.png" alt="Logo"></div>
+          <div class="cube-face right"><img src="images/cube.png" alt="Logo"></div>
+          <div class="cube-face left"><img src="images/cube.png" alt="Logo"></div>
+          <div class="cube-face top"><img src="images/cube.png" alt="Logo"></div>
+          <div class="cube-face bottom"><img src="images/cube.png" alt="Logo"></div>
+        </div>
+      </div>
+      <div class="tron-text">
+        <div id="logo-financial">FINANCIAL</div>
+        <div id="logo-estimates">ESTIMATES</div>
+      </div>
+    </div>
+    <h2 id="form-title">Login</h2>
+
+    <div class="input-group">
+      <i class="fa fa-user"></i>
+      <input type="text" id="username" placeholder="Username" pattern="[a-z0-9]+"
+        oninput="this.value = this.value.toLowerCase().replace(/[^a-z0-9]/g, '')" autocomplete="username">
+    </div>
+    <div class="input-group">
+      <i class="fa fa-lock"></i>
+      <input type="password" id="password" placeholder="Password">
+    </div>
+
+    <button id="submit-btn">Sign in</button>
+    <div class="forgot" id="forgot-password">Forgot password? Reset password</div>
+    <div class="switch" id="switch-form">Don't have an account? Sign up</div>
+  </div>
+
+  <script>
+    const apiBaseNew = "https://new-user-tunnel.fe-web.eu";
+    const apiBaseUser = "https://user-tunnel.fe-web.eu";
+
+    let language = 'en_UK'; // Lingua di default
+    let translations = {};
+    let currencies = [];
+    let timezones = [];
+    let availableLanguages = [];
+    let isLogin = true;
+
+    console.log("=== FinEst Login v0.31 ===");
+    console.log("🌍 Default language:", language);
+
+    // ========== LANGUAGE SYSTEM ==========
+
+    // Leggi l'elenco delle lingue dal manifest
+    async function loadLanguageManifest() {
+      console.log("📋 Loading language manifest...");
+      try {
+        const response = await fetch('lang/manifest.json');
+        if (!response.ok) {
+          console.error("Cannot load manifest.json");
+          return [];
+        }
+
+        const manifest = await response.json();
+        console.log("✅ Manifest loaded:", manifest.languages);
+        return manifest.languages || [];
+      } catch (error) {
+        console.error("Error loading manifest:", error);
+        return [];
+      }
+    }
+
+    // Carica un singolo file di lingua
+    async function loadLanguageFile(langCode) {
+      try {
+        const response = await fetch(`lang/${langCode}.json`);
+        if (!response.ok) {
+          console.warn(`File not found: lang/${langCode}.json`);
+          return null;
+        }
+
+        const data = await response.json();
+
+        if (data['int.language.code'] && data['int.language.description'] && data['img.language.flag']) {
+          return {
+            code: data['int.language.code'],
+            description: data['int.language.description'],
+            flag: data['img.language.flag']
+          };
+        } else {
+          console.warn(`Invalid structure in ${langCode}.json`);
+          return null;
+        }
+      } catch (error) {
+        console.error(`Error loading ${langCode}.json:`, error);
+        return null;
+      }
+    }
+
+    // Inizializza le lingue
+    async function initializeLanguages() {
+      console.log("🌍 Initializing languages...");
+
+      const langCodes = await loadLanguageManifest();
+
+      for (const langCode of langCodes) {
+        const langData = await loadLanguageFile(langCode);
+        if (langData) {
+          availableLanguages.push(langData);
+          console.log(`✅ Language loaded: ${langData.code}`);
+        }
+      }
+
+      // Mantieni l'ordine dal manifest (non ordinare alfabeticamente)
+      console.log("✅ Languages initialized:", availableLanguages.length);
+    }
+
+    // Aggiorna combobox lingue
+    function updateLanguageCombo() {
+      const combo = document.getElementById('languageCombo');
+      combo.innerHTML = '';
+
+      if (availableLanguages.length === 0) {
+        console.warn("No languages available");
+        combo.innerHTML = '<option value="">No languages</option>';
+        return;
+      }
+
+      availableLanguages.forEach(lang => {
+        const option = document.createElement('option');
+        option.value = lang.code;
+        option.textContent = `${lang.flag} ${lang.description}`;
+        if (lang.code === language) {
+          option.selected = true;
+        }
+        combo.appendChild(option);
+      });
+
+      console.log("✅ Language combo updated. Selected:", language);
+    }
+
+    // Carica traduzioni
+    async function loadTranslations(lang) {
+      console.log("📚 Loading translations for:", lang);
+      try {
+        const response = await fetch(`lang/${lang}.json`);
+        if (!response.ok) throw new Error(`Translation file not found lang/${lang}.json`);
+        translations = await response.json();
+        console.log("✅ Translations loaded for", lang);
+
+        await loadCurrencies(lang);
+        await loadTimezones();
+      } catch (error) {
+        console.error('❌ Error loading translations:', error);
+      }
+    }
+
+    // Carica valute
+    async function loadCurrencies(lang) {
+      try {
+        const response = await fetch(`currency/${lang}.json`);
+        if (!response.ok) throw new Error(`Currency file not found currency/${lang}.json`);
+        currencies = await response.json();
+        console.log("✅ Currencies loaded:", currencies.length);
+      } catch (error) {
+        console.error('❌ Error loading currencies:', error);
+        currencies = [];
+      }
+    }
+
+    // Carica timezone
+    async function loadTimezones() {
+      try {
+        const response = await fetch(`timezone/timezone.json`);
+        if (!response.ok) throw new Error("Timezone file not found");
+        timezones = await response.json();
+        console.log("✅ Timezones loaded:", timezones.length);
+      } catch (error) {
+        console.error('❌ Error loading timezones:', error);
+        timezones = [];
+      }
+    }
+
+    // Ottieni traduzione
+    function getTranslation(key) {
+      return translations[key] || key;
+    }
+
+    // Aggiorna traduzioni pagina
+    function updatePageTranslations() {
+      console.log("📄 Updating page translations for language:", language);
+
+      const formTitle = document.getElementById('form-title');
+      if (formTitle) {
+        formTitle.textContent = isLogin ? getTranslation('int.login') : getTranslation('int.registration');
+      }
+
+      const usernameInput = document.getElementById('username');
+      const passwordInput = document.getElementById('password');
+      if (usernameInput) {
+        usernameInput.placeholder = getTranslation('int.username');
+        usernameInput.title = getTranslation('int.username.validation');
+      }
+      if (passwordInput) passwordInput.placeholder = getTranslation('int.password');
+
+      const submitBtn = document.getElementById('submit-btn');
+      if (submitBtn) {
+        submitBtn.textContent = isLogin ? getTranslation('int.signin') : getTranslation('int.create.account');
+      }
+
+      const forgotPassword = document.getElementById('forgot-password');
+      const switchForm = document.getElementById('switch-form');
+      if (forgotPassword) forgotPassword.textContent = getTranslation('int.forgot.password');
+      if (switchForm) switchForm.textContent = isLogin ? getTranslation('int.no.account') : getTranslation('int.have.account');
+
+      const logoFinancial = document.getElementById('logo-financial');
+      const logoEstimates = document.getElementById('logo-estimates');
+      if (logoFinancial) logoFinancial.textContent = getTranslation('int.logo.financial');
+      if (logoEstimates) logoEstimates.textContent = getTranslation('int.logo.estimates');
+
+      const loadingOption = document.getElementById('loadingOption');
+      if (loadingOption) loadingOption.textContent = getTranslation('int.loading');
+
+      console.log("✅ Page translations updated");
+    }
+
+    // Cambia lingua
+    async function changeLanguage(langCode) {
+      console.log("🌍 Changing language from", language, "to", langCode);
+
+      language = langCode;
+
+      // Carica SEMPRE le traduzioni, anche se è la stessa lingua
+      await loadTranslations(langCode);
+      updateLanguageCombo();
+      updatePageTranslations();
+
+      console.log("✅ Language changed successfully to", langCode);
+    }
+
+    // Event listener per combobox lingue - usa 'input' per catturare anche i clic sulla stessa opzione
+    document.getElementById('languageCombo').addEventListener('input', async (e) => {
+      const selectedLang = e.target.value;
+      console.log("📝 Language selector changed to:", selectedLang);
+
+      if (selectedLang) {
+        await changeLanguage(selectedLang);
+      }
+    });
+
+    // Fallback con 'click' per assicurare che catturi sempre la selezione
+    document.getElementById('languageCombo').addEventListener('click', async (e) => {
+      const selectedLang = e.target.value;
+      setTimeout(async () => {
+        if (selectedLang && selectedLang !== language) {
+          await changeLanguage(selectedLang);
+        }
+      }, 10);
+    });
+
+    // ========== LOGIN/REGISTRATION LOGIC ==========
+
+    // Switch login/registration
+    document.getElementById("switch-form").addEventListener("click", () => {
+      isLogin = !isLogin;
+      updatePageTranslations();
+      document.getElementById("forgot-password").style.display = isLogin ? "block" : "none";
+    });
+
+    // Health check
+    async function checkHealth() {
+      try {
+        const resUser = await fetch(`${apiBaseUser}/health`, { cache: "no-cache" });
+        const resNew = await fetch(`${apiBaseNew}/health`, { cache: "no-cache" });
+
+        if (!resUser.ok || !resNew.ok) throw new Error(getTranslation('int.services.unavailable') || "Services unavailable");
+        console.log("✅ " + (getTranslation('int.services.healthy') || "Services healthy"));
+      } catch (err) {
+        console.error("❌ " + (getTranslation('int.service.check.failed') || "Service check failed") + ":", err);
+        document.body.innerHTML = '<div style="display:flex;justify-content:center;align-items:center;height:100vh;"><img src="images/off-line.jpeg" alt="Offline" class="offline"></div>';
+      }
+    }
+
+    // Submit
+    document.getElementById('submit-btn').addEventListener("click", async () => {
+      const username = document.getElementById("username").value.trim();
+      const password = document.getElementById("password").value.trim();
+
+      if (!username || !password) {
+        alert(getTranslation("int.complete.all.fields") || "Please fill in all fields");
+        return;
+      }
+
+      const apiUrl = isLogin ? `${apiBaseUser}/login` : `${apiBaseNew}/create`;
+      const payload = { username, password, language };
+
+      try {
+        const response = await fetch(apiUrl, {
+          method: "POST",
+          mode: "cors",
+          credentials: "omit",
+          headers: { "Content-Type": "application/json", "Accept": "application/json" },
+          body: JSON.stringify(payload)
+        });
+
+        const contentType = response.headers.get("content-type");
+        let data;
+        if (contentType && contentType.includes("application/json")) {
+          data = await response.json();
+        } else {
+          data = await response.text();
+        }
+
+        if (response.ok) {
+          if (isLogin) {
+            await loadTranslations(data.language || language);
+            if (data.info && (!data.info.email || !data.info.language || !data.info.timezone || !data.info.currency)) {
+              requestMissingInfo(data.info, username, password);
+            } else {
+              openDashboard(username, data.token, data.language);
+            }
+          } else {
+            alert(getTranslation('int.creation.success') || "Account created successfully!");
+            isLogin = true;
+            updatePageTranslations();
+            document.getElementById("username").value = username;
+            document.getElementById("password").value = "";
+          }
+        } else {
+          alert(isLogin ? getTranslation('int.login.failed') : getTranslation('int.creation.failed'));
+        }
+      } catch (err) {
+        alert((getTranslation('int.connection.error') || "Connection error") + ": " + err.message);
+      }
+    });
+
+    // Forgot password
+    document.getElementById("forgot-password").addEventListener("click", () => {
+      const email = prompt(getTranslation('int.enter.email') || "Enter your email:");
+      if (email) alert(getTranslation('int.reset.email.sent') || "Email sent!");
+    });
+
+    // Richiesta info mancanti
+    function requestMissingInfo(info, username, password) {
+      document.querySelector('.language-selector').style.display = 'none';
+
+      const container = document.getElementById("app-container");
+
+      let currencyOptions = `<option value="">${getTranslation('int.select.currency')}</option>`;
+      currencies.forEach(curr => {
+        currencyOptions += `<option value="${curr.currency}">${curr['img.currency.flag']} ${curr.currency} - ${curr.description}</option>`;
+      });
+
+      let timezoneOptions = `<option value="">${getTranslation('int.select.timezone')}</option>`;
+      timezones.forEach(tz => {
+        timezoneOptions += `<option value="${tz.timezone}">${tz.timezone} (GMT${tz.offset_from_gmt}) - ${tz.reference_city}</option>`;
+      });
+
+      let languageOptions = `<option value="">${getTranslation('int.select.language')}</option>`;
+      availableLanguages.forEach(lang => {
+        languageOptions += `<option value="${lang.code}">${lang.flag} ${lang.description}</option>`;
+      });
+
+      container.innerHTML = `
+        <h2>${getTranslation('int.complete.profile')}</h2>
+        <div class="input-group">
+          <i class="fa fa-envelope"></i>
+          <input type="email" id="email" placeholder="${getTranslation('int.email')}" value="${info.email || ''}">
+        </div>
+        <div class="input-group">
+          <i class="fa fa-language"></i>
+          <select id="language">${languageOptions}</select>
+        </div>
+        <div class="input-group">
+          <i class="fa fa-clock"></i>
+          <select id="timezone">${timezoneOptions}</select>
+        </div>
+        <div class="input-group">
+          <i class="fa fa-coins"></i>
+          <select id="currency">${currencyOptions}</select>
+        </div>
+        <button id="save-info">${getTranslation('int.update')}</button>
+      `;
+
+      document.getElementById("save-info").addEventListener("click", async () => {
+        const email = document.getElementById("email").value.trim();
+        const lang = document.getElementById("language").value.trim();
+        const currency = document.getElementById("currency").value.trim();
+        const tz = document.getElementById("timezone").value.trim();
+
+        if (!email || !lang || !currency || !tz) {
+          alert(getTranslation('int.complete.all.fields'));
+          return;
+        }
+
+        try {
+          const response = await fetch(`${apiBaseUser}/update`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ username, password, email, language: lang, currency, timezone: tz })
+          });
+
+          const data = await response.json();
+          if (response.ok && data.status === "ok") {
+            alert(getTranslation('int.info.saved'));
+            document.querySelector('.language-selector').style.display = 'block';
+            window.location.href = "login.html";
+          } else {
+            alert(getTranslation("int.error.update"));
+          }
+        } catch (err) {
+          alert(getTranslation("int.error.saving"));
+        }
+      });
+    }
+
+    // Apertura dashboard
+    function openDashboard(username, token, lang) {
+      localStorage.setItem("username", username);
+      localStorage.setItem("token", token);
+      localStorage.setItem("language", lang);
+      window.location.href = "dashboard.html";
+    }
+
+    // ========== INITIALIZATION ==========
+    async function init() {
+      console.log("🚀 Initializing application...");
+
+      // 1. Inizializza le lingue disponibili
+      await initializeLanguages();
+
+      // 2. Carica le traduzioni per la lingua di default
+      await loadTranslations(language);
+
+      // 3. Aggiorna il combo per mostrare la lingua di default selezionata
+      updateLanguageCombo();
+
+      // 4. Traduci la pagina
+      updatePageTranslations();
+
+      // 5. Health check
+      checkHealth();
+
+      console.log("✅ Application initialized successfully");
+    }
+
+    init();
+  </script>
+</body>
+
+</html>
