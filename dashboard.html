@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Dashboard 1.0 moon</title>
+    <title>Dashboard 1.0 mars</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
@@ -917,39 +917,56 @@
         }
 
         function updatePageTranslations() {
+            // Updated translation map including Graph buttons
+            const translations_map = {
+                'dashboardTitle': 'int.dashboard.title',
+                'userLabel': 'int.user.label',
+                'filtersPeriodTitle': 'int.filter',
+                'reportsTitle': 'int.reports.title',
+                'menuTitle': 'int.menu.title',
+                'dateStartLabel': 'int.date.start',
+                'dateEndLabel': 'int.date.end',
+                'portfolioLabel': 'int.portfolio',
+                'profitabilityLabel': 'int.profitability',
+                'sessionInvalidTitle': 'int.session.invalid',
+                'sessionInvalidMsg': 'int.session.expired',
+                'backToLoginBtn': 'int.back.to.login',
+                'menuLoading': 'int.loading.menu',
+                'reportsLoading': 'int.loading.reports',
+                'pdfViewerTitle': 'int.pdf.viewer.title',
+                'selectAllText': 'int.selectall',
+                'deselectAllText': 'int.deselectall',
+                'createAccountText': 'int.newaccount',
+                'logoutText': 'int.logout',
+                'apply-filters': 'int.apply.filters',
+                'graphText': 'int.graph',
+                'profitabilityGraphText': 'int.graph',
+                'historicalText': 'int.historical',
+                'goLiveText': 'int.golive',
+                'downloadPdfText': 'int.download.pdf'
+            };
 
-            const createAccountText = getTranslation('int.newaccount');
-            if (createAccountText !== 'int.newaccount') {
-                document.getElementById('createAccountText').textContent = createAccountText;
+            // Loop through map and update elements
+            for (const [id, key] of Object.entries(translations_map)) {
+                const el = document.getElementById(id);
+                if (el) {
+                    const translated = getTranslation(key);
+                    if (translated !== key) {
+                        if (el.tagName === 'INPUT' && (el.type === 'button' || el.type === 'submit')) {
+                            el.value = translated;
+                        } else {
+                            el.textContent = translated;
+                        }
+                    }
+                }
             }
 
-            const applyFiltersText = getTranslation('int.apply.filters');
-            if (applyFiltersText !== 'int.apply.filters') {
-                document.getElementById('apply-filters').textContent = applyFiltersText;
-            }
-
-            // Aggiorna le opzioni dei select
+            // Dropdown placeholders
             const selectOpt = getTranslation('int.select.option');
-            if (selectOpt !== 'int.select.option') {
-                const opt1 = document.getElementById('selectOption');
-                const opt2 = document.getElementById('selectOption2');
-                if (opt1) opt1.textContent = selectOpt;
-                if (opt2) opt2.textContent = selectOpt;
-            }
-
-            // Go Live button
-            const goLiveText = getTranslation('int.golive');
-            if (goLiveText !== 'int.golive') {
-                const goLiveBtn = document.getElementById('goLiveText');
-                if (goLiveBtn) goLiveBtn.textContent = goLiveText;
-            }
-
-            // Historical button
-            const historicalText = getTranslation('int.historical');
-            if (historicalText !== 'int.historical') {
-                const historicalBtn = document.getElementById('historicalText');
-                if (historicalBtn) historicalBtn.textContent = historicalText;
-            }
+            const opt1 = document.querySelector('#portfolio option[value=""]');
+            if (opt1) opt1.textContent = selectOpt;
+            const opt2 = document.querySelector('#profitability option[value=""]');
+            if (opt2) opt2.textContent = selectOpt;
         }
 
         // ========== UTILITY FUNCTIONS ==========
@@ -2809,6 +2826,19 @@
         activeData = activeData.filter(item => {
             if (!item) return false;
 
+            // For Profitability (BAR), we prioritize RISTOT
+            if (isProfitability) {
+                // Relaxed quantity check for profitability - sometimes we have profit even if qty is 0 (closed position)
+                let rawVal = item[valueKey]; // RISTOT
+                if (rawVal === undefined || rawVal === null || rawVal === '') return false;
+
+                if (typeof rawVal === 'string') rawVal = rawVal.replace(',', '.');
+                if (isNaN(parseFloat(rawVal))) return false;
+
+                return true;
+            }
+
+            // For Portfolio (PIE), standard checks
             const getQty = (itm) => {
                 if (itm.quantity !== undefined) return parseFloat(itm.quantity);
                 const k = Object.keys(itm).find(key => key.toLowerCase() === 'quantity' || key.toLowerCase() === 'qta' || key.toLowerCase() === 'quantità');
@@ -2823,14 +2853,7 @@
             const val = parseFloat(rawVal);
 
             if (isNaN(val)) return false;
-
-            // For PIE charts, we must ignore <= 0. For BAR charts, we allow them.
             if (chartType === 'pie' && val <= 0) return false;
-
-            // Check if RISTOT exists specifically as per user request
-            if (valueKey === 'RISTOT' && (item[valueKey] === undefined || item[valueKey] === null || item[valueKey] === '')) {
-                return false;
-            }
 
             return true;
         });
@@ -2838,7 +2861,6 @@
         console.log(`   - Data after Validation Filter: ${activeData.length}`);
         if (activeData.length > 0) {
             console.log("   - Sample Item:", activeData[0]);
-            if (isProfitability) console.log("   - RISTOT Value of sample:", activeData[0][valueKey]);
         } else {
             console.warn("   ⚠️ No active data found! Chart will be empty.");
         }
@@ -2848,30 +2870,52 @@
             activeData.forEach(item => {
                 let groupLabel = 'int.other';
                 const instrumentId = item.id_instrument;
+
+                // Logic specifically for Profitability grouping if needed, otherwise shared
                 if (instrumentId !== undefined && instrumentId !== null) {
                     let classObj = classificationMap[instrumentId];
                     if (!classObj) classObj = classificationMap[String(instrumentId)];
+
+                    // If checking for Sector/Type etc.
                     if (classObj && classObj[groupValue]) groupLabel = classObj[groupValue];
                 }
+
                 if (!groups[groupLabel]) groups[groupLabel] = 0;
-                groups[groupLabel] += parseFloat(item[valueKey] || 0);
+
+                let val = item[valueKey];
+                if (typeof val === 'string') val = parseFloat(val.replace(',', '.'));
+                groups[groupLabel] += (val || 0);
             });
-            // Sort: Descending for Pie, maybe different for Bar? Descending is usually good.
+
             const sortedGroups = Object.entries(groups).sort((a, b) => b[1] - a[1]);
             labels = sortedGroups.map(entry => getTranslation(entry[0]) || entry[0]);
             dataValues = sortedGroups.map(entry => entry[1]);
         } else {
-            activeData.sort((a, b) => parseFloat(b[valueKey] || 0) - parseFloat(a[valueKey] || 0));
-            labels = activeData.map(item => {
-                if (item.instrument_description) return item.instrument_description;
-                if (item.Ticker) return item.Ticker;
-                if (item.id_instrument) {
+            // Non-grouped: Use Description and RISTOT
+
+            // Extract values first to allow sorting
+            let itemsWithVals = activeData.map(item => {
+                let label = "Unknown";
+
+                // Try to find description
+                if (item.instrument_description) label = item.instrument_description;
+                else if (item.Ticker) label = item.Ticker;
+                else if (item.id_instrument) {
                     let classObj = classificationMap[item.id_instrument] || classificationMap[String(item.id_instrument)];
-                    if (classObj && classObj.instrument_description) return classObj.instrument_description;
+                    if (classObj && classObj.instrument_description) label = classObj.instrument_description;
                 }
-                return "Unknown";
+
+                let val = item[valueKey];
+                if (typeof val === 'string') val = parseFloat(val.replace(',', '.'));
+
+                return { label, val: val || 0 };
             });
-            dataValues = activeData.map(item => parseFloat(item[valueKey] || 0));
+
+            // Sort strict descending (Positive to Negative)
+            itemsWithVals.sort((a, b) => b.val - a.val);
+
+            labels = itemsWithVals.map(i => i.label);
+            dataValues = itemsWithVals.map(i => i.val);
         }
 
         console.log("   ✅ Final Charts Data Prepared:");
