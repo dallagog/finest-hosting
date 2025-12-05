@@ -342,6 +342,19 @@
             border-color: #ff3333;
         }
 
+        @keyframes pulse-highlight {
+
+            0%,
+            100% {
+                box-shadow: 0 0 10px var(--neon-cyan);
+                transform: scale(1);
+            }
+
+            50% {
+                box-shadow: 0 0 25px var(--neon-cyan), 0 0 40px var(--neon-cyan);
+                transform: scale(1.02);
+            }
+        }
 
         .message.success {
             background: rgba(0, 255, 0, 0.2);
@@ -965,13 +978,17 @@
             return true;
         }
 
-        function updateUserInfo() {
+        async function updateUserInfo() {
             if (!filterData || !filterData.Filter) return;
 
             const f = filterData.Filter;
 
-            // Language
+            // Language - ensure languages are loaded first
             if (f.language) {
+                // Reload languages if not available
+                if (availableLanguages.length === 0) {
+                    await initializeLanguages();
+                }
                 const langData = availableLanguages.find(l => l.code === f.language);
                 if (langData) {
                     document.getElementById('languageFlag').textContent = langData.flag;
@@ -983,8 +1000,12 @@
                 }
             }
 
-            // Currency
+            // Currency - ensure currencies are loaded with correct language
             if (f.currency) {
+                // Reload currencies if not available or not containing user's currency
+                if (currencies.length === 0 || !currencies.find(c => c.currency === f.currency)) {
+                    await loadCurrencies(f.language || credentials.language);
+                }
                 const currData = currencies.find(c => c.currency === f.currency);
                 if (currData && currData['img.currency.flag']) {
                     document.getElementById('currencyDisplay').textContent = `${currData['img.currency.flag']} ${f.currency}`;
@@ -1096,7 +1117,7 @@
                 renderReportsList();
                 // Trigger table render after selectedAccounts is initialized
                 filterAndRenderTables();
-                updateUserInfo();
+                await updateUserInfo();
 
                 showMessage(getTranslation('int.filters.loaded') || 'Filtri e account caricati', 'success');
             } catch (error) {
@@ -1150,6 +1171,25 @@
 
             if (!Array.isArray(accountsList) || accountsList.length === 0) {
                 container.innerHTML = `<p style="color:#999;">${getTranslation('int.no.reports') || 'Nessun rapporto trovato'}</p>`;
+
+                // Expand the filter section if no accounts
+                const filterSection = document.getElementById('filter-section');
+                if (filterSection) {
+                    filterSection.style.display = 'block';
+                    const content = filterSection.querySelector('.collapsible-content');
+                    if (content) content.style.display = 'block';
+                    const toggleBtn = filterSection.querySelector('.toggle-btn');
+                    if (toggleBtn) toggleBtn.textContent = '-';
+                }
+
+                // Highlight the "Crea rapporto" button
+                const createBtn = document.getElementById('createAccountBtn');
+                if (createBtn) {
+                    createBtn.style.animation = 'pulse-highlight 1.5s infinite';
+                    createBtn.style.border = '2px solid var(--neon-cyan)';
+                    createBtn.style.boxShadow = '0 0 15px var(--neon-cyan)';
+                }
+
                 return;
             }
 
