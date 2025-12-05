@@ -2826,6 +2826,7 @@
         }
 
         let groupingSelectId, dataFile, valueKey;
+        let isProfitability = false;
 
         if (currentChartType === 'portfolio') {
             groupingSelectId = 'grouping-select';
@@ -2833,8 +2834,9 @@
             valueKey = 'CTVMKTTQ';
         } else {
             groupingSelectId = 'profitability-grouping-select';
-            dataFile = profitabilityData; // Use global profitabilityData
+            dataFile = profitabilityData;
             valueKey = 'RISTOT';
+            isProfitability = true;
         }
 
         // Determine Grouping
@@ -2853,13 +2855,8 @@
         activeData = activeData.filter(item => {
             if (!item) return false;
 
-            // Check historical toggle logic - Applies to both presumably?
-            // Usually functionality is mirrored. 
-            // Profitability might not have 'quantity' as simple property sometimes?
-            // Helper function to get Quantity safely
             const getQty = (itm) => {
                 if (itm.quantity !== undefined) return parseFloat(itm.quantity);
-                // Try finding case insensitive
                 const k = Object.keys(itm).find(key => key.toLowerCase() === 'quantity' || key.toLowerCase() === 'qta' || key.toLowerCase() === 'quantità');
                 return k ? parseFloat(itm[k]) : 0;
             };
@@ -2867,10 +2864,6 @@
             const quantity = getQty(item);
             if (!showHistorical && (isNaN(quantity) || quantity === 0)) return false;
 
-            // Check if it has a value > 0
-            // User didn't specify behavior for negative RISTOT (Losses). 
-            // Pie charts can't show negative values. 
-            // We will filter > 0 for now.
             const val = parseFloat(item[valueKey]);
             return !isNaN(val) && val > 0;
         });
@@ -2893,10 +2886,19 @@
             dataValues = sortedGroups.map(entry => entry[1]);
         } else {
             activeData.sort((a, b) => parseFloat(b[valueKey] || 0) - parseFloat(a[valueKey] || 0));
-            labels = activeData.map(item => item.instrument_description || item.Ticker || "Unknown");
+            labels = activeData.map(item => {
+                if (item.instrument_description) return item.instrument_description;
+                if (item.Ticker) return item.Ticker;
+                if (item.id_instrument) {
+                    let classObj = classificationMap[item.id_instrument] || classificationMap[String(item.id_instrument)];
+                    if (classObj && classObj.instrument_description) return classObj.instrument_description;
+                }
+                return "Unknown";
+            });
             dataValues = activeData.map(item => parseFloat(item[valueKey] || 0));
         }
 
+        const grandTotal = dataValues.reduce((a, b) => a + b, 0);
         backgroundColors = generateTronColors(dataValues.length);
 
         chartInstance = new Chart(ctx, {
@@ -2941,75 +2943,149 @@
                 }
             },
             plugins: [{
-                id: 'outsideLabels',
+                id: 'customLabels',
                 afterDraw: (chart) => {
                     const ctx = chart.ctx;
+                    const { left, top, width, height } = chart.chartArea;
+                    const centerX = left + width / 2;
+                    const centerY = top + height / 2;
+
                     ctx.save();
                     ctx.font = '12px "Segoe UI", Roboto, sans-serif';
 
-                    const centerX = chart.chartArea.left + (chart.chartArea.right - chart.chartArea.left) / 2;
-                    const centerY = chart.chartArea.top + (chart.chartArea.bottom - chart.chartArea.top) / 2;
+                    // Collect Label Data
+                    const labelItems = [];
+                    const leftLabels = [];
+                    const rightLabels = [];
 
                     chart.data.datasets.forEach((dataset, i) => {
                         const meta = chart.getDatasetMeta(i);
                         if (meta.hidden) return;
 
                         meta.data.forEach((element, index) => {
-                            const { x, y } = element.tooltipPosition();
+                            const value = dataset.data[index];
+                            if (value === 0) return; // Skip zero values
 
-                            // Angles
                             const startAngle = element.startAngle;
                             const endAngle = element.endAngle;
                             const midAngle = startAngle + (endAngle - startAngle) / 2;
 
-                            // Radius calculations
+                            // Determine side
+                            const isRight = midAngle < Math.PI / 2 || midAngle > 3 * Math.PI / 2;
+
+                            // Basic Coords
                             const outerRadius = element.outerRadius;
                             const labelRadius = outerRadius + 30;
 
-                            // Line points
-                            const startX = centerX + Math.cos(midAngle) * outerRadius;
-                            const startY = centerY + Math.sin(midAngle) * outerRadius;
-
-                            const midX = centerX + Math.cos(midAngle) * (outerRadius + 15);
-                            const midY = centerY + Math.sin(midAngle) * (outerRadius + 15);
-
-                            const endX = centerX + Math.cos(midAngle) * labelRadius;
+                            // Ideal Y position
                             const endY = centerY + Math.sin(midAngle) * labelRadius;
+                            const endX = centerX + Math.cos(midAngle) * labelRadius;
 
-                            // Text Content
-                            const value = dataset.data[index];
                             const label = chart.data.labels[index];
                             const formattedValue = new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(value);
                             const text = `${label}: ${formattedValue}`;
 
-                            // Check alignment based on angle
-                            const isRight = midAngle < Math.PI / 2 || midAngle > 3 * Math.PI / 2;
+                            const item = {
+                                index,
+                                text,
+                                value,
+                                midAngle,
+                                outerRadius,
+                                labelRadius,
+                                isRight,
+                                startX: centerX + Math.cos(midAngle) * outerRadius,
+                                startY: centerY + Math.sin(midAngle) * outerRadius,
+                                endX,
+                                endY, // Initial desired Y
+                                currentY: endY,
+                                height: 14 // Approximate text height
+                            };
 
-                            // Draw Line (Tron Style)
-                            ctx.beginPath();
-                            ctx.moveTo(startX, startY);
-                            ctx.lineTo(midX, midY);
-                            ctx.lineTo(endX, endY);
-                            ctx.strokeStyle = '#00F3FF';
-                            ctx.lineWidth = 1;
-                            ctx.shadowBlur = 4;
-                            ctx.shadowColor = '#00F3FF';
-                            ctx.stroke();
-
-                            // Draw Text
-                            ctx.fillStyle = '#00F3FF';
-                            ctx.textAlign = isRight ? 'left' : 'right';
-                            ctx.textBaseline = 'middle';
-                            ctx.shadowBlur = 0;
-                            ctx.fillText(text, isRight ? endX + 5 : endX - 5, endY);
-
-                            // Draw dot at start
-                            ctx.beginPath();
-                            ctx.arc(startX, startY, 2, 0, 2 * Math.PI);
-                            ctx.fillStyle = '#FFFFFF';
-                            ctx.fill();
+                            if (isRight) rightLabels.push(item);
+                            else leftLabels.push(item);
                         });
                     });
+
+                    // Anti-Collision Logic (Sort by Y and spread)
+                    const resolveCollisions = (items) => {
+                        items.sort((a, b) => a.currentY - b.currentY);
+                        for (let i = 1; i < items.length; i++) {
+                            const prev = items[i - 1];
+                            const curr = items[i];
+                            if (curr.currentY < prev.currentY + prev.height) {
+                                curr.currentY = prev.currentY + prev.height;
+                            }
+                        }
+                    };
+
+                    resolveCollisions(rightLabels);
+                    resolveCollisions(leftLabels);
+
+                    // Draw Everything
+                    const drawLabel = (item) => {
+                        // Re-calculate mid-points for line based on adjusted Y
+                        // Note: Bending the line
+                        const midX = centerX + Math.cos(item.midAngle) * (item.outerRadius + 15);
+                        // We keep midY natural to avoid weird sharp angles at start
+                        let midY = centerY + Math.sin(item.midAngle) * (item.outerRadius + 15);
+
+                        // If adjustment is huge, maybe adjust midY too? 
+                        // Let's keep it simple: Start -> Mid -> End(Adjusted)
+
+                        ctx.beginPath();
+                        ctx.moveTo(item.startX, item.startY);
+                        ctx.lineTo(midX, midY);
+                        ctx.lineTo(item.endX, item.currentY);
+                        ctx.strokeStyle = '#00F3FF';
+                        ctx.lineWidth = 1;
+                        ctx.shadowBlur = 4;
+                        ctx.shadowColor = '#00F3FF';
+                        ctx.stroke();
+
+                        // Text
+                        ctx.fillStyle = '#00F3FF';
+                        ctx.textAlign = item.isRight ? 'left' : 'right';
+                        ctx.textBaseline = 'middle';
+                        ctx.shadowBlur = 0;
+                        ctx.fillText(item.text, item.isRight ? item.endX + 5 : item.endX - 5, item.currentY);
+
+                        // Dot
+                        ctx.beginPath();
+                        ctx.arc(item.startX, item.startY, 2, 0, 2 * Math.PI);
+                        ctx.fillStyle = '#FFFFFF';
+                        ctx.fill();
+
+                        // --- INSIDE PERCENTAGE ---
+                        // Re-calculate inner position based on raw data (not adjusted)
+                        // Make sure slice is visible
+                        const element = chart.getDatasetMeta(0).data[item.index];
+                        if (!element) return;
+
+                        if (element.endAngle - element.startAngle > 0.1) {
+                            const percentage = ((item.value / grandTotal) * 100).toFixed(1) + '%';
+
+                            // Position
+                            const pX = centerX + Math.cos(item.midAngle) * (item.outerRadius * 0.7);
+                            const pY = centerY + Math.sin(item.midAngle) * (item.outerRadius * 0.7);
+
+                            ctx.save();
+                            // Stroke for readability
+                            ctx.font = 'bold 11px "Segoe UI", Roboto, sans-serif';
+                            ctx.lineWidth = 2;
+                            ctx.strokeStyle = '#000000'; // Black outline
+                            ctx.strokeText(percentage, pX, pY);
+
+                            ctx.fillStyle = '#FFFFFF'; // White text
+                            ctx.textAlign = 'center';
+                            ctx.textBaseline = 'middle';
+                            ctx.fillText(percentage, pX, pY);
+                            ctx.restore();
+                        }
+                    };
+
+                    rightLabels.forEach(drawLabel);
+                    leftLabels.forEach(drawLabel);
+
                     ctx.restore();
                 }
             }]
@@ -3019,7 +3095,6 @@
     function generateTronColors(count) {
         const colors = [];
         const baseHues = [180, 210, 190, 200, 220];
-
         for (let i = 0; i < count; i++) {
             const hue = (180 + (i * 30)) % 360;
             const color = `hsl(${hue}, 90%, 60%)`;
