@@ -4,7 +4,9 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Dashboard a.4</title>
+    <title>Dashboard 1.0</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 
     <style>
@@ -552,6 +554,76 @@
             color: var(--neon-blue);
             margin-right: 5px;
         }
+
+        /* ========== CHART MODAL ========== */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 5, 16, 0.85);
+            /* Dark semi-transparent background */
+            backdrop-filter: blur(5px);
+            z-index: 2000;
+            display: none;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background: var(--neon-dark);
+            border: 1px solid var(--neon-cyan);
+            box-shadow: 0 0 20px rgba(0, 243, 255, 0.2);
+            padding: 20px;
+            width: 80%;
+            max-width: 800px;
+            /* Reduced width for better aspect ratio */
+            border-radius: 10px;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            margin-bottom: 20px;
+            border-bottom: 1px solid var(--neon-blue);
+            padding-bottom: 10px;
+        }
+
+        .modal-title {
+            color: var(--neon-cyan);
+            font-size: 1.5rem;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .close-modal-btn {
+            background: transparent;
+            border: none;
+            color: var(--neon-blue);
+            font-size: 1.5rem;
+            cursor: pointer;
+            transition: color 0.3s;
+        }
+
+        .close-modal-btn:hover {
+            color: var(--neon-cyan);
+            text-shadow: 0 0 10px var(--neon-cyan);
+        }
+
+        .chart-container {
+            width: 100%;
+            height: 500px;
+            /* Specific height for the chart */
+            position: relative;
+        }
     </style>
 </head>
 
@@ -672,6 +744,9 @@
                             <option value="">Nessun raggruppamento</option>
                         </select>
 
+                        <button id="graphBtn" onclick="toggleGraph()">
+                            <i class="fa fa-pie-chart"></i> <span id="graphText">Graph</span>
+                        </button>
                         <button id="historicalBtn" onclick="toggleHistorical()" style="margin-left: auto;">
                             <i class="fa fa-history"></i> <span id="historicalText">Storico</span>
                         </button>
@@ -2686,5 +2761,206 @@
 
     </script>
 </body>
+
+<!-- Chart Modal -->
+<div id="chartModal" class="modal-overlay">
+    <div class="modal-content">
+        <div class="modal-header">
+            <span class="modal-title" id="chartModalTitle">Portfolio Composition</span>
+            <button class="close-modal-btn" onclick="closeGraph()">
+                <i class="fa fa-times"></i>
+            </button>
+        </div>
+        <div class="chart-container">
+            <canvas id="chartCanvas"></canvas>
+        </div>
+    </div>
+</div>
+
+<script>
+    let chartInstance = null;
+
+    function toggleGraph() {
+        const modal = document.getElementById('chartModal');
+        const canvas = document.getElementById('chartCanvas');
+        const modalTitle = document.getElementById('chartModalTitle');
+
+        // Set Title
+        modalTitle.textContent = getTranslation('int.portfolio') + " " + getTranslation('int.graph');
+
+        if (modal.style.display === 'flex') {
+            closeGraph();
+        } else {
+            console.log("Opening Graph Modal");
+            modal.style.display = 'flex';
+            renderChart();
+        }
+    }
+
+    function closeGraph() {
+        const modal = document.getElementById('chartModal');
+        modal.style.display = 'none';
+        if (chartInstance) {
+            chartInstance.destroy();
+            chartInstance = null;
+        }
+    }
+
+    function renderChart() {
+        const ctx = document.getElementById('chartCanvas').getContext('2d');
+
+        // Destroy existing chart if any
+        if (chartInstance) {
+            chartInstance.destroy();
+        }
+
+        // Determine Grouping
+        const groupValue = document.getElementById('grouping-select').value;
+        const isGrouped = groupValue && groupValue !== "";
+
+        // Prepare Data
+        let labels = [];
+        let dataValues = [];
+        let backgroundColors = [];
+
+        // Filter data based on selected accounts (using existing 'isAccountSelected' logic if possible, otherwise use global 'selectedAccounts')
+        // We use 'portfolioData' which is the raw data source.
+        // We need to filter it same as the table:
+        let activeData = portfolioData.filter(item => isAccountSelected(item.id_account));
+
+        // Filter out zero or negative values for the chart if desired, or keep them? 
+        // Usually pie charts don't show negative values well. Let's filter > 0 for CTVMKTTQ.
+        // Also respect "Show Historical" flag? 
+        // The user requirement says: "Se il raggruppaemento non ha una selezione utilizza la descrizione e il controvalore delle righe. Se il portafgolio ha un raggruppamento usa la descrizione della selezione e il totale corrispondente del controvalore."
+
+        // Filter valid items first
+        activeData = activeData.filter(item => {
+            // Basic validity check
+            if (!item) return false;
+
+            // Check historical toggle logic (reusing global showHistorical variable)
+            const quantity = parseFloat(item.quantity);
+            if (!showHistorical && (isNaN(quantity) || quantity === 0)) {
+                return false;
+            }
+
+            // Check if it has a value
+            const val = parseFloat(item.CTVMKTTQ);
+            return !isNaN(val) && val > 0;
+        });
+
+
+        if (isGrouped) {
+            // AGGREGATION LOGIC
+            const groups = {};
+            activeData.forEach(item => {
+                let groupLabel = 'int.other';
+                const instrumentId = item.id_instrument;
+
+                // Reset classification logic as per renderTable
+                if (instrumentId !== undefined && instrumentId !== null) {
+                    let classObj = classificationMap[instrumentId];
+                    if (!classObj) classObj = classificationMap[String(instrumentId)];
+
+                    if (classObj && classObj[groupValue]) {
+                        groupLabel = classObj[groupValue];
+                    }
+                }
+
+                if (!groups[groupLabel]) groups[groupLabel] = 0;
+                groups[groupLabel] += parseFloat(item.CTVMKTTQ || 0);
+            });
+
+            // Convert to arrays
+            const sortedGroups = Object.entries(groups).sort((a, b) => b[1] - a[1]); // Sort by value desc
+
+            labels = sortedGroups.map(entry => getTranslation(entry[0]) || entry[0]);
+            dataValues = sortedGroups.map(entry => entry[1]);
+
+        } else {
+            // NO AGGREGATION - ROW LEVEL
+            // Sort by value desc for better visualization
+            activeData.sort((a, b) => parseFloat(b.CTVMKTTQ || 0) - parseFloat(a.CTVMKTTQ || 0));
+
+            labels = activeData.map(item => item.instrument_description || item.Ticker || "Unknown");
+            dataValues = activeData.map(item => parseFloat(item.CTVMKTTQ || 0));
+        }
+
+        // Generate Tron Colors
+        backgroundColors = generateTronColors(dataValues.length);
+
+        chartInstance = new Chart(ctx, {
+            type: 'pie', // User asked for pie chart ("grafico a torta")
+            data: {
+                labels: labels,
+                datasets: [{
+                    data: dataValues,
+                    backgroundColor: backgroundColors,
+                    borderColor: '#000510',
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'right',
+                        labels: {
+                            color: '#00F3FF', // Neon Cyan
+                            font: {
+                                family: "'Segoe UI', Roboto, Helvetica, Arial, sans-serif"
+                            }
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function (context) {
+                                let label = context.label || '';
+                                if (label) {
+                                    label += ': ';
+                                }
+                                if (context.parsed !== null) {
+                                    label += new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(context.parsed);
+                                }
+                                return label;
+                            }
+                        },
+                        backgroundColor: 'rgba(0, 5, 16, 0.9)',
+                        titleColor: '#00F3FF',
+                        bodyColor: '#fff',
+                        borderColor: '#0066FF',
+                        borderWidth: 1
+                    }
+                }
+            }
+        });
+    }
+
+    function generateTronColors(count) {
+        const colors = [];
+        const baseHues = [180, 210, 190, 200, 220]; // Cyan to Blueish hues
+
+        for (let i = 0; i < count; i++) {
+            // Generate variations of Neon Cyan/Blue
+            // Hue: 180 (Cyan) - 240 (Blue)
+            // Saturation: 80-100%
+            // Lightness: 50-70%
+            const hue = (180 + (i * 30)) % 360;
+            // Alternating logic for distinctiveness
+            const color = `hsl(${hue}, 90%, 60%)`;
+            colors.push(color);
+        }
+        return colors;
+    }
+
+    // Ensure close on outside click
+    window.onclick = function (event) {
+        const modal = document.getElementById('chartModal');
+        if (event.target == modal) {
+            closeGraph();
+        }
+    }
+</script>
 
 </html>
