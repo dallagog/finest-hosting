@@ -2930,25 +2930,35 @@
         }
 
         const grandTotal = dataValues.reduce((a, b) => a + b, 0);
-        backgroundColors = generateTronColors(dataValues.length);
+
+        // Determine chart type and colors
+        const chartType = isProfitability ? 'bar' : 'pie';
+
+        if (isProfitability) {
+            // Bar chart: Cyan for positive, Red for negative
+            backgroundColors = dataValues.map(v => v >= 0 ? 'rgba(0, 243, 255, 0.6)' : 'rgba(255, 0, 85, 0.6)');
+        } else {
+            // Pie chart: Tron colors
+            backgroundColors = generateTronColors(dataValues.length);
+        }
 
         chartInstance = new Chart(ctx, {
-            type: 'pie',
+            type: chartType,
             data: {
                 labels: labels,
                 datasets: [{
                     data: dataValues,
                     backgroundColor: backgroundColors,
-                    borderColor: '#000510',
+                    borderColor: isProfitability ? dataValues.map(v => v >= 0 ? '#00f3ff' : '#ff0055') : '#000510',
                     borderWidth: 2,
-                    hoverOffset: 10
+                    hoverOffset: isProfitability ? 0 : 10
                 }]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
                 layout: {
-                    padding: 80
+                    padding: isProfitability ? 20 : 80
                 },
                 plugins: {
                     legend: {
@@ -2959,8 +2969,9 @@
                             label: function (context) {
                                 let label = context.label || '';
                                 if (label) label += ': ';
-                                if (context.parsed !== null) {
-                                    label += new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(context.parsed);
+                                const value = isProfitability ? context.parsed.y : context.parsed;
+                                if (value !== null) {
+                                    label += new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(value);
                                 }
                                 return label;
                             }
@@ -2971,9 +2982,70 @@
                         borderColor: '#0066FF',
                         borderWidth: 1
                     }
-                }
+                },
+                ...(isProfitability && {
+                    scales: {
+                        x: {
+                            ticks: {
+                                color: '#e0f7fa',
+                                font: { family: 'Orbitron', size: 10 }
+                            },
+                            grid: {
+                                color: 'rgba(0, 243, 255, 0.1)'
+                            }
+                        },
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                color: '#e0f7fa',
+                                callback: function (value) {
+                                    return new Intl.NumberFormat('it-IT', { notation: "compact", compactDisplay: "short" }).format(value);
+                                }
+                            },
+                            grid: {
+                                color: 'rgba(0, 243, 255, 0.1)'
+                            }
+                        }
+                    }
+                })
             },
-            plugins: [{
+            plugins: isProfitability ? [{
+                id: 'barValues',
+                afterDatasetsDraw: (chart) => {
+                    const ctx = chart.ctx;
+                    ctx.save();
+                    ctx.font = 'bold 11px "Segoe UI", Roboto, sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+
+                    chart.data.datasets.forEach((dataset, i) => {
+                        const meta = chart.getDatasetMeta(i);
+                        if (meta.hidden) return;
+
+                        meta.data.forEach((element, index) => {
+                            const value = dataset.data[index];
+                            if (value === null || value === undefined) return;
+
+                            const formattedValue = new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(value);
+                            const x = element.x;
+                            let y = element.y;
+
+                            // Position above for positive, below for negative
+                            if (value >= 0) {
+                                y -= 15;
+                            } else {
+                                y += 15;
+                            }
+
+                            ctx.fillStyle = (value >= 0) ? '#00f3ff' : '#ff0055';
+                            ctx.shadowColor = 'rgba(0,0,0,0.8)';
+                            ctx.shadowBlur = 2;
+                            ctx.fillText(formattedValue, x, y);
+                        });
+                    });
+                    ctx.restore();
+                }
+            }] : [{
                 id: 'customLabels',
                 afterDraw: (chart) => {
                     const ctx = chart.ctx;
