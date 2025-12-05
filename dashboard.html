@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Dashboard 1.0 sole</title>
+    <title>Dashboard 1.0 sun</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
@@ -576,9 +576,9 @@
             border: 1px solid var(--neon-cyan);
             box-shadow: 0 0 20px rgba(0, 243, 255, 0.2);
             padding: 20px;
-            width: 95%;
-            /* Full width as requested */
-            max-width: 95vw;
+            width: 80%;
+            max-width: 800px;
+            /* Reduced width for better aspect ratio */
             border-radius: 10px;
             position: relative;
             display: flex;
@@ -591,7 +591,6 @@
             justify-content: space-between;
             align-items: center;
             width: 100%;
-            margin-bottom: 20px;
             margin-bottom: 20px;
             border-bottom: 1px solid var(--neon-blue);
             padding-bottom: 10px;
@@ -621,11 +620,8 @@
 
         .chart-container {
             width: 100%;
-            height: auto;
-            aspect-ratio: 1.618 / 1;
-            /* Golden Ratio: Wider than tall */
-            max-height: 80vh;
-            /* Ensure it fits on screen verticaly */
+            height: 500px;
+            /* Specific height for the chart */
             position: relative;
         }
     </style>
@@ -921,7 +917,7 @@
         }
 
         function updatePageTranslations() {
-            // Updated translation map including Graph buttons
+            // Traduci tutti gli elementi della pagina
             const translations_map = {
                 'dashboardTitle': 'int.dashboard.title',
                 'userLabel': 'int.user.label',
@@ -937,40 +933,73 @@
                 'backToLoginBtn': 'int.back.to.login',
                 'menuLoading': 'int.loading.menu',
                 'reportsLoading': 'int.loading.reports',
-                'pdfViewerTitle': 'int.pdf.viewer.title',
-                'selectAllText': 'int.selectall',
-                'deselectAllText': 'int.deselectall',
-                'createAccountText': 'int.newaccount',
-                'logoutText': 'int.logout',
-                'apply-filters': 'int.apply.filters',
-                'graphText': 'int.graph',
-                'profitabilityGraphText': 'int.graph',
-                'historicalText': 'int.historical',
-                'goLiveText': 'int.golive',
-                'downloadPdfText': 'int.download.pdf'
+                'pdfViewerTitle': 'int.pdf.viewer.title'
             };
 
-            // Loop through map and update elements
-            for (const [id, key] of Object.entries(translations_map)) {
-                const el = document.getElementById(id);
-                if (el) {
-                    const translated = getTranslation(key);
-                    if (translated !== key) {
-                        if (el.tagName === 'INPUT' && (el.type === 'button' || el.type === 'submit')) {
-                            el.value = translated;
-                        } else {
-                            el.textContent = translated;
-                        }
+            // Aggiorna tutti i testi
+            Object.keys(translations_map).forEach(elementId => {
+                const element = document.getElementById(elementId);
+                if (element) {
+                    const translated = getTranslation(translations_map[elementId]);
+                    if (translated !== translations_map[elementId]) {
+                        element.textContent = translated;
                     }
                 }
+            });
+
+            // Gestione speciale per elementi con contenuto HTML
+            const logoutText = getTranslation('int.logout');
+            if (logoutText !== 'int.logout') {
+                document.getElementById('logoutText').textContent = logoutText;
             }
 
-            // Dropdown placeholders
+            const downloadPdfText = getTranslation('int.download.pdf');
+            if (downloadPdfText !== 'int.download.pdf') {
+                document.getElementById('downloadPdfText').textContent = downloadPdfText;
+            }
+
+            const selectAllText = getTranslation('int.selectall');
+            if (selectAllText !== 'int.selectall') {
+                document.getElementById('selectAllText').textContent = selectAllText;
+            }
+
+            const deselectAllText = getTranslation('int.deselectall');
+            if (deselectAllText !== 'int.deselectall') {
+                document.getElementById('deselectAllText').textContent = deselectAllText;
+            }
+
+            const createAccountText = getTranslation('int.newaccount');
+            if (createAccountText !== 'int.newaccount') {
+                document.getElementById('createAccountText').textContent = createAccountText;
+            }
+
+            const applyFiltersText = getTranslation('int.apply.filters');
+            if (applyFiltersText !== 'int.apply.filters') {
+                document.getElementById('apply-filters').textContent = applyFiltersText;
+            }
+
+            // Aggiorna le opzioni dei select
             const selectOpt = getTranslation('int.select.option');
-            const opt1 = document.querySelector('#portfolio option[value=""]');
-            if (opt1) opt1.textContent = selectOpt;
-            const opt2 = document.querySelector('#profitability option[value=""]');
-            if (opt2) opt2.textContent = selectOpt;
+            if (selectOpt !== 'int.select.option') {
+                const opt1 = document.getElementById('selectOption');
+                const opt2 = document.getElementById('selectOption2');
+                if (opt1) opt1.textContent = selectOpt;
+                if (opt2) opt2.textContent = selectOpt;
+            }
+
+            // Go Live button
+            const goLiveText = getTranslation('int.golive');
+            if (goLiveText !== 'int.golive') {
+                const goLiveBtn = document.getElementById('goLiveText');
+                if (goLiveBtn) goLiveBtn.textContent = goLiveText;
+            }
+
+            // Historical button
+            const historicalText = getTranslation('int.historical');
+            if (historicalText !== 'int.historical') {
+                const historicalBtn = document.getElementById('historicalText');
+                if (historicalBtn) historicalBtn.textContent = historicalText;
+            }
         }
 
         // ========== UTILITY FUNCTIONS ==========
@@ -2740,8 +2769,10 @@
 <div id="chartModal" class="modal-overlay">
     <div class="modal-content">
         <div class="modal-header">
-            <span id="chartTitle" class="modal-title">Chart</span>
-            <button class="close-modal-btn" onclick="closeGraph()">&times;</button>
+            <span class="modal-title" id="chartModalTitle">Portfolio Composition</span>
+            <button class="close-modal-btn" onclick="closeGraph()">
+                <i class="fa fa-times"></i>
+            </button>
         </div>
         <div class="chart-container">
             <canvas id="chartCanvas"></canvas>
@@ -2751,7 +2782,7 @@
 
 <script>
     let chartInstance = null;
-    let currentChartType = 'portfolio'; // portfolio or profitability
+    let currentChartType = 'portfolio'; // 'portfolio' or 'profitability'
 
     function togglePortfolioGraph() {
         openChartModal('portfolio');
@@ -2795,19 +2826,16 @@
         }
 
         let groupingSelectId, dataFile, valueKey;
-        let chartType = 'pie'; // Default
         let isProfitability = false;
 
         if (currentChartType === 'portfolio') {
             groupingSelectId = 'grouping-select';
             dataFile = portfolioData;
             valueKey = 'CTVMKTTQ';
-            chartType = 'pie';
         } else {
             groupingSelectId = 'profitability-grouping-select';
             dataFile = profitabilityData;
             valueKey = 'RISTOT';
-            chartType = 'bar'; // Switch to bar for Profitability
             isProfitability = true;
         }
 
@@ -2819,28 +2847,21 @@
         let labels = [];
         let dataValues = [];
         let backgroundColors = [];
-        let borderColors = [];
+
+        console.log(`📊 [Chart Debug] Rendering ${currentChartType} chart.`);
+        console.log(`   - Grouping: ${groupValue || "None"}`);
+        console.log(`   - Value Key: ${valueKey}`);
+        console.log(`   - Raw Data Length: ${dataFile.length}`);
 
         // Filter active data using isAccountSelected
+        // Both portfolio and profitability use 'id_account'
         let activeData = dataFile.filter(item => isAccountSelected(item.id_account));
+        console.log(`   - Data after Account Filter: ${activeData.length}`);
 
         // Filter valid items
         activeData = activeData.filter(item => {
             if (!item) return false;
 
-            // For Profitability (BAR), we prioritize RISTOT
-            if (isProfitability) {
-                // Relaxed quantity check for profitability - sometimes we have profit even if qty is 0 (closed position)
-                let rawVal = item[valueKey]; // RISTOT
-                if (rawVal === undefined || rawVal === null || rawVal === '') return false;
-
-                if (typeof rawVal === 'string') rawVal = rawVal.replace(',', '.');
-                if (isNaN(parseFloat(rawVal))) return false;
-
-                return true;
-            }
-
-            // For Portfolio (PIE), standard checks
             const getQty = (itm) => {
                 if (itm.quantity !== undefined) return parseFloat(itm.quantity);
                 const k = Object.keys(itm).find(key => key.toLowerCase() === 'quantity' || key.toLowerCase() === 'qta' || key.toLowerCase() === 'quantità');
@@ -2848,99 +2869,111 @@
             };
 
             const quantity = getQty(item);
-            if (!showHistorical && (isNaN(quantity) || quantity === 0)) return false;
+            // Note: For profitability, quantity might not always be the filter criteria we want, but keeping consistency.
+            if (!showHistorical && (isNaN(quantity) || quantity === 0)) {
+                // console.log("      Skipped due to historical filter:", item.Ticker);
+                return false;
+            }
 
             let rawVal = item[valueKey];
+            // Handle case where RISTOT might be string
             if (typeof rawVal === 'string') rawVal = rawVal.replace(',', '.');
+
             const val = parseFloat(rawVal);
 
-            if (isNaN(val)) return false;
-            if (chartType === 'pie' && val <= 0) return false;
+            if (isNaN(val) || val <= 0) {
+                if (currentChartType === 'profitability') {
+                    console.warn(`      Skipping ${item.Ticker} (${item.instrument_description}): Invalid Value [${valueKey}=${item[valueKey]}] -> Parsed: ${val}`);
+                }
+                return false;
+            }
+
+            // Check if RISTOT exists specifically as per user request
+            if (valueKey === 'RISTOT' && (item[valueKey] === undefined || item[valueKey] === null || item[valueKey] === '')) {
+                console.warn(`      Skipping ${item.Ticker}: Missing RISTOT`);
+                return false;
+            }
 
             return true;
         });
 
         console.log(`   - Data after Validation Filter: ${activeData.length}`);
-        if (activeData.length > 0) {
-            console.log("   - Sample Item:", activeData[0]);
-        } else {
-            console.warn("   ⚠️ No active data found! Chart will be empty.");
-        }
 
         if (isGrouped) {
             const groups = {};
             activeData.forEach(item => {
                 let groupLabel = 'int.other';
                 const instrumentId = item.id_instrument;
-
-                // Logic specifically for Profitability grouping if needed, otherwise shared
                 if (instrumentId !== undefined && instrumentId !== null) {
                     let classObj = classificationMap[instrumentId];
                     if (!classObj) classObj = classificationMap[String(instrumentId)];
-
-                    // If checking for Sector/Type etc.
                     if (classObj && classObj[groupValue]) groupLabel = classObj[groupValue];
                 }
-
                 if (!groups[groupLabel]) groups[groupLabel] = 0;
-
-                let val = item[valueKey];
-                if (typeof val === 'string') val = parseFloat(val.replace(',', '.'));
-                groups[groupLabel] += (val || 0);
+                groups[groupLabel] += parseFloat(item[valueKey] || 0);
             });
-
             const sortedGroups = Object.entries(groups).sort((a, b) => b[1] - a[1]);
             labels = sortedGroups.map(entry => getTranslation(entry[0]) || entry[0]);
             dataValues = sortedGroups.map(entry => entry[1]);
         } else {
-            // Non-grouped: Use Description and RISTOT
-
-            // Extract values first to allow sorting
-            let itemsWithVals = activeData.map(item => {
-                let label = "Unknown";
-
-                // Try to find description
-                if (item.instrument_description) label = item.instrument_description;
-                else if (item.Ticker) label = item.Ticker;
-                else if (item.id_instrument) {
+            activeData.sort((a, b) => parseFloat(b[valueKey] || 0) - parseFloat(a[valueKey] || 0));
+            labels = activeData.map(item => {
+                if (item.instrument_description) return item.instrument_description;
+                if (item.Ticker) return item.Ticker;
+                if (item.id_instrument) {
                     let classObj = classificationMap[item.id_instrument] || classificationMap[String(item.id_instrument)];
-                    if (classObj && classObj.instrument_description) label = classObj.instrument_description;
+                    if (classObj && classObj.instrument_description) return classObj.instrument_description;
                 }
-
-                let val = item[valueKey];
-                if (typeof val === 'string') val = parseFloat(val.replace(',', '.'));
-
-                return { label, val: val || 0 };
+                return "Unknown";
             });
-
-            // Sort strict descending (Positive to Negative)
-            itemsWithVals.sort((a, b) => b.val - a.val);
-
-            labels = itemsWithVals.map(i => i.label);
-            dataValues = itemsWithVals.map(i => i.val);
+            dataValues = activeData.map(item => parseFloat(item[valueKey] || 0));
         }
-
-        console.log("   ✅ Final Charts Data Prepared:");
-        console.log("   - Labels:", labels);
-        console.log("   - Values:", dataValues);
 
         const grandTotal = dataValues.reduce((a, b) => a + b, 0);
+        backgroundColors = generateTronColors(dataValues.length);
 
-        // Color Logic
-        if (chartType === 'pie') {
-            backgroundColors = generateTronColors(dataValues.length);
-            borderColors = '#000510';
-        } else {
-            // Bar Chart Colors: Cyan for Positive, Pink/Red for Negative
-            backgroundColors = dataValues.map(v => v >= 0 ? 'rgba(0, 243, 255, 0.6)' : 'rgba(255, 0, 85, 0.6)');
-            borderColors = dataValues.map(v => v >= 0 ? '#00f3ff' : '#ff0055');
-        }
-
-        const plugins = [];
-
-        // Custom Labels for PIE
-        if (chartType === 'pie') {
-            plugins.push({
+        chartInstance = new Chart(ctx, {
+            type: 'pie',
+            data: {
+                labels: labels,
+                datasets: [{
+                    data: dataValues,
+                    backgroundColor: backgroundColors,
+                    borderColor: '#000510',
+                    borderWidth: 2,
+                    hoverOffset: 10
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                layout: {
+                    padding: 80
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function (context) {
+                                let label = context.label || '';
+                                if (label) label += ': ';
+                                if (context.parsed !== null) {
+                                    label += new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(context.parsed);
+                                }
+                                return label;
+                            }
+                        },
+                        backgroundColor: 'rgba(0, 5, 16, 0.9)',
+                        titleColor: '#00F3FF',
+                        bodyColor: '#fff',
+                        borderColor: '#0066FF',
+                        borderWidth: 1
+                    }
+                }
+            },
+            plugins: [{
                 id: 'customLabels',
                 afterDraw: (chart) => {
                     const ctx = chart.ctx;
@@ -2962,16 +2995,20 @@
 
                         meta.data.forEach((element, index) => {
                             const value = dataset.data[index];
-                            if (value <= 0) return; // Pie chart only active > 0
+                            if (value === 0) return; // Skip zero values
 
                             const startAngle = element.startAngle;
                             const endAngle = element.endAngle;
                             const midAngle = startAngle + (endAngle - startAngle) / 2;
 
+                            // Determine side
                             const isRight = midAngle < Math.PI / 2 || midAngle > 3 * Math.PI / 2;
+
+                            // Basic Coords
                             const outerRadius = element.outerRadius;
                             const labelRadius = outerRadius + 30;
 
+                            // Ideal Y position
                             const endY = centerY + Math.sin(midAngle) * labelRadius;
                             const endX = centerX + Math.cos(midAngle) * labelRadius;
 
@@ -2979,21 +3016,20 @@
                             const formattedValue = new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(value);
                             const text = `${label}: ${formattedValue}`;
 
-                            // Robustly get slice color
-                            let sliceColor = '#00F3FF';
-                            if (dataset.backgroundColor) {
-                                if (Array.isArray(dataset.backgroundColor)) {
-                                    sliceColor = dataset.backgroundColor[index] || '#00F3FF';
-                                } else {
-                                    sliceColor = dataset.backgroundColor;
-                                }
-                            }
-
                             const item = {
-                                index, text, value, midAngle, outerRadius, labelRadius, isRight, sliceColor,
+                                index,
+                                text,
+                                value,
+                                midAngle,
+                                outerRadius,
+                                labelRadius,
+                                isRight,
                                 startX: centerX + Math.cos(midAngle) * outerRadius,
                                 startY: centerY + Math.sin(midAngle) * outerRadius,
-                                endX, endY, currentY: endY, height: 14
+                                endX,
+                                endY, // Initial desired Y
+                                currentY: endY,
+                                height: 14 // Approximate text height
                             };
 
                             if (isRight) rightLabels.push(item);
@@ -3001,6 +3037,7 @@
                         });
                     });
 
+                    // Anti-Collision Logic (Sort by Y and spread)
                     const resolveCollisions = (items) => {
                         items.sort((a, b) => a.currentY - b.currentY);
                         for (let i = 1; i < items.length; i++) {
@@ -3011,197 +3048,78 @@
                             }
                         }
                     };
+
                     resolveCollisions(rightLabels);
                     resolveCollisions(leftLabels);
 
+                    // Draw Everything
                     const drawLabel = (item) => {
+                        // Re-calculate mid-points for line based on adjusted Y
+                        // Note: Bending the line
                         const midX = centerX + Math.cos(item.midAngle) * (item.outerRadius + 15);
+                        // We keep midY natural to avoid weird sharp angles at start
                         let midY = centerY + Math.sin(item.midAngle) * (item.outerRadius + 15);
+
+                        // If adjustment is huge, maybe adjust midY too? 
+                        // Let's keep it simple: Start -> Mid -> End(Adjusted)
 
                         ctx.beginPath();
                         ctx.moveTo(item.startX, item.startY);
                         ctx.lineTo(midX, midY);
                         ctx.lineTo(item.endX, item.currentY);
-
-                        // Use Slice Color if available, otherwise default Cyan
-                        const color = item.sliceColor || '#00F3FF';
-
-                        ctx.strokeStyle = color;
+                        ctx.strokeStyle = '#00F3FF';
                         ctx.lineWidth = 1;
                         ctx.shadowBlur = 4;
-                        ctx.shadowColor = color;
+                        ctx.shadowColor = '#00F3FF';
                         ctx.stroke();
 
-                        ctx.fillStyle = color;
+                        // Text
+                        ctx.fillStyle = '#00F3FF';
                         ctx.textAlign = item.isRight ? 'left' : 'right';
                         ctx.textBaseline = 'middle';
+                        ctx.shadowBlur = 0;
                         ctx.fillText(item.text, item.isRight ? item.endX + 5 : item.endX - 5, item.currentY);
 
+                        // Dot
                         ctx.beginPath();
                         ctx.arc(item.startX, item.startY, 2, 0, 2 * Math.PI);
                         ctx.fillStyle = '#FFFFFF';
                         ctx.fill();
 
-                        // Inner %
+                        // --- INSIDE PERCENTAGE ---
+                        // Re-calculate inner position based on raw data (not adjusted)
+                        // Make sure slice is visible
                         const element = chart.getDatasetMeta(0).data[item.index];
                         if (!element) return;
+
                         if (element.endAngle - element.startAngle > 0.1) {
                             const percentage = ((item.value / grandTotal) * 100).toFixed(1) + '%';
+
+                            // Position
                             const pX = centerX + Math.cos(item.midAngle) * (item.outerRadius * 0.7);
                             const pY = centerY + Math.sin(item.midAngle) * (item.outerRadius * 0.7);
 
                             ctx.save();
-                            // NO SHADOW for percentage as requested
-                            ctx.shadowBlur = 0;
-                            ctx.shadowColor = 'transparent';
-
+                            // Stroke for readability
                             ctx.font = 'bold 11px "Segoe UI", Roboto, sans-serif';
                             ctx.lineWidth = 2;
-                            // Use pure black outline for contrast
-                            ctx.strokeStyle = '#000000';
+                            ctx.strokeStyle = '#000000'; // Black outline
                             ctx.strokeText(percentage, pX, pY);
 
-                            ctx.fillStyle = '#FFFFFF';
+                            ctx.fillStyle = '#FFFFFF'; // White text
                             ctx.textAlign = 'center';
                             ctx.textBaseline = 'middle';
                             ctx.fillText(percentage, pX, pY);
                             ctx.restore();
                         }
-                    }; // End drawLabel
+                    };
 
                     rightLabels.forEach(drawLabel);
                     leftLabels.forEach(drawLabel);
+
                     ctx.restore();
                 }
-            });
-        }
-
-        // Custom Values for BAR
-        if (chartType === 'bar') {
-            plugins.push({
-                id: 'barValues',
-                afterDatasetsDraw: (chart) => {
-                    const ctx = chart.ctx;
-                    ctx.save();
-                    ctx.font = 'bold 11px "Segoe UI", Roboto, sans-serif';
-                    ctx.textAlign = 'center';
-                    ctx.textBaseline = 'middle';
-
-                    chart.data.datasets.forEach((dataset, i) => {
-                        const meta = chart.getDatasetMeta(i);
-                        if (meta.hidden) return;
-
-                        meta.data.forEach((element, index) => {
-                            const value = dataset.data[index];
-                            if (value === null || value === undefined) return;
-
-                            const formattedValue = new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(value);
-
-                            const x = element.x;
-                            let y = element.y;
-
-                            // Adjust Y position: Above for positive, Below for negative
-                            // Note: in Chart.js, y increases downwards.
-                            // Positive bar goes UP (lower y), Negative bar goes DOWN (higher y).
-                            if (value >= 0) {
-                                y -= 15; // Move up
-                            } else {
-                                y += 15; // Move down
-                            }
-
-                            // Color: Use same as bar or white? White is readable on dark bg.
-                            // Bar color is dataset.backgroundColor[index] (or dataset.backgroundColor if string)
-                            // Let's use the bar color for text to match Tron style, or White.
-                            // User asked "aggiungi sulle barre il valore". White is safest.
-                            // Let's use Cyan/Red match.
-                            ctx.fillStyle = (value >= 0) ? '#00f3ff' : '#ff0055';
-
-                            // Add slight shadow for readability
-                            ctx.shadowColor = 'rgba(0,0,0,0.8)';
-                            ctx.shadowBlur = 2;
-
-                            ctx.fillText(formattedValue, x, y);
-                        });
-                    });
-                    ctx.restore();
-                }
-            });
-        }
-
-        // Chart Options
-        const options = {
-            responsive: true,
-            maintainAspectRatio: false,
-            layout: {
-                padding: chartType === 'pie' ? 80 : 20
-            },
-            plugins: {
-                legend: {
-                    display: false
-                },
-                tooltip: {
-                    callbacks: {
-                        label: function (context) {
-                            let label = context.dataset.label || '';
-                            if (label) label += ': ';
-                            if (context.parsed.y !== null && context.parsed.y !== undefined) { // Bar uses y
-                                label += new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(context.parsed.y);
-                            } else if (context.parsed !== null) { // Pie uses raw parsed
-                                label += new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(context.parsed);
-                            }
-                            return label;
-                        }
-                    },
-                    backgroundColor: 'rgba(0, 5, 16, 0.9)',
-                    titleColor: '#00F3FF',
-                    bodyColor: '#fff',
-                    borderColor: '#0066FF',
-                    borderWidth: 1
-                }
-            }
-        };
-
-        if (chartType === 'bar') {
-            options.scales = {
-                x: {
-                    ticks: {
-                        color: '#e0f7fa',
-                        font: { family: 'Orbitron', size: 10 }
-                    },
-                    grid: {
-                        color: 'rgba(0, 243, 255, 0.1)'
-                    }
-                },
-                y: {
-                    beginAtZero: true,
-                    ticks: {
-                        color: '#e0f7fa',
-                        callback: function (value) {
-                            return new Intl.NumberFormat('it-IT', { notation: "compact", compactDisplay: "short" }).format(value);
-                        }
-                    },
-                    grid: {
-                        color: 'rgba(0, 243, 255, 0.1)'
-                    }
-                }
-            };
-        }
-
-        chartInstance = new Chart(ctx, {
-            type: chartType,
-            data: {
-                labels: labels,
-                datasets: [{
-                    label: getTranslation(currentChartType === 'profitability' ? 'int.profitability' : 'int.portfolio'), // For tooltip
-                    data: dataValues,
-                    backgroundColor: backgroundColors,
-                    borderColor: borderColors,
-                    borderWidth: 2,
-                    hoverOffset: 10
-                }]
-            },
-            options: options,
-            plugins: plugins
+            }]
         });
     }
 
