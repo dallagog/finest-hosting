@@ -598,7 +598,7 @@
             </div>
 
             <!-- FILTRI CON RAPPORTI -->
-            <div class="collapsible-container">
+            <div id="filter-section" class="collapsible-container">
                 <div class="collapsible-header" onclick="toggleCollapsible(this)">
                     <h2 id="filtersPeriodTitle">Filtri Periodo</h2>
                     <span class="toggle-btn">+</span>
@@ -979,38 +979,39 @@
         }
 
         async function updateUserInfo() {
-            if (!filterData || !filterData.Filter) return;
-
-            const f = filterData.Filter;
+            // Get language and currency from filterData or credentials
+            const f = (filterData && filterData.Filter) ? filterData.Filter : {};
+            const userLanguage = f.language || credentials.language || localStorage.getItem('language');
+            const userCurrency = f.currency || localStorage.getItem('currency');
 
             // Language - ensure languages are loaded first
-            if (f.language) {
+            if (userLanguage) {
                 // Reload languages if not available
                 if (availableLanguages.length === 0) {
                     await initializeLanguages();
                 }
-                const langData = availableLanguages.find(l => l.code === f.language);
+                const langData = availableLanguages.find(l => l.code === userLanguage);
                 if (langData) {
                     document.getElementById('languageFlag').textContent = langData.flag;
                     // Use translated language description instead of code
                     const langDescription = getTranslation('int.language.description');
-                    document.getElementById('languageDisplay').textContent = langDescription !== 'int.language.description' ? langDescription : f.language;
+                    document.getElementById('languageDisplay').textContent = langDescription !== 'int.language.description' ? langDescription : userLanguage;
                 } else {
-                    document.getElementById('languageDisplay').textContent = f.language;
+                    document.getElementById('languageDisplay').textContent = userLanguage;
                 }
             }
 
             // Currency - ensure currencies are loaded with correct language
-            if (f.currency) {
+            if (userCurrency) {
                 // Reload currencies if not available or not containing user's currency
-                if (currencies.length === 0 || !currencies.find(c => c.currency === f.currency)) {
-                    await loadCurrencies(f.language || credentials.language);
+                if (currencies.length === 0 || !currencies.find(c => c.currency === userCurrency)) {
+                    await loadCurrencies(userLanguage || 'it_IT');
                 }
-                const currData = currencies.find(c => c.currency === f.currency);
+                const currData = currencies.find(c => c.currency === userCurrency);
                 if (currData && currData['img.currency.flag']) {
-                    document.getElementById('currencyDisplay').textContent = `${currData['img.currency.flag']} ${f.currency}`;
+                    document.getElementById('currencyDisplay').textContent = `${currData['img.currency.flag']} ${userCurrency}`;
                 } else {
-                    document.getElementById('currencyDisplay').textContent = f.currency;
+                    document.getElementById('currencyDisplay').textContent = userCurrency;
                 }
             }
         }
@@ -1167,7 +1168,8 @@
             const container = document.getElementById('reports-list');
             container.innerHTML = '';
 
-            const accountsList = (filterData.Account && filterData.Account.list) ? filterData.Account.list : [];
+            // Handle case when filterData is not loaded yet
+            const accountsList = (filterData && filterData.Account && filterData.Account.list) ? filterData.Account.list : [];
 
             if (!Array.isArray(accountsList) || accountsList.length === 0) {
                 container.innerHTML = `<p style="color:#999;">${getTranslation('int.no.reports') || 'Nessun rapporto trovato'}</p>`;
@@ -2639,6 +2641,7 @@
                 await initializeLanguages();
                 await loadTranslations(credentials.language);
                 updatePageTranslations();
+                await updateUserInfo();  // Show user language/currency early
                 loadMenu();
                 loadFilter();
                 loadPortfolio();
