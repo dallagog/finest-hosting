@@ -592,8 +592,28 @@
             align-items: center;
             width: 100%;
             margin-bottom: 20px;
+            margin-bottom: 20px;
             border-bottom: 1px solid var(--neon-blue);
             padding-bottom: 10px;
+        }
+
+        .chart-back-btn {
+            background: rgba(0, 243, 255, 0.1);
+            border: 1px solid var(--neon-cyan);
+            color: var(--neon-cyan);
+            padding: 5px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            margin-right: 10px;
+            display: none;
+            /* Hidden by default */
+            transition: all 0.3s;
+        }
+
+        .chart-back-btn:hover {
+            background: rgba(0, 243, 255, 0.3);
+            box-shadow: 0 0 10px var(--neon-cyan);
         }
 
         .modal-title {
@@ -2739,10 +2759,13 @@
 <div id="chartModal" class="modal-overlay">
     <div class="modal-content">
         <div class="modal-header">
-            <span class="modal-title" id="chartModalTitle">Portfolio Composition</span>
-            <button class="close-modal-btn" onclick="closeGraph()">
-                <i class="fa fa-times"></i>
-            </button>
+            <div style="display: flex; align-items: center;">
+                <button id="chartBackBtn" class="chart-back-btn" onclick="resetDrillDown()">
+                    <i class="fa fa-arrow-left"></i> <span class="chart-back-text">Back</span>
+                </button>
+                <span id="chartTitle" class="modal-title">Chart</span>
+            </div>
+            <button class="close-modal-btn" onclick="closeGraph()">&times;</button>
         </div>
         <div class="chart-container">
             <canvas id="chartCanvas"></canvas>
@@ -2752,7 +2775,9 @@
 
 <script>
     let chartInstance = null;
-    let currentChartType = 'portfolio'; // 'portfolio' or 'profitability'
+    let currentChartType = 'portfolio'; // portfolio or profitability
+    let drillDownGroup = null; // Group key for drill down
+    let currentChartRawLabels = []; // Store raw keys for mapping clicks inside Pie
 
     function togglePortfolioGraph() {
         openChartModal('portfolio');
@@ -2782,10 +2807,17 @@
     function closeGraph() {
         const modal = document.getElementById('chartModal');
         modal.style.display = 'none';
+        // Reset drill down on close
+        drillDownGroup = null;
         if (chartInstance) {
             chartInstance.destroy();
             chartInstance = null;
         }
+    }
+
+    function resetDrillDown() {
+        drillDownGroup = null;
+        renderGenericChart();
     }
 
     function renderGenericChart() {
@@ -2814,16 +2846,35 @@
 
         // Determine Grouping
         const groupValue = document.getElementById(groupingSelectId).value;
-        const isGrouped = groupValue && groupValue !== "";
+        let isGrouped = groupValue && groupValue !== "";
+
+        // DRILL DOWN LOGIC
+        if (drillDownGroup) {
+            isGrouped = false; // Force ungrouped when drilling down
+        }
 
         // Prepare Data
         let labels = [];
         let dataValues = [];
         let backgroundColors = [];
         let borderColors = [];
+        currentChartRawLabels = []; // Reset raw labels for click mapping
 
         // Filter active data using isAccountSelected
         let activeData = dataFile.filter(item => isAccountSelected(item.id_account));
+
+        // DRILL DOWN FILTER
+        if (drillDownGroup && isGrouped === false) { // Logic only if we came from a group
+            activeData = activeData.filter(item => {
+                const instrumentId = item.id_instrument;
+                let itemGroup = 'int.other';
+                if (instrumentId) {
+                    let classObj = classificationMap[instrumentId] || classificationMap[String(instrumentId)];
+                    if (classObj && classObj[groupValue]) itemGroup = classObj[groupValue];
+                }
+                return itemGroup === drillDownGroup;
+            });
+        }
 
         // Filter valid items
         activeData = activeData.filter(item => {
@@ -2868,7 +2919,7 @@
             console.warn("   ⚠️ No active data found! Chart will be empty.");
         }
 
-        if (isGrouped) {
+        if (isGrouped && !drillDownGroup) {
             const groups = {};
             activeData.forEach(item => {
                 let groupLabel = 'int.other';
@@ -2891,6 +2942,10 @@
             });
 
             const sortedGroups = Object.entries(groups).sort((a, b) => b[1] - a[1]);
+
+            // Capture Raw Keys for click event
+            currentChartRawLabels = sortedGroups.map(entry => entry[0]);
+
             labels = sortedGroups.map(entry => getTranslation(entry[0]) || entry[0]);
             dataValues = sortedGroups.map(entry => entry[1]);
         } else {
@@ -2924,6 +2979,20 @@
         console.log("   ✅ Final Charts Data Prepared:");
         console.log("   - Labels:", labels);
         console.log("   - Values:", dataValues);
+
+        // UI Updates for DrillDown
+        const backBtn = document.getElementById('chartBackBtn');
+        const modalTitle = document.getElementById('chartTitle');
+
+        if (drillDownGroup) {
+            backBtn.style.display = 'inline-block';
+            // Translate group name if possible
+            const groupName = getTranslation(drillDownGroup) || drillDownGroup;
+            modalTitle.textContent = `${groupName} Details`;
+        } else {
+            backBtn.style.display = 'none';
+            modalTitle.textContent = currentChartType === 'profitability' ? getTranslation('int.profitability') : getTranslation('int.portfolio');
+        }
 
         const grandTotal = dataValues.reduce((a, b) => a + b, 0);
 
@@ -3161,6 +3230,23 @@
                 }
             }
         };
+
+        // Click Handler for Pie DrillDown
+        if (chartType === 'pie') {
+            options.onClick = (e, elements) => {
+                if (elements && elements.length > 0) {
+                    if (drillDownGroup) return; // Already drilled down? Or maybe allow further? Current plan: 1 level.
+
+                    const index = elements[0].index;
+                    const groupKey = currentChartRawLabels[index];
+                    if (groupKey) {
+                        console.log("🖱️ Pie Clicked:", groupKey);
+                        drillDownGroup = groupKey;
+                        renderGenericChart();
+                    }
+                }
+            };
+        }
 
         if (chartType === 'bar') {
             options.scales = {
