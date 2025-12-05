@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Dashboard 1.2</title>
+    <title>Dashboard 1.0 sun</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
@@ -2848,8 +2848,15 @@
         let dataValues = [];
         let backgroundColors = [];
 
+        console.log(`📊 [Chart Debug] Rendering ${currentChartType} chart.`);
+        console.log(`   - Grouping: ${groupValue || "None"}`);
+        console.log(`   - Value Key: ${valueKey}`);
+        console.log(`   - Raw Data Length: ${dataFile.length}`);
+
         // Filter active data using isAccountSelected
+        // Both portfolio and profitability use 'id_account'
         let activeData = dataFile.filter(item => isAccountSelected(item.id_account));
+        console.log(`   - Data after Account Filter: ${activeData.length}`);
 
         // Filter valid items
         activeData = activeData.filter(item => {
@@ -2862,11 +2869,35 @@
             };
 
             const quantity = getQty(item);
-            if (!showHistorical && (isNaN(quantity) || quantity === 0)) return false;
+            // Note: For profitability, quantity might not always be the filter criteria we want, but keeping consistency.
+            if (!showHistorical && (isNaN(quantity) || quantity === 0)) {
+                // console.log("      Skipped due to historical filter:", item.Ticker);
+                return false;
+            }
 
-            const val = parseFloat(item[valueKey]);
-            return !isNaN(val) && val > 0;
+            let rawVal = item[valueKey];
+            // Handle case where RISTOT might be string
+            if (typeof rawVal === 'string') rawVal = rawVal.replace(',', '.');
+
+            const val = parseFloat(rawVal);
+
+            if (isNaN(val) || val <= 0) {
+                if (currentChartType === 'profitability') {
+                    console.warn(`      Skipping ${item.Ticker} (${item.instrument_description}): Invalid Value [${valueKey}=${item[valueKey]}] -> Parsed: ${val}`);
+                }
+                return false;
+            }
+
+            // Check if RISTOT exists specifically as per user request
+            if (valueKey === 'RISTOT' && (item[valueKey] === undefined || item[valueKey] === null || item[valueKey] === '')) {
+                console.warn(`      Skipping ${item.Ticker}: Missing RISTOT`);
+                return false;
+            }
+
+            return true;
         });
+
+        console.log(`   - Data after Validation Filter: ${activeData.length}`);
 
         if (isGrouped) {
             const groups = {};
