@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Dashboard 1.0 giove</title>
+    <title>Dashboard 1.0 moon</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
@@ -2935,7 +2935,8 @@
         }
 
         const plugins = [];
-        // Only use custom labels for PIE
+
+        // Custom Labels for PIE
         if (chartType === 'pie') {
             plugins.push({
                 id: 'customLabels',
@@ -2976,8 +2977,13 @@
                             const formattedValue = new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(value);
                             const text = `${label}: ${formattedValue}`;
 
+                            // Get Slice Color for Label
+                            let sliceColor = dataset.backgroundColor[index];
+                            // If color is rgba with opacity, maybe make it solid for text? 
+                            // But usually the neon colors are fine.
+
                             const item = {
-                                index, text, value, midAngle, outerRadius, labelRadius, isRight,
+                                index, text, value, midAngle, outerRadius, labelRadius, isRight, sliceColor,
                                 startX: centerX + Math.cos(midAngle) * outerRadius,
                                 startY: centerY + Math.sin(midAngle) * outerRadius,
                                 endX, endY, currentY: endY, height: 14
@@ -3009,17 +3015,22 @@
                         ctx.moveTo(item.startX, item.startY);
                         ctx.lineTo(midX, midY);
                         ctx.lineTo(item.endX, item.currentY);
-                        ctx.strokeStyle = '#00F3FF';
+
+                        // Use Slice Color
+                        ctx.strokeStyle = item.sliceColor || '#00F3FF';
                         ctx.lineWidth = 1;
                         ctx.shadowBlur = 4;
-                        ctx.shadowColor = '#00F3FF';
+                        ctx.shadowColor = item.sliceColor || '#00F3FF';
                         ctx.stroke();
 
-                        ctx.fillStyle = '#00F3FF';
+                        // Text
+                        ctx.fillStyle = item.sliceColor || '#00F3FF';
                         ctx.textAlign = item.isRight ? 'left' : 'right';
                         ctx.textBaseline = 'middle';
+                        // Shadow persists here for the external label (good)
                         ctx.fillText(item.text, item.isRight ? item.endX + 5 : item.endX - 5, item.currentY);
 
+                        // Dot
                         ctx.beginPath();
                         ctx.arc(item.startX, item.startY, 2, 0, 2 * Math.PI);
                         ctx.fillStyle = '#FFFFFF';
@@ -3032,11 +3043,20 @@
                             const percentage = ((item.value / grandTotal) * 100).toFixed(1) + '%';
                             const pX = centerX + Math.cos(item.midAngle) * (item.outerRadius * 0.7);
                             const pY = centerY + Math.sin(item.midAngle) * (item.outerRadius * 0.7);
+
                             ctx.save();
+                            // Reset Shadow for clean percentage
+                            ctx.shadowBlur = 0;
+                            ctx.shadowColor = 'transparent';
+
+                            // Use filled text without request for "shadow" (outline)
+                            // User asked "senza l'ombra". 
+                            // I'll keep the outline (stroke) for readability on colors but ensure NO SHADOW BLUR.
                             ctx.font = 'bold 11px "Segoe UI", Roboto, sans-serif';
                             ctx.lineWidth = 2;
-                            ctx.strokeStyle = '#000000';
+                            ctx.strokeStyle = 'rgba(0,0,0,0.8)'; // Dark semi-transparent outline
                             ctx.strokeText(percentage, pX, pY);
+
                             ctx.fillStyle = '#FFFFFF';
                             ctx.textAlign = 'center';
                             ctx.textBaseline = 'middle';
@@ -3046,6 +3066,58 @@
                     };
                     rightLabels.forEach(drawLabel);
                     leftLabels.forEach(drawLabel);
+                    ctx.restore();
+                }
+            });
+        }
+
+        // Custom Values for BAR
+        if (chartType === 'bar') {
+            plugins.push({
+                id: 'barValues',
+                afterDatasetsDraw: (chart) => {
+                    const ctx = chart.ctx;
+                    ctx.save();
+                    ctx.font = 'bold 11px "Segoe UI", Roboto, sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+
+                    chart.data.datasets.forEach((dataset, i) => {
+                        const meta = chart.getDatasetMeta(i);
+                        if (meta.hidden) return;
+
+                        meta.data.forEach((element, index) => {
+                            const value = dataset.data[index];
+                            if (value === null || value === undefined) return;
+
+                            const formattedValue = new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(value);
+
+                            const x = element.x;
+                            let y = element.y;
+
+                            // Adjust Y position: Above for positive, Below for negative
+                            // Note: in Chart.js, y increases downwards.
+                            // Positive bar goes UP (lower y), Negative bar goes DOWN (higher y).
+                            if (value >= 0) {
+                                y -= 15; // Move up
+                            } else {
+                                y += 15; // Move down
+                            }
+
+                            // Color: Use same as bar or white? White is readable on dark bg.
+                            // Bar color is dataset.backgroundColor[index] (or dataset.backgroundColor if string)
+                            // Let's use the bar color for text to match Tron style, or White.
+                            // User asked "aggiungi sulle barre il valore". White is safest.
+                            // Let's use Cyan/Red match.
+                            ctx.fillStyle = (value >= 0) ? '#00f3ff' : '#ff0055';
+
+                            // Add slight shadow for readability
+                            ctx.shadowColor = 'rgba(0,0,0,0.8)';
+                            ctx.shadowBlur = 2;
+
+                            ctx.fillText(formattedValue, x, y);
+                        });
+                    });
                     ctx.restore();
                 }
             });
