@@ -575,7 +575,7 @@
             if (data.info && (!data.info.email || !data.info.language || !data.info.timezone || !data.info.currency)) {
               requestMissingInfo(data.info, username, password);
             } else {
-              openDashboard(username, data.token, data.language);
+              openDashboard(username, data.token, data.language, data.currency);
             }
           } else {
             alert(getTranslation('int.creation.success') || "Account created successfully!");
@@ -673,10 +673,12 @@
     }
 
     // Apertura dashboard
-    function openDashboard(username, token, lang) {
+    // Apertura dashboard
+    function openDashboard(username, token, lang, currency) {
       localStorage.setItem("username", username);
       localStorage.setItem("token", token);
       localStorage.setItem("language", lang);
+      if (currency) localStorage.setItem("currency", currency);
       window.location.href = "dashboard.html";
     }
 

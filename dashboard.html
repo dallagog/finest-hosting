@@ -1177,9 +1177,11 @@
                 // Expand the filter section if no accounts
                 const filterSection = document.getElementById('filter-section');
                 if (filterSection) {
-                    filterSection.style.display = 'block';
                     const content = filterSection.querySelector('.collapsible-content');
-                    if (content) content.style.display = 'block';
+                    if (content) {
+                        content.classList.add('active');
+                        content.style.display = 'block'; // Force visibility
+                    }
                     const toggleBtn = filterSection.querySelector('.toggle-btn');
                     if (toggleBtn) toggleBtn.textContent = '-';
                 }
@@ -1187,9 +1189,14 @@
                 // Highlight the "Crea rapporto" button
                 const createBtn = document.getElementById('createAccountBtn');
                 if (createBtn) {
+                    console.log("✨ Highlighting Create Account button");
                     createBtn.style.animation = 'pulse-highlight 1.5s infinite';
                     createBtn.style.border = '2px solid var(--neon-cyan)';
                     createBtn.style.boxShadow = '0 0 15px var(--neon-cyan)';
+                    // Ensure it's scrolled into view
+                    setTimeout(() => {
+                        createBtn.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }, 500);
                 }
 
                 return;
