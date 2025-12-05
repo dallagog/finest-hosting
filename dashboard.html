@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Dashboard 1.0 sun</title>
+    <title>Dashboard 1.0 moon</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
@@ -2835,6 +2835,14 @@
             return true;
         });
 
+        console.log(`   - Data after Validation Filter: ${activeData.length}`);
+        if (activeData.length > 0) {
+            console.log("   - Sample Item:", activeData[0]);
+            if (isProfitability) console.log("   - RISTOT Value of sample:", activeData[0][valueKey]);
+        } else {
+            console.warn("   ⚠️ No active data found! Chart will be empty.");
+        }
+
         if (isGrouped) {
             const groups = {};
             activeData.forEach(item => {
@@ -2865,6 +2873,10 @@
             });
             dataValues = activeData.map(item => parseFloat(item[valueKey] || 0));
         }
+
+        console.log("   ✅ Final Charts Data Prepared:");
+        console.log("   - Labels:", labels);
+        console.log("   - Values:", dataValues);
 
         const grandTotal = dataValues.reduce((a, b) => a + b, 0);
 
