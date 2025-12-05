@@ -2862,39 +2862,44 @@
         activeData = activeData.filter(item => {
             if (!item) return false;
 
-            const getQty = (itm) => {
-                if (itm.quantity !== undefined) return parseFloat(itm.quantity);
-                const k = Object.keys(itm).find(key => key.toLowerCase() === 'quantity' || key.toLowerCase() === 'qta' || key.toLowerCase() === 'quantità');
-                return k ? parseFloat(itm[k]) : 0;
-            };
+            if (isProfitability) {
+                // For profitability: Only check if RISTOT exists and is valid
+                let rawVal = item.RISTOT;
+                if (rawVal === undefined || rawVal === null || rawVal === '') return false;
 
-            const quantity = getQty(item);
-            // Note: For profitability, quantity might not always be the filter criteria we want, but keeping consistency.
-            if (!showHistorical && (isNaN(quantity) || quantity === 0)) {
-                // console.log("      Skipped due to historical filter:", item.Ticker);
-                return false;
-            }
+                if (typeof rawVal === 'string') rawVal = rawVal.replace(',', '.');
+                const val = parseFloat(rawVal);
 
-            let rawVal = item[valueKey];
-            // Handle case where RISTOT might be string
-            if (typeof rawVal === 'string') rawVal = rawVal.replace(',', '.');
-
-            const val = parseFloat(rawVal);
-
-            if (isNaN(val) || val <= 0) {
-                if (currentChartType === 'profitability') {
-                    console.warn(`      Skipping ${item.Ticker} (${item.instrument_description}): Invalid Value [${valueKey}=${item[valueKey]}] -> Parsed: ${val}`);
+                if (isNaN(val)) {
+                    console.warn(`      Skipping ${item.Ticker}: Invalid RISTOT [${item.RISTOT}] -> Parsed: ${val}`);
+                    return false;
                 }
-                return false;
-            }
 
-            // Check if RISTOT exists specifically as per user request
-            if (valueKey === 'RISTOT' && (item[valueKey] === undefined || item[valueKey] === null || item[valueKey] === '')) {
-                console.warn(`      Skipping ${item.Ticker}: Missing RISTOT`);
-                return false;
-            }
+                // Allow both positive and negative values for profitability
+                return true;
+            } else {
+                // For portfolio: Check quantity and positive values only
+                const getQty = (itm) => {
+                    if (itm.quantity !== undefined) return parseFloat(itm.quantity);
+                    const k = Object.keys(itm).find(key => key.toLowerCase() === 'quantity' || key.toLowerCase() === 'qta' || key.toLowerCase() === 'quantità');
+                    return k ? parseFloat(itm[k]) : 0;
+                };
 
-            return true;
+                const quantity = getQty(item);
+                if (!showHistorical && (isNaN(quantity) || quantity === 0)) {
+                    return false;
+                }
+
+                let rawVal = item[valueKey];
+                if (typeof rawVal === 'string') rawVal = rawVal.replace(',', '.');
+                const val = parseFloat(rawVal);
+
+                if (isNaN(val) || val <= 0) {
+                    return false;
+                }
+
+                return true;
+            }
         });
 
         console.log(`   - Data after Validation Filter: ${activeData.length}`);
