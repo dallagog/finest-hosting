@@ -552,6 +552,73 @@
             color: var(--neon-blue);
             margin-right: 5px;
         }
+
+        /* Graph Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            backdrop-filter: blur(5px);
+        }
+
+        .modal-content {
+            background: rgba(0, 20, 40, 0.95);
+            border: 1px solid var(--neon-cyan);
+            border-radius: 8px;
+            padding: 20px;
+            width: 80%;
+            max-width: 800px;
+            max-height: 90vh;
+            position: relative;
+            box-shadow: 0 0 20px rgba(0, 243, 255, 0.3);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            border-bottom: 1px solid var(--neon-blue);
+            padding-bottom: 10px;
+        }
+
+        .modal-title {
+            color: var(--neon-cyan);
+            font-size: 1.5em;
+            margin: 0;
+            text-transform: uppercase;
+        }
+
+        .close-modal {
+            background: transparent;
+            border: none;
+            color: var(--neon-cyan);
+            font-size: 24px;
+            cursor: pointer;
+            padding: 0;
+            margin: 0;
+        }
+
+        .close-modal:hover {
+            color: #fff;
+            text-shadow: 0 0 10px var(--neon-cyan);
+            box-shadow: none;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 60vh;
+            width: 100%;
+        }
     </style>
 </head>
 
@@ -2623,347 +2690,222 @@
             }
         }
 
-        async function logout() {
-            try {
-                const payload = {
-                    username: credentials.username,
-                    token: credentials.token,
-                    language: credentials.language,
-                    filter: credentials.filter
-                };
-                const response = await fetch(`${API_URL}/logout`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
+        // ========== CHART LOGIC ==========
+        let portfolioChart = null;
+        let chartModal = null;
+
+        function initChartModal() {
+            // Create modal DOM structure dynamically if it doesn't exist
+            if (!document.getElementById('graphModal')) {
+                const modal = document.createElement('div');
+                modal.id = 'graphModal';
+                modal.className = 'modal-overlay';
+
+                modal.innerHTML = `
+<div class="modal-content">
+    <div class="modal-header">
+        <h2 class="modal-title" id="graphTitle">Portfolio Distribution</h2>
+        <button class="close-modal" onclick="closeGraph()">×</button>
+    </div>
+    <div class="chart-container">
+        <canvas id="portfolioChart"></canvas>
+    </div>
+</div>
+`;
+
+                document.body.appendChild(modal);
+
+                // Close on click outside
+                modal.addEventListener('click', (e) => {
+                    if (e.target === modal) closeGraph();
                 });
-                const data = await response.json().catch(() => null);
-                if (data && data.status === 'ok') {
-                    showMessage(getTranslation('int.logout.success') || 'Logout effettuato con successo', 'success');
-                    localStorage.clear();
-                    setTimeout(() => { window.location.href = 'login.html'; }, 1000);
-                } else {
-                    showMessage(getTranslation('int.error.logout') || 'Errore durante il logout', 'error');
+            }
+            chartModal = document.getElementById('graphModal');
+        }
+
+        function toggleGraph() {
+            initChartModal();
+            chartModal.style.display = 'flex';
+            renderPortfolioChart();
+
+            // Translate title
+            const titleEl = document.getElementById('graphTitle');
+            if (titleEl) {
+                // Determine title based on grouping
+                const groupingDesc =
+                    document.getElementById('grouping-select').options[document.getElementById('grouping-select').selectedIndex].text;
+                const isGrouped = document.getElementById('grouping-select').value !== "";
+
+                let graphTitle = getTranslation('int.graph') || 'Grafico';
+                if (isGrouped) {
+                    graphTitle += ` - ${groupingDesc}`;
                 }
-            } catch (error) {
-                console.error('logout error', error);
-                showMessage((getTranslation('int.connection.error') || 'Errore di connessione') + ': ' + (error.message || error), 'error');
+                titleEl.textContent = graphTitle;
             }
         }
 
-        function openTradingDashboard() {
-            // Open trading dashboard with credentials
-            const params = new URLSearchParams({
-                username: credentials.username,
-                token: credentials.token,
-                language: credentials.language
+        function closeGraph() {
+            if (chartModal) {
+                chartModal.style.display = 'none';
+            }
+        }
+
+        function renderPortfolioChart() {
+            const ctx = document.getElementById('portfolioChart').getContext('2d');
+
+            // Destroy existing chart if any
+            if (portfolioChart) {
+                portfolioChart.destroy();
+            }
+
+            // Determine Data Source (same logic as renderTable)
+            let displayData = [];
+            if (selectedAccounts.length > 0) {
+                displayData = portfolioData.filter(item => isAccountSelected(item.id_account));
+            } else {
+                displayData = [...portfolioData]; // Clone
+            }
+
+            // Filter out zero balance rows if historical mode is disabled
+            if (!showHistorical) {
+                displayData = displayData.filter(item => {
+                    const quantity = item.quantity;
+                    if (!quantity) return true;
+                    const quantityStr = String(quantity);
+                    const colonIndex = quantityStr.indexOf(':');
+                    const numericValue = colonIndex > 0
+                        ? parseFloat(quantityStr.substring(0, colonIndex))
+                        : parseFloat(quantityStr);
+                    return numericValue !== 0;
+                });
+            }
+
+            // Aggregation
+            const currentGroup = document.getElementById('grouping-select').value;
+            let labels = [];
+            let dataValues = [];
+            let colors = [];
+
+            if (currentGroup) {
+                // GROUPED DATA
+                const groups = {};
+                displayData.forEach(item => {
+                    let groupVal = 'int.other';
+                    const instrumentId = item.id_instrument;
+                    if (instrumentId !== undefined && instrumentId !== null) {
+                        let classObj = classificationMap[instrumentId];
+                        if (!classObj) {
+                            // Try parsing keys if they are strings
+                            // This part mimics updateTableGrouping logic simplistically
+                            const keys = Object.keys(classificationMap);
+                            const match = keys.find(k => k == instrumentId); // loose equality
+                            if (match) classObj = classificationMap[match];
+                        }
+
+                        if (classObj && classObj[currentGroup]) {
+                            groupVal = classObj[currentGroup];
+                        }
+                    } else if (item[currentGroup]) {
+                        groupVal = item[currentGroup];
+                    }
+
+                    // Translate group value if possible (e.g. Sector names might not be translated but 'int.other' is)
+                    const label = getTranslation(groupVal) || groupVal;
+
+                    if (!groups[label]) groups[label] = 0;
+
+                    // Sum CTVMKTTQ
+                    let val = item.CTVMKTTQ;
+                    if (typeof val === 'string') {
+                        val = val.replace(/[^\d.-]/g, ''); // Remove currency symbols if any, though raw data should be clean-ish or handled
+                        val = parseFloat(val);
+                    }
+                    if (!isNaN(val)) {
+                        groups[label] += val;
+                    }
+                });
+
+                // Sort groups by value desc
+                const sortedGroups = Object.entries(groups).sort((a, b) => b[1] - a[1]);
+                labels = sortedGroups.map(e => e[0]);
+                dataValues = sortedGroups.map(e => e[1]);
+
+            } else {
+                // SINGLE ITEMS
+                // Sort by value desc to look nice
+                displayData.sort((a, b) => {
+                    let valA = parseFloat(a.CTVMKTTQ) || 0;
+                    let valB = parseFloat(b.CTVMKTTQ) || 0;
+                    return valB - valA;
+                });
+
+                labels = displayData.map(item => {
+                    // Use description or ticker
+                    return item.instrument_description || item.Ticker;
+                });
+                dataValues = displayData.map(item => {
+                    let val = item.CTVMKTTQ;
+                    if (typeof val === 'string') val = parseFloat(val.replace(/[^\d.-]/g, ''));
+                    return val || 0;
+                });
+            }
+
+            // Generate Tron Colors
+            colors = dataValues.map((_, i) => {
+                const hue = (180 + (i * 30)) % 360; // Start at Cyan (180), rotate
+                return `hsla(${hue}, 100%, 50%, 0.6)`;
             });
-            window.open(`dashboard-trading.html?${params.toString()}`, '_blank');
+            const borderColors = dataValues.map((_, i) => {
+                const hue = (180 + (i * 30)) % 360;
+                return `hsla(${hue}, 100%, 70%, 1)`;
+            });
+
+            // Create Chart
+            portfolioChart = new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: dataValues,
+                        backgroundColor: colors,
+                        borderColor: borderColors,
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'right',
+                            labels: {
+                                color: '#e0f7fa',
+                                font: {
+                                    family: "'Orbitron', sans-serif"
+                                }
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function (context) {
+                                    let label = context.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    if (context.parsed !== null) {
+                                        label += new Intl.NumberFormat(credentials.language || 'it-IT', {
+                                            style: 'currency', currency: 'EUR'
+                                        }).format(context.parsed);
+                                    }
+                                    return label;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
         }
-
-        function redirectToLogin() {
-            localStorage.clear();
-            window.location.href = 'login.html';
-        }
-
-        // ========== INITIALIZATION ==========
-        window.addEventListener('load', async () => {
-            if (checkAuthentication()) {
-                await initializeLanguages();
-                await loadTranslations(credentials.language);
-                updatePageTranslations();
-                await updateUserInfo();  // Show user language/currency early
-                loadMenu();
-                loadFilter();
-                loadPortfolio();
-                loadProfitability();
-                // loadPDF(); // Manual load only
-            }
-        });
-
-        document.getElementById('apply-filters')?.addEventListener('click', (e) => {
-            e.preventDefault();
-            applyFiltersAndSave();
-        });
     </script>
 </body>
 
 </html>
-        /* Graph Modal */
-        .modal-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.8);
-            display: none;
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-            backdrop-filter: blur(5px);
-        }
-
-        .modal-content {
-            background: rgba(0, 20, 40, 0.95);
-            border: 1px solid var(--neon-cyan);
-            border-radius: 8px;
-            padding: 20px;
-            width: 80%;
-            max-width: 800px;
-            max-height: 90vh;
-            position: relative;
-            box-shadow: 0 0 20px rgba(0, 243, 255, 0.3);
-            display: flex;
-            flex-direction: column;
-        }
-
-        .modal-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-            border-bottom: 1px solid var(--neon-blue);
-            padding-bottom: 10px;
-        }
-
-        .modal-title {
-            color: var(--neon-cyan);
-            font-size: 1.5em;
-            margin: 0;
-            text-transform: uppercase;
-        }
-
-        .close-modal {
-            background: transparent;
-            border: none;
-            color: var(--neon-cyan);
-            font-size: 24px;
-            cursor: pointer;
-            padding: 0;
-            margin: 0;
-        }
-
-        .close-modal:hover {
-            color: #fff;
-            text-shadow: 0 0 10px var(--neon-cyan);
-            box-shadow: none;
-        }
-
-        .chart-container {
-            position: relative;
-            height: 60vh;
-            width: 100%;
-        }
-
-// ========== CHART LOGIC ==========
-let portfolioChart = null;
-let chartModal = null;
-
-function initChartModal() {
-    // Create modal DOM structure dynamically if it doesn't exist
-    if (!document.getElementById('graphModal')) {
-        const modal = document.createElement('div');
-        modal.id = 'graphModal';
-        modal.className = 'modal-overlay';
-
-        modal.innerHTML = `
-                    <div class="modal-content">
-                        <div class="modal-header">
-                            <h2 class="modal-title" id="graphTitle">Portfolio Distribution</h2>
-                            <button class="close-modal" onclick="closeGraph()">×</button>
-                        </div>
-                        <div class="chart-container">
-                            <canvas id="portfolioChart"></canvas>
-                        </div>
-                    </div>
-                `;
-
-        document.body.appendChild(modal);
-
-        // Close on click outside
-        modal.addEventListener('click', (e) => {
-            if (e.target === modal) closeGraph();
-        });
-    }
-    chartModal = document.getElementById('graphModal');
-}
-
-function toggleGraph() {
-    initChartModal();
-    chartModal.style.display = 'flex';
-    renderPortfolioChart();
-
-    // Translate title
-    const titleEl = document.getElementById('graphTitle');
-    if (titleEl) {
-        // Determine title based on grouping
-        const groupingDesc = document.getElementById('grouping-select').options[document.getElementById('grouping-select').selectedIndex].text;
-        const isGrouped = document.getElementById('grouping-select').value !== "";
-
-        let graphTitle = getTranslation('int.graph') || 'Grafico';
-        if (isGrouped) {
-            graphTitle += ` - ${groupingDesc}`;
-        }
-        titleEl.textContent = graphTitle;
-    }
-}
-
-function closeGraph() {
-    if (chartModal) {
-        chartModal.style.display = 'none';
-    }
-}
-
-function renderPortfolioChart() {
-    const ctx = document.getElementById('portfolioChart').getContext('2d');
-
-    // Destroy existing chart if any
-    if (portfolioChart) {
-        portfolioChart.destroy();
-    }
-
-    // Determine Data Source (same logic as renderTable)
-    let displayData = [];
-    if (selectedAccounts.length > 0) {
-        displayData = portfolioData.filter(item => isAccountSelected(item.id_account));
-    } else {
-        displayData = [...portfolioData]; // Clone
-    }
-
-    // Filter out zero balance rows if historical mode is disabled
-    if (!showHistorical) {
-        displayData = displayData.filter(item => {
-            const quantity = item.quantity;
-            if (!quantity) return true;
-            const quantityStr = String(quantity);
-            const colonIndex = quantityStr.indexOf(':');
-            const numericValue = colonIndex > 0
-                ? parseFloat(quantityStr.substring(0, colonIndex))
-                : parseFloat(quantityStr);
-            return numericValue !== 0;
-        });
-    }
-
-    // Aggregation
-    const currentGroup = document.getElementById('grouping-select').value;
-    let labels = [];
-    let dataValues = [];
-    let colors = [];
-
-    if (currentGroup) {
-        // GROUPED DATA
-        const groups = {};
-        displayData.forEach(item => {
-            let groupVal = 'int.other';
-            const instrumentId = item.id_instrument;
-            if (instrumentId !== undefined && instrumentId !== null) {
-                let classObj = classificationMap[instrumentId];
-                if (!classObj) {
-                    // Try parsing keys if they are strings
-                    // This part mimics updateTableGrouping logic simplistically
-                    const keys = Object.keys(classificationMap);
-                    const match = keys.find(k => k == instrumentId); // loose equality
-                    if (match) classObj = classificationMap[match];
-                }
-
-                if (classObj && classObj[currentGroup]) {
-                    groupVal = classObj[currentGroup];
-                }
-            } else if (item[currentGroup]) {
-                groupVal = item[currentGroup];
-            }
-
-            // Translate group value if possible (e.g. Sector names might not be translated but 'int.other' is)
-            const label = getTranslation(groupVal) || groupVal;
-
-            if (!groups[label]) groups[label] = 0;
-
-            // Sum CTVMKTTQ
-            let val = item.CTVMKTTQ;
-            if (typeof val === 'string') {
-                val = val.replace(/[^\d.-]/g, ''); // Remove currency symbols if any, though raw data should be clean-ish or handled
-                val = parseFloat(val);
-            }
-            if (!isNaN(val)) {
-                groups[label] += val;
-            }
-        });
-
-        // Sort groups by value desc
-        const sortedGroups = Object.entries(groups).sort((a, b) => b[1] - a[1]);
-        labels = sortedGroups.map(e => e[0]);
-        dataValues = sortedGroups.map(e => e[1]);
-
-    } else {
-        // SINGLE ITEMS
-        // Sort by value desc to look nice
-        displayData.sort((a, b) => {
-            let valA = parseFloat(a.CTVMKTTQ) || 0;
-            let valB = parseFloat(b.CTVMKTTQ) || 0;
-            return valB - valA;
-        });
-
-        labels = displayData.map(item => {
-            // Use description or ticker
-            return item.instrument_description || item.Ticker;
-        });
-        dataValues = displayData.map(item => {
-            let val = item.CTVMKTTQ;
-            if (typeof val === 'string') val = parseFloat(val.replace(/[^\d.-]/g, ''));
-            return val || 0;
-        });
-    }
-
-    // Generate Tron Colors
-    colors = dataValues.map((_, i) => {
-        const hue = (180 + (i * 30)) % 360; // Start at Cyan (180), rotate
-        return `hsla(${hue}, 100%, 50%, 0.6)`;
-    });
-    const borderColors = dataValues.map((_, i) => {
-        const hue = (180 + (i * 30)) % 360;
-        return `hsla(${hue}, 100%, 70%, 1)`;
-    });
-
-    // Create Chart
-    portfolioChart = new Chart(ctx, {
-        type: 'pie',
-        data: {
-            labels: labels,
-            datasets: [{
-                data: dataValues,
-                backgroundColor: colors,
-                borderColor: borderColors,
-                borderWidth: 1
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    position: 'right',
-                    labels: {
-                        color: '#e0f7fa',
-                        font: {
-                            family: "'Orbitron', sans-serif"
-                        }
-                    }
-                },
-                tooltip: {
-                    callbacks: {
-                        label: function (context) {
-                            let label = context.label || '';
-                            if (label) {
-                                label += ': ';
-                            }
-                            if (context.parsed !== null) {
-                                label += new Intl.NumberFormat(credentials.language || 'it-IT', { style: 'currency', currency: 'EUR' }).format(context.parsed);
-                            }
-                            return label;
-                        }
-                    }
-                }
-            }
-        }
-    });
-}
