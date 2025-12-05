@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Dashboard a.3</title>
+    <title>Dashboard a.4</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 
     <style>
@@ -2620,6 +2620,69 @@
                 showMessage((getTranslation('int.error.pdf') || 'Errore nel caricamento del PDF') + ': ' + (error.message || error), 'error');
             }
         }
+
+        // ========== LOGOUT ==========
+        async function logout() {
+            try {
+                const payload = {
+                    username: credentials.username,
+                    token: credentials.token,
+                    language: credentials.language,
+                    filter: credentials.filter
+                };
+                const response = await fetch(`${API_URL}/logout`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await response.json().catch(() => null);
+                if (data && data.status === 'ok') {
+                    showMessage(getTranslation('int.logout.success') || 'Logout effettuato con successo', 'success');
+                    localStorage.clear();
+                    setTimeout(() => { window.location.href = 'login.html'; }, 1000);
+                } else {
+                    showMessage(getTranslation('int.error.logout') || 'Errore durante il logout', 'error');
+                }
+            } catch (error) {
+                console.error('logout error', error);
+                showMessage((getTranslation('int.connection.error') || 'Errore di connessione') + ': ' + (error.message || error), 'error');
+            }
+        }
+
+        function openTradingDashboard() {
+            // Open trading dashboard with credentials
+            const params = new URLSearchParams({
+                username: credentials.username,
+                token: credentials.token,
+                language: credentials.language
+            });
+            window.open(`dashboard-trading.html?${params.toString()}`, '_blank');
+        }
+
+        function redirectToLogin() {
+            localStorage.clear();
+            window.location.href = 'login.html';
+        }
+
+        // ========== INITIALIZATION ==========
+        window.addEventListener('load', async () => {
+            if (checkAuthentication()) {
+                await initializeLanguages();
+                await loadTranslations(credentials.language);
+                updatePageTranslations();
+                await updateUserInfo();  // Show user language/currency early
+                loadMenu();
+                loadFilter();
+                loadPortfolio();
+                loadProfitability();
+                // loadPDF(); // Manual load only
+            }
+        });
+
+        document.getElementById('apply-filters')?.addEventListener('click', (e) => {
+            e.preventDefault();
+            applyFiltersAndSave();
+        });
 
     </script>
 </body>
