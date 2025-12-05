@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Dashboard 1.0 sun</title>
+    <title>Dashboard 1.0 luna</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
@@ -2980,8 +2980,18 @@
                             const formattedValue = new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(value);
                             const text = `${label}: ${formattedValue}`;
 
+                            // Robustly get slice color
+                            let sliceColor = '#00F3FF';
+                            if (dataset.backgroundColor) {
+                                if (Array.isArray(dataset.backgroundColor)) {
+                                    sliceColor = dataset.backgroundColor[index] || '#00F3FF';
+                                } else {
+                                    sliceColor = dataset.backgroundColor;
+                                }
+                            }
+
                             const item = {
-                                index, text, value, midAngle, outerRadius, labelRadius, isRight,
+                                index, text, value, midAngle, outerRadius, labelRadius, isRight, sliceColor,
                                 startX: centerX + Math.cos(midAngle) * outerRadius,
                                 startY: centerY + Math.sin(midAngle) * outerRadius,
                                 endX, endY, currentY: endY, height: 14
@@ -3013,13 +3023,17 @@
                         ctx.moveTo(item.startX, item.startY);
                         ctx.lineTo(midX, midY);
                         ctx.lineTo(item.endX, item.currentY);
-                        ctx.strokeStyle = '#00F3FF';
+
+                        // Use Slice Color if available, otherwise default Cyan
+                        const color = item.sliceColor || '#00F3FF';
+
+                        ctx.strokeStyle = color;
                         ctx.lineWidth = 1;
                         ctx.shadowBlur = 4;
-                        ctx.shadowColor = '#00F3FF';
+                        ctx.shadowColor = color;
                         ctx.stroke();
 
-                        ctx.fillStyle = '#00F3FF';
+                        ctx.fillStyle = color;
                         ctx.textAlign = item.isRight ? 'left' : 'right';
                         ctx.textBaseline = 'middle';
                         ctx.fillText(item.text, item.isRight ? item.endX + 5 : item.endX - 5, item.currentY);
@@ -3038,9 +3052,13 @@
                             const pY = centerY + Math.sin(item.midAngle) * (item.outerRadius * 0.7);
 
                             ctx.save();
+                            // NO SHADOW for percentage as requested
+                            ctx.shadowBlur = 0;
+                            ctx.shadowColor = 'transparent';
+
                             ctx.font = 'bold 11px "Segoe UI", Roboto, sans-serif';
                             ctx.lineWidth = 2;
-                            // Restoring previous style: Black outline, White Text
+                            // Use pure black outline for contrast
                             ctx.strokeStyle = '#000000';
                             ctx.strokeText(percentage, pX, pY);
 
@@ -3050,7 +3068,8 @@
                             ctx.fillText(percentage, pX, pY);
                             ctx.restore();
                         }
-                    };
+                    }; // End drawLabel
+
                     rightLabels.forEach(drawLabel);
                     leftLabels.forEach(drawLabel);
                     ctx.restore();
@@ -3195,6 +3214,7 @@
             const color = `hsl(${hue}, 90%, 60%)`;
             colors.push(color);
         }
+        return colors;
     }
 
     // Ensure close on outside click
