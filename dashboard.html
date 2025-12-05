@@ -2899,34 +2899,88 @@
 
         console.log(`   - Data after Validation Filter: ${activeData.length}`);
 
-        if (isGrouped) {
+        // PROFITABILITY: Use bar chart with RISTOT
+        if (isProfitability) {
             const groups = {};
-            activeData.forEach(item => {
-                let groupLabel = 'int.other';
-                const instrumentId = item.id_instrument;
-                if (instrumentId !== undefined && instrumentId !== null) {
-                    let classObj = classificationMap[instrumentId];
-                    if (!classObj) classObj = classificationMap[String(instrumentId)];
-                    if (classObj && classObj[groupValue]) groupLabel = classObj[groupValue];
-                }
-                if (!groups[groupLabel]) groups[groupLabel] = 0;
-                groups[groupLabel] += parseFloat(item[valueKey] || 0);
-            });
-            const sortedGroups = Object.entries(groups).sort((a, b) => b[1] - a[1]);
-            labels = sortedGroups.map(entry => getTranslation(entry[0]) || entry[0]);
-            dataValues = sortedGroups.map(entry => entry[1]);
+
+            if (isGrouped) {
+                // Grouped: Sum RISTOT by group
+                activeData.forEach(item => {
+                    let groupLabel = 'int.other';
+                    const instrumentId = item.id_instrument;
+
+                    if (instrumentId !== undefined && instrumentId !== null) {
+                        let classObj = classificationMap[instrumentId];
+                        if (!classObj) classObj = classificationMap[String(instrumentId)];
+                        if (classObj && classObj[groupValue]) groupLabel = classObj[groupValue];
+                    }
+
+                    if (!groups[groupLabel]) groups[groupLabel] = 0;
+
+                    let ristot = item.RISTOT;
+                    if (typeof ristot === 'string') ristot = parseFloat(ristot.replace(',', '.'));
+                    groups[groupLabel] += (ristot || 0);
+                });
+
+                // Sort by value (descending: largest to smallest)
+                const sortedGroups = Object.entries(groups).sort((a, b) => b[1] - a[1]);
+                labels = sortedGroups.map(entry => getTranslation(entry[0]) || entry[0]);
+                dataValues = sortedGroups.map(entry => entry[1]);
+            } else {
+                // Not grouped: Use instrument description and RISTOT
+                activeData.sort((a, b) => {
+                    const valA = parseFloat(a.RISTOT || 0);
+                    const valB = parseFloat(b.RISTOT || 0);
+                    return valB - valA; // Descending
+                });
+
+                labels = activeData.map(item => {
+                    if (item.instrument_description) return item.instrument_description;
+                    if (item.Ticker) return item.Ticker;
+                    if (item.id_instrument) {
+                        let classObj = classificationMap[item.id_instrument] || classificationMap[String(item.id_instrument)];
+                        if (classObj && classObj.instrument_description) return classObj.instrument_description;
+                    }
+                    return "Unknown";
+                });
+
+                dataValues = activeData.map(item => {
+                    let ristot = item.RISTOT;
+                    if (typeof ristot === 'string') ristot = parseFloat(ristot.replace(',', '.'));
+                    return ristot || 0;
+                });
+            }
         } else {
-            activeData.sort((a, b) => parseFloat(b[valueKey] || 0) - parseFloat(a[valueKey] || 0));
-            labels = activeData.map(item => {
-                if (item.instrument_description) return item.instrument_description;
-                if (item.Ticker) return item.Ticker;
-                if (item.id_instrument) {
-                    let classObj = classificationMap[item.id_instrument] || classificationMap[String(item.id_instrument)];
-                    if (classObj && classObj.instrument_description) return classObj.instrument_description;
-                }
-                return "Unknown";
-            });
-            dataValues = activeData.map(item => parseFloat(item[valueKey] || 0));
+            // PORTFOLIO: Use pie chart with CTVMKTTQ
+            if (isGrouped) {
+                const groups = {};
+                activeData.forEach(item => {
+                    let groupLabel = 'int.other';
+                    const instrumentId = item.id_instrument;
+                    if (instrumentId !== undefined && instrumentId !== null) {
+                        let classObj = classificationMap[instrumentId];
+                        if (!classObj) classObj = classificationMap[String(instrumentId)];
+                        if (classObj && classObj[groupValue]) groupLabel = classObj[groupValue];
+                    }
+                    if (!groups[groupLabel]) groups[groupLabel] = 0;
+                    groups[groupLabel] += parseFloat(item[valueKey] || 0);
+                });
+                const sortedGroups = Object.entries(groups).sort((a, b) => b[1] - a[1]);
+                labels = sortedGroups.map(entry => getTranslation(entry[0]) || entry[0]);
+                dataValues = sortedGroups.map(entry => entry[1]);
+            } else {
+                activeData.sort((a, b) => parseFloat(b[valueKey] || 0) - parseFloat(a[valueKey] || 0));
+                labels = activeData.map(item => {
+                    if (item.instrument_description) return item.instrument_description;
+                    if (item.Ticker) return item.Ticker;
+                    if (item.id_instrument) {
+                        let classObj = classificationMap[item.id_instrument] || classificationMap[String(item.id_instrument)];
+                        if (classObj && classObj.instrument_description) return classObj.instrument_description;
+                    }
+                    return "Unknown";
+                });
+                dataValues = activeData.map(item => parseFloat(item[valueKey] || 0));
+            }
         }
 
         const grandTotal = dataValues.reduce((a, b) => a + b, 0);
