@@ -1125,6 +1125,25 @@
                 console.error('Errore loadFilter', error);
                 showMessage((getTranslation('int.error.loading.filters') || 'Errore nel caricamento dei filtri') + ': ' + (error.message || error), 'error');
                 document.getElementById('reports-list').innerHTML = '<p style="color:#c33;">' + (getTranslation('int.error.loading.account') || 'Errore nel caricamento dei rapporti') + '</p>';
+
+                // Force open filters on error/missing data
+                const filterSection = document.getElementById('filter-section');
+                if (filterSection) {
+                    const content = filterSection.querySelector('.collapsible-content');
+                    if (content) {
+                        content.classList.add('active');
+                        content.style.display = 'block';
+                    }
+                    const toggleBtn = filterSection.querySelector('.toggle-btn');
+                    if (toggleBtn) toggleBtn.textContent = '-';
+                }
+                const createBtn = document.getElementById('createAccountBtn');
+                if (createBtn) {
+                    createBtn.style.animation = 'pulse-highlight 1.5s infinite';
+                    createBtn.style.border = '2px solid var(--neon-cyan)';
+                    createBtn.style.boxShadow = '0 0 15px var(--neon-cyan)';
+                    setTimeout(() => createBtn.scrollIntoView({ behavior: 'smooth', block: 'center' }), 500);
+                }
             }
         }
 
@@ -1172,7 +1191,7 @@
             const accountsList = (filterData && filterData.Account && filterData.Account.list) ? filterData.Account.list : [];
 
             if (!Array.isArray(accountsList) || accountsList.length === 0) {
-                container.innerHTML = `<p style="color:#999;">${getTranslation('int.no.reports') || 'Nessun rapporto trovato'}</p>`;
+                container.innerHTML = `<p style="color:#999;">${getTranslation('int.error.loading.account') || 'Nessun rapporto trovato'}</p>`;
 
                 // Expand the filter section if no accounts
                 const filterSection = document.getElementById('filter-section');
