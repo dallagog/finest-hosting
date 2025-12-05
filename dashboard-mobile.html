@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="it">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+    <title>Dashboard Mobile</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&display=swap');
+
+        :root {
+            --bg-color: #050505;
+            --neon-cyan: #00f3ff;
+            --neon-blue: #0066ff;
+            --glass-bg: rgba(0, 20, 40, 0.85);
+            --text-color: #e0f7fa;
+            --border-color: var(--neon-cyan);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html,
+        body {
+            height: 100%;
+            overflow: hidden;
+        }
+
+        body {
+            font-family: 'Orbitron', sans-serif;
+            background-color: var(--bg-color);
+            background-image:
+                linear-gradient(rgba(0, 243, 255, 0.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 243, 255, 0.05) 1px, transparent 1px);
+            background-size: 30px 30px;
+            color: var(--text-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            perspective: 1000px;
+        }
+
+        /* Header */
+        .header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(0, 20, 40, 0.9);
+            border-bottom: 1px solid var(--neon-blue);
+            z-index: 100;
+        }
+
+        .header h1 {
+            font-size: 1rem;
+            color: var(--neon-cyan);
+            text-shadow: 0 0 10px var(--neon-cyan);
+        }
+
+        .back-btn {
+            padding: 8px 16px;
+            background: rgba(0, 102, 255, 0.2);
+            border: 1px solid var(--neon-blue);
+            color: var(--neon-cyan);
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 12px;
+            transition: all 0.3s;
+        }
+
+        .back-btn:hover {
+            background: var(--neon-blue);
+            color: #fff;
+            box-shadow: 0 0 15px var(--neon-blue);
+        }
+
+        /* Cube Container */
+        .cube-container {
+            width: 200px;
+            height: 200px;
+            position: relative;
+            transform-style: preserve-3d;
+            animation: rotate-cube 20s infinite linear;
+        }
+
+        .cube-container.paused {
+            animation-play-state: paused;
+        }
+
+        /* Cube Face */
+        .cube-face {
+            position: absolute;
+            width: 200px;
+            height: 200px;
+            background: rgba(0, 20, 40, 0.7);
+            border: 2px solid var(--neon-cyan);
+            box-shadow:
+                0 0 15px rgba(0, 243, 255, 0.3),
+                inset 0 0 30px rgba(0, 243, 255, 0.1);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            backface-visibility: visible;
+        }
+
+        .cube-face:hover {
+            background: rgba(0, 40, 80, 0.8);
+            box-shadow:
+                0 0 25px rgba(0, 243, 255, 0.5),
+                inset 0 0 40px rgba(0, 243, 255, 0.2);
+        }
+
+        .cube-face i {
+            font-size: 40px;
+            color: var(--neon-cyan);
+            margin-bottom: 10px;
+            text-shadow: 0 0 15px var(--neon-cyan);
+        }
+
+        .cube-face span {
+            font-size: 12px;
+            color: var(--text-color);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* Cube Face Positions */
+        .front {
+            transform: translateZ(100px);
+        }
+
+        .back {
+            transform: rotateY(180deg) translateZ(100px);
+        }
+
+        .right {
+            transform: rotateY(90deg) translateZ(100px);
+        }
+
+        .left {
+            transform: rotateY(-90deg) translateZ(100px);
+        }
+
+        .top {
+            transform: rotateX(90deg) translateZ(100px);
+        }
+
+        .bottom {
+            transform: rotateX(-90deg) translateZ(100px);
+        }
+
+        @keyframes rotate-cube {
+            0% {
+                transform: rotateX(-15deg) rotateY(0deg);
+            }
+
+            100% {
+                transform: rotateX(-15deg) rotateY(360deg);
+            }
+        }
+
+        /* Controls */
+        .controls {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 15px;
+            z-index: 100;
+        }
+
+        .control-btn {
+            padding: 12px 20px;
+            background: rgba(0, 102, 255, 0.2);
+            border: 1px solid var(--neon-blue);
+            color: var(--neon-cyan);
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        .control-btn:hover {
+            background: var(--neon-blue);
+            color: #fff;
+            box-shadow: 0 0 15px var(--neon-blue);
+        }
+
+        .control-btn.active {
+            background: var(--neon-cyan);
+            color: #000;
+        }
+
+        /* Glow effect for the scene */
+        .glow-ring {
+            position: absolute;
+            width: 300px;
+            height: 300px;
+            border: 1px solid rgba(0, 243, 255, 0.2);
+            border-radius: 50%;
+            animation: pulse 3s ease-in-out infinite;
+        }
+
+        .glow-ring:nth-child(2) {
+            width: 350px;
+            height: 350px;
+            animation-delay: 0.5s;
+        }
+
+        .glow-ring:nth-child(3) {
+            width: 400px;
+            height: 400px;
+            animation-delay: 1s;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 0.3;
+                transform: scale(1);
+            }
+
+            50% {
+                opacity: 0.6;
+                transform: scale(1.05);
+            }
+        }
+
+        /* Menu faces content */
+        .face-content {
+            text-align: center;
+        }
+
+        /* Touch interaction hint */
+        .touch-hint {
+            position: fixed;
+            bottom: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: rgba(0, 243, 255, 0.5);
+            font-size: 11px;
+            text-align: center;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="header">
+        <button class="back-btn" onclick="goToDesktop()">
+            <i class="fa fa-desktop"></i> Desktop
+        </button>
+        <h1>FINANCIAL ESTIMATES</h1>
+        <button class="back-btn" onclick="logout()">
+            <i class="fa fa-sign-out"></i>
+        </button>
+    </div>
+
+    <!-- Glow Rings -->
+    <div class="glow-ring"></div>
+    <div class="glow-ring"></div>
+    <div class="glow-ring"></div>
+
+    <!-- 3D Cube -->
+    <div class="cube-container" id="cube">
+        <div class="cube-face front" onclick="navigateTo('dashboard.html')">
+            <i class="fa fa-chart-pie"></i>
+            <span>Portfolio</span>
+        </div>
+        <div class="cube-face back" onclick="navigateTo('dashboard-trading.html')">
+            <i class="fa fa-rocket"></i>
+            <span>Trading</span>
+        </div>
+        <div class="cube-face right" onclick="navigateTo('dashboard-trade.html')">
+            <i class="fa fa-exchange"></i>
+            <span>Movimenti</span>
+        </div>
+        <div class="cube-face left" onclick="navigateTo('dashboard-account.html')">
+            <i class="fa fa-university"></i>
+            <span>Rapporti</span>
+        </div>
+        <div class="cube-face top" onclick="navigateTo('dashboard-instrument.html')">
+            <i class="fa fa-list"></i>
+            <span>Strumenti</span>
+        </div>
+        <div class="cube-face bottom" onclick="navigateTo('dataentry.html')">
+            <i class="fa fa-edit"></i>
+            <span>Data Entry</span>
+        </div>
+    </div>
+
+    <div class="touch-hint">
+        Tocca il cubo per navigare • Scorri per ruotare
+    </div>
+
+    <div class="controls">
+        <button class="control-btn" id="pauseBtn" onclick="toggleRotation()">
+            <i class="fa fa-pause"></i>
+        </button>
+        <button class="control-btn" onclick="resetRotation()">
+            <i class="fa fa-refresh"></i>
+        </button>
+    </div>
+
+    <script>
+        const cube = document.getElementById('cube');
+        const pauseBtn = document.getElementById('pauseBtn');
+        let isPaused = false;
+        let startX, startY, currentX = 0, currentY = -15;
+
+        // Toggle rotation
+        function toggleRotation() {
+            isPaused = !isPaused;
+            cube.classList.toggle('paused', isPaused);
+            pauseBtn.innerHTML = isPaused ? '<i class="fa fa-play"></i>' : '<i class="fa fa-pause"></i>';
+        }
+
+        // Reset rotation
+        function resetRotation() {
+            cube.style.transform = '';
+            cube.classList.remove('paused');
+            isPaused = false;
+            pauseBtn.innerHTML = '<i class="fa fa-pause"></i>';
+        }
+
+        // Navigate to page
+        function navigateTo(page) {
+            window.location.href = page;
+        }
+
+        // Go to desktop version
+        function goToDesktop() {
+            sessionStorage.setItem('forceDesktop', 'true');
+            window.location.href = 'dashboard.html';
+        }
+
+        // Logout
+        function logout() {
+            sessionStorage.clear();
+            window.location.href = 'index.html';
+        }
+
+        // Touch controls for manual rotation
+        cube.addEventListener('touchstart', (e) => {
+            if (!isPaused) {
+                toggleRotation();
+            }
+            startX = e.touches[0].clientX;
+            startY = e.touches[0].clientY;
+        });
+
+        cube.addEventListener('touchmove', (e) => {
+            if (!isPaused) return;
+            const deltaX = e.touches[0].clientX - startX;
+            const deltaY = e.touches[0].clientY - startY;
+            currentY += deltaX * 0.5;
+            currentX -= deltaY * 0.5;
+            cube.style.transform = `rotateX(${currentX}deg) rotateY(${currentY}deg)`;
+            startX = e.touches[0].clientX;
+            startY = e.touches[0].clientY;
+        });
+
+        // Mouse controls for desktop testing
+        let isDragging = false;
+        cube.addEventListener('mousedown', (e) => {
+            if (!isPaused) {
+                toggleRotation();
+            }
+            isDragging = true;
+            startX = e.clientX;
+            startY = e.clientY;
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (!isDragging || !isPaused) return;
+            const deltaX = e.clientX - startX;
+            const deltaY = e.clientY - startY;
+            currentY += deltaX * 0.5;
+            currentX -= deltaY * 0.5;
+            cube.style.transform = `rotateX(${currentX}deg) rotateY(${currentY}deg)`;
+            startX = e.clientX;
+            startY = e.clientY;
+        });
+
+        document.addEventListener('mouseup', () => {
+            isDragging = false;
+        });
+    </script>
+</body>
+
+</html>
