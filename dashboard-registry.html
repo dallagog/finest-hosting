@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Crea Anagrafica 1.0 moon</title>
+    <title>Crea Anagrafica 1.1</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&display=swap');
@@ -235,8 +235,6 @@
                     <label for="type" id="typeLabel">Tipo:</label>
                     <select id="type" required>
                         <option value="">-- seleziona --</option>
-                        <option value="person">Persona</option>
-                        <option value="firm">Azienda</option>
                     </select>
                 </div>
 
@@ -256,7 +254,41 @@
         let credentials = { username: '', token: '', language: '', filter: '' };
         let translations = {};
         let registryDefaults = null;
+        let domainData = {};
         const API_URL = "https://feweb-tunnel.fe-web.eu";
+
+        async function loadDomainData() {
+            try {
+                const response = await fetch('lang/domine.json');
+                if (!response.ok) throw new Error('Domain file not found');
+                domainData = await response.json();
+            } catch (error) {
+                console.error('Error loading domain data:', error);
+            }
+        }
+
+        function populateTypeDropdown() {
+            const typeSelect = document.getElementById('type');
+
+            // Rimuovi tutte le opzioni tranne la prima
+            while (typeSelect.options.length > 1) {
+                typeSelect.remove(1);
+            }
+
+            // Carica i valori da domine.json -> registry_type
+            if (domainData.registry_type && domainData.registry_type.length > 0) {
+                domainData.registry_type.forEach(item => {
+                    const option = document.createElement('option');
+                    // Estrai il valore dopo i due punti (es: "dom.registry_type:person" -> "person")
+                    const value = item.split(':')[1] || item;
+                    option.value = value;
+                    // Usa la chiave completa per la traduzione
+                    option.textContent = getTranslation(item) || value;
+                    option.setAttribute('data-translation-key', item);
+                    typeSelect.appendChild(option);
+                });
+            }
+        }
 
         function getCredentialsFromURL() {
             const params = new URLSearchParams(window.location.search);
@@ -365,8 +397,15 @@
             // Update select options
             const typeSelect = document.getElementById('type');
             typeSelect.options[0].textContent = getTranslation('int.select.option') || '-- seleziona --';
-            typeSelect.options[1].textContent = getTranslation('dom.registry_type:person') || 'Persona';
-            typeSelect.options[2].textContent = getTranslation('dom.registry_type:firm') || 'Azienda';
+
+            // Aggiorna le traduzioni delle opzioni dinamiche
+            for (let i = 1; i < typeSelect.options.length; i++) {
+                const option = typeSelect.options[i];
+                const translationKey = option.getAttribute('data-translation-key');
+                if (translationKey) {
+                    option.textContent = getTranslation(translationKey) || option.value;
+                }
+            }
         }
 
         function showMessage(text, type) {
@@ -406,7 +445,9 @@
 
         window.addEventListener('load', async () => {
             if (getCredentialsFromURL()) {
+                await loadDomainData();
                 await loadTranslations(credentials.language);
+                populateTypeDropdown();
                 await loadRegistryDefaults();
             }
         });

@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Crea Rapporto 1.0 moon</title>
+    <title>Crea Rapporto 1.2</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&display=swap');
@@ -233,6 +233,11 @@
                 transform: rotate(360deg);
             }
         }
+
+        .form-disabled {
+            opacity: 0.5;
+            pointer-events: none;
+        }
     </style>
 </head>
 
@@ -385,14 +390,19 @@
                 if (data && data.registries && data.registries.length > 0) {
                     registries = data.registries;
                     populateRegistriesDropdown();
+                    enableForm();
                 } else {
-                    // Se non ci sono registries, evidenzia il pulsante
+                    // Se non ci sono registries, evidenzia il pulsante e disabilita il form
                     document.getElementById('createRegistryBtn').classList.add('highlight');
+                    disableForm();
+                    showMessage(getTranslation('int.error.loading.registry') || 'Nessuna anagrafica trovata. Crea una nuova anagrafica per procedere.', 'error');
                 }
             } catch (error) {
                 console.error('Error loading registries:', error);
-                // In caso di errore, evidenzia il pulsante
+                // In caso di errore, evidenzia il pulsante e disabilita il form
                 document.getElementById('createRegistryBtn').classList.add('highlight');
+                disableForm();
+                showMessage(getTranslation('int.error.loading.registry') || 'Errore nel caricamento delle anagrafiche. Crea una nuova anagrafica per procedere.', 'error');
             }
         }
 
@@ -410,6 +420,28 @@
                 option.value = registry.id_user || registry.id_registry || '';
                 option.textContent = `${registry.name || ''} ${registry.surname || ''} - ${registry.description || ''}`.trim();
                 select.appendChild(option);
+            });
+        }
+
+        function disableForm() {
+            const form = document.getElementById('accountForm');
+            form.classList.add('form-disabled');
+
+            // Disabilita tutti gli input e select
+            const inputs = form.querySelectorAll('input, select, button[type="submit"]');
+            inputs.forEach(input => {
+                input.disabled = true;
+            });
+        }
+
+        function enableForm() {
+            const form = document.getElementById('accountForm');
+            form.classList.remove('form-disabled');
+
+            // Abilita tutti gli input e select
+            const inputs = form.querySelectorAll('input, select, button[type="submit"]');
+            inputs.forEach(input => {
+                input.disabled = false;
             });
         }
 
