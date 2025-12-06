@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Crea Anagrafica 1.1</title>
+    <title>Crea Anagrafica 1.3</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&display=swap');
@@ -259,7 +259,7 @@
 
         async function loadDomainData() {
             try {
-                const response = await fetch('lang/domine.json');
+                const response = await fetch('domine.json');
                 if (!response.ok) throw new Error('Domain file not found');
                 domainData = await response.json();
             } catch (error) {
@@ -428,7 +428,7 @@
         document.getElementById('registryForm').addEventListener('submit', async function (e) {
             e.preventDefault();
 
-            const formData = {
+            const registryData = {
                 id_user: document.getElementById('id_user').value,
                 description: document.getElementById('description').value,
                 name: document.getElementById('name').value,
@@ -436,11 +436,45 @@
                 type: document.getElementById('type').value
             };
 
-            // Placeholder for actual API call
-            showMessage('Funzionalità di salvataggio non ancora implementata. Dati: ' + JSON.stringify(formData), 'error');
+            try {
+                showMessage('Salvataggio in corso...', 'info');
 
-            // TODO: Implement actual registry creation via API
-            // const result = await createRegistry(formData);
+                const payload = {
+                    username: credentials.username,
+                    token: credentials.token,
+                    registry: JSON.stringify(registryData)
+                };
+
+                const response = await fetch(`${API_URL}/putregistry`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to save registry');
+                }
+
+                const result = await response.json();
+
+                // Verifica se la risposta indica successo
+                if (result.success || result.status === 'ok' || result.registry) {
+                    showMessage(getTranslation('int.success.save') || 'Anagrafica salvata con successo!', 'success');
+
+                    // Opzionalmente, chiudi la finestra dopo un breve delay
+                    setTimeout(() => {
+                        window.close();
+                    }, 2000);
+                } else {
+                    throw new Error(result.message || 'Unknown error');
+                }
+
+            } catch (error) {
+                console.error('Error saving registry:', error);
+                showMessage(getTranslation('int.error.save') || 'Errore durante il salvataggio: ' + error.message, 'error');
+            }
         });
 
         window.addEventListener('load', async () => {
