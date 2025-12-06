@@ -383,6 +383,14 @@
                     registry: ""
                 };
 
+                // Visualizza i dati del payload nella console
+                console.log('=== PAYLOAD DEBUG ===');
+                console.log('Username:', payload.username);
+                console.log('Token:', payload.token);
+                console.log('Language:', payload.language);
+                console.log('Registry:', payload.registry);
+                console.log('====================');
+
                 const response = await fetch(`${API_URL}/getregistries`, {
                     method: 'POST',
                     headers: {
@@ -391,16 +399,10 @@
                     body: JSON.stringify(payload)
                 });
 
+
                 if (!response.ok) {
                     throw new Error('Failed to fetch registries');
                 }
-
-                // Visualizza i dati del payload nella console
-                console.log('=== PAYLOAD DEBUG ===');
-                console.log('Username:', payload.username);
-                console.log('Token:', payload.token);
-                console.log('Language:', payload.language);
-                console.log('====================');
 
                 const data = await response.json();
 
@@ -423,13 +425,20 @@
             }
         }
 
+
         function populateRegistriesDropdown() {
             const select = document.getElementById('id_registry');
 
             // Rimuovi tutte le opzioni tranne la prima
-            while (select.options.length > 1) {
-                select.remove(1);
-            }
+            //while (select.options.length > 1) {
+            //    select.remove(1);
+            //}
+
+            // Visualizza i dati del payload nella console
+            console.log('=== populateRegistriesDropdown ===');
+            console.log('Registry:', registry);
+            console.log('Registries:', registries);
+            console.log('====================');
 
             // Aggiungi le registries
             registries.forEach(registry => {
