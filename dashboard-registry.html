@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Crea Anagrafica 1.5</title>
+    <title>Crea Anagrafica 1.6</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&display=swap');
@@ -491,6 +491,15 @@
                     registry: JSON.stringify(registryData)
                 };
 
+                // Visualizza i dati del payload nella console
+                console.log('=== PAYLOAD DEBUG ===');
+                console.log('Payload completo:', payload);
+                console.log('Registry data (oggetto):', registryData);
+                console.log('Registry data (JSON string):', JSON.stringify(registryData));
+                console.log('Username:', credentials.username);
+                console.log('Token:', credentials.token);
+                console.log('====================');
+
                 const response = await fetch(`${API_URL}/putregistry`, {
                     method: 'POST',
                     headers: {
@@ -499,11 +508,15 @@
                     body: JSON.stringify(payload)
                 });
 
+                console.log('Response status:', response.status);
+                console.log('Response ok:', response.ok);
+
                 if (!response.ok) {
                     throw new Error('Failed to save registry');
                 }
 
                 const result = await response.json();
+                console.log('Response result:', result);
 
                 // Verifica se la risposta indica successo
                 if (result.success || result.status === 'ok' || result.registry) {
