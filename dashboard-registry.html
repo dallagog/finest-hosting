@@ -358,7 +358,8 @@
                     body: JSON.stringify({
                         username: credentials.username,
                         token: credentials.token,
-                        id_user: credentials.username
+                        language: credentials.language,
+                        registry: ""
                     })
                 });
 
@@ -373,24 +374,16 @@
                     registryDefaults = data.registries[0];
                     applyDefaults(registryDefaults);
                     showMessage('Valori di default caricati. Puoi modificarli prima di salvare.', 'info');
-                } else {
-                    // Nessun default disponibile, imposta solo l'id_user
-                    document.getElementById('id_user').value = credentials.username;
                 }
 
                 showLoading(false);
             } catch (error) {
                 console.error('Error loading registry defaults:', error);
                 showLoading(false);
-                // In caso di errore, imposta comunque l'id_user
-                document.getElementById('id_user').value = credentials.username;
             }
         }
 
         function applyDefaults(defaults) {
-            if (defaults.id_user) {
-                document.getElementById('id_user').value = defaults.id_user;
-            }
             if (defaults.description) {
                 document.getElementById('description').value = defaults.description;
             }
@@ -428,7 +421,6 @@
         function updatePageTranslations() {
             document.getElementById('pageTitle').textContent = getTranslation('int.newregistry') || 'Crea Nuova Anagrafica';
             document.getElementById('closeText').textContent = getTranslation('int.close');
-            document.getElementById('idUserLabel').textContent = getTranslation('int.registry.id_user') || 'ID Utente' + ':';
             document.getElementById('descriptionLabel').textContent = getTranslation('int.registry.description') || 'Descrizione' + ':';
             document.getElementById('nameLabel').textContent = getTranslation('int.registry.name') || 'Nome' + ':';
             document.getElementById('surnameLabel').textContent = getTranslation('int.registry.surname') || 'Cognome' + ':';
