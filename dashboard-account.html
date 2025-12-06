@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Crea Rapporto 1.4</title>
+    <title>Crea Rapporto 1.5</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&display=swap');
@@ -360,6 +360,14 @@
             credentials.language = params.get('language') || 'it_IT';
             credentials.filter = params.get('filter') || '';
 
+            // Visualizza i dati del payload nella console
+            console.log('=== CREDENTIALS From URL ===');
+            console.log('Username:', credentials.username);
+            console.log('Token:', credentials.token);
+            console.log('Language:', credentials.language);
+            console.log('Filter:', credentials.filter);
+            console.log('====================');
+
             if (!credentials.username || !credentials.token) {
                 showMessage('Credenziali mancanti', 'error');
                 return false;
@@ -377,10 +385,13 @@
                     body: JSON.stringify({
                         username: credentials.username,
                         token: credentials.token,
-                        language: credentials.language,
-                        registry: ''
+                        id_user: credentials.username
                     })
                 });
+
+                if (!response.ok) {
+                    throw new Error('Failed to fetch registries');
+                }
 
                 // Visualizza i dati del payload nella console
                 console.log('=== PAYLOAD DEBUG ===');
