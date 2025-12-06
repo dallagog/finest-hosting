@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Crea Rapporto 1.6</title>
+    <title>Crea Rapporto 1.7</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&display=swap');
@@ -365,7 +365,6 @@
             console.log('Username:', credentials.username);
             console.log('Token:', credentials.token);
             console.log('Language:', credentials.language);
-            console.log('Filter:', credentials.filter);
             console.log('====================');
 
             if (!credentials.username || !credentials.token) {
@@ -377,17 +376,19 @@
 
         async function loadRegistries() {
             try {
-                const response = await fetch(`${API_URL}/getregistries`, {
+                const payload = {
+                    username: credentials.username,
+                    token: credentials.token,
+                    language: credentials.language,
+                    registry: JSON.stringify("")
+                };
+
+                const response = await fetch(`${API_URL}/getregistry`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify({
-                        username: credentials.username,
-                        token: credentials.token,
-                        language: credentials.language,
-                        registry: ""
-                    })
+                    body: JSON.stringify(payload)
                 });
 
                 if (!response.ok) {
@@ -396,14 +397,10 @@
 
                 // Visualizza i dati del payload nella console
                 console.log('=== PAYLOAD DEBUG ===');
-                console.log('Username:', credentials.username);
-                console.log('Token:', credentials.token);
-                console.log('Language:', credentials.language);
+                console.log('Username:', payload.username);
+                console.log('Token:', payload.token);
+                console.log('Language:', payload.language);
                 console.log('====================');
-
-                if (!response.ok) {
-                    throw new Error('Failed to fetch registries');
-                }
 
                 const data = await response.json();
 
