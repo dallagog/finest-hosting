@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Crea Anagrafica 1.3</title>
+    <title>Crea Anagrafica 1.5</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&display=swap');
@@ -255,16 +255,42 @@
         let translations = {};
         let registryDefaults = null;
         let domainData = {};
+        let manifestData = {};
         const API_URL = "https://feweb-tunnel.fe-web.eu";
+
+        async function loadManifestData() {
+            try {
+                const response = await fetch('manifest.json');
+                if (!response.ok) throw new Error('Manifest file not found');
+                manifestData = await response.json();
+            } catch (error) {
+                console.error('Error loading manifest data:', error);
+            }
+        }
 
         async function loadDomainData() {
             try {
-                const response = await fetch('domine.json');
+                const response = await fetch('lang/domine.json');
                 if (!response.ok) throw new Error('Domain file not found');
                 domainData = await response.json();
             } catch (error) {
                 console.error('Error loading domain data:', error);
             }
+        }
+
+        function parseFieldDefinition(fieldDef) {
+            // Se il campo contiene @, dividi il nome del campo dal gruppo di dominio
+            if (fieldDef.includes('@')) {
+                const parts = fieldDef.split('@');
+                return {
+                    fieldName: parts[0],
+                    domainGroup: parts[1]
+                };
+            }
+            return {
+                fieldName: fieldDef,
+                domainGroup: null
+            };
         }
 
         function populateTypeDropdown() {
@@ -275,9 +301,29 @@
                 typeSelect.remove(1);
             }
 
-            // Carica i valori da domine.json -> registry_type
-            if (domainData.registry_type && domainData.registry_type.length > 0) {
-                domainData.registry_type.forEach(item => {
+            // Cerca nel manifest.json il campo type per dashboard-registry
+            let domainGroup = null;
+
+            if (manifestData['dashboard-registry'] && Array.isArray(manifestData['dashboard-registry'])) {
+                // Cerca un campo che contiene "type" e "@"
+                const typeField = manifestData['dashboard-registry'].find(field =>
+                    field.includes('type') && field.includes('@')
+                );
+
+                if (typeField) {
+                    const parsed = parseFieldDefinition(typeField);
+                    domainGroup = parsed.domainGroup;
+                }
+            }
+
+            // Se non troviamo nel manifest, usa il fallback
+            if (!domainGroup) {
+                domainGroup = 'registry_type';
+            }
+
+            // Carica i valori da domine.json usando il gruppo dominio
+            if (domainData[domainGroup] && domainData[domainGroup].length > 0) {
+                domainData[domainGroup].forEach(item => {
                     const option = document.createElement('option');
                     // Estrai il valore dopo i due punti (es: "dom.registry_type:person" -> "person")
                     const value = item.split(':')[1] || item;
@@ -479,6 +525,7 @@
 
         window.addEventListener('load', async () => {
             if (getCredentialsFromURL()) {
+                await loadManifestData();
                 await loadDomainData();
                 await loadTranslations(credentials.language);
                 populateTypeDropdown();
