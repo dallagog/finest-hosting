@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Crea Anagrafica 2.2</title>
+    <title>Crea Anagrafica 2.3</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&display=swap');
@@ -301,27 +301,33 @@
             let domainGroup = null;
 
             if (manifestData['dashboard-registry'] && Array.isArray(manifestData['dashboard-registry'])) {
-                // Cerca un campo che contiene "type" e "@"
+                // Cerca un campo che contiene "type_registry" e "@"
                 const typeField = manifestData['dashboard-registry'].find(field =>
-                    field.includes('type_registry') && field.includes('@')
+                    typeof field === 'string' && field.includes('type_registry') && field.includes('@')
                 );
 
                 if (typeField) {
                     const parsed = parseFieldDefinition(typeField);
                     domainGroup = parsed.domainGroup;
+                    console.log('Domain group found in manifest:', domainGroup);
                 }
             }
 
             // Se non troviamo nel manifest, usa il fallback
             if (!domainGroup) {
                 domainGroup = 'type_registry';
+                console.log('Using fallback domain group:', domainGroup);
             }
+
+            console.log('Looking for domain data with key:', domainGroup);
+            console.log('Available domain keys:', Object.keys(domainData));
 
             // Carica i valori da domine.json usando il gruppo dominio
             if (domainData[domainGroup] && domainData[domainGroup].length > 0) {
+                console.log('Found domain data:', domainData[domainGroup]);
                 domainData[domainGroup].forEach(item => {
                     const option = document.createElement('option');
-                    // Estrai il valore dopo i due punti (es: "dom.registry_type:person" -> "person")
+                    // Estrai il valore dopo i due punti (es: "dom.type_registry:person" -> "person")
                     const value = item.split(':')[1] || item;
                     option.value = value;
                     // Usa la chiave completa per la traduzione
@@ -329,6 +335,9 @@
                     option.setAttribute('data-translation-key', item);
                     typeSelect.appendChild(option);
                 });
+                console.log('Populated', typeSelect.options.length - 1, 'options');
+            } else {
+                console.error('Domain group not found or empty:', domainGroup);
             }
         }
 
