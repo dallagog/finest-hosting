@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Dashboard 1.6</title>
+    <title>Dashboard 1.7</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
@@ -1148,9 +1148,9 @@
                 showMessage(getTranslation('int.loading.filters') || 'Caricamento filtri e account in corso...', 'loading');
 
                 const payload = {
-                    username: credentials.username,
-                    token: credentials.token,
-                    language: credentials.language,
+                    username: credentials.username || "",
+                    token: credentials.token || "",
+                    language: credentials.language || "",
                     filter: credentials.filter || "",
                     code: ""
                 };
@@ -1521,9 +1521,9 @@
         function createNewAccount() {
             // Open dashboard-account.html with credentials
             const params = new URLSearchParams({
-                username: credentials.username,
-                token: credentials.token,
-                language: credentials.language,
+                username: credentials.username || "",
+                token: credentials.token || "",
+                language: credentials.language || "",
                 filter: credentials.filter || ''
             });
             window.open(`dashboard-account.html?${params.toString()}`, '_blank');
@@ -1564,10 +1564,10 @@
                 showMessage(getTranslation('int.sending.filters') || 'Invio filtri al server...', 'loading');
 
                 const payload = {
-                    username: credentials.username,
-                    token: credentials.token,
-                    language: credentials.language,
-                    filter: filterData,
+                    username: credentials.username || "",
+                    token: credentials.token || "",
+                    language: credentials.language || "",
+                    filter: filterData || "",
                     code: ""
                 };
 
@@ -1609,8 +1609,8 @@
                 showMessage(getTranslation('int.loading.pdf') || 'Caricamento PDF in corso...', 'loading');
 
                 const payload = {
-                    username: credentials.username,
-                    token: credentials.token,
+                    username: credentials.username || "",
+                    token: credentials.token || "",
                     language: credentials.language || "",
                     filter: credentials.filter || "",
                     code: ""
@@ -1698,9 +1698,9 @@
         async function loadPortfolio() {
             try {
                 const payload = {
-                    username: credentials.username,
-                    token: credentials.token,
-                    language: credentials.language,
+                    username: credentials.username || "",
+                    token: credentials.token || "",
+                    language: credentials.language || "",
                     filter: "",
                     code: ""
                 };
@@ -2137,11 +2137,11 @@
 
             try {
                 const payload = {
-                    username: credentials.username,
-                    token: credentials.token,
-                    language: credentials.language,
+                    username: credentials.username || "",
+                    token: credentials.token || "",
+                    language: credentials.language || "",
                     filter: "",
-                    code: `${idAccount}:${idInstrument}`
+                    code: `${idAccount}:${idInstrument}` || ""
                 };
 
                 const response = await fetch(`${API_URL}/getwallet`, {
@@ -2286,9 +2286,9 @@
         async function loadProfitability() {
             try {
                 const payload = {
-                    username: credentials.username,
-                    token: credentials.token,
-                    language: credentials.language,
+                    username: credentials.username || "",
+                    token: credentials.token || "",
+                    language: credentials.language || "",
                     filter: "",
                     code: ""
                 };
@@ -2723,10 +2723,10 @@
         async function logout() {
             try {
                 const payload = {
-                    username: credentials.username,
-                    token: credentials.token,
-                    language: credentials.language,
-                    filter: credentials.filter
+                    username: credentials.username || "",
+                    token: credentials.token || "",
+                    language: credentials.language || "",
+                    filter: credentials.filter || ""
                 };
                 const response = await fetch(`${API_URL}/logout`, {
                     method: 'POST',
@@ -2750,9 +2750,9 @@
         function openTradingDashboard() {
             // Open trading dashboard with credentials
             const params = new URLSearchParams({
-                username: credentials.username,
-                token: credentials.token,
-                language: credentials.language
+                username: credentials.username || "",
+                token: credentials.token || "",
+                language: credentials.language || ""
             });
             window.open(`dashboard-trading.html?${params.toString()}`, '_blank');
         }
