@@ -1167,6 +1167,11 @@
                 console.log('📥 Response', response.json());
 
                 if (!response.ok) {
+
+                    const errorBody = await response.json().catch(() => null);
+                    console.error("Server responded with 422:", errorBody);
+                    throw new Error('HTTP ' + response.status + (errorBody ? `: ${JSON.stringify(errorBody)}` : ''));
+
                     if (response.status === 401 || response.status === 403) {
                         showMessage(getTranslation('int.session.expired') || 'Sessione scaduta. Effettua nuovamente il login.', 'error');
                         setTimeout(redirectToLogin, 2000);
@@ -1710,7 +1715,11 @@
                     body: JSON.stringify(payload)
                 });
 
-                if (!response.ok) throw new Error('HTTP ' + response.status);
+                if (!response.ok) {
+                    const errorBody = await response.json().catch(() => null);
+                    console.error("Server responded with 422:", errorBody);
+                    throw new Error('HTTP ' + response.status + (errorBody ? `: ${JSON.stringify(errorBody)}` : ''));
+                }
                 const data = await response.json();
 
                 if (data.status === 'ok') {
