@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Crea Rapporto 2.0</title>
+    <title>Crea Rapporto 2.2</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&display=swap');
@@ -408,7 +408,7 @@
 
                 // Visualizza i dati del payload nella console
                 console.log('===  DATA ===');
-                console.log('Registries:', data.registries);
+                console.log('Registries:', JSON.stringify(data.registries));
                 console.log('====================');
 
                 if (data.registries) {
@@ -435,21 +435,22 @@
             const select = document.getElementById('id_registry');
 
             // Rimuovi tutte le opzioni tranne la prima
-            //while (select.options.length > 1) {
-            //    select.remove(1);
-            //}
+            while (select.options.length > 1) {
+                select.remove(1);
+            }
 
             // Visualizza i dati del payload nella console
             console.log('=== populateRegistriesDropdown ===');
-            console.log('Registry:', registry);
             console.log('Registries:', registries);
             console.log('====================');
 
             // Aggiungi le registries
             registries.forEach(registry => {
                 const option = document.createElement('option');
-                option.value = registry.id_user || registry.id_registry || '';
-                option.textContent = `${registry.name || ''} ${registry.surname || ''} - ${registry.description || ''}`.trim();
+                // Usa l'id come value
+                option.value = registry.id || '';
+                // Mostra l'id e la description_registry
+                option.textContent = `${registry.id || ''} - ${registry.description_registry || ''}`.trim();
                 select.appendChild(option);
             });
         }
