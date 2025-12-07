@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Crea Rapporto 2.2</title>
+    <title>Crea Rapporto 2.4</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&display=swap');
@@ -350,7 +350,7 @@
         let credentials = { username: '', token: '', language: '', filter: '' };
         let translations = {};
         let accountDefaults = null;
-        let registries = [];
+        let registries = {};
         const API_URL = "https://feweb-tunnel.fe-web.eu";
 
         function getCredentialsFromURL() {
@@ -360,7 +360,6 @@
             credentials.language = params.get('language') || 'it_IT';
             credentials.filter = params.get('filter') || '';
 
-            // Visualizza i dati del payload nella console
             console.log('=== CREDENTIALS From URL ===');
             console.log('Username:', credentials.username);
             console.log('Token:', credentials.token);
@@ -383,7 +382,6 @@
                     registry: ""
                 };
 
-                // Visualizza i dati del payload nella console
                 console.log('=== PAYLOAD DEBUG ===');
                 console.log('Username:', payload.username);
                 console.log('Token:', payload.token);
@@ -399,22 +397,22 @@
                     body: JSON.stringify(payload)
                 });
 
-
                 if (!response.ok) {
                     throw new Error('Failed to fetch registries');
                 }
 
                 const data = await response.json();
 
-                // Visualizza i dati del payload nella console
                 console.log('===  DATA ===');
                 console.log('Registries:', JSON.stringify(data.registries));
                 console.log('====================');
 
-                if (data.registries) {
+                if (data.registries && Object.keys(data.registries).length > 0) {
                     registries = data.registries;
                     populateRegistriesDropdown();
                     enableForm();
+                    // Rimuovi l'evidenziazione dal pulsante se ci sono registries
+                    document.getElementById('createRegistryBtn').classList.remove('highlight');
                 } else {
                     // Se non ci sono registries, evidenzia il pulsante e disabilita il form
                     document.getElementById('createRegistryBtn').classList.add('highlight');
@@ -430,7 +428,6 @@
             }
         }
 
-
         function populateRegistriesDropdown() {
             const select = document.getElementById('id_registry');
 
@@ -439,18 +436,24 @@
                 select.remove(1);
             }
 
-            // Visualizza i dati del payload nella console
             console.log('=== populateRegistriesDropdown ===');
             console.log('Registries:', registries);
             console.log('====================');
 
-            // Aggiungi le registries
-            registries.forEach(registry => {
+            // registries è un oggetto con chiavi come id
+            // Itera sulle chiavi dell'oggetto
+            Object.keys(registries).forEach(id => {
+                const registry = registries[id];
                 const option = document.createElement('option');
+
                 // Usa l'id come value
-                option.value = registry.id || '';
-                // Mostra l'id e la description_registry
-                option.textContent = `${registry.id || ''} - ${registry.description_registry || ''}`.trim();
+                option.value = id;
+
+                // Mostra: id - type_registry - description_registry
+                const typeText = registry.type_registry || '';
+                const descText = registry.description_registry || '';
+                option.textContent = `${id} - ${typeText} - ${descText}`;
+
                 select.appendChild(option);
             });
         }
