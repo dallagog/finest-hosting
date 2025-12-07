@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Crea Rapporto 2.4</title>
+    <title>Crea Rapporto 2.3</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&display=swap');
@@ -600,11 +600,57 @@
                 date_retirement: document.getElementById('date_retirement').value
             };
 
-            // Placeholder for actual API call
-            showMessage('Funzionalità di salvataggio non ancora implementata. Dati: ' + JSON.stringify(formData), 'error');
+            try {
+                showLoading(true);
 
-            // TODO: Implement actual account creation via API
-            // const result = await createAccount(formData);
+                const payload = {
+                    username: credentials.username,
+                    token: credentials.token,
+                    language: credentials.language,
+                    account: JSON.stringify(formData)
+                };
+
+                console.log('=== PUTACCOUNT PAYLOAD ===');
+                console.log('Payload:', JSON.stringify(payload, null, 2));
+                console.log('====================');
+
+                const response = await fetch(`${API_URL}/putaccount`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+
+                console.log('=== PUTACCOUNT RESPONSE ===');
+                console.log('Response:', JSON.stringify(data, null, 2));
+                console.log('====================');
+
+                showLoading(false);
+
+                if (data.success || data.status === 'success' || response.ok) {
+                    showMessage(getTranslation('int.success.save') || 'Account salvato con successo!', 'success');
+
+                    // Aspetta 2 secondi e poi chiudi la finestra
+                    setTimeout(() => {
+                        window.close();
+                    }, 2000);
+                } else {
+                    const errorMsg = data.message || data.error || 'Errore durante il salvataggio dell\'account';
+                    showMessage(getTranslation('int.error.save') || errorMsg, 'error');
+                }
+
+            } catch (error) {
+                console.error('Error saving account:', error);
+                showLoading(false);
+                showMessage(getTranslation('int.error.save') || 'Errore durante il salvataggio: ' + error.message, 'error');
+            }
         });
 
         window.addEventListener('load', async () => {
