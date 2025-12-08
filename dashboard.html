@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Dashboard 2.5</title>
+    <title>Dashboard 2.6</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
@@ -1151,7 +1151,8 @@
                 username: credentials.username || "",
                 token: credentials.token || "",
                 language: credentials.language || "",
-                account: ""
+                filter: credentials.filter || "",
+                code: ""
             };
 
             const response = await fetch(`${API_URL}/getaccounts`, {
@@ -1168,21 +1169,31 @@
             console.log('📥 getaccounts raw:', data);
 
             /*
-              data.accounts = {
-                  "0527779": {...},
-                  "0527779C": {...}
-              }
+              data.accounts = [
+                { "0527779": {...}, "0527779C": {...}, ... },
+                { "E1": {...} }
+              ]
             */
-            const rawAccounts = data.accounts || {};
 
-            // ✅ NORMALIZZAZIONE CORRETTA
-            accountsData = Object.values(rawAccounts).map(acc => ({
-                id_account: String(acc.id_account),
-                account_type: acc.account_type || '',
-                account_sector: acc.account_sector || ''
-            }));
+            accountsData = [];
 
-            console.log('✅ accountsData normalizzato:', accountsData);
+            const blocks = Array.isArray(data.accounts) ? data.accounts : [];
+            blocks.forEach(block => {
+                if (block && typeof block === 'object') {
+                    Object.values(block).forEach(acc => {
+                        if (acc && acc.id_account) {
+                            accountsData.push({
+                                id_account: String(acc.id_account),
+                                account_type: acc.account_type || '',
+                                account_sector: acc.account_sector || '',
+                                account_level: acc.account_level || ''
+                            });
+                        }
+                    });
+                }
+            });
+
+            console.log('✅ accountsData flatten:', accountsData);
         }
 
 
@@ -1324,10 +1335,11 @@
             const container = document.getElementById('reports-list');
             container.innerHTML = '';
 
-            if (!accountsData || accountsData.length === 0) {
+            if (!accountsData.length) {
                 container.innerHTML = '<p style="color:#999">Nessun rapporto disponibile</p>';
                 return;
             }
+
 
             const accountsList = accountsData; // <-- NON filterData.Account.list
 
@@ -1447,8 +1459,10 @@
                 // Description cell
                 const td3 = document.createElement('td');
                 td3.style.cssText = 'padding: 8px;';
-                td3.textContent = item.account_type;
+                td3.textContent = item.account_type || item.account_sector || '';
                 tr.appendChild(td3);
+
+
 
                 tbody.appendChild(tr);
             });
