@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Dashboard 2.3</title>
+    <title>Dashboard 2.4</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
@@ -1144,14 +1144,15 @@
         }
 
         // ========== FILTER & ACCOUNTS ==========
-        let accountsData = []; // elenco account normalizzato
+        let accountsData = [];
 
         async function loadAccounts() {
             const payload = {
                 username: credentials.username || "",
                 token: credentials.token || "",
                 language: credentials.language || "",
-                account: ""
+                filter: credentials.filter || "",
+                code: ""
             };
 
             const response = await fetch(`${API_URL}/getaccounts`, {
@@ -1164,12 +1165,25 @@
                 throw new Error('Errore caricamento accounts');
             }
 
-            console.log('📤 POST /getaccounts', JSON.stringify(payload));
-            console.log('📥 POST /getaccounts', await response.json());
-
             const data = await response.json();
-            const raw = Array.isArray(data) ? data[0] : data;
-            accountsData = Object.values(raw);
+            console.log('📥 getaccounts raw:', data);
+
+            /*
+              data.accounts = {
+                  "0527779": {...},
+                  "0527779C": {...}
+              }
+            */
+            const rawAccounts = data.accounts || {};
+
+            // ✅ NORMALIZZAZIONE CORRETTA
+            accountsData = Object.values(rawAccounts).map(acc => ({
+                id_account: String(acc.id_account),
+                account_type: acc.account_type || '',
+                account_sector: acc.account_sector || ''
+            }));
+
+            console.log('✅ accountsData normalizzato:', accountsData);
         }
 
 
@@ -1311,6 +1325,11 @@
             const container = document.getElementById('reports-list');
             container.innerHTML = '';
 
+            if (!accountsData || accountsData.length === 0) {
+                container.innerHTML = '<p style="color:#999">Nessun rapporto disponibile</p>';
+                return;
+            }
+
             const accountsList = accountsData; // <-- NON filterData.Account.list
 
 
@@ -1401,10 +1420,10 @@
                 const checkbox = document.createElement('input');
                 checkbox.type = 'checkbox';
                 checkbox.id = `account-${item.id_account}`;
-                checkbox.checked = selectedAccounts.includes(String(item.id_account));
+                checkbox.checked = selectedAccounts.includes(item.id_account);
                 checkbox.style.cursor = 'pointer';
                 checkbox.addEventListener('change', () => {
-                    const id = String(item.id_account);
+                    const id = item.id_account;
 
                     if (checkbox.checked) {
                         if (!selectedAccounts.includes(id)) {
@@ -1423,14 +1442,13 @@
                 // ID Account cell
                 const td2 = document.createElement('td');
                 td2.style.cssText = 'padding: 8px;';
-                td2.textContent = item.id_account || 'N/A';
+                td2.textContent = item.id_account;
                 tr.appendChild(td2);
 
                 // Description cell
                 const td3 = document.createElement('td');
                 td3.style.cssText = 'padding: 8px;';
-                const desc = item.description_account || item.description || '';
-                td3.textContent = desc ? getTranslation(desc) : '';
+                td3.textContent = item.account_type;
                 tr.appendChild(td3);
 
                 tbody.appendChild(tr);
@@ -2787,8 +2805,8 @@
                 updatePageTranslations();
                 await updateUserInfo();  // Show user language/currency early
                 loadMenu();
-                await loadAccounts();  // <-- NUOVO
-                await loadFilter();    // <-- filters dopo
+                await loadAccounts();
+                await loadFilter();
                 renderReportsList();
                 loadPortfolio();
                 loadProfitability();
