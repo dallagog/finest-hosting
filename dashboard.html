@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Dashboard 2.7</title>
+    <title>Dashboard 2.8</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
@@ -1195,6 +1195,271 @@
             console.log('✅ accountsData flatten:', accountsData);
         }
 
+        // --- New global to hold accounts fetched from /getaccounts
+        //let accountsData = []; // [{id_account, account_type, description, ...}, ...]
+
+        // --- Utility to safely extract accounts from various API shapes
+        function normalizeAccountsApiResponse(data) {
+            const out = [];
+            // Case 1: server returns { accounts: [ {id_account:..., account_type:...}, ... ] }
+            if (data && Array.isArray(data.accounts)) {
+                data.accounts.forEach(a => out.push(a));
+                return out;
+            }
+
+            // Case 2: server returns an array where each element is an object mapping id->object (like uploaded accounts.json)
+            if (Array.isArray(data) && data.length > 0) {
+                data.forEach(element => {
+                    if (element && typeof element === 'object') {
+                        Object.keys(element).forEach(key => {
+                            const item = element[key];
+                            // If item already contains id_account, push it
+                            if (item && item.id_account) out.push(item);
+                            else if (item && item.account && item.account.id_account) out.push(item.account);
+                        });
+                    }
+                });
+                if (out.length) return out;
+            }
+
+            // Case 3: server returns object where keys are account ids: { "0527779": {...}, "E1": {...} }
+            if (data && typeof data === 'object' && !Array.isArray(data)) {
+                Object.keys(data).forEach(key => {
+                    const item = data[key];
+                    if (item && item.id_account) out.push(item);
+                });
+                if (out.length) return out;
+            }
+
+            // Fallback: if data is already an array of flat accounts
+            if (Array.isArray(data)) {
+                data.forEach(item => { if (item && item.id_account) out.push(item); });
+            }
+
+            return out;
+        }
+
+        // --- Modified part of loadFilter: after filterData is assigned, ensure accounts are loaded and merged
+        // Replace the section in your existing loadFilter() after `filterData = loaded;` with the lines below.
+        async function _afterFilterLoaded_mergeAccounts() {
+            // Ensure accounts from /getaccounts are loaded
+            await loadAccounts();
+
+            // If filterData contains Account.list (older format), keep it too but synchronize selected flags
+            // Build a lookup map from filterData for default selected flags
+            const selectedMap = {};
+            const fAccountList = (filterData && (filterData.Account && filterData.Account.list)) ? filterData.Account.list :
+                (filterData && filterData.Filter && filterData.Filter.accounts ? filterData.Filter.accounts : null);
+
+            if (Array.isArray(fAccountList)) {
+                fAccountList.forEach(a => {
+                    if (a && a.id_account) selectedMap[String(a.id_account).trim()] = !!a.selected;
+                });
+            }
+
+            // If accountsData is empty, fallback to filterData account list structure (convert if needed)
+            if ((!accountsData || accountsData.length === 0) && Array.isArray(fAccountList) && fAccountList.length > 0) {
+                accountsData = fAccountList.map(a => ({
+                    id_account: String(a.id_account || a.id || '').trim(),
+                    account_type: a.account_type || a.type || '',
+                    description: a.description_account || a.description || '',
+                    raw: a
+                }));
+            }
+
+            // Apply default selection based on selectedMap
+            accountsData.forEach(a => {
+                const id = String(a.id_account || '').trim();
+                a.selected = !!selectedMap[id];
+            });
+
+            // If filterData.Account.list exists but doesn't contain items for accountsData, keep any missing entries
+            if (Array.isArray(filterData?.Account?.list)) {
+                // Merge selected flags back to filterData.Account.list entries when ids match
+                filterData.Account.list.forEach(fdItem => {
+                    const found = accountsData.find(ad => ad.id_account === String(fdItem.id_account).trim());
+                    if (found) {
+                        // keep fdItem.raw metadata but sync selected
+                        found.selected = !!fdItem.selected || !!found.selected;
+                    } else {
+                        // keep fdItem as-is in accountsData so renderReportsList sees it
+                        accountsData.push({
+                            id_account: String(fdItem.id_account || '').trim(),
+                            account_type: fdItem.account_type || '',
+                            description: fdItem.description_account || fdItem.description || '',
+                            selected: !!fdItem.selected,
+                            raw: fdItem
+                        });
+                    }
+                });
+            }
+
+            // Finally ensure selectedAccounts array is rebuilt from accountsData
+            selectedAccounts = accountsData.filter(a => a.selected).map(a => a.id_account);
+            console.log('selectedAccounts (after merging accounts):', selectedAccounts);
+        }
+
+        // --- Modified renderReportsList: prefer accountsData over filterData.Account.list
+        // Replace the existing renderReportsList() implementation with the one below.
+        async function renderReportsList_patched() {
+            const container = document.getElementById('reports-list');
+            container.innerHTML = '';
+
+            // Build accountsList from accountsData (which should already contain selected flags)
+            let accountsList = Array.isArray(accountsData) ? accountsData.map(a => ({
+                id_account: a.id_account,
+                account_type: a.account_type,
+                description: a.description || (a.raw && (a.raw.description_account || a.raw.description)) || '',
+                selected: !!a.selected
+            })) : [];
+
+            // If still empty, try fallback to filterData structures
+            if ((!accountsList || accountsList.length === 0) && filterData) {
+                const fallback = (filterData.Account && filterData.Account.list) ? filterData.Account.list : (filterData.Filter && filterData.Filter.accounts ? filterData.Filter.accounts : []);
+                if (Array.isArray(fallback)) {
+                    accountsList = fallback.map(a => ({
+                        id_account: a.id_account || a.id || '',
+                        account_type: a.account_type || '',
+                        description: a.description_account || a.description || '',
+                        selected: !!a.selected
+                    }));
+                }
+            }
+
+            if (!Array.isArray(accountsList) || accountsList.length === 0) {
+                container.innerHTML = `<p style="color:#999;">${getTranslation('int.error.loading.account') || 'Nessun rapporto trovato'}</p>`;
+                // Expand and highlight as before
+                const filterSection = document.getElementById('filter-section');
+                if (filterSection) {
+                    const content = filterSection.querySelector('.collapsible-content');
+                    if (content) {
+                        content.classList.add('active');
+                        content.style.display = 'block';
+                    }
+                    const toggleBtn = filterSection.querySelector('.toggle-btn');
+                    if (toggleBtn) toggleBtn.textContent = '-';
+                }
+                const createBtn = document.getElementById('createAccountBtn');
+                if (createBtn) {
+                    createBtn.style.animation = 'pulse-highlight 1.5s infinite';
+                    createBtn.style.border = '2px solid var(--neon-cyan)';
+                    createBtn.style.boxShadow = '0 0 15px var(--neon-cyan)';
+                    setTimeout(() => { createBtn.scrollIntoView({ behavior: 'smooth', block: 'center' }); }, 500);
+                }
+                return;
+            }
+
+            // Rebuild selectedAccounts from accountsList (ensure consistency)
+            selectedAccounts = accountsList.filter(a => a.selected).map(a => a.id_account);
+            console.log('selectedAccounts (rebuilt from accountsList):', selectedAccounts);
+
+            // Sort by description
+            accountsList.sort((a, b) => {
+                const descA = String(a.description || '');
+                const descB = String(b.description || '');
+                return descA.localeCompare(descB);
+            });
+
+            // Create table
+            const table = document.createElement('table');
+            table.style.cssText = 'width: 100%; border-collapse: collapse; color: var(--text-color);';
+
+            const thead = document.createElement('thead');
+            const headerRow = document.createElement('tr');
+            headerRow.style.cssText = 'background: rgba(0, 243, 255, 0.1); border-bottom: 2px solid var(--neon-cyan);';
+
+            const th1 = document.createElement('th');
+            th1.style.cssText = 'padding: 8px; text-align: left; width: 30px;';
+            th1.innerHTML = '<input type="checkbox" id="select-all-accounts" style="cursor: pointer;" />';
+            headerRow.appendChild(th1);
+
+            const th2 = document.createElement('th');
+            th2.style.cssText = 'padding: 8px; text-align: left;';
+            th2.textContent = getTranslation('int.account.code') || 'Codice';
+            headerRow.appendChild(th2);
+
+            const th3 = document.createElement('th');
+            th3.style.cssText = 'padding: 8px; text-align: left;';
+            th3.textContent = getTranslation('int.account.description') || 'Descrizione';
+            headerRow.appendChild(th3);
+
+            thead.appendChild(headerRow);
+            table.appendChild(thead);
+
+            const tbody = document.createElement('tbody');
+
+            accountsList.forEach((item, index) => {
+                const tr = document.createElement('tr');
+                tr.style.cssText = `border-bottom: 1px solid rgba(0, 243, 255, 0.2); ${index % 2 === 0 ? 'background: rgba(0, 243, 255, 0.05);' : ''}`;
+
+                const td1 = document.createElement('td');
+                td1.style.cssText = 'padding: 8px; text-align: center;';
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.id = `account-${item.id_account}`;
+                checkbox.checked = selectedAccounts.includes(item.id_account);
+                checkbox.style.cursor = 'pointer';
+                checkbox.addEventListener('change', () => {
+                    if (checkbox.checked) {
+                        if (!selectedAccounts.includes(item.id_account)) selectedAccounts.push(item.id_account);
+                    } else {
+                        const idx = selectedAccounts.indexOf(item.id_account);
+                        if (idx > -1) selectedAccounts.splice(idx, 1);
+                    }
+                    // reflect change into accountsData if present
+                    const raw = accountsData.find(a => a.id_account === item.id_account);
+                    if (raw) raw.selected = checkbox.checked;
+                    // also try to reflect into filterData for persistence
+                    if (Array.isArray(filterData?.Account?.list)) {
+                        const fd = filterData.Account.list.find(a => String(a.id_account).trim() === String(item.id_account).trim());
+                        if (fd) fd.selected = checkbox.checked;
+                    }
+                    updateSelectAllCheckbox();
+                    filterAndRenderTables();
+                });
+                td1.appendChild(checkbox);
+                tr.appendChild(td1);
+
+                const td2 = document.createElement('td');
+                td2.style.cssText = 'padding: 8px;';
+                td2.textContent = item.id_account || 'N/A';
+                tr.appendChild(td2);
+
+                const td3 = document.createElement('td');
+                td3.style.cssText = 'padding: 8px;';
+                td3.textContent = item.description || item.account_type || '';
+                tr.appendChild(td3);
+
+                tbody.appendChild(tr);
+            });
+
+            table.appendChild(tbody);
+            container.appendChild(table);
+
+            const summary = document.createElement('p');
+            summary.style.marginTop = '15px';
+            summary.style.color = '#555';
+            summary.style.fontSize = '13px';
+            summary.innerHTML = `<strong>${accountsList.length}</strong> ${getTranslation('int.reports.available') || 'rapporti disponibili'}`;
+            container.appendChild(summary);
+
+            const selectAllCheckbox = document.getElementById('select-all-accounts');
+            if (selectAllCheckbox) {
+                updateSelectAllCheckbox();
+                selectAllCheckbox.addEventListener('change', () => {
+                    if (selectAllCheckbox.checked) selectAllReports(); else deselectAllReports();
+                });
+            }
+        }
+
+        // --- How to integrate:
+        // 1) In loadFilter(), after `filterData = loaded;` add:
+        //    await _afterFilterLoaded_mergeAccounts();
+        // 2) Replace your existing renderReportsList() with renderReportsList_patched (rename if you prefer).
+        // 3) Make sure loadFilter() is awaited in initialization (it already is in your code).
+
+        // End of patch
+
 
         async function loadFilter() {
             try {
@@ -1245,6 +1510,8 @@
                 }
 
                 filterData = loaded;
+                await _afterFilterLoaded_mergeAccounts();
+
                 syncSelectedAccountsFromFilter();
 
                 populateFilterUI();
