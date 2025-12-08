@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Dashboard 2.0</title>
+    <title>Dashboard 2.1</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
@@ -856,6 +856,7 @@
             }
         }
 
+
         async function loadLanguageFile(langCode) {
             try {
                 const response = await fetch(`lang/${langCode}.json`);
@@ -1143,6 +1144,43 @@
         }
 
         // ========== FILTER & ACCOUNTS ==========
+        let accountsData = []; // elenco account normalizzato
+
+        async function loadAccounts() {
+            const payload = {
+                username: credentials.username || "",
+                token: credentials.token || "",
+                language: credentials.language || "",
+                filter: credentials.filter || "",
+                code: ""
+            };
+
+            const response = await fetch(`${API_URL}/getaccounts`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (!response.ok) {
+                throw new Error('Errore caricamento accounts');
+            }
+
+            const data = await response.json();
+
+            /*
+              accounts.json arriva come:
+              [
+                {
+                  "0527779": { ... },
+                  "0527779C": { ... }
+                }
+              ]
+            */
+            const raw = Array.isArray(data) ? data[0] : data;
+            accountsData = Object.values(raw);
+        }
+
+
         async function loadFilter() {
             try {
                 showMessage(getTranslation('int.loading.filters') || 'Caricamento filtri e account in corso...', 'loading');
@@ -1192,6 +1230,7 @@
                 }
 
                 filterData = loaded;
+                syncSelectedAccountsFromFilter();
 
                 populateFilterUI();
                 renderReportsList();
@@ -1225,6 +1264,20 @@
                 }
             }
         }
+
+        function syncSelectedAccountsFromFilter() {
+            selectedAccounts = [];
+
+            const accountsFilter = filterData?.Filter?.accounts;
+            if (!Array.isArray(accountsFilter)) return;
+
+            accountsFilter.forEach(a => {
+                if (a.selected) {
+                    selectedAccounts.push(String(a.id_account));
+                }
+            });
+        }
+
 
         function populateFilterUI() {
             const f = filterData.Filter || {};
@@ -1266,8 +1319,8 @@
             const container = document.getElementById('reports-list');
             container.innerHTML = '';
 
-            // Handle case when filterData is not loaded yet
-            const accountsList = (filterData && filterData.Account && filterData.Account.list) ? filterData.Account.list : [];
+            const accountsList = accountsData; // <-- NON filterData.Account.list
+
 
             if (!Array.isArray(accountsList) || accountsList.length === 0) {
                 container.innerHTML = `<p style="color:#999;">${getTranslation('int.error.loading.account') || 'Nessun rapporto trovato'}</p>`;
@@ -1356,27 +1409,20 @@
                 const checkbox = document.createElement('input');
                 checkbox.type = 'checkbox';
                 checkbox.id = `account-${item.id_account}`;
-                checkbox.checked = selectedAccounts.includes(item.id_account);
+                checkbox.checked = selectedAccounts.includes(String(item.id_account));
                 checkbox.style.cursor = 'pointer';
                 checkbox.addEventListener('change', () => {
+                    const id = String(item.id_account);
+
                     if (checkbox.checked) {
-                        // Add to selectedAccounts if not already there
-                        if (!selectedAccounts.includes(item.id_account)) {
-                            selectedAccounts.push(item.id_account);
+                        if (!selectedAccounts.includes(id)) {
+                            selectedAccounts.push(id);
                         }
                     } else {
-                        // Remove from selectedAccounts
-                        const index = selectedAccounts.indexOf(item.id_account);
-                        if (index > -1) {
-                            selectedAccounts.splice(index, 1);
-                        }
+                        selectedAccounts = selectedAccounts.filter(a => a !== id);
                     }
-                    console.log('selectedAccounts (checkbox change):', selectedAccounts);
-                    // Update filterData to keep in sync
-                    item.selected = checkbox.checked;
-                    // Update select-all checkbox state
+
                     updateSelectAllCheckbox();
-                    // Redraw tables
                     filterAndRenderTables();
                 });
                 td1.appendChild(checkbox);
@@ -1475,35 +1521,17 @@
         }
 
         function selectAllReports() {
-            if (!filterData || !filterData.Account || !filterData.Account.list) return;
-
-            // Clear and repopulate selectedAccounts with all account IDs
-            selectedAccounts = [];
-            filterData.Account.list.forEach(item => {
-                item.selected = true;
-                selectedAccounts.push(item.id_account);
-            });
-            console.log('selectedAccounts (select all):', selectedAccounts);
-
+            selectedAccounts = accountsData.map(a => String(a.id_account));
             renderReportsList();
             filterAndRenderTables();
-            showMessage(getTranslation('int.all.selected') || 'Tutti i rapporti selezionati', 'success');
         }
 
         function deselectAllReports() {
-            if (!filterData || !filterData.Account || !filterData.Account.list) return;
-
-            // Clear selectedAccounts array
             selectedAccounts = [];
-            filterData.Account.list.forEach(item => {
-                item.selected = false;
-            });
-            console.log('selectedAccounts (deselect all):', selectedAccounts);
-
             renderReportsList();
             filterAndRenderTables();
-            showMessage(getTranslation('int.all.deselected') || 'Tutti i rapporti deselezionati', 'info');
         }
+
 
         function filterAndRenderTables() {
             // Use the selectedAccounts array directly (global variable)
@@ -2767,10 +2795,11 @@
                 updatePageTranslations();
                 await updateUserInfo();  // Show user language/currency early
                 loadMenu();
-                loadFilter();
+                await loadAccounts();  // <-- NUOVO
+                await loadFilter();    // <-- filters dopo
+                renderReportsList();
                 loadPortfolio();
                 loadProfitability();
-                // loadPDF(); // Manual load only
             }
         });
 
