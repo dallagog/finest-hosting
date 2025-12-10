@@ -2,9 +2,9 @@
 <html lang="en">
 
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Financial Estimates 1.0</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Financial Estimates 1.1</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&display=swap');
@@ -68,6 +68,9 @@
       transition: all 0.3s ease;
       text-transform: uppercase;
       letter-spacing: 1px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
     }
 
     .header-signin-btn:hover {
@@ -77,7 +80,7 @@
     }
 
     .header-signin-btn i {
-      margin-right: 8px;
+      margin: 0;
     }
 
     .offline-container {
@@ -127,11 +130,14 @@
     <select id="languageCombo">
       <option value="" id="loadingOption">Loading...</option>
     </select>
-    <button class="header-signin-btn" id="signin-btn" onclick="goToLogin()">
-      <i class="fa fa-sign-in"></i> <span id="signin-text">Sign In</span>
+
+    <!-- Close button: same style as signin button, text populated via getTranslation('int.close') -->
+    <button class="header-signin-btn" id="close-btn" onclick="closePage()" title="">
+      <i class="fa fa-times"></i> <span id="close-text"></span>
     </button>
-    <button class="header-signin-btn" id="close-btn" onclick="closePage()">
-      <i class="fa fa-times"></i> <span id="close-text">Close</span>
+
+    <button class="header-signin-btn" id="signin-btn" onclick="goToLogin()">
+      <i class="fa fa-sign-in"></i> <span id="signin-text"></span>
     </button>
   </div>
 
@@ -216,18 +222,25 @@
       }
     }
 
-    // Get translation
+    // Get translation (use this everywhere)
     function getTranslation(key) {
       return translations[key] || key;
     }
 
-    // Update page translations
+    // Update page translations (no hardcoded titles)
     function updatePageTranslations() {
       const signinText = document.getElementById('signin-text');
       if (signinText) signinText.textContent = getTranslation('int.signin');
 
       const closeText = document.getElementById('close-text');
       if (closeText) closeText.textContent = getTranslation('int.close');
+
+      // Optionally set title attributes for accessibility
+      const closeBtn = document.getElementById('close-btn');
+      if (closeBtn) closeBtn.title = getTranslation('int.close');
+
+      const signinBtn = document.getElementById('signin-btn');
+      if (signinBtn) signinBtn.title = getTranslation('int.signin');
     }
 
     // Change language
@@ -252,9 +265,15 @@
       window.location.href = 'login.html';
     }
 
-    // Close page
+    // Close page - best-effort to close the window/tab
     function closePage() {
-      window.close();
+      try {
+        // common fallback to allow closing even if not opened by script
+        window.open('', '_self');
+        window.close();
+      } catch (err) {
+        console.warn('Window close failed:', err);
+      }
     }
 
     // Health check
