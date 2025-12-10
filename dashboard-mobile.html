@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
-    <title>Dashboard Mobile 1.0</title>
+    <title>Dashboard Mobile</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&display=swap');
@@ -39,6 +39,7 @@
             align-items: center;
             justify-content: center;
             touch-action: none;
+            perspective: 1200px;
             background-image:
                 linear-gradient(rgba(0, 243, 255, 0.05) 1px, transparent 1px),
                 linear-gradient(90deg, rgba(0, 243, 255, 0.05) 1px, transparent 1px);
@@ -92,90 +93,103 @@
             transition: all 0.3s;
         }
 
+        /* Scene Container - IMPORTANTE per prospettiva */
+        .scene {
+            width: 300px;
+            height: 300px;
+            perspective: 1200px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
         /* Cube Container */
         .cube-container {
-            width: 280px;
-            height: 280px;
+            width: 200px;
+            height: 200px;
             position: relative;
             transform-style: preserve-3d;
-            transform: rotateX(-15deg) rotateY(0deg);
-            will-change: transform;
+            transform: rotateX(-20deg) rotateY(20deg);
+            transition: transform 0.1s linear;
         }
 
         /* Cube Face */
         .cube-face {
             position: absolute;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 20, 40, 0.85);
+            width: 200px;
+            height: 200px;
+            background: rgba(0, 20, 40, 0.9);
             border: 2px solid var(--neon-cyan);
             box-shadow:
-                0 0 20px rgba(0, 243, 255, 0.4),
-                inset 0 0 40px rgba(0, 243, 255, 0.15);
+                0 0 20px rgba(0, 243, 255, 0.5),
+                inset 0 0 40px rgba(0, 243, 255, 0.2);
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             cursor: pointer;
-            backface-visibility: hidden;
-            transition: background 0.3s;
+            backface-visibility: visible;
+            -webkit-backface-visibility: visible;
         }
 
-        .cube-face:active {
-            background: rgba(0, 40, 80, 0.9);
-        }
-
-        /* Contenuto della faccia - SENZA trasformazioni 3D */
-        .face-content {
+        /* Trucco per rendere il testo sempre leggibile: usiamo un contenitore interno */
+        .face-inner {
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            text-align: center;
-            transform: translateZ(0.1px);
-            /* Piccolo trucco per evitare problemi di rendering */
+            width: 100%;
+            height: 100%;
+            transform: translateZ(1px);
+            /* Piccolo trucco per rendering migliore */
         }
 
         .cube-face i {
-            font-size: 50px;
+            font-size: 40px;
             color: var(--neon-cyan);
-            margin-bottom: 15px;
-            text-shadow: 0 0 20px var(--neon-cyan);
+            margin-bottom: 10px;
+            text-shadow: 0 0 15px var(--neon-cyan);
         }
 
         .cube-face span {
-            font-size: 14px;
+            font-size: 12px;
             color: var(--text-color);
             text-transform: uppercase;
-            letter-spacing: 2px;
+            letter-spacing: 1.5px;
             text-align: center;
             padding: 0 10px;
             font-weight: 500;
         }
 
-        /* Cube Face Positions - Posizioni standard 3D */
+        /* Cube Face Positions - con backface-visibility */
         .front {
-            transform: translateZ(140px);
+            transform: translateZ(100px);
+            backface-visibility: visible;
         }
 
         .back {
-            transform: rotateY(180deg) translateZ(140px);
+            transform: rotateY(180deg) translateZ(100px);
+            backface-visibility: visible;
         }
 
         .right {
-            transform: rotateY(90deg) translateZ(140px);
+            transform: rotateY(90deg) translateZ(100px);
+            backface-visibility: visible;
         }
 
         .left {
-            transform: rotateY(-90deg) translateZ(140px);
+            transform: rotateY(-90deg) translateZ(100px);
+            backface-visibility: visible;
         }
 
         .top {
-            transform: rotateX(90deg) translateZ(140px);
+            transform: rotateX(90deg) translateZ(100px);
+            backface-visibility: visible;
         }
 
         .bottom {
-            transform: rotateX(-90deg) translateZ(140px);
+            transform: rotateX(-90deg) translateZ(100px);
+            backface-visibility: visible;
         }
 
         /* Touch hint */
@@ -188,6 +202,57 @@
             font-size: 12px;
             text-align: center;
             padding: 0 20px;
+        }
+
+        /* Hypercube effect - cube interno */
+        .inner-cube {
+            position: absolute;
+            width: 100px;
+            height: 100px;
+            transform-style: preserve-3d;
+            transform: translateZ(-50px) rotateX(45deg) rotateY(45deg);
+            opacity: 0.6;
+        }
+
+        .inner-face {
+            position: absolute;
+            width: 100px;
+            height: 100px;
+            background: rgba(0, 243, 255, 0.1);
+            border: 1px solid rgba(0, 243, 255, 0.3);
+            opacity: 0.5;
+        }
+
+        .inner-front {
+            transform: translateZ(50px);
+        }
+
+        .inner-back {
+            transform: rotateY(180deg) translateZ(50px);
+        }
+
+        .inner-right {
+            transform: rotateY(90deg) translateZ(50px);
+        }
+
+        .inner-left {
+            transform: rotateY(-90deg) translateZ(50px);
+        }
+
+        .inner-top {
+            transform: rotateX(90deg) translateZ(50px);
+        }
+
+        .inner-bottom {
+            transform: rotateX(-90deg) translateZ(50px);
+        }
+
+        /* Connection lines for hypercube effect */
+        .connection {
+            position: absolute;
+            background: rgba(0, 243, 255, 0.3);
+            height: 2px;
+            transform-origin: 0 0;
         }
     </style>
 </head>
@@ -203,42 +268,56 @@
         </button>
     </div>
 
-    <!-- 3D Cube -->
-    <div class="cube-container" id="cube">
-        <div class="cube-face front" onclick="navigateTo('dashboard-mobile-portfolio.html')">
-            <div class="face-content">
-                <i class="fa fa-chart-pie"></i>
-                <span>Portfolio</span>
+    <!-- Scene Container -->
+    <div class="scene">
+        <!-- 3D Cube (Hypercube projection) -->
+        <div class="cube-container" id="cube">
+            <!-- Outer Cube Faces with content -->
+            <div class="cube-face front" onclick="navigateTo('dashboard-mobile-portfolio.html')">
+                <div class="face-inner">
+                    <i class="fa fa-chart-pie"></i>
+                    <span>Portfolio</span>
+                </div>
             </div>
-        </div>
-        <div class="cube-face back" onclick="navigateTo('dashboard-mobile-trading.html')">
-            <div class="face-content">
-                <i class="fa fa-rocket"></i>
-                <span>Go Live</span>
+            <div class="cube-face back" onclick="navigateTo('dashboard-mobile-trading.html')">
+                <div class="face-inner">
+                    <i class="fa fa-rocket"></i>
+                    <span>Go Live</span>
+                </div>
             </div>
-        </div>
-        <div class="cube-face right" onclick="navigateTo('dashboard-mobile-news.html')">
-            <div class="face-content">
-                <i class="fa fa-exchange"></i>
-                <span>News</span>
+            <div class="cube-face right" onclick="navigateTo('dashboard-mobile-news.html')">
+                <div class="face-inner">
+                    <i class="fa fa-exchange"></i>
+                    <span>News</span>
+                </div>
             </div>
-        </div>
-        <div class="cube-face left" onclick="navigateTo('dashboard-mobile-account.html')">
-            <div class="face-content">
-                <i class="fa fa-university"></i>
-                <span>Rapporti</span>
+            <div class="cube-face left" onclick="navigateTo('dashboard-mobile-account.html')">
+                <div class="face-inner">
+                    <i class="fa fa-university"></i>
+                    <span>Rapporti</span>
+                </div>
             </div>
-        </div>
-        <div class="cube-face top" onclick="navigateTo('dashboard-mobile-market.html')">
-            <div class="face-content">
-                <i class="fa fa-list"></i>
-                <span>Market</span>
+            <div class="cube-face top" onclick="navigateTo('dashboard-mobile-market.html')">
+                <div class="face-inner">
+                    <i class="fa fa-list"></i>
+                    <span>Market</span>
+                </div>
             </div>
-        </div>
-        <div class="cube-face bottom" onclick="navigateTo('dashboard-mobile-trend.html')">
-            <div class="face-content">
-                <i class="fa fa-edit"></i>
-                <span>Trend</span>
+            <div class="cube-face bottom" onclick="navigateTo('dashboard-mobile-trend.html')">
+                <div class="face-inner">
+                    <i class="fa fa-edit"></i>
+                    <span>Trend</span>
+                </div>
+            </div>
+
+            <!-- Inner Cube for hypercube effect -->
+            <div class="inner-cube">
+                <div class="inner-face inner-front"></div>
+                <div class="inner-face inner-back"></div>
+                <div class="inner-face inner-right"></div>
+                <div class="inner-face inner-left"></div>
+                <div class="inner-face inner-top"></div>
+                <div class="inner-face inner-bottom"></div>
             </div>
         </div>
     </div>
@@ -250,6 +329,7 @@
     <script>
         const cube = document.getElementById('cube');
         const usernameDisplay = document.getElementById('usernameDisplay');
+        const scene = document.querySelector('.scene');
 
         // Carica username
         function loadUsername() {
@@ -260,59 +340,73 @@
         // Variabili per il controllo della rotazione
         let isDragging = false;
         let startX, startY;
-        let rotationX = -15; // Inclinazione iniziale
-        let rotationY = 0;
+        let rotationX = -20; // Inclinazione iniziale
+        let rotationY = 20;
         let lastRotationX = rotationX;
         let lastRotationY = rotationY;
 
-        // Gestione touch - ROTAZIONE ULTRA VELOCE
-        cube.addEventListener('touchstart', (e) => {
+        // Configurazione sensibilità
+        const SENSITIVITY = 0.8; // Molto fluido ma controllato
+
+        // Gestione touch
+        scene.addEventListener('touchstart', (e) => {
             e.preventDefault();
             isDragging = true;
             startX = e.touches[0].clientX;
             startY = e.touches[0].clientY;
             lastRotationX = rotationX;
             lastRotationY = rotationY;
+
+            // Aggiungi effetto attivo
+            cube.style.transition = 'none';
         });
 
-        cube.addEventListener('touchmove', (e) => {
+        scene.addEventListener('touchmove', (e) => {
             if (!isDragging) return;
             e.preventDefault();
 
             const touchX = e.touches[0].clientX;
             const touchY = e.touches[0].clientY;
 
-            // Calcola movimento con MASSIMA sensibilità
+            // Calcola movimento
             const deltaX = touchX - startX;
             const deltaY = touchY - startY;
 
-            // ROTAZIONE ULTRA VELOCE - nessun limite
-            rotationY = lastRotationY + deltaX * 3.0; // SENSIBILITÀ MOLTO ALTA
-            rotationX = lastRotationX - deltaY * 3.0; // SENSIBILITÀ MOLTO ALTA
+            // Aggiorna rotazione
+            rotationY = lastRotationY + deltaX * SENSITIVITY;
+            rotationX = lastRotationX - deltaY * SENSITIVITY;
 
-            // Applica la rotazione - NESSUN LIMITE
+            // Applica rotazione
             cube.style.transform = `rotateX(${rotationX}deg) rotateY(${rotationY}deg)`;
 
-            // Aggiorna la posizione iniziale per movimento continuo
-            startX = touchX;
-            startY = touchY;
-            lastRotationX = rotationX;
-            lastRotationY = rotationY;
+            // Aggiorna cubo interno per effetto ipercubo
+            updateInnerCube();
         });
 
-        cube.addEventListener('touchend', () => {
+        scene.addEventListener('touchend', () => {
             isDragging = false;
+            cube.style.transition = 'transform 0.2s ease-out';
         });
 
-        // Gestione mouse per testing (disabilitata su mobile)
+        // Funzione per aggiornare cubo interno (effetto ipercubo)
+        function updateInnerCube() {
+            const innerCube = document.querySelector('.inner-cube');
+            // Il cubo interno ruota in modo leggermente diverso per effetto 4D
+            const innerRotationX = rotationX * 1.2;
+            const innerRotationY = rotationY * 1.2;
+            innerCube.style.transform = `translateZ(-50px) rotateX(${innerRotationX}deg) rotateY(${innerRotationY}deg)`;
+        }
+
+        // Gestione mouse per testing
         let isMouseDragging = false;
-        cube.addEventListener('mousedown', (e) => {
+        scene.addEventListener('mousedown', (e) => {
             e.preventDefault();
             isMouseDragging = true;
             startX = e.clientX;
             startY = e.clientY;
             lastRotationX = rotationX;
             lastRotationY = rotationY;
+            cube.style.transition = 'none';
         });
 
         document.addEventListener('mousemove', (e) => {
@@ -325,14 +419,16 @@
             const deltaX = mouseX - startX;
             const deltaY = mouseY - startY;
 
-            rotationY = lastRotationY + deltaX * 2.0; // Sensibilità alta anche per mouse
-            rotationX = lastRotationX - deltaY * 2.0;
+            rotationY = lastRotationY + deltaX * SENSITIVITY;
+            rotationX = lastRotationX - deltaY * SENSITIVITY;
 
             cube.style.transform = `rotateX(${rotationX}deg) rotateY(${rotationY}deg)`;
+            updateInnerCube();
         });
 
         document.addEventListener('mouseup', () => {
             isMouseDragging = false;
+            cube.style.transition = 'transform 0.2s ease-out';
         });
 
         // Navigazione
@@ -347,7 +443,10 @@
         }
 
         // Inizializzazione
-        document.addEventListener('DOMContentLoaded', loadUsername);
+        document.addEventListener('DOMContentLoaded', () => {
+            loadUsername();
+            updateInnerCube();
+        });
     </script>
 </body>
 
