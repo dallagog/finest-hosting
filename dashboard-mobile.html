@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
-    <title>Dashboard Mobile</title>
+    <title>Dashboard Mobile 1.0</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&display=swap');
@@ -63,9 +63,23 @@
             font-size: 1rem;
             color: var(--neon-cyan);
             text-shadow: 0 0 10px var(--neon-cyan);
+            text-align: center;
+            flex: 1;
         }
 
-        .back-btn {
+        .username-display {
+            font-size: 0.9rem;
+            color: var(--neon-cyan);
+            text-shadow: 0 0 5px var(--neon-cyan);
+            padding: 5px 10px;
+            background: rgba(0, 102, 255, 0.1);
+            border: 1px solid rgba(0, 102, 255, 0.3);
+            border-radius: 4px;
+            min-width: 80px;
+            text-align: center;
+        }
+
+        .logout-btn {
             padding: 8px 16px;
             background: rgba(0, 102, 255, 0.2);
             border: 1px solid var(--neon-blue);
@@ -77,7 +91,7 @@
             transition: all 0.3s;
         }
 
-        .back-btn:hover {
+        .logout-btn:hover {
             background: var(--neon-blue);
             color: #fff;
             box-shadow: 0 0 15px var(--neon-blue);
@@ -89,11 +103,7 @@
             height: 200px;
             position: relative;
             transform-style: preserve-3d;
-            animation: rotate-cube 20s infinite linear;
-        }
-
-        .cube-container.paused {
-            animation-play-state: paused;
+            transform: rotateX(-15deg) rotateY(0deg);
         }
 
         /* Cube Face */
@@ -113,6 +123,9 @@
             cursor: pointer;
             transition: all 0.3s;
             backface-visibility: visible;
+            -webkit-user-select: none;
+            user-select: none;
+            pointer-events: auto;
         }
 
         .cube-face:hover {
@@ -134,9 +147,12 @@
             color: var(--text-color);
             text-transform: uppercase;
             letter-spacing: 1px;
+            text-align: center;
+            padding: 0 5px;
+            transform-style: preserve-3d;
         }
 
-        /* Cube Face Positions */
+        /* Cube Face Positions - Mantenendo le scritte sempre leggibili */
         .front {
             transform: translateZ(100px);
         }
@@ -145,30 +161,40 @@
             transform: rotateY(180deg) translateZ(100px);
         }
 
+        .back span {
+            transform: rotateY(180deg);
+        }
+
         .right {
             transform: rotateY(90deg) translateZ(100px);
+        }
+
+        .right span {
+            transform: rotateY(-90deg);
         }
 
         .left {
             transform: rotateY(-90deg) translateZ(100px);
         }
 
+        .left span {
+            transform: rotateY(90deg);
+        }
+
         .top {
             transform: rotateX(90deg) translateZ(100px);
+        }
+
+        .top span {
+            transform: rotateX(-90deg);
         }
 
         .bottom {
             transform: rotateX(-90deg) translateZ(100px);
         }
 
-        @keyframes rotate-cube {
-            0% {
-                transform: rotateX(-15deg) rotateY(0deg);
-            }
-
-            100% {
-                transform: rotateX(-15deg) rotateY(360deg);
-            }
+        .bottom span {
+            transform: rotateX(90deg);
         }
 
         /* Controls */
@@ -255,17 +281,18 @@
             color: rgba(0, 243, 255, 0.5);
             font-size: 11px;
             text-align: center;
+            padding: 0 10px;
         }
     </style>
 </head>
 
 <body>
     <div class="header">
-        <button class="back-btn" onclick="goToDesktop()">
-            <i class="fa fa-desktop"></i> Desktop
-        </button>
+        <div class="username-display" id="usernameDisplay">
+            USERNAME
+        </div>
         <h1>FINANCIAL ESTIMATES</h1>
-        <button class="back-btn" onclick="logout()">
+        <button class="logout-btn" onclick="logout()">
             <i class="fa fa-sign-out"></i>
         </button>
     </div>
@@ -308,9 +335,6 @@
     </div>
 
     <div class="controls">
-        <button class="control-btn" id="pauseBtn" onclick="toggleRotation()">
-            <i class="fa fa-pause"></i>
-        </button>
         <button class="control-btn" onclick="resetRotation()">
             <i class="fa fa-refresh"></i>
         </button>
@@ -318,23 +342,103 @@
 
     <script>
         const cube = document.getElementById('cube');
-        const pauseBtn = document.getElementById('pauseBtn');
-        let isPaused = false;
-        let startX, startY, currentX = 0, currentY = -15;
+        const usernameDisplay = document.getElementById('usernameDisplay');
+        let isDragging = false;
+        let startX, startY;
+        let currentX = -15; // Inizialmente inclinato in avanti
+        let currentY = 0;
+        let velocityX = 0;
+        let velocityY = 0;
+        let lastX, lastY;
+        let lastTime = 0;
 
-        // Toggle rotation
-        function toggleRotation() {
-            isPaused = !isPaused;
-            cube.classList.toggle('paused', isPaused);
-            pauseBtn.innerHTML = isPaused ? '<i class="fa fa-play"></i>' : '<i class="fa fa-pause"></i>';
+        // Recupera username da sessionStorage
+        function loadUsername() {
+            const username = sessionStorage.getItem('username') || 'USERNAME';
+            usernameDisplay.textContent = username;
         }
 
-        // Reset rotation
-        function resetRotation() {
-            cube.style.transform = '';
-            cube.classList.remove('paused');
-            isPaused = false;
-            pauseBtn.innerHTML = '<i class="fa fa-pause"></i>';
+        // Inertia parameters
+        const friction = 0.95;
+        const minVelocity = 0.01;
+
+        // Touch controls for manual rotation
+        cube.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            isDragging = true;
+            startX = e.touches[0].clientX;
+            startY = e.touches[0].clientY;
+            lastX = startX;
+            lastY = startY;
+            lastTime = Date.now();
+
+            // Reset velocity when starting new drag
+            velocityX = 0;
+            velocityY = 0;
+        });
+
+        cube.addEventListener('touchmove', (e) => {
+            if (!isDragging) return;
+            e.preventDefault();
+
+            const touchX = e.touches[0].clientX;
+            const touchY = e.touches[0].clientY;
+
+            // Calculate deltas
+            const deltaX = touchX - lastX;
+            const deltaY = touchY - lastY;
+            const currentTime = Date.now();
+            const deltaTime = currentTime - lastTime;
+
+            // Update rotation
+            currentY += deltaX * 0.5;
+            currentX -= deltaY * 0.5;
+
+            // Keep X rotation within reasonable limits to prevent flipping
+            currentX = Math.max(-85, Math.min(85, currentX));
+
+            cube.style.transform = `rotateX(${currentX}deg) rotateY(${currentY}deg)`;
+
+            // Calculate velocity for inertia
+            if (deltaTime > 0) {
+                velocityX = (deltaX / deltaTime) * 10;
+                velocityY = (deltaY / deltaTime) * 10;
+            }
+
+            lastX = touchX;
+            lastY = touchY;
+            lastTime = currentTime;
+        });
+
+        cube.addEventListener('touchend', (e) => {
+            if (!isDragging) return;
+            isDragging = false;
+
+            // Apply inertia
+            if (Math.abs(velocityX) > minVelocity || Math.abs(velocityY) > minVelocity) {
+                applyInertia();
+            }
+        });
+
+        function applyInertia() {
+            if (isDragging) return;
+
+            currentY += velocityX * 0.5;
+            currentX -= velocityY * 0.5;
+
+            // Keep X rotation within reasonable limits
+            currentX = Math.max(-85, Math.min(85, currentX));
+
+            cube.style.transform = `rotateX(${currentX}deg) rotateY(${currentY}deg)`;
+
+            // Apply friction
+            velocityX *= friction;
+            velocityY *= friction;
+
+            // Continue animation if velocity is still significant
+            if (Math.abs(velocityX) > minVelocity || Math.abs(velocityY) > minVelocity) {
+                requestAnimationFrame(applyInertia);
+            }
         }
 
         // Navigate to page
@@ -342,10 +446,13 @@
             window.location.href = page;
         }
 
-        // Go to desktop version
-        function goToDesktop() {
-            sessionStorage.setItem('forceDesktop', 'true');
-            window.location.href = 'dashboard.html';
+        // Reset rotation
+        function resetRotation() {
+            currentX = -15;
+            currentY = 0;
+            velocityX = 0;
+            velocityY = 0;
+            cube.style.transform = `rotateX(${currentX}deg) rotateY(${currentY}deg)`;
         }
 
         // Logout
@@ -354,51 +461,13 @@
             window.location.href = 'login.html';
         }
 
-        // Touch controls for manual rotation
-        cube.addEventListener('touchstart', (e) => {
-            if (!isPaused) {
-                toggleRotation();
-            }
-            startX = e.touches[0].clientX;
-            startY = e.touches[0].clientY;
-        });
-
-        cube.addEventListener('touchmove', (e) => {
-            if (!isPaused) return;
-            const deltaX = e.touches[0].clientX - startX;
-            const deltaY = e.touches[0].clientY - startY;
-            currentY += deltaX * 0.5;
-            currentX -= deltaY * 0.5;
-            cube.style.transform = `rotateX(${currentX}deg) rotateY(${currentY}deg)`;
-            startX = e.touches[0].clientX;
-            startY = e.touches[0].clientY;
-        });
-
-        // Mouse controls for desktop testing
-        let isDragging = false;
+        // Disable mouse controls for desktop
         cube.addEventListener('mousedown', (e) => {
-            if (!isPaused) {
-                toggleRotation();
-            }
-            isDragging = true;
-            startX = e.clientX;
-            startY = e.clientY;
+            e.preventDefault();
         });
 
-        document.addEventListener('mousemove', (e) => {
-            if (!isDragging || !isPaused) return;
-            const deltaX = e.clientX - startX;
-            const deltaY = e.clientY - startY;
-            currentY += deltaX * 0.5;
-            currentX -= deltaY * 0.5;
-            cube.style.transform = `rotateX(${currentX}deg) rotateY(${currentY}deg)`;
-            startX = e.clientX;
-            startY = e.clientY;
-        });
-
-        document.addEventListener('mouseup', () => {
-            isDragging = false;
-        });
+        // Load username on page load
+        document.addEventListener('DOMContentLoaded', loadUsername);
     </script>
 </body>
 
