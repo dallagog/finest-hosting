@@ -136,6 +136,17 @@
                 inset 0 0 40px rgba(0, 243, 255, 0.2);
         }
 
+        .face-content {
+            position: relative;
+            transform-style: preserve-3d;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 100%;
+        }
+
         .cube-face i {
             font-size: 40px;
             color: var(--neon-cyan);
@@ -152,7 +163,7 @@
             padding: 0 5px;
         }
 
-        /* Cube Face Positions - Mantenendo le scritte sempre leggibili */
+        /* Cube Face Positions */
         .front {
             transform: translateZ(100px);
         }
@@ -175,40 +186,6 @@
 
         .bottom {
             transform: rotateX(-90deg) translateZ(100px);
-        }
-
-        /* Controls */
-        .controls {
-            position: fixed;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            display: flex;
-            gap: 15px;
-            z-index: 100;
-        }
-
-        .control-btn {
-            padding: 12px 20px;
-            background: rgba(0, 102, 255, 0.2);
-            border: 1px solid var(--neon-blue);
-            color: var(--neon-cyan);
-            border-radius: 4px;
-            cursor: pointer;
-            font-family: 'Orbitron', sans-serif;
-            font-size: 14px;
-            transition: all 0.3s;
-        }
-
-        .control-btn:hover {
-            background: var(--neon-blue);
-            color: #fff;
-            box-shadow: 0 0 15px var(--neon-blue);
-        }
-
-        .control-btn.active {
-            background: var(--neon-cyan);
-            color: #000;
         }
 
         /* Glow effect for the scene */
@@ -250,7 +227,7 @@
         /* Touch interaction hint */
         .touch-hint {
             position: fixed;
-            bottom: 80px;
+            bottom: 20px;
             left: 50%;
             transform: translateX(-50%);
             color: rgba(0, 243, 255, 0.5);
@@ -280,33 +257,45 @@
     <!-- 3D Cube -->
     <div class="cube-container" id="cube">
         <div class="cube-face front" onclick="navigateTo('dashboard.html')">
-            <i class="fa fa-chart-pie"></i>
-            <span>Portfolio</span>
+            <div class="face-content">
+                <i class="fa fa-chart-pie"></i>
+                <span>Portfolio</span>
+            </div>
         </div>
         <div class="cube-face back" onclick="navigateTo('dashboard-trading.html')">
-            <i class="fa fa-rocket"></i>
-            <span>Trading</span>
+            <div class="face-content">
+                <i class="fa fa-rocket"></i>
+                <span>Trading</span>
+            </div>
         </div>
         <div class="cube-face right" onclick="navigateTo('dashboard-trade.html')">
-            <i class="fa fa-exchange"></i>
-            <span>Movimenti</span>
+            <div class="face-content">
+                <i class="fa fa-exchange"></i>
+                <span>Movimenti</span>
+            </div>
         </div>
         <div class="cube-face left" onclick="navigateTo('dashboard-account.html')">
-            <i class="fa fa-university"></i>
-            <span>Rapporti</span>
+            <div class="face-content">
+                <i class="fa fa-university"></i>
+                <span>Rapporti</span>
+            </div>
         </div>
         <div class="cube-face top" onclick="navigateTo('dashboard-instrument.html')">
-            <i class="fa fa-list"></i>
-            <span>Strumenti</span>
+            <div class="face-content">
+                <i class="fa fa-list"></i>
+                <span>Strumenti</span>
+            </div>
         </div>
         <div class="cube-face bottom" onclick="navigateTo('dataentry.html')">
-            <i class="fa fa-edit"></i>
-            <span>Data Entry</span>
+            <div class="face-content">
+                <i class="fa fa-edit"></i>
+                <span>Data Entry</span>
+            </div>
         </div>
     </div>
 
     <div class="touch-hint">
-        Tocca il cubo per navigare • Scorri per ruotare
+        Tocca e trascina per ruotare il cubo
     </div>
 
     <script>
@@ -322,15 +311,60 @@
         // Variabili per il controllo della rotazione
         let isDragging = false;
         let startX, startY;
-        let currentRotationX = -15; // Inizialmente inclinato in avanti
-        let currentRotationY = 0;
+        let rotationX = -15; // Inizialmente inclinato in avanti
+        let rotationY = 0;
+        let lastRotationX = rotationX;
+        let lastRotationY = rotationY;
 
-        // Variabili per l'inerzia
-        let velocityX = 0;
-        let velocityY = 0;
-        let lastX, lastY;
-        let lastTime = 0;
-        let inertiaAnimationId = null;
+        // Sistema per mantenere testo sempre orientato correttamente
+        let faceContents = document.querySelectorAll('.face-content');
+
+        // Funzione per aggiornare l'orientamento del testo
+        function updateTextOrientation() {
+            // Calcola l'angolo normalizzato
+            let normalizedY = rotationY % 360;
+            let normalizedX = rotationX % 360;
+
+            faceContents.forEach((content, index) => {
+                let faceRotationY = 0;
+                let faceRotationX = 0;
+
+                // Determina la rotazione di base per ogni faccia
+                switch (index) {
+                    case 0: // front
+                        faceRotationY = 0;
+                        faceRotationX = 0;
+                        break;
+                    case 1: // back
+                        faceRotationY = 180;
+                        faceRotationX = 0;
+                        break;
+                    case 2: // right
+                        faceRotationY = 90;
+                        faceRotationX = 0;
+                        break;
+                    case 3: // left
+                        faceRotationY = -90;
+                        faceRotationX = 0;
+                        break;
+                    case 4: // top
+                        faceRotationY = 0;
+                        faceRotationX = 90;
+                        break;
+                    case 5: // bottom
+                        faceRotationY = 0;
+                        faceRotationX = -90;
+                        break;
+                }
+
+                // Calcola la rotazione necessaria per mantenere il testo dritto
+                let targetY = -rotationY + faceRotationY;
+                let targetX = -rotationX + faceRotationX;
+
+                // Applica la rotazione inversa per compensare la rotazione del cubo
+                content.style.transform = `rotateY(${targetY}deg) rotateX(${targetX}deg)`;
+            });
+        }
 
         // Touch controls for manual rotation
         cube.addEventListener('touchstart', handleTouchStart);
@@ -341,21 +375,12 @@
             e.preventDefault();
             isDragging = true;
 
-            // Ferma l'inerzia se attiva
-            if (inertiaAnimationId) {
-                cancelAnimationFrame(inertiaAnimationId);
-                inertiaAnimationId = null;
-            }
-
             startX = e.touches[0].clientX;
             startY = e.touches[0].clientY;
-            lastX = startX;
-            lastY = startY;
-            lastTime = Date.now();
 
-            // Reset velocity when starting new drag
-            velocityX = 0;
-            velocityY = 0;
+            // Salva la rotazione corrente
+            lastRotationX = rotationX;
+            lastRotationY = rotationY;
         }
 
         function handleTouchMove(e) {
@@ -366,91 +391,29 @@
             const touchY = e.touches[0].clientY;
 
             // Calcola il movimento
-            const deltaX = touchX - lastX;
-            const deltaY = touchY - lastY;
-            const currentTime = Date.now();
-            const deltaTime = currentTime - lastTime;
+            const deltaX = touchX - startX;
+            const deltaY = touchY - startY;
 
-            // Aggiorna la rotazione - SENSIBILITÀ AUMENTATA
-            currentRotationY += deltaX * 0.8; // Sensibilità aumentata
-            currentRotationX -= deltaY * 0.8; // Sensibilità aumentata
+            // Aggiorna la rotazione - MOOLTO più sensibile
+            rotationY = lastRotationY + deltaX * 1.5; // Sensibilità aumentata
+            rotationX = lastRotationX - deltaY * 1.5; // Sensibilità aumentata
 
-            // Mantieni la rotazione X entro limiti ragionevoli
-            currentRotationX = Math.max(-85, Math.min(85, currentRotationX));
-
+            // SENZA LIMITI - il cubo può ruotare all'infinito
             // Applica la rotazione
-            cube.style.transform = `rotateX(${currentRotationX}deg) rotateY(${currentRotationY}deg)`;
+            cube.style.transform = `rotateX(${rotationX}deg) rotateY(${rotationY}deg)`;
 
-            // Calcola la velocità per l'inerzia
-            if (deltaTime > 0) {
-                velocityX = (deltaX / deltaTime) * 16; // Velocità aumentata
-                velocityY = (deltaY / deltaTime) * 16; // Velocità aumentata
-            }
-
-            lastX = touchX;
-            lastY = touchY;
-            lastTime = currentTime;
+            // Aggiorna l'orientamento del testo
+            updateTextOrientation();
         }
 
         function handleTouchEnd(e) {
             if (!isDragging) return;
             isDragging = false;
-
-            // Applica l'inerzia se c'è abbastanza velocità
-            const minVelocity = 0.05;
-            if (Math.abs(velocityX) > minVelocity || Math.abs(velocityY) > minVelocity) {
-                applyInertia();
-            }
-        }
-
-        function applyInertia() {
-            if (isDragging) {
-                inertiaAnimationId = null;
-                return;
-            }
-
-            // Applica la rotazione con inerzia
-            currentRotationY += velocityX;
-            currentRotationX -= velocityY;
-
-            // Mantieni la rotazione X entro limiti ragionevoli
-            currentRotationX = Math.max(-85, Math.min(85, currentRotationX));
-
-            // Applica la rotazione
-            cube.style.transform = `rotateX(${currentRotationX}deg) rotateY(${currentRotationY}deg)`;
-
-            // Applica attrito all'inerzia
-            velocityX *= 0.95; // Attrito ridotto per inerzia più lunga
-            velocityY *= 0.95;
-
-            // Continua l'animazione se la velocità è ancora significativa
-            const minVelocity = 0.01;
-            if (Math.abs(velocityX) > minVelocity || Math.abs(velocityY) > minVelocity) {
-                inertiaAnimationId = requestAnimationFrame(applyInertia);
-            } else {
-                inertiaAnimationId = null;
-            }
         }
 
         // Navigate to page
         function navigateTo(page) {
             window.location.href = page;
-        }
-
-        // Reset rotation
-        function resetRotation() {
-            currentRotationX = -15;
-            currentRotationY = 0;
-            velocityX = 0;
-            velocityY = 0;
-
-            // Ferma l'inerzia se attiva
-            if (inertiaAnimationId) {
-                cancelAnimationFrame(inertiaAnimationId);
-                inertiaAnimationId = null;
-            }
-
-            cube.style.transform = `rotateX(${currentRotationX}deg) rotateY(${currentRotationY}deg)`;
         }
 
         // Logout
