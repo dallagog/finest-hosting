@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Financial Estimates 1.1</title>
+  <title>Financial Estimates 1.2</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&display=swap');
@@ -132,13 +132,14 @@
     </select>
 
     <!-- Close button: same style as signin button, text populated via getTranslation('int.close') -->
+    <button class="header-signin-btn" id="signin-btn" onclick="goToLogin()">
+      <i class="fa fa-sign-in"></i> <span id="signin-text"></span>
+    </button>
+
     <button class="header-signin-btn" id="close-btn" onclick="closePage()" title="">
       <i class="fa fa-times"></i> <span id="close-text"></span>
     </button>
 
-    <button class="header-signin-btn" id="signin-btn" onclick="goToLogin()">
-      <i class="fa fa-sign-in"></i> <span id="signin-text"></span>
-    </button>
   </div>
 
   <!-- Offline overlay -->
@@ -267,13 +268,14 @@
 
     // Close page - best-effort to close the window/tab
     function closePage() {
-      try {
-        // common fallback to allow closing even if not opened by script
-        window.open('', '_self');
-        window.close();
-      } catch (err) {
-        console.warn('Window close failed:', err);
-      }
+      history.length > 1 ? history.back() : window.location.href = 'about:blank';
+      //try {
+      //  // common fallback to allow closing even if not opened by script
+      //  window.open('', '_self');
+      //  window.close();
+      //} catch (err) {
+      //  console.warn('Window close failed:', err);
+      //}
     }
 
     // Health check
