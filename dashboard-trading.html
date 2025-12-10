@@ -145,25 +145,45 @@
 
         .data-table tbody tr {
             transition: background 0.2s;
-            cursor: pointer;
         }
 
         .data-table tbody tr:hover {
             background: rgba(0, 243, 255, 0.1);
         }
 
-        .data-table tbody tr.new-stock-row {
-            background: rgba(0, 255, 0, 0.05);
-            border: 1px solid rgba(0, 255, 0, 0.3);
+        .trade-actions {
+            display: flex;
+            gap: 5px;
+            justify-content: center;
+            align-items: center;
         }
 
-        .data-table tbody tr.new-stock-row:hover {
-            background: rgba(0, 255, 0, 0.15);
+        .trade-btn {
+            padding: 5px 10px;
+            font-size: 12px;
+            min-width: 60px;
         }
 
-        .new-stock-icon {
+        .trade-btn.buy {
+            background: rgba(0, 255, 0, 0.2);
+            border-color: #00ff00;
             color: #00ff00;
-            font-size: 1.2em;
+        }
+
+        .trade-btn.buy:hover {
+            background: rgba(0, 255, 0, 0.4);
+            box-shadow: 0 0 10px #00ff00;
+        }
+
+        .trade-btn.sell {
+            background: rgba(255, 0, 0, 0.2);
+            border-color: #ff3333;
+            color: #ff3333;
+        }
+
+        .trade-btn.sell:hover {
+            background: rgba(255, 0, 0, 0.4);
+            box-shadow: 0 0 10px #ff3333;
         }
 
         .message {
@@ -225,12 +245,6 @@
             <div style="display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap;">
                 <button id="historicalBtn" onclick="toggleHistorical()">
                     <i class="fa fa-history"></i> <span id="historicalText">Storico</span>
-                </button>
-                <button id="buyBtn" onclick="openTradeBuy()">
-                    <i class="fa fa-arrow-up"></i> <span id="buyText">Acquista</span>
-                </button>
-                <button id="sellBtn" onclick="openTradeSell()">
-                    <i class="fa fa-arrow-down"></i> <span id="sellText">Vendi</span>
                 </button>
                 <button id="operationsBtn" onclick="openTradeOperations()">
                     <i class="fa fa-list"></i> <span id="operationsText">Operazioni</span>
@@ -312,8 +326,6 @@
             document.getElementById('portfolioTitle').textContent = getTranslation('int.portfolio');
             document.getElementById('closeText').textContent = getTranslation('int.close');
             document.getElementById('historicalText').textContent = getTranslation('int.historical');
-            document.getElementById('buyText').textContent = getTranslation('int.acquista');
-            document.getElementById('sellText').textContent = getTranslation('int.vendi');
             document.getElementById('operationsText').textContent = getTranslation('int.operazioni');
         }
 
@@ -473,47 +485,34 @@
                 th.textContent = getTranslation(col) || col;
                 th.style.cursor = 'pointer';
                 th.onclick = () => sortTable(col);
-                // Add sort indicator if this is the sorted column
                 if (sortColumn === col) {
                     th.classList.add(sortAscending ? 'sort-asc' : 'sort-desc');
                 }
                 thead.appendChild(th);
             });
 
-            // New Stock Row (empty row for adding new stock)
-            const newStockRow = document.createElement('tr');
-            newStockRow.className = 'new-stock-row';
-            newStockRow.onclick = () => openTradeDetails(null);
-
-            tableColumns.forEach((col, index) => {
-                const td = document.createElement('td');
-                if (index === 0) {
-                    td.innerHTML = '<i class="fa fa-plus new-stock-icon"></i> <span style="color: #00ff00;">' + getTranslation('int.newstock') + '</span>';
-                } else {
-                    td.textContent = '';
-                }
-                newStockRow.appendChild(td);
-            });
-            tbody.appendChild(newStockRow);
+            // Add Actions column header
+            const actionsHeader = document.createElement('th');
+            actionsHeader.textContent = getTranslation('int.actions') || 'Azioni';
+            actionsHeader.style.textAlign = 'center';
+            thead.appendChild(actionsHeader);
 
             // Data Rows
             let displayData = portfolioData;
 
             if (!isHistoricalActive) {
                 displayData = portfolioData.filter(item => {
-                    // Find quantity field (case insensitive)
                     const qtyKey = Object.keys(item).find(k => k.toLowerCase() === 'quantity' || k.toLowerCase() === 'quantità' || k.toLowerCase() === 'qta');
                     if (qtyKey && item[qtyKey] !== undefined) {
                         const qty = parseFloat(item[qtyKey]);
                         return !isNaN(qty) && Math.abs(qty) > 0.000001;
                     }
-                    return true; // If no quantity field found, keep the row
+                    return true;
                 });
             }
 
             displayData.forEach(item => {
                 const tr = document.createElement('tr');
-                tr.onclick = () => openTradeDetails(item);
 
                 tableColumns.forEach((col, index) => {
                     const td = document.createElement('td');
@@ -526,12 +525,10 @@
                         span.style.color = 'var(--neon-cyan)';
                         td.appendChild(span);
                     } else if (val !== undefined) {
-                        // Check if column description contains "%" and absolute value > 5000
                         const colDescription = getTranslation(col) || col;
                         const isPercentageCol = colDescription.includes('%');
 
                         if (typeof val === 'number') {
-                            // Display "--" for percentage columns with absolute value > 5000
                             if (isPercentageCol && Math.abs(val) > 5000) {
                                 td.textContent = '--';
                             } else {
@@ -546,15 +543,44 @@
                     }
                     tr.appendChild(td);
                 });
+
+                // Add Actions column
+                const actionsTd = document.createElement('td');
+                actionsTd.style.textAlign = 'center';
+                const actionsDiv = document.createElement('div');
+                actionsDiv.className = 'trade-actions';
+
+                const buyBtn = document.createElement('button');
+                buyBtn.className = 'trade-btn buy';
+                buyBtn.innerHTML = '<i class="fa fa-arrow-up"></i> ' + (getTranslation('int.acquista') || 'Acquista');
+                buyBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    openTrade(item, 'buy');
+                };
+
+                const sellBtn = document.createElement('button');
+                sellBtn.className = 'trade-btn sell';
+                sellBtn.innerHTML = '<i class="fa fa-arrow-down"></i> ' + (getTranslation('int.vendi') || 'Vendi');
+                sellBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    openTrade(item, 'sell');
+                };
+
+                actionsDiv.appendChild(buyBtn);
+                actionsDiv.appendChild(sellBtn);
+                actionsTd.appendChild(actionsDiv);
+                tr.appendChild(actionsTd);
+
                 tbody.appendChild(tr);
             });
         }
 
-        function openTradeDetails(item) {
+        function openTrade(item, action) {
             const params = new URLSearchParams({
                 username: credentials.username,
                 token: credentials.token,
-                language: credentials.language
+                language: credentials.language,
+                action: action
             });
 
             if (item && item.Ticker) {
@@ -573,7 +599,6 @@
                 sortAscending = true;
             }
 
-            // Sort portfolioData
             portfolioData.sort((a, b) => {
                 const valA = a[column];
                 const valB = b[column];
@@ -610,18 +635,7 @@
             renderTable();
         }
 
-        function openTradeBuy() {
-            // Open trade page in buy mode
-            openTradeDetails(null);
-        }
-
-        function openTradeSell() {
-            // Open trade page in sell mode
-            openTradeDetails(null);
-        }
-
         function openTradeOperations() {
-            // Open operations page
             showMessage('Funzione Operazioni non ancora implementata', 'info');
         }
 
