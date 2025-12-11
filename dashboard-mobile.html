@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
-    <title>Dashboard Mobile 1.1 a</title>
+    <title>Financial Dashboard Mobile 1.0</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&display=swap');
@@ -15,17 +15,20 @@
             --neon-blue: #0066ff;
             --glass-bg: rgba(0, 20, 40, 0.85);
             --text-color: #e0f7fa;
-            --border-color: var(--neon-cyan);
         }
 
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            -webkit-touch-callout: none;
+            user-select: none;
         }
 
         html,
         body {
+            width: 100%;
             height: 100%;
             overflow: hidden;
             background: var(--bg-color);
@@ -36,14 +39,7 @@
             color: var(--text-color);
             display: flex;
             flex-direction: column;
-            align-items: center;
-            justify-content: center;
             touch-action: none;
-            perspective: 1200px;
-            background-image:
-                linear-gradient(rgba(0, 243, 255, 0.05) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(0, 243, 255, 0.05) 1px, transparent 1px);
-            background-size: 30px 30px;
         }
 
         /* Header */
@@ -56,9 +52,10 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            background: rgba(0, 20, 40, 0.9);
+            background: rgba(0, 20, 40, 0.95);
             border-bottom: 1px solid var(--neon-blue);
-            z-index: 100;
+            z-index: 1000;
+            backdrop-filter: blur(10px);
         }
 
         .header h1 {
@@ -78,7 +75,6 @@
             border: 1px solid rgba(0, 102, 255, 0.3);
             border-radius: 4px;
             min-width: 70px;
-            text-align: left;
             max-width: 120px;
             overflow: hidden;
             text-overflow: ellipsis;
@@ -86,7 +82,7 @@
         }
 
         .logout-btn {
-            padding: 8px 16px;
+            padding: 8px 12px;
             background: rgba(255, 0, 0, 0.2);
             border: 1px solid #ff3333;
             color: #ff3333;
@@ -94,244 +90,283 @@
             cursor: pointer;
             font-family: 'Orbitron', sans-serif;
             font-size: 12px;
-            transition: all 0.3s;
         }
 
-        .logout-btn:hover {
-            background: rgba(255, 0, 0, 0.4);
-            box-shadow: 0 0 10px #ff3333;
-        }
-
-        /* Scene Container */
-        .scene {
+        /* Tesseract Container */
+        .tesseract-container {
+            position: fixed;
+            top: 0;
+            left: 0;
             width: 100%;
             height: 100%;
-            perspective: 1200px;
             display: flex;
             align-items: center;
             justify-content: center;
+            perspective: 1000px;
             overflow: hidden;
-            touch-action: pan-x pan-y;
         }
 
-        /* Hypercube Container */
-        .hypercube-container {
-            width: 200px;
-            height: 200px;
-            position: relative;
-            transform-style: preserve-3d;
-            transform: rotateX(-20deg) rotateY(20deg);
-            will-change: transform;
-        }
-
-        /* Outer Cube (Menu Faces) */
-        .cube-face {
+        .tesseract {
             position: absolute;
-            width: 200px;
-            height: 200px;
-            background: rgba(0, 20, 40, 0.95);
+            width: 280px;
+            height: 280px;
+            transform-style: preserve-3d;
+            transform: rotateX(-15deg) rotateY(15deg);
+        }
+
+        /* Outer Cube */
+        .outer-cube {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            transform-style: preserve-3d;
+        }
+
+        /* Inner Cube */
+        .inner-cube {
+            position: absolute;
+            width: 140px;
+            height: 140px;
+            transform-style: preserve-3d;
+            transform: translateZ(-70px);
+        }
+
+        /* Cube Faces - Outer */
+        .outer-face {
+            position: absolute;
+            width: 280px;
+            height: 280px;
+            background: rgba(0, 20, 40, 0.9);
             border: 2px solid var(--neon-cyan);
-            box-shadow:
-                0 0 25px rgba(0, 243, 255, 0.6),
-                inset 0 0 50px rgba(0, 243, 255, 0.15);
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             cursor: pointer;
-            backface-visibility: visible;
+            box-shadow:
+                0 0 30px rgba(0, 243, 255, 0.4),
+                inset 0 0 60px rgba(0, 243, 255, 0.1);
+            transition: all 0.2s ease;
             transform-origin: center;
         }
 
-        .cube-face:active {
+        .outer-face:active {
             background: rgba(0, 30, 60, 0.95);
             box-shadow:
-                0 0 35px rgba(0, 243, 255, 0.8),
-                inset 0 0 60px rgba(0, 243, 255, 0.25);
+                0 0 40px rgba(0, 243, 255, 0.8),
+                inset 0 0 80px rgba(0, 243, 255, 0.2);
+            transform: translateZ(5px);
         }
 
-        .face-inner {
+        .face-content {
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             width: 100%;
             height: 100%;
-            transform: translateZ(1px);
             pointer-events: none;
         }
 
-        .cube-face i {
-            font-size: 42px;
+        .outer-face i {
+            font-size: 48px;
             color: var(--neon-cyan);
-            margin-bottom: 12px;
+            margin-bottom: 15px;
             text-shadow: 0 0 20px var(--neon-cyan);
-            filter: drop-shadow(0 0 8px rgba(0, 243, 255, 0.7));
+            filter: drop-shadow(0 0 10px rgba(0, 243, 255, 0.7));
         }
 
-        .cube-face span {
-            font-size: 13px;
+        .outer-face span {
+            font-size: 14px;
             color: var(--text-color);
             text-transform: uppercase;
-            letter-spacing: 1.8px;
+            letter-spacing: 2px;
             text-align: center;
-            padding: 0 15px;
+            padding: 0 20px;
             font-weight: 500;
-            text-shadow: 0 0 10px rgba(224, 247, 250, 0.5);
+            text-shadow: 0 0 10px rgba(224, 247, 250, 0.6);
         }
 
-        /* Cube Face Positions */
+        /* Cube Faces - Inner */
+        .inner-face {
+            position: absolute;
+            width: 140px;
+            height: 140px;
+            background: rgba(0, 243, 255, 0.05);
+            border: 1px solid rgba(0, 243, 255, 0.3);
+            opacity: 0.6;
+            box-shadow:
+                inset 0 0 40px rgba(0, 243, 255, 0.1),
+                0 0 20px rgba(0, 243, 255, 0.2);
+        }
+
+        /* Face Positions */
         .front {
-            transform: translateZ(100px);
+            transform: translateZ(140px);
         }
 
         .back {
-            transform: rotateY(180deg) translateZ(100px);
+            transform: rotateY(180deg) translateZ(140px);
         }
 
         .right {
-            transform: rotateY(90deg) translateZ(100px);
+            transform: rotateY(90deg) translateZ(140px);
         }
 
         .left {
-            transform: rotateY(-90deg) translateZ(100px);
+            transform: rotateY(-90deg) translateZ(140px);
         }
 
         .top {
-            transform: rotateX(90deg) translateZ(100px);
+            transform: rotateX(90deg) translateZ(140px);
         }
 
         .bottom {
-            transform: rotateX(-90deg) translateZ(100px);
-        }
-
-        /* Inner Cube (Hypercube effect) */
-        .inner-cube {
-            position: absolute;
-            width: 100px;
-            height: 100px;
-            transform-style: preserve-3d;
-            transform: translateZ(-50px);
-            pointer-events: none;
-        }
-
-        .inner-face {
-            position: absolute;
-            width: 100px;
-            height: 100px;
-            background: rgba(0, 243, 255, 0.1);
-            border: 1px solid rgba(0, 243, 255, 0.4);
-            opacity: 0.7;
-            box-shadow:
-                0 0 20px rgba(0, 243, 255, 0.3),
-                inset 0 0 30px rgba(0, 243, 255, 0.2);
+            transform: rotateX(-90deg) translateZ(140px);
         }
 
         .inner-front {
-            transform: translateZ(50px);
+            transform: translateZ(70px);
         }
 
         .inner-back {
-            transform: rotateY(180deg) translateZ(50px);
+            transform: rotateY(180deg) translateZ(70px);
         }
 
         .inner-right {
-            transform: rotateY(90deg) translateZ(50px);
+            transform: rotateY(90deg) translateZ(70px);
         }
 
         .inner-left {
-            transform: rotateY(-90deg) translateZ(50px);
+            transform: rotateY(-90deg) translateZ(70px);
         }
 
         .inner-top {
-            transform: rotateX(90deg) translateZ(50px);
+            transform: rotateX(90deg) translateZ(70px);
         }
 
         .inner-bottom {
-            transform: rotateX(-90deg) translateZ(50px);
+            transform: rotateX(-90deg) translateZ(70px);
         }
 
-        /* Touch hint */
+        /* Connecting Lines for Tesseract */
+        .connection {
+            position: absolute;
+            background: linear-gradient(to right,
+                    transparent,
+                    rgba(0, 243, 255, 0.4),
+                    transparent);
+            height: 1px;
+            pointer-events: none;
+            filter: blur(0.5px);
+        }
+
+        /* Touch Hint */
         .touch-hint {
             position: fixed;
             bottom: 30px;
-            left: 50%;
-            transform: translateX(-50%);
+            left: 0;
+            right: 0;
             color: rgba(0, 243, 255, 0.8);
             font-size: 13px;
             text-align: center;
-            padding: 10px 25px;
-            background: rgba(0, 20, 40, 0.4);
-            border: 1px solid rgba(0, 243, 255, 0.3);
-            border-radius: 20px;
+            padding: 12px;
+            background: rgba(0, 20, 40, 0.5);
+            border-top: 1px solid rgba(0, 243, 255, 0.3);
             backdrop-filter: blur(5px);
-            z-index: 50;
+            z-index: 100;
         }
 
-        /* Remove tap highlight */
-        * {
-            -webkit-tap-highlight-color: transparent;
-            -webkit-touch-callout: none;
-            -webkit-user-select: none;
-            user-select: none;
+        /* Grid Background */
+        .grid-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image:
+                linear-gradient(rgba(0, 243, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 243, 255, 0.03) 1px, transparent 1px);
+            background-size: 40px 40px;
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        /* Active Tap Effect */
+        .tap-effect {
+            position: absolute;
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            background: radial-gradient(circle,
+                    rgba(0, 243, 255, 0.3) 0%,
+                    rgba(0, 243, 255, 0.1) 40%,
+                    transparent 70%);
+            pointer-events: none;
+            opacity: 0;
+            z-index: 500;
         }
     </style>
 </head>
 
 <body>
+    <!-- Grid Background -->
+    <div class="grid-bg"></div>
+
+    <!-- Header -->
     <div class="header">
-        <div class="username-display" id="usernameDisplay">
-            -
-        </div>
+        <div class="username-display" id="usernameDisplay">-</div>
         <h1>FINANCIAL ESTIMATES</h1>
         <button class="logout-btn" onclick="logout()">
             <i class="fa fa-sign-out"></i>
         </button>
     </div>
 
-    <!-- Scene Container -->
-    <div class="scene" id="scene">
-        <!-- Hypercube Container -->
-        <div class="hypercube-container" id="hypercube">
-            <!-- Outer Cube Faces (Menu) -->
-            <div class="cube-face front" onclick="navigateTo('dashboard-mobile-portfolio.html')">
-                <div class="face-inner">
-                    <i class="fa fa-chart-pie"></i>
-                    <span>Portfolio</span>
+    <!-- Tesseract Container -->
+    <div class="tesseract-container" id="scene">
+        <div class="tesseract" id="tesseract">
+            <!-- Outer Cube -->
+            <div class="outer-cube" id="outerCube">
+                <!-- Menu Faces -->
+                <div class="outer-face front" onclick="navigateTo('dashboard-mobile-portfolio.html')">
+                    <div class="face-content">
+                        <i class="fa fa-chart-pie"></i>
+                        <span>Portfolio</span>
+                    </div>
                 </div>
-            </div>
-            <div class="cube-face back" onclick="navigateTo('dashboard-mobile-trading.html')">
-                <div class="face-inner">
-                    <i class="fa fa-rocket"></i>
-                    <span>Go Live</span>
+                <div class="outer-face back" onclick="navigateTo('dashboard-mobile-trading.html')">
+                    <div class="face-content">
+                        <i class="fa fa-rocket"></i>
+                        <span>Go Live</span>
+                    </div>
                 </div>
-            </div>
-            <div class="cube-face right" onclick="navigateTo('dashboard-mobile-news.html')">
-                <div class="face-inner">
-                    <i class="fa fa-exchange"></i>
-                    <span>News</span>
+                <div class="outer-face right" onclick="navigateTo('dashboard-mobile-news.html')">
+                    <div class="face-content">
+                        <i class="fa fa-exchange"></i>
+                        <span>News</span>
+                    </div>
                 </div>
-            </div>
-            <div class="cube-face left" onclick="navigateTo('dashboard-mobile-account.html')">
-                <div class="face-inner">
-                    <i class="fa fa-university"></i>
-                    <span>Rapporti</span>
+                <div class="outer-face left" onclick="navigateTo('dashboard-mobile-account.html')">
+                    <div class="face-content">
+                        <i class="fa fa-university"></i>
+                        <span>Rapporti</span>
+                    </div>
                 </div>
-            </div>
-            <div class="cube-face top" onclick="navigateTo('dashboard-mobile-market.html')">
-                <div class="face-inner">
-                    <i class="fa fa-list"></i>
-                    <span>Market</span>
+                <div class="outer-face top" onclick="navigateTo('dashboard-mobile-market.html')">
+                    <div class="face-content">
+                        <i class="fa fa-list"></i>
+                        <span>Market</span>
+                    </div>
                 </div>
-            </div>
-            <div class="cube-face bottom" onclick="navigateTo('dashboard-mobile-trend.html')">
-                <div class="face-inner">
-                    <i class="fa fa-edit"></i>
-                    <span>Trend</span>
+                <div class="outer-face bottom" onclick="navigateTo('dashboard-mobile-trend.html')">
+                    <div class="face-content">
+                        <i class="fa fa-edit"></i>
+                        <span>Trend</span>
+                    </div>
                 </div>
             </div>
 
-            <!-- Inner Cube (Hypercube effect) -->
+            <!-- Inner Cube -->
             <div class="inner-cube" id="innerCube">
                 <div class="inner-face inner-front"></div>
                 <div class="inner-face inner-back"></div>
@@ -340,19 +375,41 @@
                 <div class="inner-face inner-top"></div>
                 <div class="inner-face inner-bottom"></div>
             </div>
+
+            <!-- Connections will be created dynamically -->
+            <div id="connections"></div>
         </div>
     </div>
 
+    <!-- Touch Hint -->
     <div class="touch-hint">
-        👆 Tocca e trascina per ruotare l'ipercubo
+        👆 Tocca e trascina per ruotare il tesseract • Tocca una faccia per entrare
     </div>
 
     <script>
-        const hypercube = document.getElementById('hypercube');
-        const innerCube = document.getElementById('innerCube');
-        const usernameDisplay = document.getElementById('usernameDisplay');
-        const scene = document.getElementById('scene');
+        // ========== CONFIGURATION ==========
         const API_URL = "https://feweb-tunnel.fe-web.eu";
+        const TESSERACT_SIZE = 280;
+        const INNER_SIZE = 140;
+        const SENSITIVITY = 0.4;
+        const INERTIA_DECAY = 0.94;
+
+        // ========== ELEMENTS ==========
+        const tesseract = document.getElementById('tesseract');
+        const outerCube = document.getElementById('outerCube');
+        const innerCube = document.getElementById('innerCube');
+        const connections = document.getElementById('connections');
+        const scene = document.getElementById('scene');
+        const usernameDisplay = document.getElementById('usernameDisplay');
+
+        // ========== STATE ==========
+        let rotation = { x: -15, y: 15, z: 0 };
+        let velocity = { x: 0, y: 0 };
+        let isDragging = false;
+        let lastTouch = { x: 0, y: 0 };
+        let lastTime = 0;
+        let animationId = null;
+        let isAnimating = true;
 
         let credentials = {
             username: '',
@@ -361,88 +418,156 @@
             filter: ''
         };
 
-        // ========== LOAD CREDENTIALS ==========
-        function loadCredentials() {
-            credentials.username = localStorage.getItem("username") || '';
-            credentials.token = localStorage.getItem("token") || '';
-            credentials.language = localStorage.getItem("language") || 'it_IT';
-            credentials.filter = localStorage.getItem("filter") || '';
+        // ========== TESSERACT CONNECTIONS ==========
+        function createConnections() {
+            connections.innerHTML = '';
 
-            console.log('📱 Mobile Credentials loaded:', credentials);
+            // Outer cube vertices
+            const outerVertices = [
+                { x: -1, y: -1, z: -1 }, { x: 1, y: -1, z: -1 },
+                { x: 1, y: 1, z: -1 }, { x: -1, y: 1, z: -1 },
+                { x: -1, y: -1, z: 1 }, { x: 1, y: -1, z: 1 },
+                { x: 1, y: 1, z: 1 }, { x: -1, y: 1, z: 1 }
+            ];
 
-            if (credentials.username) {
-                usernameDisplay.textContent = credentials.username;
-            } else {
-                usernameDisplay.textContent = '-';
-                setTimeout(() => {
-                    console.warn('⚠️ No credentials found, redirecting to login');
-                    window.location.href = 'login.html';
-                }, 2000);
+            // Inner cube vertices (scaled by 0.5)
+            const innerVertices = outerVertices.map(v => ({
+                x: v.x * 0.5,
+                y: v.y * 0.5,
+                z: v.z * 0.5
+            }));
+
+            // Connect outer to inner vertices
+            for (let i = 0; i < 8; i++) {
+                createConnection(outerVertices[i], innerVertices[i]);
+            }
+
+            // Connect outer cube edges
+            const outerEdges = [
+                [0, 1], [1, 2], [2, 3], [3, 0], // bottom face
+                [4, 5], [5, 6], [6, 7], [7, 4], // top face
+                [0, 4], [1, 5], [2, 6], [3, 7]  // vertical edges
+            ];
+
+            for (const [a, b] of outerEdges) {
+                createConnection(outerVertices[a], outerVertices[b], true);
+            }
+
+            // Connect inner cube edges
+            const innerEdges = [
+                [0, 1], [1, 2], [2, 3], [3, 0],
+                [4, 5], [5, 6], [6, 7], [7, 4],
+                [0, 4], [1, 5], [2, 6], [3, 7]
+            ];
+
+            for (const [a, b] of innerEdges) {
+                createConnection(innerVertices[a], innerVertices[b], true);
             }
         }
 
-        // ========== HYPERCUBE ROTATION ==========
-        let isDragging = false;
-        let rotationX = -20;
-        let rotationY = 20;
-        let animationId = null;
-        let lastTimestamp = 0;
+        function createConnection(pointA, pointB, isEdge = false) {
+            const connection = document.createElement('div');
+            connection.className = 'connection';
 
-        // Smooth rotation animation
-        function animate(timestamp) {
-            if (!lastTimestamp) lastTimestamp = timestamp;
-            const deltaTime = timestamp - lastTimestamp;
-            lastTimestamp = timestamp;
+            // Calculate midpoint and length
+            const midX = (pointA.x + pointB.x) / 2;
+            const midY = (pointA.y + pointB.y) / 2;
+            const midZ = (pointA.z + pointB.z) / 2;
 
-            // Update rotation
-            updateHypercubeRotation();
+            const dx = pointB.x - pointA.x;
+            const dy = pointB.y - pointA.y;
+            const dz = pointB.z - pointA.z;
+            const length = Math.sqrt(dx * dx + dy * dy + dz * dz) * TESSERACT_SIZE;
 
-            // Continue animation
-            animationId = requestAnimationFrame(animate);
+            // Calculate rotation angles
+            const yaw = Math.atan2(dx, dz) * (180 / Math.PI);
+            const pitch = Math.atan2(dy, Math.sqrt(dx * dx + dz * dz)) * (180 / Math.PI);
+
+            // Set styles
+            connection.style.width = length + 'px';
+            connection.style.transform = `
+                translate3d(${midX * TESSERACT_SIZE / 2}px, ${midY * TESSERACT_SIZE / 2}px, ${midZ * TESSERACT_SIZE / 2}px)
+                rotateY(${yaw}deg)
+                rotateX(${-pitch}deg)
+            `;
+
+            if (isEdge) {
+                connection.style.background = 'rgba(0, 243, 255, 0.2)';
+                connection.style.height = '1px';
+            } else {
+                connection.style.background = 'rgba(0, 102, 255, 0.3)';
+                connection.style.height = '0.5px';
+            }
+
+            connections.appendChild(connection);
         }
 
-        function startAnimation() {
-            if (!animationId) {
+        // ========== ANIMATION LOOP ==========
+        function animate(timestamp) {
+            if (!lastTime) lastTime = timestamp;
+            const deltaTime = Math.min(timestamp - lastTime, 32) / 16;
+            lastTime = timestamp;
+
+            // Apply velocity (inertia)
+            if (!isDragging) {
+                rotation.y += velocity.x * deltaTime;
+                rotation.x += velocity.y * deltaTime;
+
+                // Decay velocity
+                velocity.x *= INERTIA_DECAY;
+                velocity.y *= INERTIA_DECAY;
+
+                // Stop when very slow
+                if (Math.abs(velocity.x) < 0.01 && Math.abs(velocity.y) < 0.01) {
+                    velocity.x = velocity.y = 0;
+                }
+            }
+
+            // Apply rotation
+            updateRotation();
+
+            if (isAnimating) {
                 animationId = requestAnimationFrame(animate);
             }
         }
 
-        function stopAnimation() {
-            if (animationId) {
-                cancelAnimationFrame(animationId);
-                animationId = null;
-                lastTimestamp = 0;
-            }
-        }
+        function updateRotation() {
+            tesseract.style.transform = `
+                rotateX(${rotation.x}deg) 
+                rotateY(${rotation.y}deg) 
+                rotateZ(${rotation.z}deg)
+            `;
 
-        function updateHypercubeRotation() {
-            // Apply rotation to outer cube
-            hypercube.style.transform =
-                `rotateX(${rotationX}deg) rotateY(${rotationY}deg)`;
-
-            // Apply different rotation to inner cube for hypercube effect
-            innerCube.style.transform =
-                `translateZ(-50px) rotateX(${rotationX * -0.7}deg) rotateY(${rotationY * -0.7}deg)`;
+            // Inner cube rotates differently for 4D effect
+            innerCube.style.transform = `
+                translateZ(-70px)
+                rotateX(${rotation.x * -0.5}deg)
+                rotateY(${rotation.y * -0.5}deg)
+                rotateZ(${rotation.z * 0.3}deg)
+            `;
         }
 
         // ========== TOUCH CONTROLS ==========
-        let lastX = 0;
-        lastY = 0;
-        const SENSITIVITY = 0.5;
-
-        // Touch events
-        scene.addEventListener('touchstart', (e) => {
+        function handleTouchStart(e) {
             e.preventDefault();
             isDragging = true;
 
             const touch = e.touches[0];
-            lastX = touch.clientX;
-            lastY = touch.clientY;
+            lastTouch.x = touch.clientX;
+            lastTouch.y = touch.clientY;
 
-            startAnimation();
-        });
+            // Reset velocity when starting new drag
+            velocity.x = velocity.y = 0;
 
-        scene.addEventListener('touchmove', (e) => {
+            // Start animation if not running
+            if (!isAnimating) {
+                isAnimating = true;
+                lastTime = 0;
+                animationId = requestAnimationFrame(animate);
+            }
+        }
+
+        function handleTouchMove(e) {
             if (!isDragging) return;
             e.preventDefault();
 
@@ -451,63 +576,76 @@
             const currentY = touch.clientY;
 
             // Calculate delta
-            const deltaX = currentX - lastX;
-            const deltaY = currentY - lastY;
+            const deltaX = currentX - lastTouch.x;
+            const deltaY = currentY - lastTouch.y;
 
-            // Update rotation - NO LIMITS, free rotation
-            rotationY += deltaX * SENSITIVITY;
-            rotationX -= deltaY * SENSITIVITY;
+            // Update rotation
+            rotation.y += deltaX * SENSITIVITY;
+            rotation.x -= deltaY * SENSITIVITY;
+
+            // Store velocity for inertia
+            velocity.x = deltaX * SENSITIVITY * 0.5;
+            velocity.y = -deltaY * SENSITIVITY * 0.5;
 
             // Update last position
-            lastX = currentX;
-            lastY = currentY;
-        });
+            lastTouch.x = currentX;
+            lastTouch.y = currentY;
 
-        scene.addEventListener('touchend', () => {
+            // Immediate update for responsiveness
+            updateRotation();
+        }
+
+        function handleTouchEnd() {
             isDragging = false;
-        });
+        }
 
-        // Mouse events for testing (only on non-touch devices)
-        if (!('ontouchstart' in window)) {
-            scene.addEventListener('mousedown', (e) => {
-                e.preventDefault();
-                isDragging = true;
+        // ========== TAP EFFECT ==========
+        function createTapEffect(x, y) {
+            const effect = document.createElement('div');
+            effect.className = 'tap-effect';
+            effect.style.left = (x - 50) + 'px';
+            effect.style.top = (y - 50) + 'px';
 
-                lastX = e.clientX;
-                lastY = e.clientY;
+            document.body.appendChild(effect);
 
-                startAnimation();
-            });
-
-            document.addEventListener('mousemove', (e) => {
-                if (!isDragging) return;
-                e.preventDefault();
-
-                const currentX = e.clientX;
-                const currentY = e.clientY;
-
-                const deltaX = currentX - lastX;
-                const deltaY = currentY - lastY;
-
-                rotationY += deltaX * SENSITIVITY;
-                rotationX -= deltaY * SENSITIVITY;
-
-                lastX = currentX;
-                lastY = currentY;
-            });
-
-            document.addEventListener('mouseup', () => {
-                isDragging = false;
-            });
+            // Animate
+            effect.animate([
+                { opacity: 0.8, transform: 'scale(0.5)' },
+                { opacity: 0, transform: 'scale(2)' }
+            ], {
+                duration: 600,
+                easing: 'ease-out'
+            }).onfinish = () => effect.remove();
         }
 
         // ========== NAVIGATION ==========
         function navigateTo(page) {
-            // Simple navigation without effects
-            window.location.href = page;
+            // Create tap effect
+            createTapEffect(window.innerWidth / 2, window.innerHeight / 2);
+
+            // Navigate after short delay
+            setTimeout(() => {
+                window.location.href = page;
+            }, 200);
         }
 
-        // ========== LOGOUT ==========
+        // ========== AUTH FUNCTIONS ==========
+        function loadCredentials() {
+            credentials.username = localStorage.getItem("username") || '';
+            credentials.token = localStorage.getItem("token") || '';
+            credentials.language = localStorage.getItem("language") || 'it_IT';
+            credentials.filter = localStorage.getItem("filter") || '';
+
+            if (credentials.username) {
+                usernameDisplay.textContent = credentials.username;
+            } else {
+                usernameDisplay.textContent = '-';
+                setTimeout(() => {
+                    window.location.href = 'login.html';
+                }, 2000);
+            }
+        }
+
         async function logout() {
             try {
                 const payload = {
@@ -517,21 +655,13 @@
                     filter: credentials.filter || ""
                 };
 
-                const response = await fetch(`${API_URL}/logout`, {
+                await fetch(`${API_URL}/logout`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
                 });
-
-                const data = await response.json().catch(() => null);
-
-                if (data && data.status === 'ok') {
-                    console.log('✅ Logout successful');
-                } else {
-                    console.warn('⚠️ Logout response:', data);
-                }
             } catch (error) {
-                console.error('❌ Logout error:', error);
+                console.error('Logout error:', error);
             } finally {
                 localStorage.clear();
                 sessionStorage.clear();
@@ -540,28 +670,47 @@
         }
 
         // ========== INITIALIZATION ==========
-        document.addEventListener('DOMContentLoaded', () => {
+        function init() {
             loadCredentials();
-            updateHypercubeRotation();
-            startAnimation();
+            createConnections();
+
+            // Start animation
+            isAnimating = true;
+            animationId = requestAnimationFrame(animate);
+
+            // Add touch events
+            scene.addEventListener('touchstart', handleTouchStart, { passive: false });
+            scene.addEventListener('touchmove', handleTouchMove, { passive: false });
+            scene.addEventListener('touchend', handleTouchEnd);
 
             // Prevent context menu
-            document.addEventListener('contextmenu', (e) => e.preventDefault());
+            document.addEventListener('contextmenu', e => e.preventDefault());
 
             // Handle visibility change
             document.addEventListener('visibilitychange', () => {
                 if (document.hidden) {
-                    stopAnimation();
+                    isAnimating = false;
+                    if (animationId) {
+                        cancelAnimationFrame(animationId);
+                    }
                 } else {
-                    startAnimation();
+                    isAnimating = true;
+                    lastTime = 0;
+                    animationId = requestAnimationFrame(animate);
                 }
             });
 
-            // Handle page unload
-            window.addEventListener('beforeunload', () => {
-                stopAnimation();
+            // Add tap effect to all faces
+            document.querySelectorAll('.outer-face').forEach(face => {
+                face.addEventListener('touchstart', (e) => {
+                    const touch = e.touches[0];
+                    createTapEffect(touch.clientX, touch.clientY);
+                });
             });
-        });
+        }
+
+        // Start everything
+        document.addEventListener('DOMContentLoaded', init);
     </script>
 </body>
 
