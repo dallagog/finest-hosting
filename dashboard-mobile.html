@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
-    <title>Financial Dashboard Mobile</title>
+    <title>Financial Dashboard Mobile — Tesseract</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&display=swap');
@@ -102,16 +102,17 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            perspective: 1000px;
+            perspective: 1100px;
             overflow: hidden;
         }
 
         .tesseract {
             position: absolute;
-            width: 280px;
-            height: 280px;
+            width: 320px;
+            height: 320px;
             transform-style: preserve-3d;
-            transform: rotateX(-15deg) rotateY(15deg);
+            will-change: transform;
+            touch-action: none;
         }
 
         /* Outer Cube */
@@ -120,22 +121,24 @@
             width: 100%;
             height: 100%;
             transform-style: preserve-3d;
+            will-change: transform;
         }
 
         /* Inner Cube */
         .inner-cube {
             position: absolute;
-            width: 140px;
-            height: 140px;
+            width: 160px;
+            height: 160px;
             transform-style: preserve-3d;
-            transform: translateZ(-70px);
+            will-change: transform;
+            transform: translateZ(-80px);
         }
 
         /* Cube Faces - Outer */
         .outer-face {
             position: absolute;
-            width: 280px;
-            height: 280px;
+            width: 320px;
+            height: 320px;
             background: rgba(0, 20, 40, 0.9);
             border: 2px solid var(--neon-cyan);
             display: flex;
@@ -146,8 +149,11 @@
             box-shadow:
                 0 0 30px rgba(0, 243, 255, 0.4),
                 inset 0 0 60px rgba(0, 243, 255, 0.1);
-            transition: all 0.2s ease;
+            transition: transform 160ms ease, box-shadow 160ms ease, background 160ms ease;
             transform-origin: center;
+            backface-visibility: hidden;
+            overflow: hidden;
+            -webkit-backface-visibility: hidden;
         }
 
         .outer-face:active {
@@ -155,7 +161,7 @@
             box-shadow:
                 0 0 40px rgba(0, 243, 255, 0.8),
                 inset 0 0 80px rgba(0, 243, 255, 0.2);
-            transform: translateZ(5px);
+            transform: translateZ(6px) scale(0.995);
         }
 
         .face-content {
@@ -165,7 +171,12 @@
             justify-content: center;
             width: 100%;
             height: 100%;
-            pointer-events: none;
+            pointer-events: auto;
+            /* allow icon taps */
+            transform-style: preserve-3d;
+            will-change: transform;
+            backface-visibility: hidden;
+            -webkit-backface-visibility: hidden;
         }
 
         .outer-face i {
@@ -185,68 +196,73 @@
             padding: 0 20px;
             font-weight: 500;
             text-shadow: 0 0 10px rgba(224, 247, 250, 0.6);
+            transform: translateZ(24px);
+            /* keep text above face so it's readable */
         }
 
         /* Cube Faces - Inner */
         .inner-face {
             position: absolute;
-            width: 140px;
-            height: 140px;
-            background: rgba(0, 243, 255, 0.05);
+            width: 160px;
+            height: 160px;
+            background: rgba(0, 243, 255, 0.03);
             border: 1px solid rgba(0, 243, 255, 0.3);
-            opacity: 0.6;
+            opacity: 0.9;
             box-shadow:
                 inset 0 0 40px rgba(0, 243, 255, 0.1),
                 0 0 20px rgba(0, 243, 255, 0.2);
+            backface-visibility: hidden;
+            -webkit-backface-visibility: hidden;
         }
 
-        /* Face Positions */
+        /* Face Positions (outer) */
         .front {
-            transform: translateZ(140px);
+            transform: translateZ(160px);
         }
 
         .back {
-            transform: rotateY(180deg) translateZ(140px);
+            transform: rotateY(180deg) translateZ(160px);
         }
 
         .right {
-            transform: rotateY(90deg) translateZ(140px);
+            transform: rotateY(90deg) translateZ(160px);
         }
 
         .left {
-            transform: rotateY(-90deg) translateZ(140px);
+            transform: rotateY(-90deg) translateZ(160px);
         }
 
         .top {
-            transform: rotateX(90deg) translateZ(140px);
+            transform: rotateX(90deg) translateZ(160px);
         }
 
         .bottom {
-            transform: rotateX(-90deg) translateZ(140px);
+            transform: rotateX(-90deg) translateZ(160px);
         }
 
+        /* inner face positions */
         .inner-front {
-            transform: translateZ(70px);
+            transform: translateZ(80px);
         }
 
         .inner-back {
-            transform: rotateY(180deg) translateZ(70px);
+            transform: rotateY(180deg) translateZ(80px);
         }
 
         .inner-right {
-            transform: rotateY(90deg) translateZ(70px);
+            transform: rotateY(90deg) translateZ(80px);
         }
 
         .inner-left {
-            transform: rotateY(-90deg) translateZ(70px);
+            transform: rotateY(-90deg) translateZ(80px);
         }
 
         .inner-top {
-            transform: rotateX(90deg) translateZ(70px);
+            transform: rotateX(90deg) translateZ(80px);
         }
 
         .inner-bottom {
-            transform: rotateX(-90deg) translateZ(70px);
+            transform: rotateX(-90deg) translateZ(80px);
         }
 
         /* Connecting Lines for Tesseract */
@@ -254,11 +270,13 @@
             position: absolute;
             background: linear-gradient(to right,
                     transparent,
-                    rgba(0, 243, 255, 0.4),
+                    rgba(0, 243, 255, 0.45),
                     transparent);
             height: 1px;
             pointer-events: none;
-            filter: blur(0.5px);
+            filter: blur(0.6px);
+            transform-origin: center left;
+            will-change: transform, width;
         }
 
         /* Touch Hint */
@@ -306,6 +324,23 @@
             opacity: 0;
             z-index: 500;
         }
+
+        /* small responsiveness */
+        @media (max-width:420px) {
+            .tesseract {
+                width: 260px;
+                height: 260px;
+            }
+
+            .outer-face {
+                width: 260px;
+                height: 260px;
+            }
+
+            .outer-face i {
+                font-size: 42px;
+            }
+        }
     </style>
 </head>
 
@@ -328,37 +363,37 @@
             <!-- Outer Cube -->
             <div class="outer-cube" id="outerCube">
                 <!-- Menu Faces -->
-                <div class="outer-face front" onclick="navigateTo('dashboard-mobile-portfolio.html')">
+                <div class="outer-face front" data-target="dashboard-mobile-portfolio.html">
                     <div class="face-content">
                         <i class="fa fa-chart-pie"></i>
                         <span>Portfolio</span>
                     </div>
                 </div>
-                <div class="outer-face back" onclick="navigateTo('dashboard-mobile-trading.html')">
+                <div class="outer-face back" data-target="dashboard-mobile-trading.html">
                     <div class="face-content">
                         <i class="fa fa-rocket"></i>
                         <span>Go Live</span>
                     </div>
                 </div>
-                <div class="outer-face right" onclick="navigateTo('dashboard-mobile-news.html')">
+                <div class="outer-face right" data-target="dashboard-mobile-news.html">
                     <div class="face-content">
                         <i class="fa fa-exchange"></i>
                         <span>News</span>
                     </div>
                 </div>
-                <div class="outer-face left" onclick="navigateTo('dashboard-mobile-account.html')">
+                <div class="outer-face left" data-target="dashboard-mobile-account.html">
                     <div class="face-content">
                         <i class="fa fa-university"></i>
                         <span>Rapporti</span>
                     </div>
                 </div>
-                <div class="outer-face top" onclick="navigateTo('dashboard-mobile-market.html')">
+                <div class="outer-face top" data-target="dashboard-mobile-market.html">
                     <div class="face-content">
                         <i class="fa fa-list"></i>
                         <span>Market</span>
                     </div>
                 </div>
-                <div class="outer-face bottom" onclick="navigateTo('dashboard-mobile-trend.html')">
+                <div class="outer-face bottom" data-target="dashboard-mobile-trend.html">
                     <div class="face-content">
                         <i class="fa fa-edit"></i>
                         <span>Trend</span>
@@ -389,10 +424,11 @@
     <script>
         // ========== CONFIGURATION ==========
         const API_URL = "https://feweb-tunnel.fe-web.eu";
-        const TESSERACT_SIZE = 280;
-        const INNER_SIZE = 140;
-        const SENSITIVITY = 0.4;
-        const INERTIA_DECAY = 0.94;
+        const TESSERACT_SIZE = 320; // outer cube size (px)
+        const INNER_SIZE = 160; // inner cube size (px)
+        const SENSITIVITY = 0.28; // slightly lower for mobile precision
+        const INERTIA_DECAY = 0.93;
+        const LERP = 0.12; // smoothing factor for rotation
 
         // ========== ELEMENTS ==========
         const tesseract = document.getElementById('tesseract');
@@ -404,6 +440,7 @@
 
         // ========== STATE ==========
         let rotation = { x: -15, y: 15, z: 0 };
+        let targetRotation = { x: rotation.x, y: rotation.y, z: rotation.z };
         let velocity = { x: 0, y: 0 };
         let isDragging = false;
         let lastTouch = { x: 0, y: 0 };
@@ -422,180 +459,114 @@
         function createConnections() {
             connections.innerHTML = '';
 
-            // Outer cube vertices
+            // Outer cube vertices (normalized)
+            const half = 1;
             const outerVertices = [
-                { x: -1, y: -1, z: -1 }, { x: 1, y: -1, z: -1 },
-                { x: 1, y: 1, z: -1 }, { x: -1, y: 1, z: -1 },
-                { x: -1, y: -1, z: 1 }, { x: 1, y: -1, z: 1 },
-                { x: 1, y: 1, z: 1 }, { x: -1, y: 1, z: 1 }
+                { x: -half, y: -half, z: -half }, { x: half, y: -half, z: -half },
+                { x: half, y: half, z: -half }, { x: -half, y: half, z: -half },
+                { x: -half, y: -half, z: half }, { x: half, y: -half, z: half },
+                { x: half, y: half, z: half }, { x: -half, y: half, z: half }
             ];
 
             // Inner cube vertices (scaled by 0.5)
-            const innerVertices = outerVertices.map(v => ({
-                x: v.x * 0.5,
-                y: v.y * 0.5,
-                z: v.z * 0.5
-            }));
+            const innerVertices = outerVertices.map(v => ({ x: v.x * 0.5, y: v.y * 0.5, z: v.z * 0.5 }));
 
-            // Connect outer to inner vertices
-            for (let i = 0; i < 8; i++) {
-                createConnection(outerVertices[i], innerVertices[i]);
-            }
+            // Connect matching outer->inner
+            for (let i = 0; i < 8; i++) createConnection(outerVertices[i], innerVertices[i]);
 
-            // Connect outer cube edges
-            const outerEdges = [
-                [0, 1], [1, 2], [2, 3], [3, 0], // bottom face
-                [4, 5], [5, 6], [6, 7], [7, 4], // top face
-                [0, 4], [1, 5], [2, 6], [3, 7]  // vertical edges
-            ];
-
-            for (const [a, b] of outerEdges) {
-                createConnection(outerVertices[a], outerVertices[b], true);
-            }
-
-            // Connect inner cube edges
-            const innerEdges = [
+            const cubeEdges = [
                 [0, 1], [1, 2], [2, 3], [3, 0],
                 [4, 5], [5, 6], [6, 7], [7, 4],
                 [0, 4], [1, 5], [2, 6], [3, 7]
             ];
 
-            for (const [a, b] of innerEdges) {
-                createConnection(innerVertices[a], innerVertices[b], true);
-            }
+            cubeEdges.forEach(e => createConnection(outerVertices[e[0]], outerVertices[e[1]], true));
+            cubeEdges.forEach(e => createConnection(innerVertices[e[0]], innerVertices[e[1]], true));
         }
 
-        function createConnection(pointA, pointB, isEdge = false) {
-            const connection = document.createElement('div');
-            connection.className = 'connection';
+        function createConnection(a, b, isEdge = false) {
+            const el = document.createElement('div');
+            el.className = 'connection';
 
-            // Calculate midpoint and length
-            const midX = (pointA.x + pointB.x) / 2;
-            const midY = (pointA.y + pointB.y) / 2;
-            const midZ = (pointA.z + pointB.z) / 2;
+            const mid = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2, z: (a.z + b.z) / 2 };
+            const dx = b.x - a.x, dy = b.y - a.y, dz = b.z - a.z;
+            const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
+            const length = dist * TESSERACT_SIZE;
 
-            const dx = pointB.x - pointA.x;
-            const dy = pointB.y - pointA.y;
-            const dz = pointB.z - pointA.z;
-            const length = Math.sqrt(dx * dx + dy * dy + dz * dz) * TESSERACT_SIZE;
+            const yaw = Math.atan2(dx, dz) * 180 / Math.PI;
+            const pitch = Math.atan2(dy, Math.sqrt(dx * dx + dz * dz)) * 180 / Math.PI;
 
-            // Calculate rotation angles
-            const yaw = Math.atan2(dx, dz) * (180 / Math.PI);
-            const pitch = Math.atan2(dy, Math.sqrt(dx * dx + dz * dz)) * (180 / Math.PI);
+            el.style.width = length + 'px';
+            el.style.height = (isEdge ? '1px' : '0.6px');
+            el.style.transform = `translate3d(${mid.x * TESSERACT_SIZE / 2}px, ${mid.y * TESSERACT_SIZE / 2}px, ${mid.z * TESSERACT_SIZE / 2}px) rotateY(${yaw}deg) rotateX(${-pitch}deg)`;
 
-            // Set styles
-            connection.style.width = length + 'px';
-            connection.style.transform = `
-                translate3d(${midX * TESSERACT_SIZE / 2}px, ${midY * TESSERACT_SIZE / 2}px, ${midZ * TESSERACT_SIZE / 2}px)
-                rotateY(${yaw}deg)
-                rotateX(${-pitch}deg)
-            `;
-
-            if (isEdge) {
-                connection.style.background = 'rgba(0, 243, 255, 0.2)';
-                connection.style.height = '1px';
-            } else {
-                connection.style.background = 'rgba(0, 102, 255, 0.3)';
-                connection.style.height = '0.5px';
-            }
-
-            connections.appendChild(connection);
+            connections.appendChild(el);
         }
 
         // ========== ANIMATION LOOP ==========
-        function animate(timestamp) {
-            if (!lastTime) lastTime = timestamp;
-            const deltaTime = Math.min(timestamp - lastTime, 32) / 16;
-            lastTime = timestamp;
+        function animate(ts) {
+            if (!lastTime) lastTime = ts;
+            const dt = Math.min(ts - lastTime, 40) / 16;
+            lastTime = ts;
 
-            // Apply velocity (inertia)
+            // if dragging, targetRotation follows immediate input; otherwise velocity applies to target
             if (!isDragging) {
-                rotation.y += velocity.x * deltaTime;
-                rotation.x += velocity.y * deltaTime;
+                targetRotation.y += velocity.x * dt;
+                targetRotation.x += velocity.y * dt;
 
-                // Decay velocity
+                // decay velocity
                 velocity.x *= INERTIA_DECAY;
                 velocity.y *= INERTIA_DECAY;
-
-                // Stop when very slow
-                if (Math.abs(velocity.x) < 0.01 && Math.abs(velocity.y) < 0.01) {
-                    velocity.x = velocity.y = 0;
-                }
+                if (Math.abs(velocity.x) < 0.01) velocity.x = 0;
+                if (Math.abs(velocity.y) < 0.01) velocity.y = 0;
             }
 
-            // Apply rotation
-            updateRotation();
+            // lerp rotation towards target for smoothness
+            rotation.x += (targetRotation.x - rotation.x) * LERP;
+            rotation.y += (targetRotation.y - rotation.y) * LERP;
+            rotation.z += (targetRotation.z - rotation.z) * LERP;
 
-            if (isAnimating) {
-                animationId = requestAnimationFrame(animate);
-            }
+            applyTransforms();
+
+            if (isAnimating) animationId = requestAnimationFrame(animate);
         }
 
-        function updateRotation() {
-            tesseract.style.transform = `
-                rotateX(${rotation.x}deg) 
-                rotateY(${rotation.y}deg) 
-                rotateZ(${rotation.z}deg)
-            `;
+        function applyTransforms() {
+            // rotate outer tesseract
+            tesseract.style.transform = `rotateX(${rotation.x}deg) rotateY(${rotation.y}deg) rotateZ(${rotation.z}deg)`;
 
-            // Inner cube rotates differently for 4D effect
-            innerCube.style.transform = `
-                translateZ(-70px)
-                rotateX(${rotation.x * -0.5}deg)
-                rotateY(${rotation.y * -0.5}deg)
-                rotateZ(${rotation.z * 0.3}deg)
-            `;
+            // inner cube rotates differently -> simulate a 4D fold by offsetting and rotating with different multipliers
+            innerCube.style.transform = `translateZ(-80px) rotateX(${rotation.x * -0.55}deg) rotateY(${rotation.y * -0.5}deg) rotateZ(${rotation.z * 0.35}deg)`;
         }
 
-        // ========== TOUCH CONTROLS ==========
-        function handleTouchStart(e) {
-            e.preventDefault();
+        // ========== TOUCH & MOUSE CONTROLS ==========
+        function onPointerDown(e) {
             isDragging = true;
-
-            const touch = e.touches[0];
-            lastTouch.x = touch.clientX;
-            lastTouch.y = touch.clientY;
-
-            // Reset velocity when starting new drag
+            const p = e.touches ? e.touches[0] : e;
+            lastTouch.x = p.clientX; lastTouch.y = p.clientY;
             velocity.x = velocity.y = 0;
-
-            // Start animation if not running
-            if (!isAnimating) {
-                isAnimating = true;
-                lastTime = 0;
-                animationId = requestAnimationFrame(animate);
-            }
+            // stop any snapping
         }
 
-        function handleTouchMove(e) {
+        function onPointerMove(e) {
             if (!isDragging) return;
-            e.preventDefault();
+            const p = e.touches ? e.touches[0] : e;
+            const dx = p.clientX - lastTouch.x;
+            const dy = p.clientY - lastTouch.y;
 
-            const touch = e.touches[0];
-            const currentX = touch.clientX;
-            const currentY = touch.clientY;
+            targetRotation.y += dx * SENSITIVITY;
+            targetRotation.x -= dy * SENSITIVITY;
 
-            // Calculate delta
-            const deltaX = currentX - lastTouch.x;
-            const deltaY = currentY - lastTouch.y;
+            // store velocity for inertia
+            velocity.x = dx * SENSITIVITY * 0.6;
+            velocity.y = -dy * SENSITIVITY * 0.6;
 
-            // Update rotation
-            rotation.y += deltaX * SENSITIVITY;
-            rotation.x -= deltaY * SENSITIVITY;
+            lastTouch.x = p.clientX; lastTouch.y = p.clientY;
 
-            // Store velocity for inertia
-            velocity.x = deltaX * SENSITIVITY * 0.5;
-            velocity.y = -deltaY * SENSITIVITY * 0.5;
-
-            // Update last position
-            lastTouch.x = currentX;
-            lastTouch.y = currentY;
-
-            // Immediate update for responsiveness
-            updateRotation();
+            applyTransforms();
         }
 
-        function handleTouchEnd() {
+        function onPointerUp() {
             isDragging = false;
         }
 
@@ -608,25 +579,16 @@
 
             document.body.appendChild(effect);
 
-            // Animate
             effect.animate([
                 { opacity: 0.8, transform: 'scale(0.5)' },
                 { opacity: 0, transform: 'scale(2)' }
-            ], {
-                duration: 600,
-                easing: 'ease-out'
-            }).onfinish = () => effect.remove();
+            ], { duration: 600, easing: 'ease-out' }).onfinish = () => effect.remove();
         }
 
-        // ========== NAVIGATION ==========
+        // ========== NAVIGATION (faces keep icons/text readable) ==========
         function navigateTo(page) {
-            // Create tap effect
             createTapEffect(window.innerWidth / 2, window.innerHeight / 2);
-
-            // Navigate after short delay
-            setTimeout(() => {
-                window.location.href = page;
-            }, 200);
+            setTimeout(() => window.location.href = page, 160);
         }
 
         // ========== AUTH FUNCTIONS ==========
@@ -636,37 +598,16 @@
             credentials.language = localStorage.getItem("language") || 'it_IT';
             credentials.filter = localStorage.getItem("filter") || '';
 
-            if (credentials.username) {
-                usernameDisplay.textContent = credentials.username;
-            } else {
-                usernameDisplay.textContent = '-';
-                setTimeout(() => {
-                    window.location.href = 'login.html';
-                }, 2000);
-            }
+            usernameDisplay.textContent = credentials.username || '-';
+            if (!credentials.username) setTimeout(() => window.location.href = 'login.html', 1400);
         }
 
         async function logout() {
             try {
-                const payload = {
-                    username: credentials.username || "",
-                    token: credentials.token || "",
-                    language: credentials.language || "",
-                    filter: credentials.filter || ""
-                };
-
-                await fetch(`${API_URL}/logout`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-            } catch (error) {
-                console.error('Logout error:', error);
-            } finally {
-                localStorage.clear();
-                sessionStorage.clear();
-                window.location.href = 'login.html';
-            }
+                const payload = { username: credentials.username || "", token: credentials.token || "", language: credentials.language || "", filter: credentials.filter || "" };
+                await fetch(`${API_URL}/logout`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+            } catch (err) { console.error('Logout error', err); }
+            finally { localStorage.clear(); sessionStorage.clear(); window.location.href = 'login.html'; }
         }
 
         // ========== INITIALIZATION ==========
@@ -674,42 +615,39 @@
             loadCredentials();
             createConnections();
 
-            // Start animation
             isAnimating = true;
             animationId = requestAnimationFrame(animate);
 
-            // Add touch events
-            scene.addEventListener('touchstart', handleTouchStart, { passive: false });
-            scene.addEventListener('touchmove', handleTouchMove, { passive: false });
-            scene.addEventListener('touchend', handleTouchEnd);
+            // unified pointer events (works for mouse and touch)
+            scene.addEventListener('touchstart', onPointerDown, { passive: false });
+            scene.addEventListener('touchmove', onPointerMove, { passive: false });
+            scene.addEventListener('touchend', onPointerUp);
+            scene.addEventListener('mousedown', onPointerDown);
+            window.addEventListener('mousemove', onPointerMove);
+            window.addEventListener('mouseup', onPointerUp);
 
-            // Prevent context menu
-            document.addEventListener('contextmenu', e => e.preventDefault());
-
-            // Handle visibility change
-            document.addEventListener('visibilitychange', () => {
-                if (document.hidden) {
-                    isAnimating = false;
-                    if (animationId) {
-                        cancelAnimationFrame(animationId);
-                    }
-                } else {
-                    isAnimating = true;
-                    lastTime = 0;
-                    animationId = requestAnimationFrame(animate);
-                }
-            });
-
-            // Add tap effect to all faces
+            // add tap feedback and navigation on faces
             document.querySelectorAll('.outer-face').forEach(face => {
-                face.addEventListener('touchstart', (e) => {
-                    const touch = e.touches[0];
-                    createTapEffect(touch.clientX, touch.clientY);
+                face.addEventListener('touchstart', (ev) => {
+                    const t = ev.touches[0]; createTapEffect(t.clientX, t.clientY);
+                }, { passive: true });
+
+                face.addEventListener('click', (ev) => {
+                    const target = face.getAttribute('data-target');
+                    if (target) navigateTo(target);
                 });
             });
+
+            // visibility handling
+            document.addEventListener('visibilitychange', () => {
+                if (document.hidden) { isAnimating = false; cancelAnimationFrame(animationId); }
+                else { isAnimating = true; lastTime = 0; animationId = requestAnimationFrame(animate); }
+            });
+
+            // prevent default context menu on long press
+            document.addEventListener('contextmenu', e => e.preventDefault());
         }
 
-        // Start everything
         document.addEventListener('DOMContentLoaded', init);
     </script>
 </body>
