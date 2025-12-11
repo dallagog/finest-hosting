@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
-    <title>Dashboard Mobile 1.1</title>
+    <title>Dashboard Mobile 1.0 a</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&display=swap');
@@ -114,18 +114,18 @@
             touch-action: pan-x pan-y;
         }
 
-        /* Cube Container */
-        .cube-container {
+        /* Hypercube Container */
+        .hypercube-container {
             width: 200px;
             height: 200px;
             position: relative;
             transform-style: preserve-3d;
             transform: rotateX(-20deg) rotateY(20deg);
-            transition: transform 0.08s linear;
+            transition: transform 0.1s linear;
             will-change: transform;
         }
 
-        /* Cube Face */
+        /* Outer Cube (Menu Faces) */
         .cube-face {
             position: absolute;
             width: 200px;
@@ -141,7 +141,6 @@
             justify-content: center;
             cursor: pointer;
             backface-visibility: visible;
-            -webkit-backface-visibility: visible;
             transform-origin: center;
             transition: all 0.3s ease;
         }
@@ -170,11 +169,6 @@
             margin-bottom: 12px;
             text-shadow: 0 0 20px var(--neon-cyan);
             filter: drop-shadow(0 0 8px rgba(0, 243, 255, 0.7));
-            transition: transform 0.3s ease;
-        }
-
-        .cube-face:hover i {
-            transform: scale(1.1);
         }
 
         .cube-face span {
@@ -213,31 +207,13 @@
             transform: rotateX(-90deg) translateZ(100px);
         }
 
-        /* Touch hint */
-        .touch-hint {
-            position: fixed;
-            bottom: 30px;
-            left: 50%;
-            transform: translateX(-50%);
-            color: rgba(0, 243, 255, 0.8);
-            font-size: 13px;
-            text-align: center;
-            padding: 10px 25px;
-            background: rgba(0, 20, 40, 0.4);
-            border: 1px solid rgba(0, 243, 255, 0.3);
-            border-radius: 20px;
-            backdrop-filter: blur(5px);
-            z-index: 50;
-        }
-
-        /* Inner cubes for hypercube effect */
+        /* Inner Cube (Hypercube effect) */
         .inner-cube {
             position: absolute;
             width: 100px;
             height: 100px;
             transform-style: preserve-3d;
-            transform: translateZ(-50px) rotateX(45deg) rotateY(45deg);
-            opacity: 0.7;
+            transform: translateZ(-50px);
             pointer-events: none;
         }
 
@@ -245,10 +221,12 @@
             position: absolute;
             width: 100px;
             height: 100px;
-            background: rgba(0, 243, 255, 0.15);
+            background: rgba(0, 243, 255, 0.1);
             border: 1px solid rgba(0, 243, 255, 0.4);
-            opacity: 0.6;
-            box-shadow: inset 0 0 30px rgba(0, 243, 255, 0.2);
+            opacity: 0.7;
+            box-shadow:
+                0 0 20px rgba(0, 243, 255, 0.3),
+                inset 0 0 30px rgba(0, 243, 255, 0.2);
         }
 
         .inner-front {
@@ -275,48 +253,28 @@
             transform: rotateX(-90deg) translateZ(50px);
         }
 
-        /* Additional inner cube for deeper hypercube effect */
-        .inner-cube-2 {
+        /* Connecting Lines for Hypercube */
+        .connection {
             position: absolute;
-            width: 50px;
-            height: 50px;
-            transform-style: preserve-3d;
-            transform: translateZ(-25px) rotateX(60deg) rotateY(60deg);
-            opacity: 0.5;
+            background: rgba(0, 243, 255, 0.3);
             pointer-events: none;
         }
 
-        .inner-face-2 {
-            position: absolute;
-            width: 50px;
-            height: 50px;
-            background: rgba(0, 243, 255, 0.1);
+        /* Touch hint */
+        .touch-hint {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: rgba(0, 243, 255, 0.8);
+            font-size: 13px;
+            text-align: center;
+            padding: 10px 25px;
+            background: rgba(0, 20, 40, 0.4);
             border: 1px solid rgba(0, 243, 255, 0.3);
-            opacity: 0.4;
-        }
-
-        .inner-front-2 {
-            transform: translateZ(25px);
-        }
-
-        .inner-back-2 {
-            transform: rotateY(180deg) translateZ(25px);
-        }
-
-        .inner-right-2 {
-            transform: rotateY(90deg) translateZ(25px);
-        }
-
-        .inner-left-2 {
-            transform: rotateY(-90deg) translateZ(25px);
-        }
-
-        .inner-top-2 {
-            transform: rotateX(90deg) translateZ(25px);
-        }
-
-        .inner-bottom-2 {
-            transform: rotateX(-90deg) translateZ(25px);
+            border-radius: 20px;
+            backdrop-filter: blur(5px);
+            z-index: 50;
         }
 
         /* Desktop mode button */
@@ -344,24 +302,12 @@
             transform: scale(1.05);
         }
 
-        /* Auto-rotation animation */
-        @keyframes autoRotate {
-            0% {
-                transform: rotateX(-20deg) rotateY(20deg);
-            }
-
-            100% {
-                transform: rotateX(340deg) rotateY(380deg);
-            }
-        }
-
-        .cube-container.auto-rotate {
-            animation: autoRotate 40s infinite linear;
-        }
-
-        /* Inertia effect */
-        .cube-container.inertia {
-            transition: transform 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        /* Remove tap highlight */
+        * {
+            -webkit-tap-highlight-color: transparent;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            user-select: none;
         }
     </style>
 </head>
@@ -379,9 +325,9 @@
 
     <!-- Scene Container -->
     <div class="scene" id="scene">
-        <!-- 3D Cube -->
-        <div class="cube-container" id="cube">
-            <!-- Outer Cube Faces -->
+        <!-- Hypercube Container -->
+        <div class="hypercube-container" id="hypercube">
+            <!-- Outer Cube Faces (Menu) -->
             <div class="cube-face front" onclick="navigateTo('dashboard-mobile-portfolio.html')">
                 <div class="face-inner">
                     <i class="fa fa-chart-pie"></i>
@@ -419,8 +365,8 @@
                 </div>
             </div>
 
-            <!-- Inner Cube 1 -->
-            <div class="inner-cube">
+            <!-- Inner Cube (Hypercube effect) -->
+            <div class="inner-cube" id="innerCube">
                 <div class="inner-face inner-front"></div>
                 <div class="inner-face inner-back"></div>
                 <div class="inner-face inner-right"></div>
@@ -429,15 +375,8 @@
                 <div class="inner-face inner-bottom"></div>
             </div>
 
-            <!-- Inner Cube 2 -->
-            <div class="inner-cube-2">
-                <div class="inner-face-2 inner-front-2"></div>
-                <div class="inner-face-2 inner-back-2"></div>
-                <div class="inner-face-2 inner-right-2"></div>
-                <div class="inner-face-2 inner-left-2"></div>
-                <div class="inner-face-2 inner-top-2"></div>
-                <div class="inner-face-2 inner-bottom-2"></div>
-            </div>
+            <!-- Connecting lines between cubes (Hypercube edges) -->
+            <div class="connection" id="connections"></div>
         </div>
     </div>
 
@@ -446,11 +385,13 @@
     </button>
 
     <div class="touch-hint">
-        👆 Tocca e trascina per ruotare il cubo
+        👆 Tocca e trascina per ruotare l'ipercubo
     </div>
 
     <script>
-        const cube = document.getElementById('cube');
+        const hypercube = document.getElementById('hypercube');
+        const innerCube = document.getElementById('innerCube');
+        const connections = document.getElementById('connections');
         const usernameDisplay = document.getElementById('usernameDisplay');
         const scene = document.getElementById('scene');
         const API_URL = "https://feweb-tunnel.fe-web.eu";
@@ -482,218 +423,213 @@
             }
         }
 
-        // ========== ADVANCED ROTATION CONTROL ==========
+        // ========== HYPERCUBE ROTATION ==========
         let isDragging = false;
-        let startX, startY;
         let rotationX = -20;
         let rotationY = 20;
+        let rotationZ = 0;
+        const SENSITIVITY = 0.4;
+
+        // Animation variables for smooth rotation
+        let targetRotationX = rotationX;
+        let targetRotationY = rotationY;
+        let targetRotationZ = rotationZ;
+        let animationId = null;
+        let lastTime = 0;
+
+        // Start animation loop
+        function startAnimation() {
+            if (animationId) return;
+
+            function animate(currentTime) {
+                if (!lastTime) lastTime = currentTime;
+                const deltaTime = currentTime - lastTime;
+                lastTime = currentTime;
+
+                // Smooth interpolation towards target rotation
+                const lerpFactor = Math.min(deltaTime * 0.02, 1);
+                rotationX += (targetRotationX - rotationX) * lerpFactor;
+                rotationY += (targetRotationY - rotationY) * lerpFactor;
+                rotationZ += (targetRotationZ - rotationZ) * lerpFactor;
+
+                // Update hypercube rotation
+                updateHypercubeRotation();
+
+                // Continue animation
+                animationId = requestAnimationFrame(animate);
+            }
+
+            animationId = requestAnimationFrame(animate);
+        }
+
+        // Stop animation when not needed
+        function stopAnimation() {
+            if (animationId) {
+                cancelAnimationFrame(animationId);
+                animationId = null;
+                lastTime = 0;
+            }
+        }
+
+        function updateHypercubeRotation() {
+            // Apply rotation to outer cube
+            hypercube.style.transform =
+                `rotateX(${rotationX}deg) rotateY(${rotationY}deg) rotateZ(${rotationZ}deg)`;
+
+            // Apply opposite rotation to inner cube for hypercube effect
+            innerCube.style.transform =
+                `translateZ(-50px) rotateX(${-rotationX * 0.5}deg) rotateY(${-rotationY * 0.5}deg) rotateZ(${rotationZ * 0.3}deg)`;
+        }
+
+        // ========== TOUCH/MOUSE CONTROLS ==========
+        let lastX = 0;
+        let lastY = 0;
         let velocityX = 0;
         let velocityY = 0;
-        let lastTime = 0;
-        let isAutoRotating = false;
-        const SENSITIVITY = 0.5;
-        const INERTIA_DECAY = 0.95;
-        const MIN_VELOCITY = 0.01;
-        let lastTouchTime = 0;
-        const DOUBLE_TAP_DELAY = 300;
+        let isInertia = false;
+        const INERTIA_DECAY = 0.92;
 
-        // Request Animation Frame for smooth animation
-        function animate() {
-            requestAnimationFrame(animate);
-
-            if (!isDragging && (Math.abs(velocityX) > MIN_VELOCITY || Math.abs(velocityY) > MIN_VELOCITY)) {
-                rotationY += velocityY;
-                rotationX += velocityX;
-
-                velocityX *= INERTIA_DECAY;
-                velocityY *= INERTIA_DECAY;
-
-                if (Math.abs(velocityX) < MIN_VELOCITY) velocityX = 0;
-                if (Math.abs(velocityY) < MIN_VELOCITY) velocityY = 0;
-
-                updateCubeRotation();
-            }
-        }
-
-        // Initialize animation loop
-        animate();
-
-        function updateCubeRotation() {
-            cube.style.transform = `rotateX(${rotationX}deg) rotateY(${rotationY}deg)`;
-            updateInnerCubes();
-        }
-
-        function updateInnerCubes() {
-            const innerCube = document.querySelector('.inner-cube');
-            const innerCube2 = document.querySelector('.inner-cube-2');
-
-            if (innerCube) {
-                innerCube.style.transform = `translateZ(-50px) rotateX(${rotationX * 1.5}deg) rotateY(${rotationY * 1.5}deg)`;
-            }
-
-            if (innerCube2) {
-                innerCube2.style.transform = `translateZ(-25px) rotateX(${rotationX * 2}deg) rotateY(${rotationY * 2}deg)`;
-            }
-        }
-
-        // Touch events with momentum
+        // Touch events
         scene.addEventListener('touchstart', (e) => {
             e.preventDefault();
-            const currentTime = Date.now();
-
-            // Double tap detection
-            if (currentTime - lastTouchTime < DOUBLE_TAP_DELAY) {
-                toggleAutoRotation();
-                lastTouchTime = 0;
-                return;
-            }
-            lastTouchTime = currentTime;
-
             isDragging = true;
-            isAutoRotating = false;
-            cube.classList.remove('auto-rotate');
-            cube.classList.remove('inertia');
+            isInertia = false;
 
-            startX = e.touches[0].clientX;
-            startY = e.touches[0].clientY;
+            const touch = e.touches[0];
+            lastX = touch.clientX;
+            lastY = touch.clientY;
 
+            // Reset velocities
             velocityX = 0;
             velocityY = 0;
-            lastTime = Date.now();
 
-            cube.style.transition = 'none';
+            // Start smooth animation
+            startAnimation();
         });
 
         scene.addEventListener('touchmove', (e) => {
             if (!isDragging) return;
             e.preventDefault();
 
-            const touchX = e.touches[0].clientX;
-            const touchY = e.touches[0].clientY;
-            const currentTime = Date.now();
-            const deltaTime = currentTime - lastTime;
+            const touch = e.touches[0];
+            const currentX = touch.clientX;
+            const currentY = touch.clientY;
 
-            if (deltaTime > 0) {
-                const deltaX = touchX - startX;
-                const deltaY = touchY - startY;
+            // Calculate delta
+            const deltaX = currentX - lastX;
+            const deltaY = currentY - lastY;
 
-                // Calculate velocity for inertia
-                velocityY = (deltaX * SENSITIVITY) / deltaTime * 16;
-                velocityX = (-deltaY * SENSITIVITY) / deltaTime * 16;
+            // Update target rotation
+            targetRotationY += deltaX * SENSITIVITY;
+            targetRotationX -= deltaY * SENSITIVITY;
 
-                // Apply rotation
-                rotationY += deltaX * SENSITIVITY;
-                rotationX -= deltaY * SENSITIVITY;
+            // Store velocity for inertia
+            velocityX = deltaX;
+            velocityY = deltaY;
 
-                updateCubeRotation();
-
-                startX = touchX;
-                startY = touchY;
-                lastTime = currentTime;
-            }
+            // Update last position
+            lastX = currentX;
+            lastY = currentY;
         });
 
         scene.addEventListener('touchend', () => {
             if (!isDragging) return;
             isDragging = false;
 
-            // Apply inertia
-            cube.classList.add('inertia');
+            // Apply inertia if there was significant movement
+            if (Math.abs(velocityX) > 2 || Math.abs(velocityY) > 2) {
+                isInertia = true;
 
-            // Gradually reduce velocity
-            const inertiaInterval = setInterval(() => {
-                velocityX *= INERTIA_DECAY;
-                velocityY *= INERTIA_DECAY;
+                function applyInertia() {
+                    if (!isInertia) return;
 
-                if (Math.abs(velocityX) < MIN_VELOCITY && Math.abs(velocityY) < MIN_VELOCITY) {
-                    clearInterval(inertiaInterval);
-                    cube.classList.remove('inertia');
+                    // Decay velocities
+                    velocityX *= INERTIA_DECAY;
+                    velocityY *= INERTIA_DECAY;
+
+                    // Apply to rotation
+                    targetRotationY += velocityX * SENSITIVITY * 0.5;
+                    targetRotationX -= velocityY * SENSITIVITY * 0.5;
+
+                    // Stop when velocities are very small
+                    if (Math.abs(velocityX) < 0.1 && Math.abs(velocityY) < 0.1) {
+                        isInertia = false;
+                    } else {
+                        requestAnimationFrame(applyInertia);
+                    }
                 }
-            }, 16);
+
+                applyInertia();
+            }
         });
 
-        // Mouse events for desktop testing
-        let isMouseDragging = false;
+        // Mouse events for testing
         scene.addEventListener('mousedown', (e) => {
             e.preventDefault();
-            isMouseDragging = true;
-            isAutoRotating = false;
-            cube.classList.remove('auto-rotate');
-            cube.classList.remove('inertia');
+            isDragging = true;
+            isInertia = false;
 
-            startX = e.clientX;
-            startY = e.clientY;
+            lastX = e.clientX;
+            lastY = e.clientY;
 
             velocityX = 0;
             velocityY = 0;
-            lastTime = Date.now();
 
-            cube.style.transition = 'none';
+            startAnimation();
         });
 
         document.addEventListener('mousemove', (e) => {
-            if (!isMouseDragging) return;
+            if (!isDragging) return;
             e.preventDefault();
 
-            const mouseX = e.clientX;
-            const mouseY = e.clientY;
-            const currentTime = Date.now();
-            const deltaTime = currentTime - lastTime;
+            const currentX = e.clientX;
+            const currentY = e.clientY;
 
-            if (deltaTime > 0) {
-                const deltaX = mouseX - startX;
-                const deltaY = mouseY - startY;
+            const deltaX = currentX - lastX;
+            const deltaY = currentY - lastY;
 
-                velocityY = (deltaX * SENSITIVITY) / deltaTime * 16;
-                velocityX = (-deltaY * SENSITIVITY) / deltaTime * 16;
+            targetRotationY += deltaX * SENSITIVITY;
+            targetRotationX -= deltaY * SENSITIVITY;
 
-                rotationY += deltaX * SENSITIVITY;
-                rotationX -= deltaY * SENSITIVITY;
+            velocityX = deltaX;
+            velocityY = deltaY;
 
-                updateCubeRotation();
-
-                startX = mouseX;
-                startY = mouseY;
-                lastTime = currentTime;
-            }
+            lastX = currentX;
+            lastY = currentY;
         });
 
         document.addEventListener('mouseup', () => {
-            if (!isMouseDragging) return;
-            isMouseDragging = false;
+            if (!isDragging) return;
+            isDragging = false;
 
-            cube.classList.add('inertia');
+            if (Math.abs(velocityX) > 2 || Math.abs(velocityY) > 2) {
+                isInertia = true;
 
-            const inertiaInterval = setInterval(() => {
-                velocityX *= INERTIA_DECAY;
-                velocityY *= INERTIA_DECAY;
+                function applyInertia() {
+                    if (!isInertia) return;
 
-                if (Math.abs(velocityX) < MIN_VELOCITY && Math.abs(velocityY) < MIN_VELOCITY) {
-                    clearInterval(inertiaInterval);
-                    cube.classList.remove('inertia');
+                    velocityX *= INERTIA_DECAY;
+                    velocityY *= INERTIA_DECAY;
+
+                    targetRotationY += velocityX * SENSITIVITY * 0.5;
+                    targetRotationX -= velocityY * SENSITIVITY * 0.5;
+
+                    if (Math.abs(velocityX) < 0.1 && Math.abs(velocityY) < 0.1) {
+                        isInertia = false;
+                    } else {
+                        requestAnimationFrame(applyInertia);
+                    }
                 }
-            }, 16);
-        });
 
-        // Auto-rotation toggle
-        function toggleAutoRotation() {
-            isAutoRotating = !isAutoRotating;
-
-            if (isAutoRotating) {
-                cube.classList.add('auto-rotate');
-                velocityX = 0;
-                velocityY = 0;
-            } else {
-                cube.classList.remove('auto-rotate');
+                applyInertia();
             }
-        }
+        });
 
         // ========== NAVIGATION ==========
         function navigateTo(page) {
-            // Add click feedback
-            cube.style.transform += ' scale(0.95)';
+            // Add click effect
+            hypercube.style.transform += ' scale(0.95)';
             setTimeout(() => {
-                cube.style.transform = cube.style.transform.replace(' scale(0.95)', '');
                 window.location.href = page;
             }, 150);
         }
@@ -738,18 +674,22 @@
         // ========== INITIALIZATION ==========
         document.addEventListener('DOMContentLoaded', () => {
             loadCredentials();
-            updateInnerCubes();
+            updateHypercubeRotation();
+            startAnimation(); // Start animation loop
 
-            // Prevent context menu on long press
-            document.addEventListener('contextmenu', (e) => {
-                e.preventDefault();
-                return false;
-            });
+            // Prevent context menu
+            document.addEventListener('contextmenu', (e) => e.preventDefault());
 
             // Prevent text selection
-            document.addEventListener('selectstart', (e) => {
-                e.preventDefault();
-                return false;
+            document.addEventListener('selectstart', (e) => e.preventDefault());
+
+            // Handle visibility change
+            document.addEventListener('visibilitychange', () => {
+                if (document.hidden) {
+                    stopAnimation();
+                } else {
+                    startAnimation();
+                }
             });
         });
     </script>
