@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
-    <title>Dashboard Mobile 1.0</title>
+    <title>Dashboard Mobile 1.1</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&display=swap');
@@ -104,12 +104,14 @@
 
         /* Scene Container */
         .scene {
-            width: 300px;
-            height: 300px;
+            width: 100%;
+            height: 100%;
             perspective: 1200px;
             display: flex;
             align-items: center;
             justify-content: center;
+            overflow: hidden;
+            touch-action: pan-x pan-y;
         }
 
         /* Cube Container */
@@ -119,7 +121,8 @@
             position: relative;
             transform-style: preserve-3d;
             transform: rotateX(-20deg) rotateY(20deg);
-            transition: transform 0.1s linear;
+            transition: transform 0.08s linear;
+            will-change: transform;
         }
 
         /* Cube Face */
@@ -127,11 +130,11 @@
             position: absolute;
             width: 200px;
             height: 200px;
-            background: rgba(0, 20, 40, 0.9);
+            background: rgba(0, 20, 40, 0.95);
             border: 2px solid var(--neon-cyan);
             box-shadow:
-                0 0 20px rgba(0, 243, 255, 0.5),
-                inset 0 0 40px rgba(0, 243, 255, 0.2);
+                0 0 25px rgba(0, 243, 255, 0.6),
+                inset 0 0 50px rgba(0, 243, 255, 0.15);
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -139,6 +142,15 @@
             cursor: pointer;
             backface-visibility: visible;
             -webkit-backface-visibility: visible;
+            transform-origin: center;
+            transition: all 0.3s ease;
+        }
+
+        .cube-face:hover {
+            background: rgba(0, 30, 60, 0.95);
+            box-shadow:
+                0 0 35px rgba(0, 243, 255, 0.8),
+                inset 0 0 60px rgba(0, 243, 255, 0.25);
         }
 
         .face-inner {
@@ -149,54 +161,56 @@
             width: 100%;
             height: 100%;
             transform: translateZ(1px);
+            pointer-events: none;
         }
 
         .cube-face i {
-            font-size: 40px;
+            font-size: 42px;
             color: var(--neon-cyan);
-            margin-bottom: 10px;
-            text-shadow: 0 0 15px var(--neon-cyan);
+            margin-bottom: 12px;
+            text-shadow: 0 0 20px var(--neon-cyan);
+            filter: drop-shadow(0 0 8px rgba(0, 243, 255, 0.7));
+            transition: transform 0.3s ease;
+        }
+
+        .cube-face:hover i {
+            transform: scale(1.1);
         }
 
         .cube-face span {
-            font-size: 12px;
+            font-size: 13px;
             color: var(--text-color);
             text-transform: uppercase;
-            letter-spacing: 1.5px;
+            letter-spacing: 1.8px;
             text-align: center;
-            padding: 0 10px;
+            padding: 0 15px;
             font-weight: 500;
+            text-shadow: 0 0 10px rgba(224, 247, 250, 0.5);
         }
 
         /* Cube Face Positions */
         .front {
             transform: translateZ(100px);
-            backface-visibility: visible;
         }
 
         .back {
             transform: rotateY(180deg) translateZ(100px);
-            backface-visibility: visible;
         }
 
         .right {
             transform: rotateY(90deg) translateZ(100px);
-            backface-visibility: visible;
         }
 
         .left {
             transform: rotateY(-90deg) translateZ(100px);
-            backface-visibility: visible;
         }
 
         .top {
             transform: rotateX(90deg) translateZ(100px);
-            backface-visibility: visible;
         }
 
         .bottom {
             transform: rotateX(-90deg) translateZ(100px);
-            backface-visibility: visible;
         }
 
         /* Touch hint */
@@ -205,29 +219,36 @@
             bottom: 30px;
             left: 50%;
             transform: translateX(-50%);
-            color: rgba(0, 243, 255, 0.6);
-            font-size: 12px;
+            color: rgba(0, 243, 255, 0.8);
+            font-size: 13px;
             text-align: center;
-            padding: 0 20px;
+            padding: 10px 25px;
+            background: rgba(0, 20, 40, 0.4);
+            border: 1px solid rgba(0, 243, 255, 0.3);
+            border-radius: 20px;
+            backdrop-filter: blur(5px);
+            z-index: 50;
         }
 
-        /* Inner cube for hypercube effect */
+        /* Inner cubes for hypercube effect */
         .inner-cube {
             position: absolute;
             width: 100px;
             height: 100px;
             transform-style: preserve-3d;
             transform: translateZ(-50px) rotateX(45deg) rotateY(45deg);
-            opacity: 0.6;
+            opacity: 0.7;
+            pointer-events: none;
         }
 
         .inner-face {
             position: absolute;
             width: 100px;
             height: 100px;
-            background: rgba(0, 243, 255, 0.1);
-            border: 1px solid rgba(0, 243, 255, 0.3);
-            opacity: 0.5;
+            background: rgba(0, 243, 255, 0.15);
+            border: 1px solid rgba(0, 243, 255, 0.4);
+            opacity: 0.6;
+            box-shadow: inset 0 0 30px rgba(0, 243, 255, 0.2);
         }
 
         .inner-front {
@@ -254,27 +275,93 @@
             transform: rotateX(-90deg) translateZ(50px);
         }
 
+        /* Additional inner cube for deeper hypercube effect */
+        .inner-cube-2 {
+            position: absolute;
+            width: 50px;
+            height: 50px;
+            transform-style: preserve-3d;
+            transform: translateZ(-25px) rotateX(60deg) rotateY(60deg);
+            opacity: 0.5;
+            pointer-events: none;
+        }
+
+        .inner-face-2 {
+            position: absolute;
+            width: 50px;
+            height: 50px;
+            background: rgba(0, 243, 255, 0.1);
+            border: 1px solid rgba(0, 243, 255, 0.3);
+            opacity: 0.4;
+        }
+
+        .inner-front-2 {
+            transform: translateZ(25px);
+        }
+
+        .inner-back-2 {
+            transform: rotateY(180deg) translateZ(25px);
+        }
+
+        .inner-right-2 {
+            transform: rotateY(90deg) translateZ(25px);
+        }
+
+        .inner-left-2 {
+            transform: rotateY(-90deg) translateZ(25px);
+        }
+
+        .inner-top-2 {
+            transform: rotateX(90deg) translateZ(25px);
+        }
+
+        .inner-bottom-2 {
+            transform: rotateX(-90deg) translateZ(25px);
+        }
+
         /* Desktop mode button */
         .desktop-btn {
             position: fixed;
             bottom: 70px;
             right: 20px;
-            padding: 8px 12px;
-            background: rgba(0, 102, 255, 0.2);
+            padding: 10px 15px;
+            background: rgba(0, 102, 255, 0.25);
             border: 1px solid var(--neon-blue);
             color: var(--neon-cyan);
-            border-radius: 4px;
+            border-radius: 6px;
             cursor: pointer;
             font-family: 'Orbitron', sans-serif;
-            font-size: 11px;
+            font-size: 12px;
             transition: all 0.3s;
             z-index: 100;
+            backdrop-filter: blur(5px);
         }
 
         .desktop-btn:hover {
             background: var(--neon-blue);
             color: #fff;
-            box-shadow: 0 0 15px var(--neon-blue);
+            box-shadow: 0 0 20px var(--neon-blue);
+            transform: scale(1.05);
+        }
+
+        /* Auto-rotation animation */
+        @keyframes autoRotate {
+            0% {
+                transform: rotateX(-20deg) rotateY(20deg);
+            }
+
+            100% {
+                transform: rotateX(340deg) rotateY(380deg);
+            }
+        }
+
+        .cube-container.auto-rotate {
+            animation: autoRotate 40s infinite linear;
+        }
+
+        /* Inertia effect */
+        .cube-container.inertia {
+            transition: transform 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
         }
     </style>
 </head>
@@ -291,7 +378,7 @@
     </div>
 
     <!-- Scene Container -->
-    <div class="scene">
+    <div class="scene" id="scene">
         <!-- 3D Cube -->
         <div class="cube-container" id="cube">
             <!-- Outer Cube Faces -->
@@ -332,7 +419,7 @@
                 </div>
             </div>
 
-            <!-- Inner Cube -->
+            <!-- Inner Cube 1 -->
             <div class="inner-cube">
                 <div class="inner-face inner-front"></div>
                 <div class="inner-face inner-back"></div>
@@ -340,6 +427,16 @@
                 <div class="inner-face inner-left"></div>
                 <div class="inner-face inner-top"></div>
                 <div class="inner-face inner-bottom"></div>
+            </div>
+
+            <!-- Inner Cube 2 -->
+            <div class="inner-cube-2">
+                <div class="inner-face-2 inner-front-2"></div>
+                <div class="inner-face-2 inner-back-2"></div>
+                <div class="inner-face-2 inner-right-2"></div>
+                <div class="inner-face-2 inner-left-2"></div>
+                <div class="inner-face-2 inner-top-2"></div>
+                <div class="inner-face-2 inner-bottom-2"></div>
             </div>
         </div>
     </div>
@@ -349,13 +446,13 @@
     </button>
 
     <div class="touch-hint">
-        Tocca e trascina per ruotare il cubo
+        👆 Tocca e trascina per ruotare il cubo
     </div>
 
     <script>
         const cube = document.getElementById('cube');
         const usernameDisplay = document.getElementById('usernameDisplay');
-        const scene = document.querySelector('.scene');
+        const scene = document.getElementById('scene');
         const API_URL = "https://feweb-tunnel.fe-web.eu";
 
         let credentials = {
@@ -367,7 +464,6 @@
 
         // ========== LOAD CREDENTIALS ==========
         function loadCredentials() {
-            // Get from localStorage
             credentials.username = localStorage.getItem("username") || '';
             credentials.token = localStorage.getItem("token") || '';
             credentials.language = localStorage.getItem("language") || 'it_IT';
@@ -375,12 +471,10 @@
 
             console.log('📱 Mobile Credentials loaded:', credentials);
 
-            // Display username
             if (credentials.username) {
                 usernameDisplay.textContent = credentials.username;
             } else {
                 usernameDisplay.textContent = '-';
-                // If no credentials, redirect to login after a delay
                 setTimeout(() => {
                     console.warn('⚠️ No credentials found, redirecting to login');
                     window.location.href = 'login.html';
@@ -388,23 +482,85 @@
             }
         }
 
-        // ========== ROTATION CONTROL ==========
+        // ========== ADVANCED ROTATION CONTROL ==========
         let isDragging = false;
         let startX, startY;
         let rotationX = -20;
         let rotationY = 20;
-        let lastRotationX = rotationX;
-        let lastRotationY = rotationY;
-        const SENSITIVITY = 0.8;
+        let velocityX = 0;
+        let velocityY = 0;
+        let lastTime = 0;
+        let isAutoRotating = false;
+        const SENSITIVITY = 0.5;
+        const INERTIA_DECAY = 0.95;
+        const MIN_VELOCITY = 0.01;
+        let lastTouchTime = 0;
+        const DOUBLE_TAP_DELAY = 300;
 
-        // Touch events
+        // Request Animation Frame for smooth animation
+        function animate() {
+            requestAnimationFrame(animate);
+
+            if (!isDragging && (Math.abs(velocityX) > MIN_VELOCITY || Math.abs(velocityY) > MIN_VELOCITY)) {
+                rotationY += velocityY;
+                rotationX += velocityX;
+
+                velocityX *= INERTIA_DECAY;
+                velocityY *= INERTIA_DECAY;
+
+                if (Math.abs(velocityX) < MIN_VELOCITY) velocityX = 0;
+                if (Math.abs(velocityY) < MIN_VELOCITY) velocityY = 0;
+
+                updateCubeRotation();
+            }
+        }
+
+        // Initialize animation loop
+        animate();
+
+        function updateCubeRotation() {
+            cube.style.transform = `rotateX(${rotationX}deg) rotateY(${rotationY}deg)`;
+            updateInnerCubes();
+        }
+
+        function updateInnerCubes() {
+            const innerCube = document.querySelector('.inner-cube');
+            const innerCube2 = document.querySelector('.inner-cube-2');
+
+            if (innerCube) {
+                innerCube.style.transform = `translateZ(-50px) rotateX(${rotationX * 1.5}deg) rotateY(${rotationY * 1.5}deg)`;
+            }
+
+            if (innerCube2) {
+                innerCube2.style.transform = `translateZ(-25px) rotateX(${rotationX * 2}deg) rotateY(${rotationY * 2}deg)`;
+            }
+        }
+
+        // Touch events with momentum
         scene.addEventListener('touchstart', (e) => {
             e.preventDefault();
+            const currentTime = Date.now();
+
+            // Double tap detection
+            if (currentTime - lastTouchTime < DOUBLE_TAP_DELAY) {
+                toggleAutoRotation();
+                lastTouchTime = 0;
+                return;
+            }
+            lastTouchTime = currentTime;
+
             isDragging = true;
+            isAutoRotating = false;
+            cube.classList.remove('auto-rotate');
+            cube.classList.remove('inertia');
+
             startX = e.touches[0].clientX;
             startY = e.touches[0].clientY;
-            lastRotationX = rotationX;
-            lastRotationY = rotationY;
+
+            velocityX = 0;
+            velocityY = 0;
+            lastTime = Date.now();
+
             cube.style.transition = 'none';
         });
 
@@ -414,19 +570,46 @@
 
             const touchX = e.touches[0].clientX;
             const touchY = e.touches[0].clientY;
-            const deltaX = touchX - startX;
-            const deltaY = touchY - startY;
+            const currentTime = Date.now();
+            const deltaTime = currentTime - lastTime;
 
-            rotationY = lastRotationY + deltaX * SENSITIVITY;
-            rotationX = lastRotationX - deltaY * SENSITIVITY;
+            if (deltaTime > 0) {
+                const deltaX = touchX - startX;
+                const deltaY = touchY - startY;
 
-            cube.style.transform = `rotateX(${rotationX}deg) rotateY(${rotationY}deg)`;
-            updateInnerCube();
+                // Calculate velocity for inertia
+                velocityY = (deltaX * SENSITIVITY) / deltaTime * 16;
+                velocityX = (-deltaY * SENSITIVITY) / deltaTime * 16;
+
+                // Apply rotation
+                rotationY += deltaX * SENSITIVITY;
+                rotationX -= deltaY * SENSITIVITY;
+
+                updateCubeRotation();
+
+                startX = touchX;
+                startY = touchY;
+                lastTime = currentTime;
+            }
         });
 
         scene.addEventListener('touchend', () => {
+            if (!isDragging) return;
             isDragging = false;
-            cube.style.transition = 'transform 0.2s ease-out';
+
+            // Apply inertia
+            cube.classList.add('inertia');
+
+            // Gradually reduce velocity
+            const inertiaInterval = setInterval(() => {
+                velocityX *= INERTIA_DECAY;
+                velocityY *= INERTIA_DECAY;
+
+                if (Math.abs(velocityX) < MIN_VELOCITY && Math.abs(velocityY) < MIN_VELOCITY) {
+                    clearInterval(inertiaInterval);
+                    cube.classList.remove('inertia');
+                }
+            }, 16);
         });
 
         // Mouse events for desktop testing
@@ -434,10 +617,17 @@
         scene.addEventListener('mousedown', (e) => {
             e.preventDefault();
             isMouseDragging = true;
+            isAutoRotating = false;
+            cube.classList.remove('auto-rotate');
+            cube.classList.remove('inertia');
+
             startX = e.clientX;
             startY = e.clientY;
-            lastRotationX = rotationX;
-            lastRotationY = rotationY;
+
+            velocityX = 0;
+            velocityY = 0;
+            lastTime = Date.now();
+
             cube.style.transition = 'none';
         });
 
@@ -447,37 +637,68 @@
 
             const mouseX = e.clientX;
             const mouseY = e.clientY;
-            const deltaX = mouseX - startX;
-            const deltaY = mouseY - startY;
+            const currentTime = Date.now();
+            const deltaTime = currentTime - lastTime;
 
-            rotationY = lastRotationY + deltaX * SENSITIVITY;
-            rotationX = lastRotationX - deltaY * SENSITIVITY;
+            if (deltaTime > 0) {
+                const deltaX = mouseX - startX;
+                const deltaY = mouseY - startY;
 
-            cube.style.transform = `rotateX(${rotationX}deg) rotateY(${rotationY}deg)`;
-            updateInnerCube();
+                velocityY = (deltaX * SENSITIVITY) / deltaTime * 16;
+                velocityX = (-deltaY * SENSITIVITY) / deltaTime * 16;
+
+                rotationY += deltaX * SENSITIVITY;
+                rotationX -= deltaY * SENSITIVITY;
+
+                updateCubeRotation();
+
+                startX = mouseX;
+                startY = mouseY;
+                lastTime = currentTime;
+            }
         });
 
         document.addEventListener('mouseup', () => {
+            if (!isMouseDragging) return;
             isMouseDragging = false;
-            cube.style.transition = 'transform 0.2s ease-out';
+
+            cube.classList.add('inertia');
+
+            const inertiaInterval = setInterval(() => {
+                velocityX *= INERTIA_DECAY;
+                velocityY *= INERTIA_DECAY;
+
+                if (Math.abs(velocityX) < MIN_VELOCITY && Math.abs(velocityY) < MIN_VELOCITY) {
+                    clearInterval(inertiaInterval);
+                    cube.classList.remove('inertia');
+                }
+            }, 16);
         });
 
-        // Update inner cube for hypercube effect
-        function updateInnerCube() {
-            const innerCube = document.querySelector('.inner-cube');
-            const innerRotationX = rotationX * 1.2;
-            const innerRotationY = rotationY * 1.2;
-            innerCube.style.transform = `translateZ(-50px) rotateX(${innerRotationX}deg) rotateY(${innerRotationY}deg)`;
+        // Auto-rotation toggle
+        function toggleAutoRotation() {
+            isAutoRotating = !isAutoRotating;
+
+            if (isAutoRotating) {
+                cube.classList.add('auto-rotate');
+                velocityX = 0;
+                velocityY = 0;
+            } else {
+                cube.classList.remove('auto-rotate');
+            }
         }
 
         // ========== NAVIGATION ==========
         function navigateTo(page) {
-            // Credentials are already in localStorage, just navigate
-            window.location.href = page;
+            // Add click feedback
+            cube.style.transform += ' scale(0.95)';
+            setTimeout(() => {
+                cube.style.transform = cube.style.transform.replace(' scale(0.95)', '');
+                window.location.href = page;
+            }, 150);
         }
 
         function switchToDesktop() {
-            // Set flag to prevent redirect back to mobile
             sessionStorage.setItem('forceDesktop', 'true');
             window.location.href = 'dashboard.html';
         }
@@ -508,7 +729,6 @@
             } catch (error) {
                 console.error('❌ Logout error:', error);
             } finally {
-                // Always clear and redirect
                 localStorage.clear();
                 sessionStorage.clear();
                 window.location.href = 'login.html';
@@ -518,7 +738,19 @@
         // ========== INITIALIZATION ==========
         document.addEventListener('DOMContentLoaded', () => {
             loadCredentials();
-            updateInnerCube();
+            updateInnerCubes();
+
+            // Prevent context menu on long press
+            document.addEventListener('contextmenu', (e) => {
+                e.preventDefault();
+                return false;
+            });
+
+            // Prevent text selection
+            document.addEventListener('selectstart', (e) => {
+                e.preventDefault();
+                return false;
+            });
         });
     </script>
 </body>
