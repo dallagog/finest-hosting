@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
-    <title>Dashboard Mobile 1.0 a</title>
+    <title>Dashboard Mobile 1.1 a</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&display=swap');
@@ -121,7 +121,6 @@
             position: relative;
             transform-style: preserve-3d;
             transform: rotateX(-20deg) rotateY(20deg);
-            transition: transform 0.1s linear;
             will-change: transform;
         }
 
@@ -142,10 +141,9 @@
             cursor: pointer;
             backface-visibility: visible;
             transform-origin: center;
-            transition: all 0.3s ease;
         }
 
-        .cube-face:hover {
+        .cube-face:active {
             background: rgba(0, 30, 60, 0.95);
             box-shadow:
                 0 0 35px rgba(0, 243, 255, 0.8),
@@ -253,13 +251,6 @@
             transform: rotateX(-90deg) translateZ(50px);
         }
 
-        /* Connecting Lines for Hypercube */
-        .connection {
-            position: absolute;
-            background: rgba(0, 243, 255, 0.3);
-            pointer-events: none;
-        }
-
         /* Touch hint */
         .touch-hint {
             position: fixed;
@@ -275,31 +266,6 @@
             border-radius: 20px;
             backdrop-filter: blur(5px);
             z-index: 50;
-        }
-
-        /* Desktop mode button */
-        .desktop-btn {
-            position: fixed;
-            bottom: 70px;
-            right: 20px;
-            padding: 10px 15px;
-            background: rgba(0, 102, 255, 0.25);
-            border: 1px solid var(--neon-blue);
-            color: var(--neon-cyan);
-            border-radius: 6px;
-            cursor: pointer;
-            font-family: 'Orbitron', sans-serif;
-            font-size: 12px;
-            transition: all 0.3s;
-            z-index: 100;
-            backdrop-filter: blur(5px);
-        }
-
-        .desktop-btn:hover {
-            background: var(--neon-blue);
-            color: #fff;
-            box-shadow: 0 0 20px var(--neon-blue);
-            transform: scale(1.05);
         }
 
         /* Remove tap highlight */
@@ -374,15 +340,8 @@
                 <div class="inner-face inner-top"></div>
                 <div class="inner-face inner-bottom"></div>
             </div>
-
-            <!-- Connecting lines between cubes (Hypercube edges) -->
-            <div class="connection" id="connections"></div>
         </div>
     </div>
-
-    <button class="desktop-btn" onclick="switchToDesktop()">
-        <i class="fa fa-desktop"></i> Desktop
-    </button>
 
     <div class="touch-hint">
         👆 Tocca e trascina per ruotare l'ipercubo
@@ -391,7 +350,6 @@
     <script>
         const hypercube = document.getElementById('hypercube');
         const innerCube = document.getElementById('innerCube');
-        const connections = document.getElementById('connections');
         const usernameDisplay = document.getElementById('usernameDisplay');
         const scene = document.getElementById('scene');
         const API_URL = "https://feweb-tunnel.fe-web.eu";
@@ -427,83 +385,60 @@
         let isDragging = false;
         let rotationX = -20;
         let rotationY = 20;
-        let rotationZ = 0;
-        const SENSITIVITY = 0.4;
-
-        // Animation variables for smooth rotation
-        let targetRotationX = rotationX;
-        let targetRotationY = rotationY;
-        let targetRotationZ = rotationZ;
         let animationId = null;
-        let lastTime = 0;
+        let lastTimestamp = 0;
 
-        // Start animation loop
-        function startAnimation() {
-            if (animationId) return;
+        // Smooth rotation animation
+        function animate(timestamp) {
+            if (!lastTimestamp) lastTimestamp = timestamp;
+            const deltaTime = timestamp - lastTimestamp;
+            lastTimestamp = timestamp;
 
-            function animate(currentTime) {
-                if (!lastTime) lastTime = currentTime;
-                const deltaTime = currentTime - lastTime;
-                lastTime = currentTime;
+            // Update rotation
+            updateHypercubeRotation();
 
-                // Smooth interpolation towards target rotation
-                const lerpFactor = Math.min(deltaTime * 0.02, 1);
-                rotationX += (targetRotationX - rotationX) * lerpFactor;
-                rotationY += (targetRotationY - rotationY) * lerpFactor;
-                rotationZ += (targetRotationZ - rotationZ) * lerpFactor;
-
-                // Update hypercube rotation
-                updateHypercubeRotation();
-
-                // Continue animation
-                animationId = requestAnimationFrame(animate);
-            }
-
+            // Continue animation
             animationId = requestAnimationFrame(animate);
         }
 
-        // Stop animation when not needed
+        function startAnimation() {
+            if (!animationId) {
+                animationId = requestAnimationFrame(animate);
+            }
+        }
+
         function stopAnimation() {
             if (animationId) {
                 cancelAnimationFrame(animationId);
                 animationId = null;
-                lastTime = 0;
+                lastTimestamp = 0;
             }
         }
 
         function updateHypercubeRotation() {
             // Apply rotation to outer cube
             hypercube.style.transform =
-                `rotateX(${rotationX}deg) rotateY(${rotationY}deg) rotateZ(${rotationZ}deg)`;
+                `rotateX(${rotationX}deg) rotateY(${rotationY}deg)`;
 
-            // Apply opposite rotation to inner cube for hypercube effect
+            // Apply different rotation to inner cube for hypercube effect
             innerCube.style.transform =
-                `translateZ(-50px) rotateX(${-rotationX * 0.5}deg) rotateY(${-rotationY * 0.5}deg) rotateZ(${rotationZ * 0.3}deg)`;
+                `translateZ(-50px) rotateX(${rotationX * -0.7}deg) rotateY(${rotationY * -0.7}deg)`;
         }
 
-        // ========== TOUCH/MOUSE CONTROLS ==========
+        // ========== TOUCH CONTROLS ==========
         let lastX = 0;
-        let lastY = 0;
-        let velocityX = 0;
-        let velocityY = 0;
-        let isInertia = false;
-        const INERTIA_DECAY = 0.92;
+        lastY = 0;
+        const SENSITIVITY = 0.5;
 
         // Touch events
         scene.addEventListener('touchstart', (e) => {
             e.preventDefault();
             isDragging = true;
-            isInertia = false;
 
             const touch = e.touches[0];
             lastX = touch.clientX;
             lastY = touch.clientY;
 
-            // Reset velocities
-            velocityX = 0;
-            velocityY = 0;
-
-            // Start smooth animation
             startAnimation();
         });
 
@@ -519,13 +454,9 @@
             const deltaX = currentX - lastX;
             const deltaY = currentY - lastY;
 
-            // Update target rotation
-            targetRotationY += deltaX * SENSITIVITY;
-            targetRotationX -= deltaY * SENSITIVITY;
-
-            // Store velocity for inertia
-            velocityX = deltaX;
-            velocityY = deltaY;
+            // Update rotation - NO LIMITS, free rotation
+            rotationY += deltaX * SENSITIVITY;
+            rotationX -= deltaY * SENSITIVITY;
 
             // Update last position
             lastX = currentX;
@@ -533,110 +464,47 @@
         });
 
         scene.addEventListener('touchend', () => {
-            if (!isDragging) return;
             isDragging = false;
-
-            // Apply inertia if there was significant movement
-            if (Math.abs(velocityX) > 2 || Math.abs(velocityY) > 2) {
-                isInertia = true;
-
-                function applyInertia() {
-                    if (!isInertia) return;
-
-                    // Decay velocities
-                    velocityX *= INERTIA_DECAY;
-                    velocityY *= INERTIA_DECAY;
-
-                    // Apply to rotation
-                    targetRotationY += velocityX * SENSITIVITY * 0.5;
-                    targetRotationX -= velocityY * SENSITIVITY * 0.5;
-
-                    // Stop when velocities are very small
-                    if (Math.abs(velocityX) < 0.1 && Math.abs(velocityY) < 0.1) {
-                        isInertia = false;
-                    } else {
-                        requestAnimationFrame(applyInertia);
-                    }
-                }
-
-                applyInertia();
-            }
         });
 
-        // Mouse events for testing
-        scene.addEventListener('mousedown', (e) => {
-            e.preventDefault();
-            isDragging = true;
-            isInertia = false;
+        // Mouse events for testing (only on non-touch devices)
+        if (!('ontouchstart' in window)) {
+            scene.addEventListener('mousedown', (e) => {
+                e.preventDefault();
+                isDragging = true;
 
-            lastX = e.clientX;
-            lastY = e.clientY;
+                lastX = e.clientX;
+                lastY = e.clientY;
 
-            velocityX = 0;
-            velocityY = 0;
+                startAnimation();
+            });
 
-            startAnimation();
-        });
+            document.addEventListener('mousemove', (e) => {
+                if (!isDragging) return;
+                e.preventDefault();
 
-        document.addEventListener('mousemove', (e) => {
-            if (!isDragging) return;
-            e.preventDefault();
+                const currentX = e.clientX;
+                const currentY = e.clientY;
 
-            const currentX = e.clientX;
-            const currentY = e.clientY;
+                const deltaX = currentX - lastX;
+                const deltaY = currentY - lastY;
 
-            const deltaX = currentX - lastX;
-            const deltaY = currentY - lastY;
+                rotationY += deltaX * SENSITIVITY;
+                rotationX -= deltaY * SENSITIVITY;
 
-            targetRotationY += deltaX * SENSITIVITY;
-            targetRotationX -= deltaY * SENSITIVITY;
+                lastX = currentX;
+                lastY = currentY;
+            });
 
-            velocityX = deltaX;
-            velocityY = deltaY;
-
-            lastX = currentX;
-            lastY = currentY;
-        });
-
-        document.addEventListener('mouseup', () => {
-            if (!isDragging) return;
-            isDragging = false;
-
-            if (Math.abs(velocityX) > 2 || Math.abs(velocityY) > 2) {
-                isInertia = true;
-
-                function applyInertia() {
-                    if (!isInertia) return;
-
-                    velocityX *= INERTIA_DECAY;
-                    velocityY *= INERTIA_DECAY;
-
-                    targetRotationY += velocityX * SENSITIVITY * 0.5;
-                    targetRotationX -= velocityY * SENSITIVITY * 0.5;
-
-                    if (Math.abs(velocityX) < 0.1 && Math.abs(velocityY) < 0.1) {
-                        isInertia = false;
-                    } else {
-                        requestAnimationFrame(applyInertia);
-                    }
-                }
-
-                applyInertia();
-            }
-        });
+            document.addEventListener('mouseup', () => {
+                isDragging = false;
+            });
+        }
 
         // ========== NAVIGATION ==========
         function navigateTo(page) {
-            // Add click effect
-            hypercube.style.transform += ' scale(0.95)';
-            setTimeout(() => {
-                window.location.href = page;
-            }, 150);
-        }
-
-        function switchToDesktop() {
-            sessionStorage.setItem('forceDesktop', 'true');
-            window.location.href = 'dashboard.html';
+            // Simple navigation without effects
+            window.location.href = page;
         }
 
         // ========== LOGOUT ==========
@@ -675,13 +543,10 @@
         document.addEventListener('DOMContentLoaded', () => {
             loadCredentials();
             updateHypercubeRotation();
-            startAnimation(); // Start animation loop
+            startAnimation();
 
             // Prevent context menu
             document.addEventListener('contextmenu', (e) => e.preventDefault());
-
-            // Prevent text selection
-            document.addEventListener('selectstart', (e) => e.preventDefault());
 
             // Handle visibility change
             document.addEventListener('visibilitychange', () => {
@@ -690,6 +555,11 @@
                 } else {
                     startAnimation();
                 }
+            });
+
+            // Handle page unload
+            window.addEventListener('beforeunload', () => {
+                stopAnimation();
             });
         });
     </script>

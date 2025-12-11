@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Financial Estimates 1.2</title>
+  <title>Financial Estimates 1.3</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&display=swap');
@@ -345,8 +345,21 @@
 
     // ========== CLOSE BUTTON ==========
     document.getElementById('closeButton').addEventListener('click', () => {
-      window.close();
-      history.length > 1 ? history.back() : window.location.href = 'about:blank';
+
+      // Se è una PWA può chiudere davvero
+      if (window.matchMedia('(display-mode: standalone)').matches) {
+        window.close();
+        return;
+      }
+
+      // Se esiste una pagina precedente, torna indietro
+      if (history.length > 1) {
+        history.back();
+        return;
+      }
+
+      // Fallback universale per mobile
+      window.location.href = "about:blank";
     });
 
     // ========== LANGUAGE SYSTEM ==========
