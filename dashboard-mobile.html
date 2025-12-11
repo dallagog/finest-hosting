@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
-    <title>Dashboard Mobile</title>
+    <title>Dashboard Mobile 1.0</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&display=swap');
@@ -70,22 +70,26 @@
         }
 
         .username-display {
-            font-size: 0.9rem;
+            font-size: 0.85rem;
             color: var(--neon-cyan);
             text-shadow: 0 0 5px var(--neon-cyan);
             padding: 5px 10px;
             background: rgba(0, 102, 255, 0.1);
             border: 1px solid rgba(0, 102, 255, 0.3);
             border-radius: 4px;
-            min-width: 80px;
-            text-align: center;
+            min-width: 70px;
+            text-align: left;
+            max-width: 120px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
         }
 
         .logout-btn {
             padding: 8px 16px;
-            background: rgba(0, 102, 255, 0.2);
-            border: 1px solid var(--neon-blue);
-            color: var(--neon-cyan);
+            background: rgba(255, 0, 0, 0.2);
+            border: 1px solid #ff3333;
+            color: #ff3333;
             border-radius: 4px;
             cursor: pointer;
             font-family: 'Orbitron', sans-serif;
@@ -93,7 +97,12 @@
             transition: all 0.3s;
         }
 
-        /* Scene Container - IMPORTANTE per prospettiva */
+        .logout-btn:hover {
+            background: rgba(255, 0, 0, 0.4);
+            box-shadow: 0 0 10px #ff3333;
+        }
+
+        /* Scene Container */
         .scene {
             width: 300px;
             height: 300px;
@@ -132,7 +141,6 @@
             -webkit-backface-visibility: visible;
         }
 
-        /* Trucco per rendere il testo sempre leggibile: usiamo un contenitore interno */
         .face-inner {
             display: flex;
             flex-direction: column;
@@ -141,7 +149,6 @@
             width: 100%;
             height: 100%;
             transform: translateZ(1px);
-            /* Piccolo trucco per rendering migliore */
         }
 
         .cube-face i {
@@ -161,7 +168,7 @@
             font-weight: 500;
         }
 
-        /* Cube Face Positions - con backface-visibility */
+        /* Cube Face Positions */
         .front {
             transform: translateZ(100px);
             backface-visibility: visible;
@@ -204,7 +211,7 @@
             padding: 0 20px;
         }
 
-        /* Hypercube effect - cube interno */
+        /* Inner cube for hypercube effect */
         .inner-cube {
             position: absolute;
             width: 100px;
@@ -247,12 +254,27 @@
             transform: rotateX(-90deg) translateZ(50px);
         }
 
-        /* Connection lines for hypercube effect */
-        .connection {
-            position: absolute;
-            background: rgba(0, 243, 255, 0.3);
-            height: 2px;
-            transform-origin: 0 0;
+        /* Desktop mode button */
+        .desktop-btn {
+            position: fixed;
+            bottom: 70px;
+            right: 20px;
+            padding: 8px 12px;
+            background: rgba(0, 102, 255, 0.2);
+            border: 1px solid var(--neon-blue);
+            color: var(--neon-cyan);
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 11px;
+            transition: all 0.3s;
+            z-index: 100;
+        }
+
+        .desktop-btn:hover {
+            background: var(--neon-blue);
+            color: #fff;
+            box-shadow: 0 0 15px var(--neon-blue);
         }
     </style>
 </head>
@@ -260,7 +282,7 @@
 <body>
     <div class="header">
         <div class="username-display" id="usernameDisplay">
-            USERNAME
+            -
         </div>
         <h1>FINANCIAL ESTIMATES</h1>
         <button class="logout-btn" onclick="logout()">
@@ -270,9 +292,9 @@
 
     <!-- Scene Container -->
     <div class="scene">
-        <!-- 3D Cube (Hypercube projection) -->
+        <!-- 3D Cube -->
         <div class="cube-container" id="cube">
-            <!-- Outer Cube Faces with content -->
+            <!-- Outer Cube Faces -->
             <div class="cube-face front" onclick="navigateTo('dashboard-mobile-portfolio.html')">
                 <div class="face-inner">
                     <i class="fa fa-chart-pie"></i>
@@ -310,7 +332,7 @@
                 </div>
             </div>
 
-            <!-- Inner Cube for hypercube effect -->
+            <!-- Inner Cube -->
             <div class="inner-cube">
                 <div class="inner-face inner-front"></div>
                 <div class="inner-face inner-back"></div>
@@ -322,6 +344,10 @@
         </div>
     </div>
 
+    <button class="desktop-btn" onclick="switchToDesktop()">
+        <i class="fa fa-desktop"></i> Desktop
+    </button>
+
     <div class="touch-hint">
         Tocca e trascina per ruotare il cubo
     </div>
@@ -330,25 +356,48 @@
         const cube = document.getElementById('cube');
         const usernameDisplay = document.getElementById('usernameDisplay');
         const scene = document.querySelector('.scene');
+        const API_URL = "https://feweb-tunnel.fe-web.eu";
 
-        // Carica username
-        function loadUsername() {
-            const username = sessionStorage.getItem('username') || 'USERNAME';
-            usernameDisplay.textContent = username;
+        let credentials = {
+            username: '',
+            token: '',
+            language: '',
+            filter: ''
+        };
+
+        // ========== LOAD CREDENTIALS ==========
+        function loadCredentials() {
+            // Get from localStorage
+            credentials.username = localStorage.getItem("username") || '';
+            credentials.token = localStorage.getItem("token") || '';
+            credentials.language = localStorage.getItem("language") || 'it_IT';
+            credentials.filter = localStorage.getItem("filter") || '';
+
+            console.log('📱 Mobile Credentials loaded:', credentials);
+
+            // Display username
+            if (credentials.username) {
+                usernameDisplay.textContent = credentials.username;
+            } else {
+                usernameDisplay.textContent = '-';
+                // If no credentials, redirect to login after a delay
+                setTimeout(() => {
+                    console.warn('⚠️ No credentials found, redirecting to login');
+                    window.location.href = 'login.html';
+                }, 2000);
+            }
         }
 
-        // Variabili per il controllo della rotazione
+        // ========== ROTATION CONTROL ==========
         let isDragging = false;
         let startX, startY;
-        let rotationX = -20; // Inclinazione iniziale
+        let rotationX = -20;
         let rotationY = 20;
         let lastRotationX = rotationX;
         let lastRotationY = rotationY;
+        const SENSITIVITY = 0.8;
 
-        // Configurazione sensibilità
-        const SENSITIVITY = 0.8; // Molto fluido ma controllato
-
-        // Gestione touch
+        // Touch events
         scene.addEventListener('touchstart', (e) => {
             e.preventDefault();
             isDragging = true;
@@ -356,8 +405,6 @@
             startY = e.touches[0].clientY;
             lastRotationX = rotationX;
             lastRotationY = rotationY;
-
-            // Aggiungi effetto attivo
             cube.style.transition = 'none';
         });
 
@@ -367,19 +414,13 @@
 
             const touchX = e.touches[0].clientX;
             const touchY = e.touches[0].clientY;
-
-            // Calcola movimento
             const deltaX = touchX - startX;
             const deltaY = touchY - startY;
 
-            // Aggiorna rotazione
             rotationY = lastRotationY + deltaX * SENSITIVITY;
             rotationX = lastRotationX - deltaY * SENSITIVITY;
 
-            // Applica rotazione
             cube.style.transform = `rotateX(${rotationX}deg) rotateY(${rotationY}deg)`;
-
-            // Aggiorna cubo interno per effetto ipercubo
             updateInnerCube();
         });
 
@@ -388,16 +429,7 @@
             cube.style.transition = 'transform 0.2s ease-out';
         });
 
-        // Funzione per aggiornare cubo interno (effetto ipercubo)
-        function updateInnerCube() {
-            const innerCube = document.querySelector('.inner-cube');
-            // Il cubo interno ruota in modo leggermente diverso per effetto 4D
-            const innerRotationX = rotationX * 1.2;
-            const innerRotationY = rotationY * 1.2;
-            innerCube.style.transform = `translateZ(-50px) rotateX(${innerRotationX}deg) rotateY(${innerRotationY}deg)`;
-        }
-
-        // Gestione mouse per testing
+        // Mouse events for desktop testing
         let isMouseDragging = false;
         scene.addEventListener('mousedown', (e) => {
             e.preventDefault();
@@ -415,7 +447,6 @@
 
             const mouseX = e.clientX;
             const mouseY = e.clientY;
-
             const deltaX = mouseX - startX;
             const deltaY = mouseY - startY;
 
@@ -431,20 +462,62 @@
             cube.style.transition = 'transform 0.2s ease-out';
         });
 
-        // Navigazione
+        // Update inner cube for hypercube effect
+        function updateInnerCube() {
+            const innerCube = document.querySelector('.inner-cube');
+            const innerRotationX = rotationX * 1.2;
+            const innerRotationY = rotationY * 1.2;
+            innerCube.style.transform = `translateZ(-50px) rotateX(${innerRotationX}deg) rotateY(${innerRotationY}deg)`;
+        }
+
+        // ========== NAVIGATION ==========
         function navigateTo(page) {
+            // Credentials are already in localStorage, just navigate
             window.location.href = page;
         }
 
-        // Logout
-        function logout() {
-            sessionStorage.clear();
-            window.location.href = 'login.html';
+        function switchToDesktop() {
+            // Set flag to prevent redirect back to mobile
+            sessionStorage.setItem('forceDesktop', 'true');
+            window.location.href = 'dashboard.html';
         }
 
-        // Inizializzazione
+        // ========== LOGOUT ==========
+        async function logout() {
+            try {
+                const payload = {
+                    username: credentials.username || "",
+                    token: credentials.token || "",
+                    language: credentials.language || "",
+                    filter: credentials.filter || ""
+                };
+
+                const response = await fetch(`${API_URL}/logout`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const data = await response.json().catch(() => null);
+
+                if (data && data.status === 'ok') {
+                    console.log('✅ Logout successful');
+                } else {
+                    console.warn('⚠️ Logout response:', data);
+                }
+            } catch (error) {
+                console.error('❌ Logout error:', error);
+            } finally {
+                // Always clear and redirect
+                localStorage.clear();
+                sessionStorage.clear();
+                window.location.href = 'login.html';
+            }
+        }
+
+        // ========== INITIALIZATION ==========
         document.addEventListener('DOMContentLoaded', () => {
-            loadUsername();
+            loadCredentials();
             updateInnerCube();
         });
     </script>

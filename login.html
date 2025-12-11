@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Financial Estimates 1.0</title>
+  <title>Financial Estimates 1.1</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&display=swap');
@@ -32,11 +32,42 @@
       color: var(--text-color);
     }
 
-    .language-selector {
+    .top-controls {
       position: absolute;
       top: 20px;
       right: 20px;
       z-index: 1000;
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .close-button {
+      padding: 8px 16px;
+      border: 1px solid var(--neon-cyan);
+      border-radius: 4px;
+      background: rgba(0, 0, 0, 0.8);
+      color: var(--neon-cyan);
+      cursor: pointer;
+      font-family: 'Orbitron', sans-serif;
+      font-size: 14px;
+      transition: all 0.3s;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .close-button:hover {
+      background: var(--neon-cyan);
+      color: #000;
+      box-shadow: 0 0 15px var(--neon-cyan);
+      transform: translateY(-2px);
+    }
+
+    .close-button i {
+      font-size: 12px;
     }
 
     #languageCombo {
@@ -253,7 +284,11 @@
 </head>
 
 <body>
-  <div class="language-selector">
+  <div class="top-controls">
+    <button class="close-button" id="closeButton">
+      <i class="fa fa-times"></i>
+      <span id="closeText">Close</span>
+    </button>
     <select id="languageCombo">
       <option value="" id="loadingOption">Loading...</option>
     </select>
@@ -306,6 +341,11 @@
 
     console.log("=== FinEst Login v0.31 ===");
     console.log("🌍 Default language:", language);
+
+    // ========== CLOSE BUTTON ==========
+    document.getElementById('closeButton').addEventListener('click', () => {
+      window.close();
+    });
 
     // ========== LANGUAGE SYSTEM ==========
 
@@ -446,7 +486,13 @@
 
     // Aggiorna traduzioni pagina
     function updatePageTranslations() {
-      console.log("📄 Updating page translations for language:", language);
+      console.log("🔄 Updating page translations for language:", language);
+
+      // Update close button text
+      const closeText = document.getElementById('closeText');
+      if (closeText) {
+        closeText.textContent = getTranslation('int.close');
+      }
 
       const formTitle = document.getElementById('form-title');
       if (formTitle) {
@@ -499,7 +545,7 @@
     // Event listener per combobox lingue - usa 'input' per catturare anche i clic sulla stessa opzione
     document.getElementById('languageCombo').addEventListener('input', async (e) => {
       const selectedLang = e.target.value;
-      console.log("📝 Language selector changed to:", selectedLang);
+      console.log("🔍 Language selector changed to:", selectedLang);
 
       if (selectedLang) {
         await changeLanguage(selectedLang);
@@ -600,7 +646,7 @@
 
     // Richiesta info mancanti
     function requestMissingInfo(info, username, password) {
-      document.querySelector('.language-selector').style.display = 'none';
+      document.querySelector('.top-controls').style.display = 'none';
 
       const container = document.getElementById("app-container");
 
@@ -661,7 +707,7 @@
           const data = await response.json();
           if (response.ok && data.status === "ok") {
             alert(getTranslation('int.info.saved'));
-            document.querySelector('.language-selector').style.display = 'block';
+            document.querySelector('.top-controls').style.display = 'flex';
             window.location.href = "login.html";
           } else {
             alert(getTranslation("int.error.update"));
@@ -672,7 +718,6 @@
       });
     }
 
-    // Apertura dashboard
     // Apertura dashboard
     function openDashboard(username, token, lang, currency) {
       localStorage.setItem("username", username);
