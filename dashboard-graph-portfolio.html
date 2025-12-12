@@ -16,9 +16,11 @@
             --neon-blue: #0066ff;
             --glass-bg: rgba(0, 20, 40, 0.85);
             --text-color: #e0f7fa;
+            --button-bg: rgba(0, 243, 255, 0.1);
+            --button-border: var(--neon-cyan);
+            --button-hover: #ff0044;
         }
 
-        /* 3. Layout full-height standard e con padding ridotto */
         html,
         body {
             height: 100%;
@@ -40,9 +42,10 @@
             overflow: hidden;
         }
 
+        /* 1. Header con layout a 3 colonne (Sinistra-Centro-Destra) */
         .header-bar {
-            display: flex;
-            justify-content: space-between;
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
             align-items: center;
             padding: 15px 20px;
             background: var(--glass-bg);
@@ -53,8 +56,8 @@
             flex-shrink: 0;
         }
 
-        /* 2. Username e Titolo a sinistra */
-        .header-info {
+        /* Contenitore Sinistro: Username e Lingua */
+        .header-left {
             display: flex;
             flex-direction: column;
             align-items: flex-start;
@@ -66,8 +69,32 @@
             color: var(--neon-cyan);
             text-transform: uppercase;
             letter-spacing: 1px;
-            /* Rimuove l'overlap con il titolo */
             margin-bottom: 5px;
+        }
+
+        .language-display {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9rem;
+            color: var(--text-color);
+        }
+
+        .language-display .flag-icon {
+            width: 20px;
+            height: 15px;
+            background-color: var(--neon-blue);
+            color: #fff;
+            text-align: center;
+            line-height: 15px;
+            font-size: 8px;
+            border: 1px solid var(--neon-cyan);
+            box-shadow: 0 0 5px rgba(0, 243, 255, 0.5);
+        }
+
+        /* Contenitore Centrale: Titolo */
+        .header-center {
+            text-align: center;
         }
 
         h1 {
@@ -79,22 +106,43 @@
             text-shadow: 0 0 10px var(--neon-cyan);
         }
 
-        /* Controlli a destra */
-        .controls {
+        /* Contenitore Destro: Raggruppamento e Chiudi */
+        .header-right {
             display: flex;
             gap: 15px;
             align-items: center;
-            margin-left: auto;
+            justify-content: flex-end;
         }
 
         select {
             padding: 8px 15px;
-            background: rgba(0, 243, 255, 0.1);
+            background: var(--button-bg);
             border: 1px solid var(--neon-blue);
             color: var(--neon-cyan);
             font-family: 'Orbitron', sans-serif;
             border-radius: 4px;
             cursor: pointer;
+        }
+
+        /* 1. Stile Tasto Chiudi coerente con dashboard (Logout) */
+        .close-button {
+            padding: 8px 15px;
+            background: var(--button-bg);
+            border: 1px solid var(--neon-cyan);
+            color: var(--neon-cyan);
+            font-family: 'Orbitron', sans-serif;
+            border-radius: 4px;
+            cursor: pointer;
+            text-transform: uppercase;
+            font-size: 0.9rem;
+            transition: background 0.3s, color 0.3s, border-color 0.3s;
+        }
+
+        .close-button:hover {
+            background: rgba(255, 0, 85, 0.2);
+            border-color: var(--button-hover);
+            color: var(--button-hover);
+            box-shadow: 0 0 10px rgba(255, 0, 85, 0.5);
         }
 
         .chart-wrapper {
@@ -111,7 +159,7 @@
             align-items: center;
         }
 
-        /* 3. Contenitore interno per limitare la dimensione del grafico */
+        /* Grafico più piccolo */
         #chartContainerInner {
             position: relative;
             max-width: 80%;
@@ -120,39 +168,7 @@
             height: 100%;
         }
 
-        /* Stili per il resto (language-display, close-button, loading...) omessi per brevità */
-        .language-display {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-size: 0.9rem;
-            color: var(--neon-cyan);
-        }
-
-        .language-display .flag-icon {
-            width: 20px;
-            height: 15px;
-            background-color: #0066ff;
-            color: #fff;
-            text-align: center;
-            line-height: 15px;
-            font-size: 8px;
-            border: 1px solid var(--neon-cyan);
-            box-shadow: 0 0 5px rgba(0, 243, 255, 0.5);
-        }
-
-        .close-button {
-            color: var(--neon-cyan);
-            cursor: pointer;
-            font-size: 1.5rem;
-            transition: color 0.3s, text-shadow 0.3s;
-            margin-left: 15px;
-        }
-
-        .close-button:hover {
-            color: #ff0044;
-            text-shadow: 0 0 10px #ff0044;
-        }
+        /* Stili loading omessi per brevità */
     </style>
 </head>
 
@@ -164,18 +180,20 @@
     </div>
 
     <div class="header-bar">
-        <div class="header-info">
+        <div class="header-left">
             <div id="username-display" class="username-display"></div>
+            <div id="language-indicator" class="language-display"></div>
+        </div>
+
+        <div class="header-center">
             <h1>Portfolio Composition</h1>
         </div>
 
-        <div class="controls">
-            <div id="language-indicator" class="language-display"></div>
-
+        <div class="header-right">
             <label for="grouping-select" id="grouping-label">Group By:</label>
             <select id="grouping-select" onchange="renderChart()">
             </select>
-            <i class="fas fa-times close-button" onclick="closeWindow()" id="close-btn" title="Close"></i>
+            <button class="close-button" onclick="closeWindow()" id="close-btn"></button>
         </div>
     </div>
 
@@ -186,14 +204,13 @@
     </div>
 
     <script>
-        // --- Simulazione Funzioni di Traduzione e Mappatura (DA SOSTITUIRE con la tua implementazione) ---
+        // --- Simulazione Funzioni di Traduzione e Mappatura ---
         const translations = {
             'it_IT': {
                 'int.no_grouping': 'Nessun raggruppamento',
                 'int.group_by': 'Raggruppa per:',
-                'int.close': 'Chiudi',
+                'int.close': 'CHIUDI',
                 'lang.it_IT': 'Italiano',
-                // 1. Chiavi di raggruppamento del portafoglio (assunzione standard)
                 'group.asset_type': 'Tipo Asset',
                 'group.geography': 'Geografia',
                 'group.currency': 'Valuta',
@@ -201,7 +218,7 @@
             'en_US': {
                 'int.no_grouping': 'No Grouping',
                 'int.group_by': 'Group By:',
-                'int.close': 'Close',
+                'int.close': 'CLOSE',
                 'lang.it_IT': 'Italian',
                 'group.asset_type': 'Asset Type',
                 'group.geography': 'Geography',
@@ -235,19 +252,18 @@
         let chartInstance = null;
         let portfolioData = [];
         let classificationMap = {};
-        // 1. Chiavi di raggruppamento coerenti
+        // Codici di raggruppamento utilizzati in dashboard.html
         const groupingKeys = ['asset_type', 'geography', 'currency'];
 
         // Get params from URL
         const urlParams = new URLSearchParams(window.location.search);
-        const username = urlParams.get('username') || 'UTENTE_NON_AUTORIZZATO'; // 2. Legge l'username
+        const username = urlParams.get('username') || 'UTENTE_NON_AUTORIZZATO';
         const token = urlParams.get('token');
         const language = urlParams.get('language') || 'it_IT';
-        const initialGrouping = urlParams.get('grouping') || ''; // 1. Raggruppamento iniziale
+        const initialGrouping = urlParams.get('grouping') || ''; // 2. Deve contenere il CODICE (es. 'asset_type')
 
         async function init() {
-            // 2. Visualizza l'username
-            document.getElementById('username-display').textContent = username;
+            document.getElementById('username-display').textContent = 'USER: ' + username;
 
             if (!username || !token) {
                 document.getElementById('loadingText').textContent = "Unauthorized Access";
@@ -256,23 +272,24 @@
 
             await loadPortfolio();
             updateHeaderTranslations();
-            // 1. Applica il raggruppamento di default DOPO aver popolato il select
+            // 2. Applicazione del raggruppamento di default (dal codice URL)
             if (initialGrouping) {
+                // Importante: qui si usa il codice del raggruppamento (es. 'asset_type')
                 document.getElementById('grouping-select').value = initialGrouping;
             }
         }
 
         function updateHeaderTranslations() {
             document.getElementById('grouping-label').textContent = getTranslation('int.group_by');
-            const closeBtn = document.getElementById('close-btn');
-            closeBtn.title = getTranslation('int.close');
+            document.getElementById('close-btn').textContent = getTranslation('int.close');
+
             const langIndicator = document.getElementById('language-indicator');
             const langName = getTranslation('lang.' + language);
             langIndicator.innerHTML = `${getFlagIcon(language)} <span>${langName}</span>`;
         }
 
-        // --- loadPortfolio function omessa per brevità (rimane invariata) ---
         async function loadPortfolio() {
+            // ... (Funzione omessa, la logica di chiamata API è la stessa) ...
             try {
                 const payload = {
                     username: username,
@@ -291,7 +308,6 @@
                 const data = await response.json();
 
                 if (data.status === 'ok') {
-                    // Parse Classification
                     let classificationList = data.classification;
                     if (typeof classificationList === 'string') {
                         try { classificationList = JSON.parse(classificationList.replace(/'/g, '"')); }
@@ -305,10 +321,8 @@
                         populateGroupingSelect(classificationList);
                     }
 
-                    // Parse Portfolio
                     const rawPortfolio = data.portfolio || {};
                     portfolioData = [];
-
                     const parsePortfolioItem = (symbol, details) => {
                         const flatItem = { Ticker: symbol };
                         if (details && typeof details === 'object') {
@@ -348,14 +362,16 @@
             select.innerHTML = '';
 
             let optNone = document.createElement('option');
+            // 2. Value è il codice: stringa vuota per 'Nessun raggruppamento'
             optNone.value = "";
             optNone.textContent = getTranslation('int.no_grouping');
             select.appendChild(optNone);
 
-            // 1. Opzioni di raggruppamento tradotte
             groupingKeys.forEach(key => {
                 const opt = document.createElement('option');
+                // 2. Value è il CODICE del raggruppamento (es. 'asset_type')
                 opt.value = key;
+                // Il testo è la traduzione (es. 'Tipo Asset')
                 opt.textContent = getTranslation('group.' + key) || key.replace(/_/g, ' ').toUpperCase();
                 select.appendChild(opt);
             });
@@ -364,8 +380,6 @@
                 select.value = initialGrouping;
             }
         }
-        // --- Fine loadPortfolio function ---
-
 
         function generateTronColors(count) {
             const colors = [];
@@ -387,6 +401,7 @@
             let labels = [];
             let dataValues = [];
 
+            // ... (Logica di raggruppamento dati omessa per brevità) ...
             let activeData = portfolioData.filter(item => {
                 let rawVal = item[valueKey];
                 if (typeof rawVal === 'string') rawVal = rawVal.replace(',', '.');
@@ -394,7 +409,6 @@
                 return !isNaN(val) && val > 0;
             });
 
-            // ... (Logica di raggruppamento dati omessa per brevità) ...
             if (isGrouped) {
                 const groups = {};
                 activeData.forEach(item => {
@@ -437,12 +451,11 @@
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    // 4. Aumento del padding per ospitare le label esterne
-                    layout: { padding: 90 },
+                    // 3. Aumento estremo del padding per allontanare le label dai bordi
+                    layout: { padding: 150 },
                     plugins: {
                         legend: { display: false },
                         tooltip: {
-                            // ... (tooltip stile TRON) ...
                             backgroundColor: 'rgba(0, 5, 16, 0.9)',
                             titleColor: '#00F3FF',
                             bodyColor: '#fff',
@@ -457,7 +470,7 @@
                         }
                     }
                 },
-                // 4. Plugin custom migliorato per l'allineamento e la gestione delle collisioni
+                // 3. Plugin custom migliorato per l'allineamento e la gestione delle collisioni
                 plugins: [{
                     id: 'tronLabels',
                     afterDraw: (chart) => {
@@ -486,8 +499,8 @@
                                 const isRight = midAngle < Math.PI / 2 || midAngle > 3 * Math.PI / 2;
                                 const outerRadius = element.outerRadius;
 
-                                // 4. Aumento significativo del raggio per allontanare le label
-                                const labelRadius = outerRadius + 80;
+                                // 3. Aumento significativo del raggio (ancora di più)
+                                const labelRadius = outerRadius + 140;
 
                                 const endX = centerX + Math.cos(midAngle) * labelRadius;
                                 const endY = centerY + Math.sin(midAngle) * labelRadius;
@@ -502,15 +515,15 @@
                                     startX: centerX + Math.cos(midAngle) * outerRadius,
                                     startY: centerY + Math.sin(midAngle) * outerRadius,
                                     endX, endY, currentY: endY,
-                                    // 4. Aumento dell'altezza per maggiore spaziatura
-                                    height: descriptionFontSize + valueFontSize + 15
+                                    // 3. Altezza necessaria per maggiore spaziatura verticale
+                                    height: descriptionFontSize + valueFontSize + 20
                                 };
 
                                 if (isRight) rightLabels.push(item); else leftLabels.push(item);
                             });
                         });
 
-                        // 4. Funzione di risoluzione delle collisioni: ordina e sposta verticalmente
+                        // 3. Risoluzione delle collisioni
                         const resolveCollisions = (items) => {
                             items.sort((a, b) => a.currentY - b.currentY);
                             for (let i = 1; i < items.length; i++) {
@@ -524,13 +537,13 @@
 
                         const draw = (item) => {
                             // Punto intermedio del segmento di linea
-                            const midX = centerX + Math.cos(item.midAngle) * (item.outerRadius + 30);
-                            const midY = centerY + Math.sin(item.midAngle) * (item.outerRadius + 30);
+                            const midX = centerX + Math.cos(item.midAngle) * (item.outerRadius + 40);
+                            const midY = centerY + Math.sin(item.midAngle) * (item.outerRadius + 40);
 
                             // Punto X finale per il testo
                             const textX = item.isRight ? item.endX + 5 : item.endX - 5;
 
-                            // Linea
+                            // Linea a tre segmenti
                             ctx.beginPath();
                             ctx.moveTo(item.startX, item.startY);
                             ctx.lineTo(midX, midY);
@@ -553,13 +566,13 @@
                             ctx.textAlign = item.isRight ? 'left' : 'right';
                             ctx.textBaseline = 'bottom';
                             ctx.font = `${descriptionFontSize}px "Orbitron", sans-serif`;
-                            ctx.fillText(item.text, textX, item.currentY - 1);
+                            ctx.fillText(item.text, textX, item.currentY - 2);
 
                             // Testo (Valore e Percentuale) - 12px
                             ctx.fillStyle = '#fff';
                             ctx.textBaseline = 'top';
                             ctx.font = `${valueFontSize}px "Orbitron", sans-serif`;
-                            ctx.fillText(`${item.formattedValue} (${item.percentage})`, textX, item.currentY + 1);
+                            ctx.fillText(`${item.formattedValue} (${item.percentage})`, textX, item.currentY + 2);
                         };
 
                         rightLabels.forEach(draw);

@@ -17,6 +17,10 @@
             --neon-blue: #0066ff;
             --glass-bg: rgba(0, 20, 40, 0.85);
             --text-color: #e0f7fa;
+            --button-bg: rgba(255, 0, 85, 0.1);
+            /* Sfumatura rossa per coerenza con lo Yield */
+            --button-border: var(--neon-red);
+            --button-hover: var(--neon-cyan);
         }
 
         /* Layout full-height standard e con padding ridotto */
@@ -41,9 +45,11 @@
             overflow: hidden;
         }
 
+        /* 1. Header con layout a 3 colonne (Sinistra-Centro-Destra) */
         .header-bar {
-            display: flex;
-            justify-content: space-between;
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
+            /* Sinistra, Centro (auto), Destra */
             align-items: center;
             padding: 15px 20px;
             background: var(--glass-bg);
@@ -54,8 +60,8 @@
             flex-shrink: 0;
         }
 
-        /* 2. Username e Titolo a sinistra */
-        .header-info {
+        /* Contenitore Sinistro: Username e Lingua */
+        .header-left {
             display: flex;
             flex-direction: column;
             align-items: flex-start;
@@ -70,6 +76,31 @@
             margin-bottom: 5px;
         }
 
+        .language-display {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9rem;
+            color: var(--text-color);
+        }
+
+        .language-display .flag-icon {
+            width: 20px;
+            height: 15px;
+            background-color: var(--neon-red);
+            color: #fff;
+            text-align: center;
+            line-height: 15px;
+            font-size: 8px;
+            border: 1px solid var(--neon-cyan);
+            box-shadow: 0 0 5px rgba(0, 243, 255, 0.5);
+        }
+
+        /* Contenitore Centrale: Titolo */
+        .header-center {
+            text-align: center;
+        }
+
         h1 {
             margin: 0;
             font-size: 1.5rem;
@@ -79,17 +110,17 @@
             text-shadow: 0 0 10px var(--neon-red);
         }
 
-        /* Controlli a destra */
-        .controls {
+        /* Contenitore Destro: Raggruppamento e Chiudi */
+        .header-right {
             display: flex;
             gap: 15px;
             align-items: center;
-            margin-left: auto;
+            justify-content: flex-end;
         }
 
         select {
             padding: 8px 15px;
-            background: rgba(255, 0, 85, 0.1);
+            background: var(--button-bg);
             border: 1px solid var(--neon-red);
             color: var(--neon-cyan);
             font-family: 'Orbitron', sans-serif;
@@ -102,14 +133,35 @@
             box-shadow: 0 0 10px var(--neon-red);
         }
 
+        /* 1. Stile Tasto Chiudi coerente con dashboard (Logout) */
+        .close-button {
+            padding: 8px 15px;
+            background: var(--button-bg);
+            border: 1px solid var(--neon-red);
+            color: var(--neon-red);
+            font-family: 'Orbitron', sans-serif;
+            border-radius: 4px;
+            cursor: pointer;
+            text-transform: uppercase;
+            font-size: 0.9rem;
+            transition: background 0.3s, color 0.3s, border-color 0.3s;
+        }
+
+        .close-button:hover {
+            background: rgba(0, 243, 255, 0.2);
+            border-color: var(--button-hover);
+            color: var(--button-hover);
+            box-shadow: 0 0 10px rgba(0, 243, 255, 0.5);
+        }
+
         .chart-wrapper {
             flex: 1;
             /* Usa lo spazio rimanente */
             position: relative;
             background: var(--glass-bg);
-            border: 1px solid var(--neon-cyan);
+            border: 1px solid var(--neon-red);
             border-radius: 8px;
-            box-shadow: 0 0 20px rgba(0, 243, 255, 0.1);
+            box-shadow: 0 0 20px rgba(255, 0, 85, 0.1);
             padding: 20px;
             min-height: 0;
             /* Centra il contenitore interno */
@@ -126,39 +178,7 @@
             height: 90%;
         }
 
-        /* Stili per il resto (language-display, close-button, loading...) omessi per brevità */
-        .language-display {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-size: 0.9rem;
-            color: var(--neon-cyan);
-        }
-
-        .language-display .flag-icon {
-            width: 20px;
-            height: 15px;
-            background-color: #ff0055;
-            color: #fff;
-            text-align: center;
-            line-height: 15px;
-            font-size: 8px;
-            border: 1px solid var(--neon-cyan);
-            box-shadow: 0 0 5px rgba(0, 243, 255, 0.5);
-        }
-
-        .close-button {
-            color: var(--neon-red);
-            cursor: pointer;
-            font-size: 1.5rem;
-            transition: color 0.3s, text-shadow 0.3s;
-            margin-left: 15px;
-        }
-
-        .close-button:hover {
-            color: var(--neon-cyan);
-            text-shadow: 0 0 10px var(--neon-cyan);
-        }
+        /* Stili loading omessi per brevità */
     </style>
 </head>
 
@@ -170,18 +190,20 @@
     </div>
 
     <div class="header-bar">
-        <div class="header-info">
+        <div class="header-left">
             <div id="username-display" class="username-display"></div>
+            <div id="language-indicator" class="language-display"></div>
+        </div>
+
+        <div class="header-center">
             <h1>Profitability Analysis</h1>
         </div>
 
-        <div class="controls">
-            <div id="language-indicator" class="language-display"></div>
-
+        <div class="header-right">
             <label for="grouping-select" id="grouping-label">Group By:</label>
             <select id="grouping-select" onchange="renderChart()">
             </select>
-            <i class="fas fa-times close-button" onclick="closeWindow()" id="close-btn" title="Close"></i>
+            <button class="close-button" onclick="closeWindow()" id="close-btn"></button>
         </div>
     </div>
 
@@ -192,12 +214,12 @@
     </div>
 
     <script>
-        // --- Simulazione Funzioni di Traduzione e Mappatura (DA SOSTITUIRE con la tua implementazione) ---
+        // --- Simulazione Funzioni di Traduzione e Mappatura ---
         const translations = {
             'it_IT': {
                 'int.no_grouping': 'Nessun raggruppamento',
                 'int.group_by': 'Raggruppa per:',
-                'int.close': 'Chiudi',
+                'int.close': 'CHIUDI', // Testo in maiuscolo per lo stile TRON
                 'lang.it_IT': 'Italiano',
                 // Chiavi di raggruppamento (coerenti con il portafoglio)
                 'group.asset_type': 'Tipo Asset',
@@ -207,7 +229,7 @@
             'en_US': {
                 'int.no_grouping': 'No Grouping',
                 'int.group_by': 'Group By:',
-                'int.close': 'Close',
+                'int.close': 'CLOSE',
                 'lang.it_IT': 'Italian',
                 'group.asset_type': 'Asset Type',
                 'group.geography': 'Geography',
@@ -241,19 +263,18 @@
         let chartInstance = null;
         let profitabilityData = [];
         let classificationMap = {};
-        // 1. Chiavi di raggruppamento coerenti
+        // Codici di raggruppamento coerenti
         const groupingKeys = ['asset_type', 'geography', 'currency'];
 
         const urlParams = new URLSearchParams(window.location.search);
-        // 2. Legge l'username
         const username = urlParams.get('username') || 'UTENTE_NON_AUTORIZZATO';
         const token = urlParams.get('token');
         const language = urlParams.get('language') || 'it_IT';
-        const initialGrouping = urlParams.get('grouping') || ''; // 1. Raggruppamento iniziale da URL
+        const initialGrouping = urlParams.get('grouping') || ''; // 2. Raggruppamento iniziale da URL (il codice)
 
         async function init() {
-            // 2. Visualizza l'username
-            document.getElementById('username-display').textContent = username;
+            // 1. Visualizza l'username
+            document.getElementById('username-display').textContent = 'USER: ' + username;
 
             if (!username || !token) {
                 document.getElementById('loadingText').textContent = "Access Denied";
@@ -262,23 +283,23 @@
 
             await loadYield();
             updateHeaderTranslations();
-            // 1. Seleziona il raggruppamento iniziale DOPO che il select è stato popolato
+            // 2. Seleziona il raggruppamento iniziale tramite il codice
             if (initialGrouping) {
                 document.getElementById('grouping-select').value = initialGrouping;
             }
         }
 
         function updateHeaderTranslations() {
+            // 1. Traduzione etichette nell'header
             document.getElementById('grouping-label').textContent = getTranslation('int.group_by');
-
-            const closeBtn = document.getElementById('close-btn');
-            closeBtn.title = getTranslation('int.close');
+            document.getElementById('close-btn').textContent = getTranslation('int.close');
 
             const langIndicator = document.getElementById('language-indicator');
             const langName = getTranslation('lang.' + language);
             langIndicator.innerHTML = `${getFlagIcon(language)} <span>${langName}</span>`;
         }
 
+        // --- loadYield function omessa per brevità (la logica API è la stessa) ---
         async function loadYield() {
             try {
                 const payload = {
@@ -355,14 +376,16 @@
             select.innerHTML = '';
 
             let optNone = document.createElement('option');
+            // 2. Value è il codice: stringa vuota per 'Nessun raggruppamento'
             optNone.value = "";
             optNone.textContent = getTranslation('int.no_grouping');
             select.appendChild(optNone);
 
-            // Opzioni di raggruppamento tradotte
             groupingKeys.forEach(key => {
                 const opt = document.createElement('option');
+                // 2. Value è il CODICE del raggruppamento (es. 'asset_type')
                 opt.value = key;
+                // Il testo è la traduzione (es. 'Tipo Asset')
                 opt.textContent = getTranslation('group.' + key) || key.replace(/_/g, ' ').toUpperCase();
                 select.appendChild(opt);
             });
@@ -371,6 +394,7 @@
                 select.value = initialGrouping;
             }
         }
+        // --- Fine loadYield function ---
 
         function renderChart() {
             const ctx = document.getElementById('chartCanvas').getContext('2d');
