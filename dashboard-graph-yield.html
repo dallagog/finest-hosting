@@ -7,6 +7,7 @@
     <title>Yield Graph - Tron Style</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <script src="js/dashboard-shared.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&display=swap');
 
@@ -244,43 +245,46 @@
     </div>
 
     <script>
-        // --- Simulazione Funzioni di Traduzione e Mappatura ---
-        const translations = {
-            'it_IT': {
-                'int.no_grouping': 'Nessun raggruppamento',
-                'int.group_by': 'Raggruppa per:',
-                'int.close': 'CHIUDI',
-                'lang.it_IT': 'Italiano',
-            },
-            'en_US': {
-                'int.no_grouping': 'No Grouping',
-                'int.group_by': 'Group By:',
-                'int.close': 'CLOSE',
-                'lang.it_IT': 'Italian',
+        // --- TRANSLATION SYSTEM (Dynamic) ---
+        let translations = {};
+
+        async function loadTranslations(langCode) {
+            try {
+                let response = await fetch(`lang/${langCode}.json`);
+                if (!response.ok) {
+                    const simple = langCode.split('_')[0];
+                    if (simple && simple !== langCode) {
+                        response = await fetch(`lang/${simple}.json`);
+                    }
+                }
+                if (response.ok) {
+                    translations = await response.json();
+                } else {
+                    console.warn("Translation file not found:", langCode);
+                }
+            } catch (error) {
+                console.error("Error loading translations:", error);
             }
-        };
+        }
+
+        function getTranslation(key) {
+            return translations[key] || key;
+        }
 
         const languageMap = {
             'it_IT': { name: 'Italiano', initials: 'IT' },
             'en_US': { name: 'English', initials: 'EN' },
         };
 
-        function getTranslation(key) {
-            const lang = language;
-            const t = translations[lang] || translations['it_IT'];
-            return t[key] || key;
-        }
-
         function getFlagIcon(lang) {
-            const langInfo = languageMap[lang] || languageMap['it_IT'];
+            // Default to IT if not found, or handle gracefully
+            const langInfo = languageMap[lang] || languageMap['it_IT'] || { name: lang, initials: lang.substring(0, 2).toUpperCase() };
             return `<div class="flag-icon" title="${langInfo.name}">${langInfo.initials}</div>`;
         }
 
         function closeWindow() {
             window.close();
         }
-
-        // --- Fine Simulazione ---
         const API_URL = "https://feweb-tunnel.fe-web.eu";
         let chartInstance = null;
         let profitabilityData = [];
@@ -300,12 +304,18 @@
                 return;
             }
 
-            await loadYield();
+            // Load translations first
+            await loadTranslations(language);
             updateHeaderTranslations();
 
-            // Imposta il raggruppamento iniziale se specificato
+            await loadYield();
+
+            // Imposta il raggruppamento iniziale se specificato e se presente nelle opzioni
             if (initialGrouping) {
-                document.getElementById('grouping-select').value = initialGrouping;
+                const select = document.getElementById('grouping-select');
+                if (select.querySelector(`option[value="${initialGrouping}"]`)) {
+                    select.value = initialGrouping;
+                }
             }
 
             renderChart();
@@ -353,38 +363,21 @@
                         classificationList.forEach(item => {
                             if (item.id_instrument) classificationMap[item.id_instrument] = item;
                         });
-                        populateGroupingSelect(classificationList);
+
+                        // Use shared function
+                        const select = document.getElementById('grouping-select');
+                        populateGroupingSelectSummary(
+                            select,
+                            classificationList,
+                            getTranslation,
+                            initialGrouping,
+                            getTranslation('int.no_grouping') || "Nessun raggruppamento"
+                        );
                     }
 
                     const rawYield = data.portfolioyield || {};
-                    profitabilityData = [];
-
-                    const parseYieldItem = (symbol, details) => {
-                        const flatItem = { Ticker: symbol };
-                        if (details && typeof details === 'object') {
-                            Object.keys(details).forEach(key => {
-                                let val = details[key];
-                                if (typeof val === 'string' && /^-?\d+(\.\d+)?$/.test(val.trim())) {
-                                    flatItem[key] = parseFloat(val);
-                                } else {
-                                    flatItem[key] = val;
-                                }
-                            });
-                        }
-                        return flatItem;
-                    };
-
-                    if (Array.isArray(rawYield)) {
-                        rawYield.forEach(entry => {
-                            if (Array.isArray(entry) && entry.length === 2) {
-                                profitabilityData.push(parseYieldItem(entry[0], entry[1]));
-                            }
-                        });
-                    } else if (typeof rawYield === 'object') {
-                        Object.keys(rawYield).forEach(symbol => {
-                            profitabilityData.push(parseYieldItem(symbol, rawYield[symbol]));
-                        });
-                    }
+                    // Use shared parsing logic
+                    profitabilityData = parsePortfolioItems(rawYield);
 
                     document.getElementById('loading').style.display = 'none';
                 } else {
@@ -396,85 +389,24 @@
             }
         }
 
-        function populateGroupingSelect(classificationList) {
-            const select = document.getElementById('grouping-select');
-            select.innerHTML = '';
-
-            // Opzione "Nessun raggruppamento"
-            let optNone = document.createElement('option');
-            optNone.value = "";
-            optNone.textContent = getTranslation('int.no_grouping');
-            select.appendChild(optNone);
-
-            // Estrai dinamicamente le chiavi di raggruppamento dai dati di classificazione
-            if (Array.isArray(classificationList) && classificationList.length > 0) {
-                // Prendi tutte le chiavi tranne id_instrument
-                let keys = Object.keys(classificationList[0]).filter(k => k !== "id_instrument");
-
-                keys.forEach(key => {
-                    const opt = document.createElement('option');
-                    opt.value = key;
-                    // Usa la traduzione se disponibile, altrimenti formatta la chiave
-                    opt.textContent = getTranslation(key) || key.replace(/_/g, ' ').toUpperCase();
-                    select.appendChild(opt);
-                });
-            }
-
-            // Imposta il valore iniziale se specificato
-            if (initialGrouping && select.querySelector(`option[value="${initialGrouping}"]`)) {
-                select.value = initialGrouping;
-            }
-        }
-
         function renderChart() {
             const ctx = document.getElementById('chartCanvas').getContext('2d');
             if (chartInstance) chartInstance.destroy();
 
             const groupValue = document.getElementById('grouping-select').value;
-            const isGrouped = groupValue && groupValue !== "";
 
-            let labels = [];
-            let dataValues = [];
+            // Shared logic: group by 'groupValue', sum 'RISTOT'
+            // getGroupedData returns { label, value } array, sorted by value descending
+            // However, for yield, we usually want to retain positive/negative distinction for coloring
+            // And maybe we want to see them sorted by value anyway.
 
-            let activeData = profitabilityData.filter(item => {
-                let rawVal = item.RISTOT;
-                if (!rawVal) return false;
-                if (typeof rawVal === 'string') rawVal = rawVal.replace(',', '.');
-                return !isNaN(parseFloat(rawVal));
-            });
+            const groupedData = getGroupedData(profitabilityData, classificationMap, groupValue, "RISTOT");
 
-            if (isGrouped) {
-                const groups = {};
-                activeData.forEach(item => {
-                    let groupLabel = 'Other';
-                    const instrumentId = item.id_instrument;
-                    if (instrumentId) {
-                        let classObj = classificationMap[instrumentId] || classificationMap[String(instrumentId)];
-                        if (classObj && classObj[groupValue]) groupLabel = classObj[groupValue];
-                    }
-                    if (!groups[groupLabel]) groups[groupLabel] = 0;
+            // Limit to top 30
+            const slicedData = groupedData.length > 30 ? groupedData.slice(0, 30) : groupedData;
 
-                    let val = item.RISTOT;
-                    if (typeof val === 'string') val = parseFloat(val.replace(',', '.'));
-                    groups[groupLabel] += val;
-                });
-
-                const sorted = Object.entries(groups).sort((a, b) => b[1] - a[1]);
-                labels = sorted.map(e => e[0]);
-                dataValues = sorted.map(e => e[1]);
-            } else {
-                activeData.sort((a, b) => {
-                    let valA = parseFloat(a.RISTOT);
-                    let valB = parseFloat(b.RISTOT);
-                    return valB - valA;
-                });
-
-                // Limita a 30 elementi per evitare sovraffollamento
-                if (activeData.length > 30) activeData = activeData.slice(0, 30);
-
-                labels = activeData.map(item => item.instrument_description || item.Ticker || "Unknown");
-                dataValues = activeData.map(item => parseFloat(item.RISTOT));
-            }
+            const labels = slicedData.map(item => getTranslation(item.label) || item.label);
+            const dataValues = slicedData.map(item => item.value);
 
             const backgroundColors = dataValues.map(v => v >= 0 ? 'rgba(0, 243, 255, 0.6)' : 'rgba(255, 0, 85, 0.6)');
             const borderColors = dataValues.map(v => v >= 0 ? '#00f3ff' : '#ff0055');

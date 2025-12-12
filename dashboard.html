@@ -7,6 +7,7 @@
     <title>Dashboard 2.9</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <script src="js/dashboard-shared.js"></script>
 
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&display=swap');
@@ -767,13 +768,22 @@
             });
 
             let filename = '';
+            let groupingValue = '';
+
             if (type === 'portfolio') {
                 filename = 'dashboard-graph-portfolio.html';
+                const el = document.getElementById("grouping-select");
+                if (el) groupingValue = el.value;
             } else if (type === 'profitability') {
                 filename = 'dashboard-graph-yield.html';
             }
 
             if (filename) {
+                // Remove any existing grouping param just in case
+                params.delete('grouping');
+                if (groupingValue) {
+                    params.append('grouping', groupingValue);
+                }
                 window.open(`${filename}?${params.toString()}`, '_blank');
             }
         }
@@ -1537,30 +1547,17 @@
                         classificationList.forEach(item => { if (item.id_instrument) classificationMap[item.id_instrument] = item; });
                         localStorage.setItem('classificationMap', JSON.stringify(classificationMap));
                     }
-                    portfolioData = [];
+
+                    // USE SHARED LOGIC
                     const rawPortfolio = data.portfolio || {};
-                    const parsePortfolioItem = (symbol, details) => {
-                        const flatItem = { Ticker: symbol };
-                        if (details && typeof details === 'object') {
-                            Object.keys(details).forEach(key => {
-                                let val = details[key];
-                                if (typeof val === 'string' && /^-?\d+(\.\d+)?$/.test(val.trim())) flatItem[key] = parseFloat(val);
-                                else flatItem[key] = val;
-                            });
-                        }
-                        return flatItem;
-                    };
-                    if (Array.isArray(rawPortfolio)) {
-                        rawPortfolio.forEach(entry => { if (Array.isArray(entry) && entry.length === 2) portfolioData.push(parsePortfolioItem(entry[0], entry[1])); });
-                    } else if (typeof rawPortfolio === 'object') {
-                        Object.keys(rawPortfolio).forEach(symbol => portfolioData.push(parsePortfolioItem(symbol, rawPortfolio[symbol])));
-                    }
+                    portfolioData = parsePortfolioItems(rawPortfolio);
+
+                    // Note: parsePortfolioItems already handles '%' calculation if cost and MP exist
+                    // But we might need to double check if we need to do it exactly as before for column detection?
+                    // The shared logic adds '%' to the item if valid.
+                    // Let's rely on the shared logic, but we still need to determine columns.
+
                     if (portfolioData.length > 0) {
-                        portfolioData.forEach(item => {
-                            const mp = item['M/P']; const cost = item['cost_amount'];
-                            if (typeof mp === 'number' && typeof cost === 'number' && cost !== 0) item['%'] = parseFloat(((mp / cost) * 100).toFixed(1));
-                            else item['%'] = null;
-                        });
                         if (portfolioColumns.length > 0) tableColumns = [...portfolioColumns, '%'];
                         else {
                             const allKeys = new Set();
@@ -1568,6 +1565,7 @@
                             tableColumns = Array.from(allKeys).filter(k => k !== 'Ticker');
                         }
                     }
+
                     populateGroupingSelect(classificationList);
                     renderTable();
                     document.getElementById('portfolio-section').style.display = 'block';
@@ -1577,15 +1575,17 @@
 
         function populateGroupingSelect(classificationList) {
             const select = document.getElementById('grouping-select');
-            select.innerHTML = `<option value="">${getTranslation('int.noselection') || 'Nessun raggruppamento'}</option>`;
-            let keys = [];
-            if (classificationFilter && classificationFilter.length > 0) keys = classificationFilter;
-            else if (Array.isArray(classificationList) && classificationList.length > 0) keys = Object.keys(classificationList[0]).filter(k => k !== 'id_instrument');
-            keys.forEach(key => {
-                const opt = document.createElement('option');
-                opt.value = key; opt.textContent = getTranslation(key) || key;
-                select.appendChild(opt);
-            });
+            const defaultLabel = getTranslation('int.noselection') || 'Nessun raggruppamento';
+
+            // Use shared function
+            // classificationList is expected to be an array of objects
+            populateGroupingSelectSummary(
+                select,
+                classificationList,
+                getTranslation,
+                '',
+                defaultLabel
+            );
         }
 
         function updateTableGrouping() {

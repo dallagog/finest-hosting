@@ -7,6 +7,7 @@
     <title>Portfolio Graph - Tron Style</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <script src="js/dashboard-shared.js"></script>
 
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&display=swap');
@@ -194,24 +195,61 @@
 
     <script>
         /* -----------------------------------------------------------
-           SIMULAZIONE TRADUZIONI
+           TRANSLATION SYSTEM (Dynamic)
         ----------------------------------------------------------- */
-        const translations = {
-            'it_IT': {
-                'int.no_grouping': 'Nessun raggruppamento',
-                'int.group_by': 'Raggruppa per:',
-                'int.close': 'CHIUDI',
-                'int.no_grouping': 'Nessun raggruppamento'
-            },
-            'en_US': {
-                'int.no_grouping': 'No Grouping',
-                'int.group_by': 'Group By:',
-                'int.close': 'CLOSE'
+        let translations = {};
+
+        async function loadTranslations(langCode) {
+            try {
+                // Try full language first
+                let response = await fetch(`lang/${langCode}.json`);
+                if (!response.ok) {
+                    // Fallback to simpler code if needed e.g. it_IT -> it
+                    const simple = langCode.split('_')[0];
+                    if (simple && simple !== langCode) {
+                        response = await fetch(`lang/${simple}.json`);
+                    }
+                }
+                if (response.ok) {
+                    translations = await response.json();
+                } else {
+                    console.warn("Translation file not found:", langCode);
+                }
+            } catch (error) {
+                console.error("Error loading translations:", error);
             }
-        };
+        }
 
         function getTranslation(key) {
-            return translations[language]?.[key] || key;
+            return translations[key] || key;
+        }
+
+        /* -----------------------------------------------------------
+           UI TRANSLATION UPDATE
+        ----------------------------------------------------------- */
+        function updatePageTranslations() {
+            const mapping = {
+                'grouping-label': 'int.group_by',
+                'close-btn': 'int.close'
+            };
+
+            Object.keys(mapping).forEach(id => {
+                const el = document.getElementById(id);
+                if (el) {
+                    const tr = getTranslation(mapping[id]);
+                    if (tr !== mapping[id]) {
+                        el.textContent = tr;
+                    }
+                }
+            });
+
+            // Update title if needed
+            const title = document.querySelector("h1");
+            if (title) {
+                const t = getTranslation('int.portfolio.composition');
+                if (t && t !== 'int.portfolio.composition') title.textContent = t;
+                else if (!t || t === 'int.portfolio.composition') title.textContent = 'Portfolio Composition'; // Default fallback
+            }
         }
 
         /* -----------------------------------------------------------
@@ -235,11 +273,16 @@
 
         async function init() {
             document.getElementById('username-display').textContent = 'USER: ' + username;
+
+            // Load translations first
+            await loadTranslations(language);
+            updatePageTranslations();
+
             loadPortfolio();
         }
 
         /* -----------------------------------------------------------
-           CARICA PORTAFOGLIO + CLASSIFICAZIONE (come dashboard)
+           CARICA PORTAFOGLIO + CLASSIFICAZIONE (Shared Logic)
         ----------------------------------------------------------- */
         async function loadPortfolio() {
             try {
@@ -280,33 +323,21 @@
                     });
                 }
 
-                populateGroupingSelect(classificationList);
+                // Populate selects using shared function
+                const select = document.getElementById('grouping-select');
+                populateGroupingSelectSummary(
+                    select,
+                    classificationList,
+                    getTranslation, // Use dynamic translation function
+                    initialGrouping,
+                    getTranslation('int.no_grouping') || "Nessun raggruppamento"
+                );
 
                 /* ---- Portafoglio ---- */
                 const rawPort = data.portfolio || {};
-                portfolioData = [];
 
-                const parseItem = (symbol, obj) => {
-                    const flat = { Ticker: symbol };
-                    for (let k in obj) {
-                        let v = obj[k];
-                        if (typeof v === "string" && /^-?\d+(\.\d+)?$/.test(v.trim()))
-                            flat[k] = parseFloat(v);
-                        else flat[k] = v;
-                    }
-                    return flat;
-                };
-
-                if (Array.isArray(rawPort)) {
-                    rawPort.forEach(e => {
-                        if (Array.isArray(e) && e.length === 2)
-                            portfolioData.push(parseItem(e[0], e[1]));
-                    });
-                } else {
-                    Object.keys(rawPort).forEach(key => {
-                        portfolioData.push(parseItem(key, rawPort[key]));
-                    });
-                }
+                // Use shared parsing logic
+                portfolioData = parsePortfolioItems(rawPort);
 
                 document.getElementById("loading").style.display = "none";
 
@@ -315,30 +346,6 @@
             } catch (err) {
                 console.error(err);
             }
-        }
-
-        /* -----------------------------------------------------------
-           RAGGRUPPAMENTI IDENTICI ALLA DASHBOARD
-        ----------------------------------------------------------- */
-        function populateGroupingSelect(classificationList) {
-            const select = document.getElementById('grouping-select');
-            select.innerHTML = `<option value="">${getTranslation('int.no_grouping')}</option>`;
-
-            let keys = [];
-
-            if (Array.isArray(classificationList) && classificationList.length > 0) {
-                keys = Object.keys(classificationList[0]).filter(k => k !== "id_instrument");
-            }
-
-            keys.forEach(k => {
-                const opt = document.createElement("option");
-                opt.value = k;
-                opt.textContent = getTranslation(k) || k;
-                select.appendChild(opt);
-            });
-
-            if (initialGrouping)
-                select.value = initialGrouping;
         }
 
         /* -----------------------------------------------------------
@@ -363,39 +370,29 @@
                 chartInstance.destroy();
 
             const grouping = document.getElementById("grouping-select").value;
-            const valueKey = "CTVMKTTQ";
 
-            let active = portfolioData.filter(x => parseFloat(x[valueKey]) > 0);
+            // Use shared grouping logic
+            // getGroupedData returns { label, value } array sorted descending
+            const groupedData = getGroupedData(portfolioData, classificationMap, grouping);
 
-            let labels = [];
-            let values = [];
+            // Limit to top 30 if needed (shared function returns all)
+            const slicedData = groupedData.length > 30 ? groupedData.slice(0, 30) : groupedData;
 
-            if (grouping) {
-
-                const grp = {};
-
-                active.forEach(item => {
-                    let id = item.id_instrument;
-                    let cls = classificationMap[id];
-                    let label = cls?.[grouping] || "Other";
-
-                    if (!grp[label]) grp[label] = 0;
-
-                    grp[label] += parseFloat(item[valueKey]);
-                });
-
-                const sorted = Object.entries(grp).sort((a, b) => b[1] - a[1]);
-                labels = sorted.map(e => e[0]);
-                values = sorted.map(e => e[1]);
-
-            } else {
-
-                active.sort((a, b) => b[valueKey] - a[valueKey]);
-                if (active.length > 30) active = active.slice(0, 30);
-
-                labels = active.map(x => x.instrument_description || x.Ticker);
-                values = active.map(x => x[valueKey]);
-            }
+            // Map labels: if grouping is active, labels are already grouping values (e.g. "Equity").
+            // If no grouping, labels are Tickers.
+            // We should try to translate them if possible (especially for Classification values)
+            const labels = slicedData.map(item => {
+                // Try translation for the label (common for grouping keys like 'int.asset.class')
+                // but also for values like 'Equity' if they have translation keys?
+                // Usually classification values are just strings. The grouping keys (columns) are keys.
+                // The values (e.g. "Azionario") might be in the language file?
+                // The user asked to "fix the descriptions of labels".
+                // If it's a classification value, we might trust it's already descriptive or use it as is.
+                // If the user meant the grouping *header*, that's handled in populateGroupingSelectSummary.
+                // If the user meant the pie slices:
+                return getTranslation(item.label) || item.label;
+            });
+            const values = slicedData.map(item => item.value);
 
             const colors = generateColors(values.length);
 
