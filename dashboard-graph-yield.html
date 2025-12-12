@@ -18,17 +18,16 @@
             --glass-bg: rgba(0, 20, 40, 0.85);
             --text-color: #e0f7fa;
             --button-bg: rgba(255, 0, 85, 0.1);
-            /* Sfumatura rossa per coerenza con lo Yield */
             --button-border: var(--neon-red);
             --button-hover: var(--neon-cyan);
         }
 
-        /* Layout full-height standard e con padding ridotto */
         html,
         body {
             height: 100%;
             margin: 0;
             padding: 0;
+            overflow: hidden;
         }
 
         body {
@@ -42,14 +41,11 @@
             color: var(--text-color);
             display: flex;
             flex-direction: column;
-            overflow: hidden;
         }
 
-        /* 1. Header con layout a 3 colonne (Sinistra-Centro-Destra) */
         .header-bar {
             display: grid;
             grid-template-columns: 1fr auto 1fr;
-            /* Sinistra, Centro (auto), Destra */
             align-items: center;
             padding: 15px 20px;
             background: var(--glass-bg);
@@ -60,7 +56,6 @@
             flex-shrink: 0;
         }
 
-        /* Contenitore Sinistro: Username e Lingua */
         .header-left {
             display: flex;
             flex-direction: column;
@@ -96,7 +91,6 @@
             box-shadow: 0 0 5px rgba(0, 243, 255, 0.5);
         }
 
-        /* Contenitore Centrale: Titolo */
         .header-center {
             text-align: center;
         }
@@ -110,7 +104,6 @@
             text-shadow: 0 0 10px var(--neon-red);
         }
 
-        /* Contenitore Destro: Raggruppamento e Chiudi */
         .header-right {
             display: flex;
             gap: 15px;
@@ -126,6 +119,7 @@
             font-family: 'Orbitron', sans-serif;
             border-radius: 4px;
             cursor: pointer;
+            min-width: 150px;
         }
 
         select:focus {
@@ -133,7 +127,6 @@
             box-shadow: 0 0 10px var(--neon-red);
         }
 
-        /* 1. Stile Tasto Chiudi coerente con dashboard (Logout) */
         .close-button {
             padding: 8px 15px;
             background: var(--button-bg);
@@ -156,29 +149,66 @@
 
         .chart-wrapper {
             flex: 1;
-            /* Usa lo spazio rimanente */
             position: relative;
             background: var(--glass-bg);
             border: 1px solid var(--neon-red);
             border-radius: 8px;
             box-shadow: 0 0 20px rgba(255, 0, 85, 0.1);
-            padding: 20px;
+            padding: 15px;
             min-height: 0;
-            /* Centra il contenitore interno */
-            display: flex;
-            justify-content: center;
-            align-items: center;
+            overflow: hidden;
         }
 
-        /* 3. Contenitore interno per limitare la dimensione del grafico */
         #chartContainerInner {
             position: relative;
-            /* Rende il grafico più piccolo e centrato */
-            width: 80%;
-            height: 90%;
+            width: 100%;
+            height: 100%;
         }
 
-        /* Stili loading omessi per brevità */
+        #chartCanvas {
+            width: 100% !important;
+            height: 100% !important;
+        }
+
+        #loading {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 3px solid var(--neon-red);
+            border-top: 3px solid transparent;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        #loadingText {
+            color: var(--neon-cyan);
+            font-size: 1.2rem;
+            letter-spacing: 1px;
+        }
     </style>
 </head>
 
@@ -219,21 +249,14 @@
             'it_IT': {
                 'int.no_grouping': 'Nessun raggruppamento',
                 'int.group_by': 'Raggruppa per:',
-                'int.close': 'CHIUDI', // Testo in maiuscolo per lo stile TRON
+                'int.close': 'CHIUDI',
                 'lang.it_IT': 'Italiano',
-                // Chiavi di raggruppamento (coerenti con il portafoglio)
-                'group.asset_type': 'Tipo Asset',
-                'group.geography': 'Geografia',
-                'group.currency': 'Valuta',
             },
             'en_US': {
                 'int.no_grouping': 'No Grouping',
                 'int.group_by': 'Group By:',
                 'int.close': 'CLOSE',
                 'lang.it_IT': 'Italian',
-                'group.asset_type': 'Asset Type',
-                'group.geography': 'Geography',
-                'group.currency': 'Currency',
             }
         };
 
@@ -256,24 +279,20 @@
         function closeWindow() {
             window.close();
         }
+
         // --- Fine Simulazione ---
-
-
         const API_URL = "https://feweb-tunnel.fe-web.eu";
         let chartInstance = null;
         let profitabilityData = [];
         let classificationMap = {};
-        // Codici di raggruppamento coerenti
-        const groupingKeys = ['asset_type', 'geography', 'currency'];
 
         const urlParams = new URLSearchParams(window.location.search);
         const username = urlParams.get('username') || 'UTENTE_NON_AUTORIZZATO';
         const token = urlParams.get('token');
         const language = urlParams.get('language') || 'it_IT';
-        const initialGrouping = urlParams.get('grouping') || ''; // 2. Raggruppamento iniziale da URL (il codice)
+        const initialGrouping = urlParams.get('grouping') || '';
 
         async function init() {
-            // 1. Visualizza l'username
             document.getElementById('username-display').textContent = 'USER: ' + username;
 
             if (!username || !token) {
@@ -283,14 +302,16 @@
 
             await loadYield();
             updateHeaderTranslations();
-            // 2. Seleziona il raggruppamento iniziale tramite il codice
+
+            // Imposta il raggruppamento iniziale se specificato
             if (initialGrouping) {
                 document.getElementById('grouping-select').value = initialGrouping;
             }
+
+            renderChart();
         }
 
         function updateHeaderTranslations() {
-            // 1. Traduzione etichette nell'header
             document.getElementById('grouping-label').textContent = getTranslation('int.group_by');
             document.getElementById('close-btn').textContent = getTranslation('int.close');
 
@@ -299,7 +320,6 @@
             langIndicator.innerHTML = `${getFlagIcon(language)} <span>${langName}</span>`;
         }
 
-        // --- loadYield function omessa per brevità (la logica API è la stessa) ---
         async function loadYield() {
             try {
                 const payload = {
@@ -319,11 +339,14 @@
                 const data = await response.json();
 
                 if (data.status === 'ok') {
-                    // Parse Classification (needed for grouping)
                     let classificationList = data.classification;
                     if (typeof classificationList === 'string') {
-                        try { classificationList = JSON.parse(classificationList.replace(/'/g, '"')); }
-                        catch (e) { classificationList = []; }
+                        try {
+                            classificationList = JSON.parse(classificationList.replace(/'/g, '"'));
+                        }
+                        catch (e) {
+                            classificationList = [];
+                        }
                     }
 
                     if (Array.isArray(classificationList)) {
@@ -333,9 +356,9 @@
                         populateGroupingSelect(classificationList);
                     }
 
-                    // Parse Yield
                     const rawYield = data.portfolioyield || {};
                     profitabilityData = [];
+
                     const parseYieldItem = (symbol, details) => {
                         const flatItem = { Ticker: symbol };
                         if (details && typeof details === 'object') {
@@ -353,15 +376,17 @@
 
                     if (Array.isArray(rawYield)) {
                         rawYield.forEach(entry => {
-                            if (Array.isArray(entry) && entry.length === 2) profitabilityData.push(parseYieldItem(entry[0], entry[1]));
+                            if (Array.isArray(entry) && entry.length === 2) {
+                                profitabilityData.push(parseYieldItem(entry[0], entry[1]));
+                            }
                         });
                     } else if (typeof rawYield === 'object') {
-                        Object.keys(rawYield).forEach(symbol => profitabilityData.push(parseYieldItem(symbol, rawYield[symbol])));
+                        Object.keys(rawYield).forEach(symbol => {
+                            profitabilityData.push(parseYieldItem(symbol, rawYield[symbol]));
+                        });
                     }
 
-
                     document.getElementById('loading').style.display = 'none';
-                    renderChart();
                 } else {
                     alert("Error loading data");
                 }
@@ -371,30 +396,35 @@
             }
         }
 
-        function populateGroupingSelect(list) {
+        function populateGroupingSelect(classificationList) {
             const select = document.getElementById('grouping-select');
             select.innerHTML = '';
 
+            // Opzione "Nessun raggruppamento"
             let optNone = document.createElement('option');
-            // 2. Value è il codice: stringa vuota per 'Nessun raggruppamento'
             optNone.value = "";
             optNone.textContent = getTranslation('int.no_grouping');
             select.appendChild(optNone);
 
-            groupingKeys.forEach(key => {
-                const opt = document.createElement('option');
-                // 2. Value è il CODICE del raggruppamento (es. 'asset_type')
-                opt.value = key;
-                // Il testo è la traduzione (es. 'Tipo Asset')
-                opt.textContent = getTranslation('group.' + key) || key.replace(/_/g, ' ').toUpperCase();
-                select.appendChild(opt);
-            });
+            // Estrai dinamicamente le chiavi di raggruppamento dai dati di classificazione
+            if (Array.isArray(classificationList) && classificationList.length > 0) {
+                // Prendi tutte le chiavi tranne id_instrument
+                let keys = Object.keys(classificationList[0]).filter(k => k !== "id_instrument");
 
-            if (initialGrouping) {
+                keys.forEach(key => {
+                    const opt = document.createElement('option');
+                    opt.value = key;
+                    // Usa la traduzione se disponibile, altrimenti formatta la chiave
+                    opt.textContent = getTranslation(key) || key.replace(/_/g, ' ').toUpperCase();
+                    select.appendChild(opt);
+                });
+            }
+
+            // Imposta il valore iniziale se specificato
+            if (initialGrouping && select.querySelector(`option[value="${initialGrouping}"]`)) {
                 select.value = initialGrouping;
             }
         }
-        // --- Fine loadYield function ---
 
         function renderChart() {
             const ctx = document.getElementById('chartCanvas').getContext('2d');
@@ -438,14 +468,14 @@
                     let valB = parseFloat(b.RISTOT);
                     return valB - valA;
                 });
-                if (activeData.length > 40) activeData = activeData.slice(0, 40);
+
+                // Limita a 30 elementi per evitare sovraffollamento
+                if (activeData.length > 30) activeData = activeData.slice(0, 30);
 
                 labels = activeData.map(item => item.instrument_description || item.Ticker || "Unknown");
                 dataValues = activeData.map(item => parseFloat(item.RISTOT));
             }
 
-
-            // Colori: ciano per positivo, rosso per negativo
             const backgroundColors = dataValues.map(v => v >= 0 ? 'rgba(0, 243, 255, 0.6)' : 'rgba(255, 0, 85, 0.6)');
             const borderColors = dataValues.map(v => v >= 0 ? '#00f3ff' : '#ff0055');
 
@@ -466,26 +496,39 @@
                     maintainAspectRatio: false,
                     scales: {
                         x: {
-                            // Assi delle categorie in basso
                             position: 'bottom',
                             ticks: {
                                 color: '#e0f7fa',
-                                font: { family: 'Orbitron', size: 10 },
-                                maxRotation: 45,
-                                minRotation: 45
+                                font: {
+                                    family: 'Orbitron',
+                                    size: 10
+                                },
+                                maxRotation: 90, // Etichette verticali
+                                minRotation: 90,
+                                padding: 5
                             },
-                            grid: { color: 'rgba(0, 243, 255, 0.1)' }
+                            grid: {
+                                color: 'rgba(0, 243, 255, 0.1)'
+                            },
+                            // Limita il numero di etichette mostrate
+                            afterFit: function (scale) {
+                                scale.height = 80; // Aumenta lo spazio per le etichette verticali
+                            }
                         },
                         y: {
-                            // L'asse Y si adatta per mostrare valori positivi (in alto) e negativi (in basso)
                             beginAtZero: false,
                             ticks: {
                                 color: '#e0f7fa',
+                                font: { size: 10 },
                                 callback: function (value) {
-                                    return new Intl.NumberFormat('it-IT', { notation: "compact" }).format(value);
+                                    return new Intl.NumberFormat('it-IT', {
+                                        style: "currency",
+                                        currency: "EUR",
+                                        minimumFractionDigits: 0,
+                                        maximumFractionDigits: 0
+                                    }).format(value);
                                 }
                             },
-                            // Linea dello zero accentuata, le altre più tenui
                             grid: {
                                 color: (context) => context.tick.value === 0 ? 'var(--neon-red)' : 'rgba(0, 243, 255, 0.1)',
                                 lineWidth: (context) => context.tick.value === 0 ? 2 : 1
@@ -493,7 +536,9 @@
                         }
                     },
                     plugins: {
-                        legend: { display: false },
+                        legend: {
+                            display: false
+                        },
                         tooltip: {
                             backgroundColor: 'rgba(0, 5, 16, 0.9)',
                             titleColor: '#fff',
@@ -503,9 +548,21 @@
                             callbacks: {
                                 label: function (context) {
                                     let val = context.parsed.y;
-                                    return new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(val);
+                                    return new Intl.NumberFormat('it-IT', {
+                                        style: 'currency',
+                                        currency: 'EUR'
+                                    }).format(val);
                                 }
                             }
+                        }
+                    },
+                    // Aggiungi padding per evitare che le etichette escano
+                    layout: {
+                        padding: {
+                            top: 20,
+                            right: 10,
+                            bottom: 50, // Più spazio per le etichette verticali
+                            left: 10
                         }
                     }
                 },
@@ -514,8 +571,8 @@
                     afterDatasetsDraw: (chart) => {
                         const ctx = chart.ctx;
                         ctx.save();
-                        // Etichette ingrandite e bianche per leggibilità
-                        ctx.font = 'bold 12px "Orbitron", sans-serif';
+                        // Font più piccola per evitare sovrapposizioni
+                        ctx.font = 'bold 9px "Orbitron", sans-serif';
                         ctx.textAlign = 'center';
                         ctx.textBaseline = 'middle';
 
@@ -526,15 +583,21 @@
                                 const value = dataset.data[index];
                                 if (value === 0) return;
 
-                                const formatted = new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(value);
+                                // Formatta il valore in modo compatto
+                                const formatted = new Intl.NumberFormat('it-IT', {
+                                    style: 'currency',
+                                    currency: 'EUR',
+                                    notation: "compact",
+                                    maximumFractionDigits: 1
+                                }).format(value);
+
                                 const x = element.x;
                                 let y = element.y;
 
-                                // Etichette sempre bianche
                                 ctx.fillStyle = '#ffffff';
 
-                                // Posizionamento sopra i positivi (-18) e sotto i negativi (+18)
-                                y += (value >= 0) ? -18 : 18;
+                                // Posizionamento sopra i positivi (-12) e sotto i negativi (+12)
+                                y += (value >= 0) ? -12 : 12;
 
                                 ctx.fillText(formatted, x, y);
                             });
