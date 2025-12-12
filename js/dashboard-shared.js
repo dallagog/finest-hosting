@@ -1,4 +1,4 @@
-// Shared logic for Dashboard and Portfolio Graph
+// Shared logic for Dashboard and Portfolio Graph ver 1.0
 
 /**
  * Parses raw portfolio data into a flat list of objects.
