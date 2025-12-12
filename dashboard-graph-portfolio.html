@@ -18,7 +18,7 @@
             --text-color: #e0f7fa;
         }
 
-        /* Garantisce che il body e l'HTML usino tutta l'altezza */
+        /* 3. Layout full-height standard e con padding ridotto */
         html,
         body {
             height: 100%;
@@ -33,7 +33,7 @@
                 linear-gradient(rgba(0, 243, 255, 0.1) 1px, transparent 1px),
                 linear-gradient(90deg, rgba(0, 243, 255, 0.1) 1px, transparent 1px);
             background-size: 50px 50px;
-            padding: 20px;
+            padding: 15px;
             color: var(--text-color);
             display: flex;
             flex-direction: column;
@@ -49,16 +49,78 @@
             border: 1px solid var(--neon-blue);
             box-shadow: 0 0 15px rgba(0, 102, 255, 0.3);
             border-radius: 8px;
-            margin-bottom: 20px;
+            margin-bottom: 15px;
             flex-shrink: 0;
         }
 
+        /* 2. Username e Titolo a sinistra */
         .header-info {
             display: flex;
-            align-items: center;
-            gap: 20px;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 5px;
         }
 
+        .username-display {
+            font-size: 0.9rem;
+            color: var(--neon-cyan);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            /* Rimuove l'overlap con il titolo */
+            margin-bottom: 5px;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 1.5rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: var(--neon-cyan);
+            text-shadow: 0 0 10px var(--neon-cyan);
+        }
+
+        /* Controlli a destra */
+        .controls {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            margin-left: auto;
+        }
+
+        select {
+            padding: 8px 15px;
+            background: rgba(0, 243, 255, 0.1);
+            border: 1px solid var(--neon-blue);
+            color: var(--neon-cyan);
+            font-family: 'Orbitron', sans-serif;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .chart-wrapper {
+            flex: 1;
+            position: relative;
+            background: var(--glass-bg);
+            border: 1px solid var(--neon-cyan);
+            border-radius: 8px;
+            box-shadow: 0 0 20px rgba(0, 243, 255, 0.1);
+            padding: 20px;
+            min-height: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* 3. Contenitore interno per limitare la dimensione del grafico */
+        #chartContainerInner {
+            position: relative;
+            max-width: 80%;
+            max-height: 80%;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Stili per il resto (language-display, close-button, loading...) omessi per brevità */
         .language-display {
             display: flex;
             align-items: center;
@@ -91,84 +153,6 @@
             color: #ff0044;
             text-shadow: 0 0 10px #ff0044;
         }
-
-        h1 {
-            margin: 0;
-            font-size: 1.5rem;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            color: var(--neon-cyan);
-            text-shadow: 0 0 10px var(--neon-cyan);
-        }
-
-        .controls {
-            display: flex;
-            gap: 15px;
-            align-items: center;
-        }
-
-        select {
-            padding: 8px 15px;
-            background: rgba(0, 243, 255, 0.1);
-            border: 1px solid var(--neon-blue);
-            color: var(--neon-cyan);
-            font-family: 'Orbitron', sans-serif;
-            border-radius: 4px;
-            cursor: pointer;
-        }
-
-        select:focus {
-            outline: none;
-            box-shadow: 0 0 10px var(--neon-cyan);
-        }
-
-        .chart-wrapper {
-            flex: 1;
-            position: relative;
-            background: var(--glass-bg);
-            border: 1px solid var(--neon-cyan);
-            border-radius: 8px;
-            box-shadow: 0 0 20px rgba(0, 243, 255, 0.1);
-            padding: 20px;
-            min-height: 0;
-        }
-
-        /* ... Stili loading ... */
-        #loading {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.9);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 999;
-            color: var(--neon-cyan);
-            font-size: 1.2rem;
-            flex-direction: column;
-        }
-
-        .spinner {
-            border: 4px solid rgba(0, 243, 255, 0.1);
-            border-left: 4px solid var(--neon-cyan);
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            animation: spin 1s linear infinite;
-            margin-bottom: 15px;
-        }
-
-        @keyframes spin {
-            0% {
-                transform: rotate(0deg);
-            }
-
-            100% {
-                transform: rotate(360deg);
-            }
-        }
     </style>
 </head>
 
@@ -181,11 +165,13 @@
 
     <div class="header-bar">
         <div class="header-info">
+            <div id="username-display" class="username-display"></div>
             <h1>Portfolio Composition</h1>
-            <div id="language-indicator" class="language-display">
-            </div>
         </div>
+
         <div class="controls">
+            <div id="language-indicator" class="language-display"></div>
+
             <label for="grouping-select" id="grouping-label">Group By:</label>
             <select id="grouping-select" onchange="renderChart()">
             </select>
@@ -194,18 +180,20 @@
     </div>
 
     <div class="chart-wrapper">
-        <canvas id="chartCanvas"></canvas>
+        <div id="chartContainerInner">
+            <canvas id="chartCanvas"></canvas>
+        </div>
     </div>
 
     <script>
-        // --- Simulazione Funzioni di Traduzione e Mappatura (DA SOSTITUIRE) ---
+        // --- Simulazione Funzioni di Traduzione e Mappatura (DA SOSTITUIRE con la tua implementazione) ---
         const translations = {
             'it_IT': {
                 'int.no_grouping': 'Nessun raggruppamento',
                 'int.group_by': 'Raggruppa per:',
                 'int.close': 'Chiudi',
                 'lang.it_IT': 'Italiano',
-                // 4. Traduzioni chiavi raggruppamento
+                // 1. Chiavi di raggruppamento del portafoglio (assunzione standard)
                 'group.asset_type': 'Tipo Asset',
                 'group.geography': 'Geografia',
                 'group.currency': 'Valuta',
@@ -247,17 +235,20 @@
         let chartInstance = null;
         let portfolioData = [];
         let classificationMap = {};
-        // 2. Chiavi di raggruppamento coerenti con dashboard.html
+        // 1. Chiavi di raggruppamento coerenti
         const groupingKeys = ['asset_type', 'geography', 'currency'];
 
         // Get params from URL
         const urlParams = new URLSearchParams(window.location.search);
-        const username = urlParams.get('username');
+        const username = urlParams.get('username') || 'UTENTE_NON_AUTORIZZATO'; // 2. Legge l'username
         const token = urlParams.get('token');
         const language = urlParams.get('language') || 'it_IT';
-        const initialGrouping = urlParams.get('grouping') || ''; // 1. Raggruppamento iniziale da URL
+        const initialGrouping = urlParams.get('grouping') || ''; // 1. Raggruppamento iniziale
 
         async function init() {
+            // 2. Visualizza l'username
+            document.getElementById('username-display').textContent = username;
+
             if (!username || !token) {
                 document.getElementById('loadingText').textContent = "Unauthorized Access";
                 return;
@@ -265,25 +256,22 @@
 
             await loadPortfolio();
             updateHeaderTranslations();
-            // 1. Seleziona il raggruppamento iniziale DOPO che il select è stato popolato in loadPortfolio
+            // 1. Applica il raggruppamento di default DOPO aver popolato il select
             if (initialGrouping) {
                 document.getElementById('grouping-select').value = initialGrouping;
             }
         }
 
         function updateHeaderTranslations() {
-            // 5. Traduzione etichetta Raggruppa per:
             document.getElementById('grouping-label').textContent = getTranslation('int.group_by');
-            // Traduzione del titolo del tasto Chiudi
             const closeBtn = document.getElementById('close-btn');
             closeBtn.title = getTranslation('int.close');
-            // Informazioni sulla lingua
             const langIndicator = document.getElementById('language-indicator');
             const langName = getTranslation('lang.' + language);
             langIndicator.innerHTML = `${getFlagIcon(language)} <span>${langName}</span>`;
         }
 
-        // ... (loadPortfolio function remains essentially the same, removed for brevity) ...
+        // --- loadPortfolio function omessa per brevità (rimane invariata) ---
         async function loadPortfolio() {
             try {
                 const payload = {
@@ -314,7 +302,7 @@
                         classificationList.forEach(item => {
                             if (item.id_instrument) classificationMap[item.id_instrument] = item;
                         });
-                        populateGroupingSelect(classificationList); // Popola il select
+                        populateGroupingSelect(classificationList);
                     }
 
                     // Parse Portfolio
@@ -355,18 +343,16 @@
             }
         }
 
-
         function populateGroupingSelect(list) {
             const select = document.getElementById('grouping-select');
             select.innerHTML = '';
 
-            // 4. Opzione "Nessun raggruppamento" tradotta
             let optNone = document.createElement('option');
             optNone.value = "";
             optNone.textContent = getTranslation('int.no_grouping');
             select.appendChild(optNone);
 
-            // 4. Opzioni di raggruppamento tradotte
+            // 1. Opzioni di raggruppamento tradotte
             groupingKeys.forEach(key => {
                 const opt = document.createElement('option');
                 opt.value = key;
@@ -374,11 +360,12 @@
                 select.appendChild(opt);
             });
 
-            // 1. Seleziona il raggruppamento iniziale
             if (initialGrouping) {
                 select.value = initialGrouping;
             }
         }
+        // --- Fine loadPortfolio function ---
+
 
         function generateTronColors(count) {
             const colors = [];
@@ -395,7 +382,7 @@
 
             const groupValue = document.getElementById('grouping-select').value;
             const isGrouped = groupValue && groupValue !== "";
-            const valueKey = 'CTVMKTTQ'; // Valore di mercato totale
+            const valueKey = 'CTVMKTTQ';
 
             let labels = [];
             let dataValues = [];
@@ -407,7 +394,7 @@
                 return !isNaN(val) && val > 0;
             });
 
-            // ... (Logica di raggruppamento dati) ...
+            // ... (Logica di raggruppamento dati omessa per brevità) ...
             if (isGrouped) {
                 const groups = {};
                 activeData.forEach(item => {
@@ -451,7 +438,7 @@
                     responsive: true,
                     maintainAspectRatio: false,
                     // 4. Aumento del padding per ospitare le label esterne
-                    layout: { padding: 80 },
+                    layout: { padding: 90 },
                     plugins: {
                         legend: { display: false },
                         tooltip: {
@@ -470,7 +457,7 @@
                         }
                     }
                 },
-                // 3. Plugin custom per l'allineamento e la gestione delle collisioni delle label
+                // 4. Plugin custom migliorato per l'allineamento e la gestione delle collisioni
                 plugins: [{
                     id: 'tronLabels',
                     afterDraw: (chart) => {
@@ -496,12 +483,11 @@
                                 if (value === 0) return;
 
                                 const midAngle = element.startAngle + (element.endAngle - element.startAngle) / 2;
-                                // 3. Determinazione se il settore è a destra o a sinistra
                                 const isRight = midAngle < Math.PI / 2 || midAngle > 3 * Math.PI / 2;
                                 const outerRadius = element.outerRadius;
 
-                                // Allontana il punto finale della label
-                                const labelRadius = outerRadius + 60;
+                                // 4. Aumento significativo del raggio per allontanare le label
+                                const labelRadius = outerRadius + 80;
 
                                 const endX = centerX + Math.cos(midAngle) * labelRadius;
                                 const endY = centerY + Math.sin(midAngle) * labelRadius;
@@ -516,15 +502,15 @@
                                     startX: centerX + Math.cos(midAngle) * outerRadius,
                                     startY: centerY + Math.sin(midAngle) * outerRadius,
                                     endX, endY, currentY: endY,
-                                    // Altezza necessaria per la collisione
-                                    height: descriptionFontSize + valueFontSize + 10
+                                    // 4. Aumento dell'altezza per maggiore spaziatura
+                                    height: descriptionFontSize + valueFontSize + 15
                                 };
 
                                 if (isRight) rightLabels.push(item); else leftLabels.push(item);
                             });
                         });
 
-                        // 3. Funzione di risoluzione delle collisioni (sposta le label verticalmente)
+                        // 4. Funzione di risoluzione delle collisioni: ordina e sposta verticalmente
                         const resolveCollisions = (items) => {
                             items.sort((a, b) => a.currentY - b.currentY);
                             for (let i = 1; i < items.length; i++) {
@@ -540,13 +526,16 @@
                             // Punto intermedio del segmento di linea
                             const midX = centerX + Math.cos(item.midAngle) * (item.outerRadius + 30);
                             const midY = centerY + Math.sin(item.midAngle) * (item.outerRadius + 30);
-                            const lineToX = item.isRight ? item.endX + 5 : item.endX - 5;
+
+                            // Punto X finale per il testo
+                            const textX = item.isRight ? item.endX + 5 : item.endX - 5;
 
                             // Linea
                             ctx.beginPath();
                             ctx.moveTo(item.startX, item.startY);
                             ctx.lineTo(midX, midY);
-                            ctx.lineTo(lineToX, item.currentY);
+                            // La linea orizzontale finisce dove inizia il testo
+                            ctx.lineTo(textX, item.currentY);
                             ctx.strokeStyle = '#00F3FF';
                             ctx.lineWidth = 1;
                             ctx.shadowBlur = 4;
@@ -559,19 +548,18 @@
                             ctx.fillStyle = '#fff';
                             ctx.fill();
 
-                            // 5. Testo (Descrizione) - 14px
+                            // Testo (Descrizione) - 14px
                             ctx.fillStyle = '#00F3FF';
-                            // 3. Allineamento testo: 'left' per destra, 'right' per sinistra
                             ctx.textAlign = item.isRight ? 'left' : 'right';
                             ctx.textBaseline = 'bottom';
                             ctx.font = `${descriptionFontSize}px "Orbitron", sans-serif`;
-                            ctx.fillText(item.text, lineToX, item.currentY - 1);
+                            ctx.fillText(item.text, textX, item.currentY - 1);
 
-                            // 5. Testo (Valore e Percentuale) - 12px
+                            // Testo (Valore e Percentuale) - 12px
                             ctx.fillStyle = '#fff';
                             ctx.textBaseline = 'top';
                             ctx.font = `${valueFontSize}px "Orbitron", sans-serif`;
-                            ctx.fillText(`${item.formattedValue} (${item.percentage})`, lineToX, item.currentY + 1);
+                            ctx.fillText(`${item.formattedValue} (${item.percentage})`, textX, item.currentY + 1);
                         };
 
                         rightLabels.forEach(draw);

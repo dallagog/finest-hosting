@@ -19,7 +19,7 @@
             --text-color: #e0f7fa;
         }
 
-        /* Garantisce che il body e l'HTML usino tutta l'altezza */
+        /* Layout full-height standard e con padding ridotto */
         html,
         body {
             height: 100%;
@@ -34,7 +34,7 @@
                 linear-gradient(rgba(255, 0, 85, 0.05) 1px, transparent 1px),
                 linear-gradient(90deg, rgba(255, 0, 85, 0.05) 1px, transparent 1px);
             background-size: 50px 50px;
-            padding: 20px;
+            padding: 15px;
             color: var(--text-color);
             display: flex;
             flex-direction: column;
@@ -50,16 +50,83 @@
             border: 1px solid var(--neon-red);
             box-shadow: 0 0 15px rgba(255, 0, 85, 0.3);
             border-radius: 8px;
-            margin-bottom: 20px;
+            margin-bottom: 15px;
             flex-shrink: 0;
         }
 
+        /* 2. Username e Titolo a sinistra */
         .header-info {
             display: flex;
-            align-items: center;
-            gap: 20px;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 5px;
         }
 
+        .username-display {
+            font-size: 0.9rem;
+            color: var(--neon-cyan);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 5px;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 1.5rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: var(--neon-red);
+            text-shadow: 0 0 10px var(--neon-red);
+        }
+
+        /* Controlli a destra */
+        .controls {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            margin-left: auto;
+        }
+
+        select {
+            padding: 8px 15px;
+            background: rgba(255, 0, 85, 0.1);
+            border: 1px solid var(--neon-red);
+            color: var(--neon-cyan);
+            font-family: 'Orbitron', sans-serif;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        select:focus {
+            outline: none;
+            box-shadow: 0 0 10px var(--neon-red);
+        }
+
+        .chart-wrapper {
+            flex: 1;
+            /* Usa lo spazio rimanente */
+            position: relative;
+            background: var(--glass-bg);
+            border: 1px solid var(--neon-cyan);
+            border-radius: 8px;
+            box-shadow: 0 0 20px rgba(0, 243, 255, 0.1);
+            padding: 20px;
+            min-height: 0;
+            /* Centra il contenitore interno */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* 3. Contenitore interno per limitare la dimensione del grafico */
+        #chartContainerInner {
+            position: relative;
+            /* Rende il grafico più piccolo e centrato */
+            width: 80%;
+            height: 90%;
+        }
+
+        /* Stili per il resto (language-display, close-button, loading...) omessi per brevità */
         .language-display {
             display: flex;
             align-items: center;
@@ -92,49 +159,6 @@
             color: var(--neon-cyan);
             text-shadow: 0 0 10px var(--neon-cyan);
         }
-
-        h1 {
-            margin: 0;
-            font-size: 1.5rem;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            color: var(--neon-red);
-            text-shadow: 0 0 10px var(--neon-red);
-        }
-
-        .controls {
-            display: flex;
-            gap: 15px;
-            align-items: center;
-        }
-
-        select {
-            padding: 8px 15px;
-            background: rgba(255, 0, 85, 0.1);
-            border: 1px solid var(--neon-red);
-            color: var(--neon-cyan);
-            font-family: 'Orbitron', sans-serif;
-            border-radius: 4px;
-            cursor: pointer;
-        }
-
-        select:focus {
-            outline: none;
-            box-shadow: 0 0 10px var(--neon-red);
-        }
-
-        .chart-wrapper {
-            flex: 1;
-            position: relative;
-            background: var(--glass-bg);
-            border: 1px solid var(--neon-cyan);
-            border-radius: 8px;
-            box-shadow: 0 0 20px rgba(0, 243, 255, 0.1);
-            padding: 20px;
-            min-height: 0;
-        }
-
-        /* ... Stili loading omessi per brevità, assumendo siano corretti ... */
     </style>
 </head>
 
@@ -147,11 +171,13 @@
 
     <div class="header-bar">
         <div class="header-info">
+            <div id="username-display" class="username-display"></div>
             <h1>Profitability Analysis</h1>
-            <div id="language-indicator" class="language-display">
-            </div>
         </div>
+
         <div class="controls">
+            <div id="language-indicator" class="language-display"></div>
+
             <label for="grouping-select" id="grouping-label">Group By:</label>
             <select id="grouping-select" onchange="renderChart()">
             </select>
@@ -160,18 +186,20 @@
     </div>
 
     <div class="chart-wrapper">
-        <canvas id="chartCanvas"></canvas>
+        <div id="chartContainerInner">
+            <canvas id="chartCanvas"></canvas>
+        </div>
     </div>
 
     <script>
-        // --- Simulazione Funzioni di Traduzione e Mappatura (DA SOSTITUIRE) ---
+        // --- Simulazione Funzioni di Traduzione e Mappatura (DA SOSTITUIRE con la tua implementazione) ---
         const translations = {
             'it_IT': {
                 'int.no_grouping': 'Nessun raggruppamento',
                 'int.group_by': 'Raggruppa per:',
                 'int.close': 'Chiudi',
                 'lang.it_IT': 'Italiano',
-                // 3 & 4. Traduzioni chiavi raggruppamento redditività
+                // Chiavi di raggruppamento (coerenti con il portafoglio)
                 'group.asset_type': 'Tipo Asset',
                 'group.geography': 'Geografia',
                 'group.currency': 'Valuta',
@@ -213,16 +241,20 @@
         let chartInstance = null;
         let profitabilityData = [];
         let classificationMap = {};
-        // 2. Chiavi di raggruppamento (assumiamo queste, altrimenti vanno corrette qui)
+        // 1. Chiavi di raggruppamento coerenti
         const groupingKeys = ['asset_type', 'geography', 'currency'];
 
         const urlParams = new URLSearchParams(window.location.search);
-        const username = urlParams.get('username');
+        // 2. Legge l'username
+        const username = urlParams.get('username') || 'UTENTE_NON_AUTORIZZATO';
         const token = urlParams.get('token');
         const language = urlParams.get('language') || 'it_IT';
         const initialGrouping = urlParams.get('grouping') || ''; // 1. Raggruppamento iniziale da URL
 
         async function init() {
+            // 2. Visualizza l'username
+            document.getElementById('username-display').textContent = username;
+
             if (!username || !token) {
                 document.getElementById('loadingText').textContent = "Access Denied";
                 return;
@@ -237,7 +269,6 @@
         }
 
         function updateHeaderTranslations() {
-            // 4. Traduzione etichetta Raggruppa per:
             document.getElementById('grouping-label').textContent = getTranslation('int.group_by');
 
             const closeBtn = document.getElementById('close-btn');
@@ -323,13 +354,12 @@
             const select = document.getElementById('grouping-select');
             select.innerHTML = '';
 
-            // 3. Opzione "Nessun raggruppamento" tradotta
             let optNone = document.createElement('option');
             optNone.value = "";
             optNone.textContent = getTranslation('int.no_grouping');
             select.appendChild(optNone);
 
-            // 3. Opzioni di raggruppamento tradotte
+            // Opzioni di raggruppamento tradotte
             groupingKeys.forEach(key => {
                 const opt = document.createElement('option');
                 opt.value = key;
@@ -337,7 +367,6 @@
                 select.appendChild(opt);
             });
 
-            // 1. Seleziona il raggruppamento iniziale
             if (initialGrouping) {
                 select.value = initialGrouping;
             }
@@ -361,7 +390,6 @@
             });
 
             if (isGrouped) {
-                // ... (Logica di raggruppamento) ...
                 const groups = {};
                 activeData.forEach(item => {
                     let groupLabel = 'Other';
@@ -398,7 +426,6 @@
             const borderColors = dataValues.map(v => v >= 0 ? '#00f3ff' : '#ff0055');
 
             chartInstance = new Chart(ctx, {
-                // 5. Grafico a barre verticale (default)
                 type: 'bar',
                 data: {
                     labels: labels,
@@ -426,7 +453,7 @@
                             grid: { color: 'rgba(0, 243, 255, 0.1)' }
                         },
                         y: {
-                            // 5. L'asse Y si adatta per mostrare valori positivi (in alto) e negativi (in basso)
+                            // L'asse Y si adatta per mostrare valori positivi (in alto) e negativi (in basso)
                             beginAtZero: false,
                             ticks: {
                                 color: '#e0f7fa',
