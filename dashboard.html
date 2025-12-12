@@ -4,9 +4,8 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Dashboard 2.0</title>
+    <title>Dashboard 2.9</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 
     <style>
@@ -127,9 +126,6 @@
             background: rgba(255, 0, 0, 0.4);
             box-shadow: 0 0 10px #ff3333;
         }
-
-        /* Layout Columns */
-
 
         /* Collapsible / Panels */
         .collapsible-container {
@@ -475,13 +471,10 @@
         .data-table th,
         .data-table td {
             padding: 8px 15px;
-            /* Reduced padding */
             text-align: right;
-            /* Align headers and data to right */
             border-bottom: 1px solid rgba(0, 243, 255, 0.2);
             color: var(--text-color);
             height: 35px;
-            /* Reduced fixed row height */
         }
 
         /* First column alignment override (usually text/description) */
@@ -555,75 +548,7 @@
             margin-right: 5px;
         }
 
-        /* ========== CHART MODAL ========== */
-        .modal-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            background: rgba(0, 5, 16, 0.85);
-            /* Dark semi-transparent background */
-            backdrop-filter: blur(5px);
-            z-index: 2000;
-            display: none;
-            justify-content: center;
-            align-items: center;
-        }
-
-        .modal-content {
-            background: var(--neon-dark);
-            border: 1px solid var(--neon-cyan);
-            box-shadow: 0 0 20px rgba(0, 243, 255, 0.2);
-            padding: 20px;
-            width: 48%;
-            max-width: 48vw;
-            /* Left half of the page */
-            border-radius: 10px;
-            position: relative;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-
-        .modal-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            width: 100%;
-            margin-bottom: 20px;
-            border-bottom: 1px solid var(--neon-blue);
-            padding-bottom: 10px;
-        }
-
-        .modal-title {
-            color: var(--neon-cyan);
-            font-size: 1.5rem;
-            font-weight: bold;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-        }
-
-        .close-modal-btn {
-            background: transparent;
-            border: none;
-            color: var(--neon-blue);
-            font-size: 1.5rem;
-            cursor: pointer;
-            transition: color 0.3s;
-        }
-
-        .close-modal-btn:hover {
-            color: var(--neon-cyan);
-            text-shadow: 0 0 10px var(--neon-cyan);
-        }
-
-        .chart-container {
-            width: 100%;
-            height: 500px;
-            /* Specific height for the chart */
-            position: relative;
-        }
+        /* Removed Chart Modal CSS as charts are now external */
     </style>
 </head>
 
@@ -659,7 +584,6 @@
         <div id="mainContent" style="display:none;">
             <div id="message" class="message"></div>
 
-            <!-- MENU (Top) -->
             <div class="collapsible-container">
                 <div class="collapsible-header" onclick="toggleCollapsible(this)">
                     <h2 id="menuTitle">Menu</h2>
@@ -670,7 +594,6 @@
                 </div>
             </div>
 
-            <!-- FILTRI CON RAPPORTI -->
             <div id="filter-section" class="collapsible-container">
                 <div class="collapsible-header" onclick="toggleCollapsible(this)">
                     <h2 id="filtersPeriodTitle">Filtri Periodo</h2>
@@ -702,7 +625,6 @@
                         </div>
                     </div>
 
-                    <!-- RAPPORTI DENTRO FILTRI -->
                     <div class="reports-section">
                         <h3 id="reportsTitle">Rapporti</h3>
                         <div class="reports-controls">
@@ -730,7 +652,6 @@
                 </div>
             </div>
 
-            <!-- PORTFOLIO TABLE SECTION -->
             <div id="portfolio-section" class="collapsible-container" style="display:none;">
                 <div class="collapsible-header" onclick="toggleCollapsible(this)">
                     <h2 id="portfolioTitle">Portafoglio</h2>
@@ -743,7 +664,7 @@
                             <option value="">Nessun raggruppamento</option>
                         </select>
 
-                        <button id="graphBtn" onclick="togglePortfolioGraph()">
+                        <button id="graphBtn" onclick="openGraphNewWindow('portfolio')">
                             <i class="fa fa-pie-chart"></i> <span id="graphText">Graph</span>
                         </button>
                         <button id="historicalBtn" onclick="toggleHistorical()" style="margin-left: auto;">
@@ -757,18 +678,15 @@
                         <table id="portfolio-table" class="data-table">
                             <thead>
                                 <tr id="portfolio-header-row">
-                                    <!-- Headers will be injected here -->
                                 </tr>
                             </thead>
                             <tbody id="portfolio-body">
-                                <!-- Rows will be injected here -->
                             </tbody>
                         </table>
                     </div>
                 </div>
             </div>
 
-            <!-- PROFITABILITY TABLE SECTION -->
             <div id="profitability-section" class="collapsible-container" style="display:none;">
                 <div class="collapsible-header" onclick="toggleCollapsible(this)">
                     <h2 id="profitabilityTableTitle">Redditività</h2>
@@ -780,26 +698,23 @@
                         <select id="profitability-grouping-select" onchange="updateProfitabilityGrouping()">
                             <option value="">Nessun raggruppamento</option>
                         </select>
-                        <button id="profitabilityGraphBtn" onclick="toggleProfitabilityGraph()">
-                            <i class="fa fa-pie-chart"></i> <span id="profitabilityGraphText">Graph</span>
+                        <button id="profitabilityGraphBtn" onclick="openGraphNewWindow('profitability')">
+                            <i class="fa fa-bar-chart"></i> <span id="profitabilityGraphText">Graph</span>
                         </button>
                     </div>
                     <div id="profitability-table-container" style="overflow-x: auto;">
                         <table id="profitability-table" class="data-table">
                             <thead>
                                 <tr id="profitability-header-row">
-                                    <!-- Headers will be injected here -->
                                 </tr>
                             </thead>
                             <tbody id="profitability-body">
-                                <!-- Rows will be injected here -->
                             </tbody>
                         </table>
                     </div>
                 </div>
             </div>
 
-            <!-- PDF VIEWER IN BASSO -->
             <div class="pdf-viewer" id="pdfViewer">
                 <div class="pdf-header">
                     <h3 id="pdfViewerTitle">Report PDF - template.pdf</h3>
@@ -823,7 +738,7 @@
 
         const API_URL = "https://feweb-tunnel.fe-web.eu";
         let filterData = null;
-        let selectedAccounts = []; // Array of selected account IDs
+        let selectedAccounts = [];
         let credentials = { username: '', token: '', language: '', filter: '' };
         let pdfBase64 = null;
         let translations = {};
@@ -832,7 +747,37 @@
         let classificationFilter = [];
         let portfolioColumns = [];
         let profitabilityColumns = [];
-        let showHistorical = false; // Toggle for showing zero balance rows
+        let showHistorical = false;
+
+        // ========== NEW GRAPH FUNCTION ==========
+        function openGraphNewWindow(type) {
+            const u = credentials.username || localStorage.getItem('username');
+            const t = credentials.token || localStorage.getItem('token');
+            const l = credentials.language || localStorage.getItem('language') || 'it_IT';
+
+            if (!u || !t) {
+                showMessage("Sessione non valida per aprire il grafico.", 'error');
+                return;
+            }
+
+            const params = new URLSearchParams({
+                username: u,
+                token: t,
+                language: l
+            });
+
+            let filename = '';
+            if (type === 'portfolio') {
+                filename = 'dashboard-graph-portfolio.html';
+            } else if (type === 'profitability') {
+                filename = 'dashboard-graph-yield.html';
+            }
+
+            if (filename) {
+                window.open(`${filename}?${params.toString()}`, '_blank');
+            }
+        }
+        // ========================================
 
         // ========== TRANSLATION SYSTEM ==========
         async function loadLanguageManifest() {
@@ -840,22 +785,15 @@
                 const response = await fetch('lang/manifest.json');
                 if (!response.ok) return [];
                 const manifest = await response.json();
-                if (manifest.classification && Array.isArray(manifest.classification)) {
-                    classificationFilter = manifest.classification;
-                }
-                if (manifest.portfolio && Array.isArray(manifest.portfolio)) {
-                    portfolioColumns = manifest.portfolio;
-                }
-                if (manifest.portfolio_yield && Array.isArray(manifest.portfolio_yield)) {
-                    profitabilityColumns = manifest.portfolio_yield;
-                }
+                if (manifest.classification && Array.isArray(manifest.classification)) classificationFilter = manifest.classification;
+                if (manifest.portfolio && Array.isArray(manifest.portfolio)) portfolioColumns = manifest.portfolio;
+                if (manifest.portfolio_yield && Array.isArray(manifest.portfolio_yield)) profitabilityColumns = manifest.portfolio_yield;
                 return manifest.languages || [];
             } catch (error) {
                 console.error("Error loading manifest:", error);
                 return [];
             }
         }
-
 
         async function loadLanguageFile(langCode) {
             try {
@@ -880,9 +818,7 @@
             const langCodes = await loadLanguageManifest();
             for (const langCode of langCodes) {
                 const langData = await loadLanguageFile(langCode);
-                if (langData) {
-                    availableLanguages.push(langData);
-                }
+                if (langData) availableLanguages.push(langData);
             }
             availableLanguages.sort((a, b) => a.code.localeCompare(b.code));
         }
@@ -892,7 +828,6 @@
                 const response = await fetch(`currency/${lang}.json`);
                 if (!response.ok) throw new Error(`Currency file not found currency/${lang}.json`);
                 currencies = await response.json();
-                console.log("✅ Currencies loaded:", currencies.length);
             } catch (error) {
                 console.error('❌ Error loading currencies:', error);
                 currencies = [];
@@ -900,12 +835,10 @@
         }
 
         async function loadTranslations(lang) {
-            console.log("📚 Loading translations for:", lang);
             try {
                 const response = await fetch(`lang/${lang}.json`);
                 if (!response.ok) throw new Error(`Translation file not found lang/${lang}.json`);
                 translations = await response.json();
-                console.log("✅ Translations loaded");
                 await loadCurrencies(lang);
             } catch (error) {
                 console.error('❌ Error loading translations:', error);
@@ -917,7 +850,6 @@
         }
 
         function updatePageTranslations() {
-            // Traduci tutti gli elementi della pagina
             const translations_map = {
                 'dashboardTitle': 'int.dashboard.title',
                 'userLabel': 'int.user.label',
@@ -936,49 +868,33 @@
                 'pdfViewerTitle': 'int.pdf.viewer.title'
             };
 
-            // Aggiorna tutti i testi
             Object.keys(translations_map).forEach(elementId => {
                 const element = document.getElementById(elementId);
                 if (element) {
                     const translated = getTranslation(translations_map[elementId]);
-                    if (translated !== translations_map[elementId]) {
-                        element.textContent = translated;
-                    }
+                    if (translated !== translations_map[elementId]) element.textContent = translated;
                 }
             });
 
-            // Gestione speciale per elementi con contenuto HTML
+            // Special HTML Elements
             const logoutText = getTranslation('int.logout');
-            if (logoutText !== 'int.logout') {
-                document.getElementById('logoutText').textContent = logoutText;
-            }
+            if (logoutText !== 'int.logout') document.getElementById('logoutText').textContent = logoutText;
 
             const downloadPdfText = getTranslation('int.download.pdf');
-            if (downloadPdfText !== 'int.download.pdf') {
-                document.getElementById('downloadPdfText').textContent = downloadPdfText;
-            }
+            if (downloadPdfText !== 'int.download.pdf') document.getElementById('downloadPdfText').textContent = downloadPdfText;
 
             const selectAllText = getTranslation('int.selectall');
-            if (selectAllText !== 'int.selectall') {
-                document.getElementById('selectAllText').textContent = selectAllText;
-            }
+            if (selectAllText !== 'int.selectall') document.getElementById('selectAllText').textContent = selectAllText;
 
             const deselectAllText = getTranslation('int.deselectall');
-            if (deselectAllText !== 'int.deselectall') {
-                document.getElementById('deselectAllText').textContent = deselectAllText;
-            }
+            if (deselectAllText !== 'int.deselectall') document.getElementById('deselectAllText').textContent = deselectAllText;
 
             const createAccountText = getTranslation('int.newaccount');
-            if (createAccountText !== 'int.newaccount') {
-                document.getElementById('createAccountText').textContent = createAccountText;
-            }
+            if (createAccountText !== 'int.newaccount') document.getElementById('createAccountText').textContent = createAccountText;
 
             const applyFiltersText = getTranslation('int.apply.filters');
-            if (applyFiltersText !== 'int.apply.filters') {
-                document.getElementById('apply-filters').textContent = applyFiltersText;
-            }
+            if (applyFiltersText !== 'int.apply.filters') document.getElementById('apply-filters').textContent = applyFiltersText;
 
-            // Aggiorna le opzioni dei select
             const selectOpt = getTranslation('int.select.option');
             if (selectOpt !== 'int.select.option') {
                 const opt1 = document.getElementById('selectOption');
@@ -987,14 +903,12 @@
                 if (opt2) opt2.textContent = selectOpt;
             }
 
-            // Go Live button
             const goLiveText = getTranslation('int.golive');
             if (goLiveText !== 'int.golive') {
                 const goLiveBtn = document.getElementById('goLiveText');
                 if (goLiveBtn) goLiveBtn.textContent = goLiveText;
             }
 
-            // Historical button
             const historicalText = getTranslation('int.historical');
             if (historicalText !== 'int.historical') {
                 const historicalBtn = document.getElementById('historicalText');
@@ -1015,8 +929,9 @@
                 btn.style.backgroundColor = '';
                 btn.style.color = '';
             }
-            renderTable(); // Re-render table with new filter
+            renderTable();
         }
+
         function toggleCollapsible(header) {
             const content = header.nextElementSibling;
             const toggleBtn = header.querySelector('.toggle-btn');
@@ -1059,21 +974,15 @@
         }
 
         async function updateUserInfo() {
-            // Get language and currency from filterData or credentials
             const f = (filterData && filterData.Filter) ? filterData.Filter : {};
             const userLanguage = f.language || credentials.language || localStorage.getItem('language');
             const userCurrency = f.currency || localStorage.getItem('currency');
 
-            // Language - ensure languages are loaded first
             if (userLanguage) {
-                // Reload languages if not available
-                if (availableLanguages.length === 0) {
-                    await initializeLanguages();
-                }
+                if (availableLanguages.length === 0) await initializeLanguages();
                 const langData = availableLanguages.find(l => l.code === userLanguage);
                 if (langData) {
                     document.getElementById('languageFlag').textContent = langData.flag;
-                    // Use translated language description instead of code
                     const langDescription = getTranslation('int.language.description');
                     document.getElementById('languageDisplay').textContent = langDescription !== 'int.language.description' ? langDescription : userLanguage;
                 } else {
@@ -1081,12 +990,8 @@
                 }
             }
 
-            // Currency - ensure currencies are loaded with correct language
             if (userCurrency) {
-                // Reload currencies if not available or not containing user's currency
-                if (currencies.length === 0 || !currencies.find(c => c.currency === userCurrency)) {
-                    await loadCurrencies(userLanguage || 'it_IT');
-                }
+                if (currencies.length === 0 || !currencies.find(c => c.currency === userCurrency)) await loadCurrencies(userLanguage || 'it_IT');
                 const currData = currencies.find(c => c.currency === userCurrency);
                 if (currData && currData['img.currency.flag']) {
                     document.getElementById('currencyDisplay').textContent = `${currData['img.currency.flag']} ${userCurrency}`;
@@ -1160,22 +1065,10 @@
                 body: JSON.stringify(payload)
             });
 
-            if (!response.ok) {
-                throw new Error('Errore caricamento accounts');
-            }
+            if (!response.ok) throw new Error('Errore caricamento accounts');
 
             const data = await response.json();
-            console.log('📥 getaccounts raw:', data);
-
-            /*
-              data.accounts = [
-                { "0527779": {...}, "0527779C": {...}, ... },
-                { "E1": {...} }
-              ]
-            */
-
             accountsData = [];
-
             const blocks = Array.isArray(data.accounts) ? data.accounts : [];
             blocks.forEach(block => {
                 if (block && typeof block === 'object') {
@@ -1191,62 +1084,10 @@
                     });
                 }
             });
-
-            console.log('✅ accountsData flatten:', accountsData);
         }
 
-        // --- New global to hold accounts fetched from /getaccounts
-        //let accountsData = []; // [{id_account, account_type, description, ...}, ...]
-
-        // --- Utility to safely extract accounts from various API shapes
-        function normalizeAccountsApiResponse(data) {
-            const out = [];
-            // Case 1: server returns { accounts: [ {id_account:..., account_type:...}, ... ] }
-            if (data && Array.isArray(data.accounts)) {
-                data.accounts.forEach(a => out.push(a));
-                return out;
-            }
-
-            // Case 2: server returns an array where each element is an object mapping id->object (like uploaded accounts.json)
-            if (Array.isArray(data) && data.length > 0) {
-                data.forEach(element => {
-                    if (element && typeof element === 'object') {
-                        Object.keys(element).forEach(key => {
-                            const item = element[key];
-                            // If item already contains id_account, push it
-                            if (item && item.id_account) out.push(item);
-                            else if (item && item.account && item.account.id_account) out.push(item.account);
-                        });
-                    }
-                });
-                if (out.length) return out;
-            }
-
-            // Case 3: server returns object where keys are account ids: { "0527779": {...}, "E1": {...} }
-            if (data && typeof data === 'object' && !Array.isArray(data)) {
-                Object.keys(data).forEach(key => {
-                    const item = data[key];
-                    if (item && item.id_account) out.push(item);
-                });
-                if (out.length) return out;
-            }
-
-            // Fallback: if data is already an array of flat accounts
-            if (Array.isArray(data)) {
-                data.forEach(item => { if (item && item.id_account) out.push(item); });
-            }
-
-            return out;
-        }
-
-        // --- Modified part of loadFilter: after filterData is assigned, ensure accounts are loaded and merged
-        // Replace the section in your existing loadFilter() after `filterData = loaded;` with the lines below.
         async function _afterFilterLoaded_mergeAccounts() {
-            // Ensure accounts from /getaccounts are loaded
             await loadAccounts();
-
-            // If filterData contains Account.list (older format), keep it too but synchronize selected flags
-            // Build a lookup map from filterData for default selected flags
             const selectedMap = {};
             const fAccountList = (filterData && (filterData.Account && filterData.Account.list)) ? filterData.Account.list :
                 (filterData && filterData.Filter && filterData.Filter.accounts ? filterData.Filter.accounts : null);
@@ -1257,7 +1098,6 @@
                 });
             }
 
-            // If accountsData is empty, fallback to filterData account list structure (convert if needed)
             if ((!accountsData || accountsData.length === 0) && Array.isArray(fAccountList) && fAccountList.length > 0) {
                 accountsData = fAccountList.map(a => ({
                     id_account: String(a.id_account || a.id || '').trim(),
@@ -1267,22 +1107,17 @@
                 }));
             }
 
-            // Apply default selection based on selectedMap
             accountsData.forEach(a => {
                 const id = String(a.id_account || '').trim();
                 a.selected = !!selectedMap[id];
             });
 
-            // If filterData.Account.list exists but doesn't contain items for accountsData, keep any missing entries
             if (Array.isArray(filterData?.Account?.list)) {
-                // Merge selected flags back to filterData.Account.list entries when ids match
                 filterData.Account.list.forEach(fdItem => {
                     const found = accountsData.find(ad => ad.id_account === String(fdItem.id_account).trim());
                     if (found) {
-                        // keep fdItem.raw metadata but sync selected
                         found.selected = !!fdItem.selected || !!found.selected;
                     } else {
-                        // keep fdItem as-is in accountsData so renderReportsList sees it
                         accountsData.push({
                             id_account: String(fdItem.id_account || '').trim(),
                             account_type: fdItem.account_type || '',
@@ -1293,19 +1128,13 @@
                     }
                 });
             }
-
-            // Finally ensure selectedAccounts array is rebuilt from accountsData
             selectedAccounts = accountsData.filter(a => a.selected).map(a => a.id_account);
-            console.log('selectedAccounts (after merging accounts):', selectedAccounts);
         }
 
-        // --- Modified renderReportsList: prefer accountsData over filterData.Account.list
-        // Replace the existing renderReportsList() implementation with the one below.
         async function renderReportsList_patched() {
             const container = document.getElementById('reports-list');
             container.innerHTML = '';
 
-            // Build accountsList from accountsData (which should already contain selected flags)
             let accountsList = Array.isArray(accountsData) ? accountsData.map(a => ({
                 id_account: a.id_account,
                 account_type: a.account_type,
@@ -1313,7 +1142,6 @@
                 selected: !!a.selected
             })) : [];
 
-            // If still empty, try fallback to filterData structures
             if ((!accountsList || accountsList.length === 0) && filterData) {
                 const fallback = (filterData.Account && filterData.Account.list) ? filterData.Account.list : (filterData.Filter && filterData.Filter.accounts ? filterData.Filter.accounts : []);
                 if (Array.isArray(fallback)) {
@@ -1328,7 +1156,6 @@
 
             if (!Array.isArray(accountsList) || accountsList.length === 0) {
                 container.innerHTML = `<p style="color:#999;">${getTranslation('int.error.loading.account') || 'Nessun rapporto trovato'}</p>`;
-                // Expand and highlight as before
                 const filterSection = document.getElementById('filter-section');
                 if (filterSection) {
                     const content = filterSection.querySelector('.collapsible-content');
@@ -1349,18 +1176,9 @@
                 return;
             }
 
-            // Rebuild selectedAccounts from accountsList (ensure consistency)
             selectedAccounts = accountsList.filter(a => a.selected).map(a => a.id_account);
-            console.log('selectedAccounts (rebuilt from accountsList):', selectedAccounts);
+            accountsList.sort((a, b) => String(a.description || '').localeCompare(String(b.description || '')));
 
-            // Sort by description
-            accountsList.sort((a, b) => {
-                const descA = String(a.description || '');
-                const descB = String(b.description || '');
-                return descA.localeCompare(descB);
-            });
-
-            // Create table
             const table = document.createElement('table');
             table.style.cssText = 'width: 100%; border-collapse: collapse; color: var(--text-color);';
 
@@ -1385,7 +1203,6 @@
 
             thead.appendChild(headerRow);
             table.appendChild(thead);
-
             const tbody = document.createElement('tbody');
 
             accountsList.forEach((item, index) => {
@@ -1406,14 +1223,8 @@
                         const idx = selectedAccounts.indexOf(item.id_account);
                         if (idx > -1) selectedAccounts.splice(idx, 1);
                     }
-                    // reflect change into accountsData if present
                     const raw = accountsData.find(a => a.id_account === item.id_account);
                     if (raw) raw.selected = checkbox.checked;
-                    // also try to reflect into filterData for persistence
-                    if (Array.isArray(filterData?.Account?.list)) {
-                        const fd = filterData.Account.list.find(a => String(a.id_account).trim() === String(item.id_account).trim());
-                        if (fd) fd.selected = checkbox.checked;
-                    }
                     updateSelectAllCheckbox();
                     filterAndRenderTables();
                 });
@@ -1452,19 +1263,9 @@
             }
         }
 
-        // --- How to integrate:
-        // 1) In loadFilter(), after `filterData = loaded;` add:
-        //    await _afterFilterLoaded_mergeAccounts();
-        // 2) Replace your existing renderReportsList() with renderReportsList_patched (rename if you prefer).
-        // 3) Make sure loadFilter() is awaited in initialization (it already is in your code).
-
-        // End of patch
-
-
         async function loadFilter() {
             try {
                 showMessage(getTranslation('int.loading.filters') || 'Caricamento filtri e account in corso...', 'loading');
-
                 const payload = {
                     username: credentials.username || "",
                     token: credentials.token || "",
@@ -1473,8 +1274,6 @@
                     code: ""
                 };
 
-                console.log('📤 POST /getfilter', JSON.stringify(payload));
-
                 const response = await fetch(`${API_URL}/getfilter`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -1482,9 +1281,8 @@
                 });
 
                 if (!response.ok) {
-
                     if (response.status === 401 || response.status === 403) {
-                        showMessage(getTranslation('int.session.expired') || 'Sessione scaduta. Effettua nuovamente il login.', 'error');
+                        showMessage(getTranslation('int.session.expired') || 'Sessione scaduta.', 'error');
                         setTimeout(redirectToLogin, 2000);
                         return;
                     }
@@ -1492,268 +1290,57 @@
                 }
 
                 const data = await response.json();
-                console.log('getfilter response:', data);
-
                 let loaded = null;
-                if (data && data.Filter && data.Account) {
-                    loaded = data;
-                } else if (data && data.filter && data.filter.Filter) {
-                    loaded = data.filter;
-                } else if (data.status === 'ok' && data.data && data.data.Filter) {
-                    loaded = data.data;
-                } else {
-                    loaded = data;
-                }
+                if (data && data.Filter && data.Account) loaded = data;
+                else if (data && data.filter && data.filter.Filter) loaded = data.filter;
+                else if (data.status === 'ok' && data.data && data.data.Filter) loaded = data.data;
+                else loaded = data;
 
-                if (!loaded || !loaded.Filter) {
-                    throw new Error('Formato filter.json non valido');
-                }
+                if (!loaded || !loaded.Filter) throw new Error('Formato filter.json non valido');
 
                 filterData = loaded;
                 await _afterFilterLoaded_mergeAccounts();
-
                 syncSelectedAccountsFromFilter();
-
                 populateFilterUI();
-                renderReportsList();
-                // Trigger table render after selectedAccounts is initialized
+                renderReportsList_patched();
                 filterAndRenderTables();
                 await updateUserInfo();
-
                 showMessage(getTranslation('int.filters.loaded') || 'Filtri e account caricati', 'success');
             } catch (error) {
                 console.error('Errore loadFilter', error);
-                showMessage((getTranslation('int.error.loading.filters') || 'Errore nel caricamento dei filtri') + ': ' + (error.message || error), 'error');
-                document.getElementById('reports-list').innerHTML = '<p style="color:#c33;">' + (getTranslation('int.error.loading.account') || 'Errore nel caricamento dei rapporti') + '</p>';
-
-                // Force open filters on error/missing data
-                const filterSection = document.getElementById('filter-section');
-                if (filterSection) {
-                    const content = filterSection.querySelector('.collapsible-content');
-                    if (content) {
-                        content.classList.add('active');
-                        content.style.display = 'block';
-                    }
-                    const toggleBtn = filterSection.querySelector('.toggle-btn');
-                    if (toggleBtn) toggleBtn.textContent = '-';
-                }
-                const createBtn = document.getElementById('createAccountBtn');
-                if (createBtn) {
-                    createBtn.style.animation = 'pulse-highlight 1.5s infinite';
-                    createBtn.style.border = '2px solid var(--neon-cyan)';
-                    createBtn.style.boxShadow = '0 0 15px var(--neon-cyan)';
-                    setTimeout(() => createBtn.scrollIntoView({ behavior: 'smooth', block: 'center' }), 500);
-                }
+                showMessage((getTranslation('int.error.loading.filters') || 'Errore nel caricamento dei filtri'), 'error');
             }
         }
 
         function syncSelectedAccountsFromFilter() {
             selectedAccounts = [];
-
             const accountsFilter = filterData?.Filter?.accounts;
             if (!Array.isArray(accountsFilter)) return;
-
-            accountsFilter.forEach(a => {
-                if (a.selected) {
-                    selectedAccounts.push(String(a.id_account));
-                }
-            });
+            accountsFilter.forEach(a => { if (a.selected) selectedAccounts.push(String(a.id_account)); });
         }
-
 
         function populateFilterUI() {
             const f = filterData.Filter || {};
-
-            // Date
             if (f.date_start) document.getElementById('date-start').value = f.date_start;
             if (f.date_end) document.getElementById('date-end').value = f.date_end;
 
-            // Portfolio (combobox singolo)
             const portfolioSelect = document.getElementById('portfolio');
             portfolioSelect.innerHTML = `<option value="">${getTranslation('int.select.option') || '-- seleziona --'}</option>`;
-
             if (Array.isArray(f.portfolio)) {
                 f.portfolio.forEach(p => {
                     const opt = document.createElement('option');
-                    opt.value = p.value;
-                    opt.textContent = p.value;
-                    opt.selected = p.selected;
+                    opt.value = p.value; opt.textContent = p.value; opt.selected = p.selected;
                     portfolioSelect.appendChild(opt);
                 });
             }
 
-            // Yield/Profitability (combobox singolo)
             const profitabilitySelect = document.getElementById('profitability');
             profitabilitySelect.innerHTML = `<option value="">${getTranslation('int.select.option') || '-- seleziona --'}</option>`;
-
             if (Array.isArray(f.yield)) {
                 f.yield.forEach(y => {
                     const opt = document.createElement('option');
-                    opt.value = y.value;
-                    opt.textContent = y.value;
-                    opt.selected = y.selected;
+                    opt.value = y.value; opt.textContent = y.value; opt.selected = y.selected;
                     profitabilitySelect.appendChild(opt);
-                });
-            }
-        }
-
-        function renderReportsList() {
-            const container = document.getElementById('reports-list');
-            container.innerHTML = '';
-
-            if (!accountsData.length) {
-                container.innerHTML = '<p style="color:#999">Nessun rapporto disponibile</p>';
-                return;
-            }
-
-
-            const accountsList = accountsData; // <-- NON filterData.Account.list
-
-
-            if (!Array.isArray(accountsList) || accountsList.length === 0) {
-                container.innerHTML = `<p style="color:#999;">${getTranslation('int.error.loading.account') || 'Nessun rapporto trovato'}</p>`;
-
-                // Expand the filter section if no accounts
-                const filterSection = document.getElementById('filter-section');
-                if (filterSection) {
-                    const content = filterSection.querySelector('.collapsible-content');
-                    if (content) {
-                        content.classList.add('active');
-                        content.style.display = 'block'; // Force visibility
-                    }
-                    const toggleBtn = filterSection.querySelector('.toggle-btn');
-                    if (toggleBtn) toggleBtn.textContent = '-';
-                }
-
-                // Highlight the "Crea rapporto" button
-                const createBtn = document.getElementById('createAccountBtn');
-                if (createBtn) {
-                    console.log("✨ Highlighting Create Account button");
-                    createBtn.style.animation = 'pulse-highlight 1.5s infinite';
-                    createBtn.style.border = '2px solid var(--neon-cyan)';
-                    createBtn.style.boxShadow = '0 0 15px var(--neon-cyan)';
-                    // Ensure it's scrolled into view
-                    setTimeout(() => {
-                        createBtn.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    }, 500);
-                }
-
-                return;
-            }
-
-            // Always rebuild selectedAccounts from filterData - use full id_account
-            selectedAccounts = [];
-            accountsList.forEach(item => {
-                if (item.selected) {
-                    selectedAccounts.push(item.id_account);
-                }
-            });
-            console.log('selectedAccounts (rebuilt from filterData):', selectedAccounts);
-
-            // Sort accounts by description
-            accountsList.sort((a, b) => {
-                const descA = String(a.description || '');
-                const descB = String(b.description || '');
-                return descA.localeCompare(descB);
-            });
-
-            // Create table
-            const table = document.createElement('table');
-            table.style.cssText = 'width: 100%; border-collapse: collapse; color: var(--text-color);';
-
-            // Table header
-            const thead = document.createElement('thead');
-            const headerRow = document.createElement('tr');
-            headerRow.style.cssText = 'background: rgba(0, 243, 255, 0.1); border-bottom: 2px solid var(--neon-cyan);';
-
-            const th1 = document.createElement('th');
-            th1.style.cssText = 'padding: 8px; text-align: left; width: 30px;';
-            th1.innerHTML = '<input type="checkbox" id="select-all-accounts" style="cursor: pointer;" />';
-            headerRow.appendChild(th1);
-
-            const th2 = document.createElement('th');
-            th2.style.cssText = 'padding: 8px; text-align: left;';
-            th2.textContent = getTranslation('int.account.code') || 'Codice';
-            headerRow.appendChild(th2);
-
-            const th3 = document.createElement('th');
-            th3.style.cssText = 'padding: 8px; text-align: left;';
-            th3.textContent = getTranslation('int.account.description') || 'Descrizione';
-            headerRow.appendChild(th3);
-
-            thead.appendChild(headerRow);
-            table.appendChild(thead);
-
-            // Table body
-            const tbody = document.createElement('tbody');
-
-            accountsList.forEach((item, index) => {
-                const tr = document.createElement('tr');
-                tr.style.cssText = `border-bottom: 1px solid rgba(0, 243, 255, 0.2); ${index % 2 === 0 ? 'background: rgba(0, 243, 255, 0.05);' : ''}`;
-
-                // Checkbox cell
-                const td1 = document.createElement('td');
-                td1.style.cssText = 'padding: 8px; text-align: center;';
-                const checkbox = document.createElement('input');
-                checkbox.type = 'checkbox';
-                checkbox.id = `account-${item.id_account}`;
-                checkbox.checked = selectedAccounts.includes(item.id_account);
-                checkbox.style.cursor = 'pointer';
-                checkbox.addEventListener('change', () => {
-                    const id = item.id_account;
-
-                    if (checkbox.checked) {
-                        if (!selectedAccounts.includes(id)) {
-                            selectedAccounts.push(id);
-                        }
-                    } else {
-                        selectedAccounts = selectedAccounts.filter(a => a !== id);
-                    }
-
-                    updateSelectAllCheckbox();
-                    filterAndRenderTables();
-                });
-                td1.appendChild(checkbox);
-                tr.appendChild(td1);
-
-                // ID Account cell
-                const td2 = document.createElement('td');
-                td2.style.cssText = 'padding: 8px;';
-                td2.textContent = item.id_account;
-                tr.appendChild(td2);
-
-                // Description cell
-                const td3 = document.createElement('td');
-                td3.style.cssText = 'padding: 8px;';
-                td3.textContent = item.account_type || item.account_sector || '';
-                tr.appendChild(td3);
-
-
-
-                tbody.appendChild(tr);
-            });
-
-            table.appendChild(tbody);
-            container.appendChild(table);
-
-            // Summary
-            const summary = document.createElement('p');
-            summary.style.marginTop = '15px';
-            summary.style.color = '#555';
-            summary.style.fontSize = '13px';
-            summary.innerHTML = `<strong>${accountsList.length}</strong> ${getTranslation('int.reports.available') || 'rapporti disponibili'}`;
-            container.appendChild(summary);
-
-            // Setup select-all checkbox
-            const selectAllCheckbox = document.getElementById('select-all-accounts');
-            if (selectAllCheckbox) {
-                updateSelectAllCheckbox();
-                selectAllCheckbox.addEventListener('change', () => {
-                    if (selectAllCheckbox.checked) {
-                        selectAllReports();
-                    } else {
-                        deselectAllReports();
-                    }
                 });
             }
         }
@@ -1761,75 +1348,44 @@
         function updateSelectAllCheckbox() {
             const selectAllCheckbox = document.getElementById('select-all-accounts');
             if (!selectAllCheckbox || !filterData?.Account?.list) return;
-
             const allSelected = filterData.Account.list.every(item => item.selected);
             const noneSelected = filterData.Account.list.every(item => !item.selected);
-
             selectAllCheckbox.checked = allSelected;
             selectAllCheckbox.indeterminate = !allSelected && !noneSelected;
         }
 
         function isAccountSelected(accountId) {
             if (!accountId && accountId !== 0) return false;
-
-            // Normalize the account ID to compare
             const normId = String(accountId).trim();
-
-            // Function to normalize account IDs (remove leading zeros for numeric part)
             const normalizeAccountId = (id) => {
                 const str = String(id).trim();
-                // If it's purely numeric, remove leading zeros
-                if (/^\d+$/.test(str)) {
-                    return String(parseInt(str, 10));
-                }
-                // If it has letters, remove leading zeros only from numeric prefix
+                if (/^\d+$/.test(str)) return String(parseInt(str, 10));
                 const match = str.match(/^(0*)(\d+)(.*)$/);
-                if (match) {
-                    return String(parseInt(match[2], 10)) + match[3];
-                }
+                if (match) return String(parseInt(match[2], 10)) + match[3];
                 return str;
             };
-
             const normalizedId = normalizeAccountId(normId);
-
-            // Debug logging (rimuovi in produzione)
-            console.log('Checking account:', normId, '→ normalized:', normalizedId, 'against:', selectedAccounts);
-
-            // Check if this account is in selectedAccounts
-            const isSelected = selectedAccounts.some(acc => {
-                const normalizedAcc = normalizeAccountId(acc);
-                const match = normalizedAcc === normalizedId;
-                if (match) {
-                    console.log('✅ MATCH:', acc, '→', normalizedAcc, '===', normalizedId);
-                }
-                return match;
-            });
-
-            console.log('Result:', isSelected);
-            return isSelected;
+            return selectedAccounts.some(acc => normalizeAccountId(acc) === normalizedId);
         }
 
         function selectAllReports() {
             selectedAccounts = accountsData.map(a => String(a.id_account));
-            renderReportsList();
+            renderReportsList_patched();
             filterAndRenderTables();
         }
 
         function deselectAllReports() {
             selectedAccounts = [];
-            renderReportsList();
+            renderReportsList_patched();
             filterAndRenderTables();
         }
 
-
         function filterAndRenderTables() {
-            // Use the selectedAccounts array directly (global variable)
             renderTable();
             renderProfitabilityTable();
         }
 
         function createNewAccount() {
-            // Open dashboard-account.html with credentials
             const params = new URLSearchParams({
                 username: credentials.username || "",
                 token: credentials.token || "",
@@ -1842,37 +1398,24 @@
         // ========== APPLY FILTERS ==========
         async function applyFiltersAndSave() {
             try {
-                if (!filterData) {
-                    showMessage(getTranslation('int.error.no.data') || 'Impossibile applicare filtri: dati non caricati', 'error');
-                    return;
-                }
-
+                if (!filterData) return;
                 const dateStart = document.getElementById('date-start').value;
                 const dateEnd = document.getElementById('date-end').value;
                 const portfolioSelect = document.getElementById('portfolio');
                 const profitabilitySelect = document.getElementById('profitability');
 
-                // Aggiorna Filter
                 if (!filterData.Filter) filterData.Filter = {};
                 filterData.Filter.date_start = dateStart || filterData.Filter.date_start || '';
                 filterData.Filter.date_end = dateEnd || filterData.Filter.date_end || '';
 
-                // Aggiorna portfolio
                 if (Array.isArray(filterData.Filter.portfolio)) {
-                    filterData.Filter.portfolio.forEach(p => {
-                        p.selected = (p.value === portfolioSelect.value);
-                    });
+                    filterData.Filter.portfolio.forEach(p => { p.selected = (p.value === portfolioSelect.value); });
                 }
-
-                // Aggiorna yield
                 if (Array.isArray(filterData.Filter.yield)) {
-                    filterData.Filter.yield.forEach(y => {
-                        y.selected = (y.value === profitabilitySelect.value);
-                    });
+                    filterData.Filter.yield.forEach(y => { y.selected = (y.value === profitabilitySelect.value); });
                 }
 
                 showMessage(getTranslation('int.sending.filters') || 'Invio filtri al server...', 'loading');
-
                 const payload = {
                     username: credentials.username || "",
                     token: credentials.token || "",
@@ -1881,43 +1424,24 @@
                     code: ""
                 };
 
-                console.log('📤 POST /putfilter', payload);
-
                 const response = await fetch(`${API_URL}/putfilter`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
                 });
 
-                console.log('📥 status', response.status);
-
-                if (!response.ok) {
-                    if (response.status === 401 || response.status === 403) {
-                        showMessage(getTranslation('int.session.expired') || 'Sessione scaduta. Effettua nuovamente il login.', 'error');
-                        setTimeout(redirectToLogin, 2000);
-                        return;
-                    }
-                    const text = await response.text().catch(() => null);
-                    throw new Error(`HTTP ${response.status} ${text ? '- ' + text : ''}`);
-                }
-
-                const respJson = await response.json().catch(() => null);
-                console.log('putfilter response', respJson);
-
-                showMessage(getTranslation('int.filters.updated') || 'Filtri aggiornati e inviati correttamente', 'success');
-
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                showMessage(getTranslation('int.filters.updated') || 'Filtri aggiornati', 'success');
                 await loadFilter();
             } catch (error) {
-                console.error('Errore applyFiltersAndSave', error);
-                showMessage((getTranslation('int.error.sending.filters') || 'Errore nell\'invio dei filtri') + ': ' + (error.message || error), 'error');
+                showMessage((getTranslation('int.error.sending.filters') || 'Errore') + ': ' + error.message, 'error');
             }
         }
 
         // ========== PDF ==========
         async function loadPDF() {
             try {
-                showMessage(getTranslation('int.loading.pdf') || 'Caricamento PDF in corso...', 'loading');
-
+                showMessage(getTranslation('int.loading.pdf') || 'Caricamento PDF...', 'loading');
                 const payload = {
                     username: credentials.username || "",
                     token: credentials.token || "",
@@ -1925,31 +1449,17 @@
                     filter: credentials.filter || "",
                     code: ""
                 };
-
-                console.log('Payload loadPDF', JSON.stringify(payload));
-
                 const response = await fetch(`${API_URL}/getreport`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
                 });
-
-                if (!response.ok) {
-                    if (response.status === 401 || response.status === 403) {
-                        showMessage(getTranslation('int.session.expired') || 'Sessione scaduta. Effettua nuovamente il login.', 'error');
-                        setTimeout(redirectToLogin, 2000);
-                        return;
-                    }
-                    throw new Error('HTTP ' + response.status);
-                }
-
+                if (!response.ok) throw new Error('HTTP ' + response.status);
                 const data = await response.json();
-                if (!data || data.status !== 'ok' || !data.pdf_data) throw new Error(data && data.message ? data.message : 'PDF non disponibile');
-
+                if (!data || data.status !== 'ok' || !data.pdf_data) throw new Error('PDF non disponibile');
                 displayPDF(data.pdf_data);
             } catch (error) {
-                console.error('Errore loadPDF', error);
-                showMessage((getTranslation('int.error.loading.pdf') || 'Errore nel caricamento del PDF') + ': ' + (error.message || error), 'error');
+                showMessage((getTranslation('int.error.loading.pdf') || 'Errore') + ': ' + error.message, 'error');
             }
         }
 
@@ -1961,24 +1471,19 @@
                 for (let i = 0; i < byteCharacters.length; i++) byteNumbers[i] = byteCharacters.charCodeAt(i);
                 const byteArray = new Uint8Array(byteNumbers);
                 const pdfBlob = new Blob([byteArray], { type: 'application/pdf' });
-                if (pdfBlob.size === 0) throw new Error('PDF vuoto');
                 const pdfUrl = URL.createObjectURL(pdfBlob);
                 const pdfFrame = document.getElementById('pdfFrame');
                 pdfFrame.src = pdfUrl;
-                pdfFrame.onload = () => showMessage(getTranslation('int.pdf.loaded') || 'PDF caricato con successo', 'success');
+                pdfFrame.onload = () => showMessage(getTranslation('int.pdf.loaded') || 'PDF caricato', 'success');
                 document.getElementById('pdfViewer').style.display = 'block';
                 document.getElementById('pdfViewer').scrollIntoView({ behavior: 'smooth' });
             } catch (error) {
                 console.error('displayPDF error', error);
-                showMessage((getTranslation('int.error.display.pdf') || 'Errore nel display del PDF') + ': ' + (error.message || error), 'error');
             }
         }
 
         function downloadPDF() {
-            if (!pdfBase64) {
-                showMessage(getTranslation('int.no.pdf') || 'Nessun PDF caricato', 'error');
-                return;
-            }
+            if (!pdfBase64) return;
             try {
                 const byteCharacters = atob(pdfBase64);
                 const byteNumbers = new Array(byteCharacters.length);
@@ -1993,16 +1498,14 @@
                 a.click();
                 document.body.removeChild(a);
                 URL.revokeObjectURL(url);
-                showMessage(getTranslation('int.download.started') || 'Download avviato', 'success');
             } catch (error) {
                 console.error('downloadPDF error', error);
-                showMessage((getTranslation('int.error.download.pdf') || 'Errore nel download del PDF') + ': ' + (error.message || error), 'error');
             }
         }
 
         // ========== PORTFOLIO TABLE ==========
         let portfolioData = [];
-        let classificationMap = {}; // Map id_instrument -> classification object
+        let classificationMap = {};
         let tableColumns = [];
         let currentSort = { column: null, direction: 'asc' };
         let currentGroup = null;
@@ -2016,162 +1519,71 @@
                     filter: "",
                     code: ""
                 };
-
-                console.log("📤 POST /getportfolio", JSON.stringify(payload));
-
                 const response = await fetch(`${API_URL}/getportfolio`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
                 });
-
-                if (!response.ok) {
-                    const errorBody = await response.json().catch(() => null);
-                    console.error("Server responded with 422:", errorBody);
-                    throw new Error('HTTP ' + response.status + (errorBody ? `: ${JSON.stringify(errorBody)}` : ''));
-                }
+                if (!response.ok) throw new Error('HTTP ' + response.status);
                 const data = await response.json();
-
                 if (data.status === 'ok') {
-
-                    console.info('web classification : ', data.classification);
-                    console.info('web portfolio: ', data.portfolio);
-
-                    const debugPortfolio = data.portfolio || {};
-                    const rawKeys = Array.isArray(debugPortfolio) ? debugPortfolio.length : Object.keys(debugPortfolio).length;
-                    console.info('📊 Portfolio items received:', rawKeys);
-                    if (rawKeys > 0) {
-                        const firstItem = Array.isArray(debugPortfolio) ? debugPortfolio[0] : debugPortfolio[Object.keys(debugPortfolio)[0]];
-                        console.info('🔍 First portfolio item structure:', firstItem);
-                    }
-
-                    // Parse Classification
                     classificationMap = {};
                     let classificationList = data.classification;
-
-                    // FIX: Handle case where classification is a string representation of a list (Python str())
                     if (typeof classificationList === 'string') {
-                        try {
-                            // Replace single quotes with double quotes to make it valid JSON
-                            // This is a workaround for the backend bug
-                            const validJson = classificationList.replace(/'/g, '"');
-                            classificationList = JSON.parse(validJson);
-                        } catch (e) {
-                            console.error('Error parsing classification string:', e);
-                            classificationList = [];
-                        }
+                        try { classificationList = JSON.parse(classificationList.replace(/'/g, '"')); }
+                        catch (e) { classificationList = []; }
                     }
-
                     if (Array.isArray(classificationList)) {
-                        classificationList.forEach(item => {
-                            if (item.id_instrument) {
-                                classificationMap[item.id_instrument] = item;
-                            }
-                        });
+                        classificationList.forEach(item => { if (item.id_instrument) classificationMap[item.id_instrument] = item; });
                         localStorage.setItem('classificationMap', JSON.stringify(classificationMap));
                     }
-
-                    // Parse Portfolio: [[Symbol, {data}], ...] -> [{Ticker: Symbol, ...data}]
-                    portfolioData = [];
-                    // Parse Portfolio: Object { Ticker: {details} } or Array [[Ticker, {details}]]
                     portfolioData = [];
                     const rawPortfolio = data.portfolio || {};
-
                     const parsePortfolioItem = (symbol, details) => {
                         const flatItem = { Ticker: symbol };
                         if (details && typeof details === 'object') {
                             Object.keys(details).forEach(key => {
                                 let val = details[key];
-                                if (typeof val === 'string' && val.trim() !== '') {
-                                    // Regex for strict number: optional minus, digits, optional dot+digits
-                                    const numberRegex = /^-?\d+(\.\d+)?$/;
-                                    if (numberRegex.test(val)) {
-                                        flatItem[key] = parseFloat(val);
-                                    } else {
-                                        flatItem[key] = val;
-                                    }
-                                } else {
-                                    flatItem[key] = val;
-                                }
+                                if (typeof val === 'string' && /^-?\d+(\.\d+)?$/.test(val.trim())) flatItem[key] = parseFloat(val);
+                                else flatItem[key] = val;
                             });
                         }
                         return flatItem;
                     };
-
                     if (Array.isArray(rawPortfolio)) {
-                        rawPortfolio.forEach(entry => {
-                            if (Array.isArray(entry) && entry.length === 2) {
-                                portfolioData.push(parsePortfolioItem(entry[0], entry[1]));
-                            }
-                        });
-                    } else if (typeof rawPortfolio === 'object' && rawPortfolio !== null) {
-                        Object.keys(rawPortfolio).forEach(symbol => {
-                            portfolioData.push(parsePortfolioItem(symbol, rawPortfolio[symbol]));
-                        });
+                        rawPortfolio.forEach(entry => { if (Array.isArray(entry) && entry.length === 2) portfolioData.push(parsePortfolioItem(entry[0], entry[1])); });
+                    } else if (typeof rawPortfolio === 'object') {
+                        Object.keys(rawPortfolio).forEach(symbol => portfolioData.push(parsePortfolioItem(symbol, rawPortfolio[symbol])));
                     }
-
                     if (portfolioData.length > 0) {
-                        // Calculate percentage column for each item: (M/P / cost_amount) * 100
                         portfolioData.forEach(item => {
-                            const mp = item['M/P'];
-                            const cost = item['cost_amount'];
-                            if (typeof mp === 'number' && typeof cost === 'number' && cost !== 0) {
-                                item['%'] = parseFloat(((mp / cost) * 100).toFixed(1));
-                            } else {
-                                item['%'] = null;
-                            }
+                            const mp = item['M/P']; const cost = item['cost_amount'];
+                            if (typeof mp === 'number' && typeof cost === 'number' && cost !== 0) item['%'] = parseFloat(((mp / cost) * 100).toFixed(1));
+                            else item['%'] = null;
                         });
-
-                        // Determine columns from all items
-                        if (portfolioColumns.length > 0) {
-                            // Use columns from manifest and add % at the end
-                            tableColumns = [...portfolioColumns, '%'];
-                        } else {
-                            // Fallback: dynamic discovery
+                        if (portfolioColumns.length > 0) tableColumns = [...portfolioColumns, '%'];
+                        else {
                             const allKeys = new Set();
-                            portfolioData.forEach(item => {
-                                Object.keys(item).forEach(k => allKeys.add(k));
-                            });
-                            const keys = Array.from(allKeys);
-                            // Remove Ticker from visible columns if present
-                            tableColumns = keys.filter(k => k !== 'Ticker');
+                            portfolioData.forEach(item => Object.keys(item).forEach(k => allKeys.add(k)));
+                            tableColumns = Array.from(allKeys).filter(k => k !== 'Ticker');
                         }
-
-                        console.log('✅ Portfolio Data parsed:', portfolioData.length, 'items');
-                        console.log('✅ Table Columns:', tableColumns);
-                    } else {
-                        console.warn('⚠️ Portfolio Data is empty after parsing');
                     }
-
                     populateGroupingSelect(classificationList);
                     renderTable();
                     document.getElementById('portfolio-section').style.display = 'block';
-                } else {
-                    console.error('Portfolio error:', data);
                 }
-            } catch (error) {
-                console.error('Error loading portfolio:', error);
-            }
+            } catch (error) { console.error('Error loading portfolio:', error); }
         }
 
         function populateGroupingSelect(classificationList) {
             const select = document.getElementById('grouping-select');
             select.innerHTML = `<option value="">${getTranslation('int.noselection') || 'Nessun raggruppamento'}</option>`;
-
-
             let keys = [];
-            // Use classificationFilter from manifest if available
-            if (classificationFilter && classificationFilter.length > 0) {
-                keys = classificationFilter;
-            } else if (Array.isArray(classificationList) && classificationList.length > 0) {
-                // Fallback to keys from the first classification item
-                keys = Object.keys(classificationList[0]).filter(k => k !== 'id_instrument');
-            }
-
+            if (classificationFilter && classificationFilter.length > 0) keys = classificationFilter;
+            else if (Array.isArray(classificationList) && classificationList.length > 0) keys = Object.keys(classificationList[0]).filter(k => k !== 'id_instrument');
             keys.forEach(key => {
                 const opt = document.createElement('option');
-                opt.value = key;
-                opt.textContent = getTranslation(key) || key;
+                opt.value = key; opt.textContent = getTranslation(key) || key;
                 select.appendChild(opt);
             });
         }
@@ -2181,156 +1593,76 @@
             renderTable();
         }
 
-        function isPercentageColumn(colName) {
-            const lower = colName.toLowerCase();
-            return lower.includes('%');
-        }
-
         function renderTable() {
             const thead = document.getElementById('portfolio-header-row');
             const tbody = document.getElementById('portfolio-body');
-            thead.innerHTML = '';
-            tbody.innerHTML = '';
-
-            // Filter data by selected accounts
+            thead.innerHTML = ''; tbody.innerHTML = '';
             let displayData = [];
+            if (selectedAccounts.length > 0) displayData = portfolioData.filter(item => isAccountSelected(item.id_account));
 
-            // Debug: check what accounts are actually in the data
-            const availableAccounts = [...new Set(portfolioData.map(item => String(item.id_account).trim()))];
-            console.log('Portfolio - available accounts in data:', availableAccounts);
-            console.log('Portfolio - selectedAccounts:', selectedAccounts);
-
-            if (selectedAccounts.length > 0) {
-                displayData = portfolioData.filter(item => isAccountSelected(item.id_account));
-                console.log('Portfolio - filtered to:', displayData.length, 'items');
-            } else {
-                console.log('Portfolio - no accounts selected, showing nothing');
-            }
-
-            // Headers
             tableColumns.forEach((col, index) => {
                 const th = document.createElement('th');
                 th.draggable = true;
                 th.addEventListener('dragstart', (e) => handleDragStart(e, index));
                 th.addEventListener('dragover', handleDragOver);
                 th.addEventListener('drop', (e) => handleDrop(e, index));
-
-                const sortIcon = currentSort.column === col
-                    ? (currentSort.direction === 'asc' ? ' ▲' : ' ▼')
-                    : '';
-
-                // Right-align all headers except the first one
-                if (index > 0) {
-                    th.style.textAlign = 'right';
-                }
-
+                const sortIcon = currentSort.column === col ? (currentSort.direction === 'asc' ? ' ▲' : ' ▼') : '';
+                if (index > 0) th.style.textAlign = 'right';
                 th.innerHTML = `<span style="cursor: pointer;" onclick="sortPortfolio('${col}')">${getTranslation(col) || col}${sortIcon}</span>`;
                 thead.appendChild(th);
             });
 
-            // Filter out zero balance rows if historical mode is disabled
             if (!showHistorical) {
                 displayData = displayData.filter(item => {
                     const quantity = item.quantity;
-                    if (!quantity) return true; // Keep if no quantity field
-
-                    // Extract numeric value from "value:currency" format
+                    if (!quantity) return true;
                     const quantityStr = String(quantity);
                     const colonIndex = quantityStr.indexOf(':');
-                    const numericValue = colonIndex > 0
-                        ? parseFloat(quantityStr.substring(0, colonIndex))
-                        : parseFloat(quantityStr);
-
-                    // Keep row if quantity is not zero
+                    const numericValue = colonIndex > 0 ? parseFloat(quantityStr.substring(0, colonIndex)) : parseFloat(quantityStr);
                     return numericValue !== 0;
                 });
             }
 
-            // Sort
             if (currentSort.column) {
                 displayData.sort((a, b) => {
-                    const valA = a[currentSort.column];
-                    const valB = b[currentSort.column];
+                    const valA = a[currentSort.column]; const valB = b[currentSort.column];
                     if (valA < valB) return currentSort.direction === 'asc' ? -1 : 1;
                     if (valA > valB) return currentSort.direction === 'asc' ? 1 : -1;
                     return 0;
                 });
             }
 
-            // Calculate Totals Helper
             const calculateTotals = (items, columns) => {
                 const totals = {};
                 columns.forEach(col => {
-                    if (col === 'Ticker') {
-                        totals[col] = 'TOTAL';
-                        return;
-                    }
-
-                    // Skip totals for id_account column
-                    if (col === 'id_account') {
-                        totals[col] = '';
-                        return;
-                    }
-
-                    // Skip totals for calculated % column
-                    if (col === '%') {
-                        totals[col] = '';
-                        return;
-                    }
-
-                    // Check translated description for exclusion (contains % or &)
+                    if (col === 'Ticker') { totals[col] = 'TOTAL'; return; }
+                    if (col === 'id_account' || col === '%') { totals[col] = ''; return; }
                     const desc = getTranslation(col) || col;
-                    if (desc.includes('%')) {
-                        totals[col] = '';
-                        return;
-                    }
-
-                    // Check if column is numeric (scan all items to be sure)
-                    const isNumeric = items.some(item => {
-                        const val = item[col];
-                        return typeof val === 'number' || (typeof val === 'string' && /^-?\d+(\.\d+)?$/.test(val));
-                    });
-
+                    if (desc.includes('%')) { totals[col] = ''; return; }
+                    const isNumeric = items.some(item => { const val = item[col]; return typeof val === 'number' || (typeof val === 'string' && /^-?\d+(\.\d+)?$/.test(val)); });
                     if (isNumeric) {
                         const sum = items.reduce((acc, curr) => {
-                            let val = curr[col];
-                            if (typeof val === 'string') val = parseFloat(val);
+                            let val = curr[col]; if (typeof val === 'string') val = parseFloat(val);
                             return acc + (val || 0);
                         }, 0);
                         totals[col] = parseFloat(sum.toFixed(2));
-                    } else {
-                        totals[col] = '';
-                    }
+                    } else totals[col] = '';
                 });
                 return totals;
             };
 
-            // Group
             if (currentGroup) {
                 const groups = {};
                 displayData.forEach(item => {
                     let groupVal = 'int.other';
                     const instrumentId = item.id_instrument;
-                    // Lookup in classification map using id_instrument
-                    // Ensure we handle both string and number types for id_instrument
-                    if (instrumentId !== undefined && instrumentId !== null) {
-                        // Try direct match first
-                        let classObj = classificationMap[instrumentId];
-                        // If not found, try converting to string (if it's a number) or number (if it's a string)
-                        if (!classObj) {
-                            // If classificationMap keys are strings (from JSON), and instrumentId is number
-                            classObj = classificationMap[String(instrumentId)];
-                        }
-
-                        if (classObj && classObj[currentGroup]) {
-                            groupVal = classObj[currentGroup];
-                        }
+                    if (instrumentId) {
+                        let classObj = classificationMap[instrumentId] || classificationMap[String(instrumentId)];
+                        if (classObj && classObj[currentGroup]) groupVal = classObj[currentGroup];
                     }
-
                     if (!groups[groupVal]) groups[groupVal] = [];
                     groups[groupVal].push(item);
                 });
-
                 Object.keys(groups).sort().forEach(group => {
                     const groupItems = groups[group];
                     const trGroup = document.createElement('tr');
@@ -2341,19 +1673,13 @@
                     trGroup.appendChild(tdGroup);
                     tbody.appendChild(trGroup);
                     groupItems.forEach(item => renderRow(item, tbody));
-
-                    // Group Total
                     const groupTotal = calculateTotals(groupItems, tableColumns);
                     renderRow(groupTotal, tbody, true);
                 });
-
-                // Grand Total
                 const grandTotal = calculateTotals(displayData, tableColumns);
                 renderRow(grandTotal, tbody, true, true);
-
             } else {
                 displayData.forEach(item => renderRow(item, tbody));
-                // Grand Total
                 const grandTotal = calculateTotals(displayData, tableColumns);
                 renderRow(grandTotal, tbody, true, true);
             }
@@ -2366,71 +1692,42 @@
                 tr.style.background = isGrandTotal ? 'rgba(0, 243, 255, 0.15)' : 'rgba(0, 102, 255, 0.1)';
                 tr.style.borderTop = isGrandTotal ? '2px solid var(--neon-cyan)' : '1px solid var(--neon-blue)';
             } else {
-                // Make the whole row clickable to open details
                 tr.addEventListener('click', async () => {
                     await selectRow(tr, item);
-                    // Open portfolio details when row is clicked
-                    if (item.id_instrument && item.id_account) {
-                        openPortfolioDetails(item.id_account, item.id_instrument);
-                    }
+                    if (item.id_instrument && item.id_account) openPortfolioDetails(item.id_account, item.id_instrument);
                 });
             }
-
             tableColumns.forEach((col, index) => {
                 const td = document.createElement('td');
                 let val = item[col];
-
-                // If it's the first column and not a total row, style it like a link/primary column
                 if (index === 0 && !isTotal) {
                     const span = document.createElement('span');
                     span.textContent = val !== undefined ? val : '';
-                    span.style.cursor = 'pointer';
-                    span.style.color = 'var(--neon-cyan)';
+                    span.style.cursor = 'pointer'; span.style.color = 'var(--neon-cyan)';
                     td.appendChild(span);
                 } else if (val !== undefined) {
-                    // Check if column description contains "%" and absolute value > 5000
                     const colDescription = getTranslation(col) || col;
                     const isPercentageCol = colDescription.includes('%');
-
-                    // Format numbers
                     if (typeof val === 'number') {
-                        // Display "--" for percentage columns with absolute value > 5000
-                        if (isPercentageCol && Math.abs(val) > 5000) {
-                            td.textContent = '--';
-                        } else {
-                            td.textContent = val.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-                        }
+                        if (isPercentageCol && Math.abs(val) > 5000) td.textContent = '--';
+                        else td.textContent = val.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
                         td.style.textAlign = 'right';
-                    } else {
-                        td.textContent = val;
-                    }
-                } else {
-                    td.textContent = '';
-                }
+                    } else td.textContent = val;
+                } else td.textContent = '';
                 tr.appendChild(td);
             });
             tbody.appendChild(tr);
         }
 
         function sortPortfolio(col) {
-            if (currentSort.column === col) {
-                currentSort.direction = currentSort.direction === 'asc' ? 'desc' : 'asc';
-            } else {
-                currentSort.column = col;
-                currentSort.direction = 'asc';
-            }
+            if (currentSort.column === col) currentSort.direction = currentSort.direction === 'asc' ? 'desc' : 'asc';
+            else { currentSort.column = col; currentSort.direction = 'asc'; }
             renderTable();
         }
 
         let draggedColIndex = null;
-        function handleDragStart(e, index) {
-            draggedColIndex = index;
-            e.dataTransfer.effectAllowed = 'move';
-        }
-        function handleDragOver(e) {
-            e.preventDefault();
-            e.dataTransfer.dropEffect = 'move';
-        }
+        function handleDragStart(e, index) { draggedColIndex = index; e.dataTransfer.effectAllowed = 'move'; }
+        function handleDragOver(e) { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }
         function handleDrop(e, index) {
             e.preventDefault();
             if (draggedColIndex === index) return;
@@ -2445,8 +1742,6 @@
         }
 
         async function openPortfolioDetails(idAccount, idInstrument) {
-            console.log('Open portfolio details for:', idAccount, idInstrument);
-
             try {
                 const payload = {
                     username: credentials.username || "",
@@ -2455,92 +1750,25 @@
                     filter: "",
                     code: `${idAccount}:${idInstrument}` || ""
                 };
-
-                console.log('📤 POST openPortfolioDetails', JSON.stringify(payload));
-
                 const response = await fetch(`${API_URL}/getwallet`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
                 });
-
                 if (!response.ok) throw new Error('HTTP ' + response.status);
                 const data = await response.json();
-
-                if (data.status === 'ok' && data.wallet) {
-                    displayPortfolioDetails(data.wallet, idInstrument);
-                } else {
-                    alert('Portfolio details not available');
-                }
-            } catch (error) {
-                console.error('Error loading portfolio details:', error);
-                alert('Error loading portfolio details');
-            }
+                if (data.status === 'ok' && data.wallet) displayPortfolioDetails(data.wallet, idInstrument);
+                else alert('Portfolio details not available');
+            } catch (error) { console.error('Error loading details:', error); }
         }
 
         function displayPortfolioDetails(walletData, idInstrument) {
-            // Create modal overlay
             const overlay = document.createElement('div');
-            overlay.style.cssText = `
-                position: fixed;
-                top: 0;
-                left: 0;
-                width: 100%;
-                height: 100%;
-                background: rgba(0, 0, 0, 0.8);
-                z-index: 10000;
-                display: flex;
-                justify-content: flex-start;
-                align-items: center;
-                padding: 20px;
-                padding-left: 2%;
-            `;
-
-            // Create modal content
+            overlay.style.cssText = `position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.8); z-index: 10000; display: flex; justify-content: flex-start; align-items: center; padding: 20px; padding-left: 2%;`;
             const modal = document.createElement('div');
-            modal.style.cssText = `
-                background: var(--glass-bg);
-                border: 1px solid var(--neon-cyan);
-                border-radius: 12px;
-                padding: 30px;
-                max-width: 90%;
-                max-height: 90%;
-                overflow-y: auto;
-                box-shadow: 0 0 30px rgba(0, 243, 255, 0.3);
-            `;
-
-            // Get instrument description
+            modal.style.cssText = `background: var(--glass-bg); border: 1px solid var(--neon-cyan); border-radius: 12px; padding: 30px; max-width: 90%; max-height: 90%; overflow-y: auto; box-shadow: 0 0 30px rgba(0, 243, 255, 0.3);`;
             const instrumentDesc = walletData[0]?.instrument?.instrument_description || idInstrument;
-
-            // Build modal HTML
-            let html = `
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                    <h2 style="color: var(--neon-cyan); margin: 0;">${instrumentDesc} - Transaction History</h2>
-                    <button id="close-modal" style="
-                        background: rgba(255, 0, 0, 0.2);
-                        border: 1px solid #ff0000;
-                        color: #ff0000;
-                        padding: 8px 16px;
-                        border-radius: 4px;
-                        cursor: pointer;
-                        font-family: 'Orbitron', sans-serif;
-                    ">Close</button>
-                </div>
-                <table style="width: 100%; border-collapse: collapse; color: var(--text-color);">
-                    <thead>
-                        <tr style="background: rgba(0, 243, 255, 0.1); border-bottom: 2px solid var(--neon-cyan);">
-                            <th style="padding: 10px; text-align: left;">Date</th>
-                            <th style="padding: 10px; text-align: left;">Event</th>
-                            <th style="padding: 10px; text-align: right;">Quantity</th>
-                            <th style="padding: 10px; text-align: right;">Price</th>
-                            <th style="padding: 10px; text-align: right;">Amount</th>
-                            <th style="padding: 10px; text-align: right;">Balance</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-            `;
-
-            // Add transaction rows
+            let html = `<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;"><h2 style="color: var(--neon-cyan); margin: 0;">${instrumentDesc} - Transaction History</h2><button id="close-modal" style="background: rgba(255, 0, 0, 0.2); border: 1px solid #ff0000; color: #ff0000; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-family: 'Orbitron', sans-serif;">Close</button></div><table style="width: 100%; border-collapse: collapse; color: var(--text-color);"><thead><tr style="background: rgba(0, 243, 255, 0.1); border-bottom: 2px solid var(--neon-cyan);"><th style="padding: 10px; text-align: left;">Date</th><th style="padding: 10px; text-align: left;">Event</th><th style="padding: 10px; text-align: right;">Quantity</th><th style="padding: 10px; text-align: right;">Price</th><th style="padding: 10px; text-align: right;">Amount</th><th style="padding: 10px; text-align: right;">Balance</th></tr></thead><tbody>`;
             walletData.forEach((transaction, index) => {
                 const date = transaction.date_evaluation || '-';
                 const event = transaction.event?.event_description || transaction.id_event || '-';
@@ -2548,46 +1776,21 @@
                 const price = transaction.price || '-';
                 const amount = transaction['amount:net'] || transaction.controvaloresupersecco || '-';
                 const balance = transaction.valutazioni?.saldo || '-';
-
-                html += `
-                    <tr style="border-bottom: 1px solid rgba(0, 243, 255, 0.2); ${index % 2 === 0 ? 'background: rgba(0, 243, 255, 0.05);' : ''}">
-                        <td style="padding: 10px;">${date}</td>
-                        <td style="padding: 10px;">${event}</td>
-                        <td style="padding: 10px; text-align: right;">${quantity}</td>
-                        <td style="padding: 10px; text-align: right;">${price}</td>
-                        <td style="padding: 10px; text-align: right;">${amount}</td>
-                        <td style="padding: 10px; text-align: right;">${balance}</td>
-                    </tr>
-                `;
+                html += `<tr style="border-bottom: 1px solid rgba(0, 243, 255, 0.2); ${index % 2 === 0 ? 'background: rgba(0, 243, 255, 0.05);' : ''}"><td style="padding: 10px;">${date}</td><td style="padding: 10px;">${event}</td><td style="padding: 10px; text-align: right;">${quantity}</td><td style="padding: 10px; text-align: right;">${price}</td><td style="padding: 10px; text-align: right;">${amount}</td><td style="padding: 10px; text-align: right;">${balance}</td></tr>`;
             });
-
-            html += `
-                    </tbody>
-                </table>
-            `;
-
+            html += `</tbody></table>`;
             modal.innerHTML = html;
             overlay.appendChild(modal);
             document.body.appendChild(overlay);
-
-            // Close modal handlers
-            document.getElementById('close-modal').addEventListener('click', () => {
-                document.body.removeChild(overlay);
-            });
-            overlay.addEventListener('click', (e) => {
-                if (e.target === overlay) {
-                    document.body.removeChild(overlay);
-                }
-            });
+            document.getElementById('close-modal').addEventListener('click', () => { document.body.removeChild(overlay); });
+            overlay.addEventListener('click', (e) => { if (e.target === overlay) document.body.removeChild(overlay); });
         }
 
         function openTradeDetails(symbol) {
-            console.log('Open trade details for:', symbol);
             window.open(`dashboard-trade.html?code=${encodeURIComponent(symbol)}`, '_blank');
         }
 
         function openTradeYieldDetails(symbol) {
-            console.log('Open trade yield details for:', symbol);
             window.open(`dashboard-tradeyield.html?code=${encodeURIComponent(symbol)}`, '_blank');
         }
 
@@ -2606,156 +1809,78 @@
                     filter: "",
                     code: ""
                 };
-
-                console.log("📤 POST /getportfolioyield", JSON.stringify(payload));
-
                 const response = await fetch(`${API_URL}/getportfolioyield`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
                 });
-
                 if (!response.ok) throw new Error('HTTP ' + response.status);
                 const data = await response.json();
-
                 if (data.status === 'ok') {
-                    //console.info('web profitability classification : ', data.classification);
-                    //console.info('web portfolioyield: ', data.portfolioyield);
-
-                    // Parse Classification
                     classificationMap = {};
                     let classificationList = data.classification;
-
-                    // FIX: Handle case where classification is a string representation of a list (Python str())
                     if (typeof classificationList === 'string') {
-                        try {
-                            // Replace single quotes with double quotes to make it valid JSON
-                            const validJson = classificationList.replace(/'/g, '"');
-                            classificationList = JSON.parse(validJson);
-                        } catch (e) {
-                            console.error('Error parsing classification string:', e);
-                            classificationList = [];
-                        }
+                        try { classificationList = JSON.parse(classificationList.replace(/'/g, '"')); }
+                        catch (e) { classificationList = []; }
                     }
-
                     if (Array.isArray(classificationList)) {
-                        classificationList.forEach(item => {
-                            if (item.id_instrument) {
-                                classificationMap[item.id_instrument] = item;
-                            }
-                        });
+                        classificationList.forEach(item => { if (item.id_instrument) classificationMap[item.id_instrument] = item; });
                         localStorage.setItem('classificationMap', JSON.stringify(classificationMap));
                     }
-
-                    // Parse Profitability Data
-                    // Parse Profitability Data
                     profitabilityData = [];
                     const rawYield = data.portfolioyield || {};
-
                     const parseYieldItem = (symbol, details) => {
                         const flatItem = { Ticker: symbol };
                         if (details && typeof details === 'object') {
                             Object.keys(details).forEach(key => {
                                 let val = details[key];
-                                if (typeof val === 'string' && val.trim() !== '') {
-                                    // Regex for strict number: optional minus, digits, optional dot+digits
-                                    const numberRegex = /^-?\d+(\.\d+)?$/;
-                                    if (numberRegex.test(val)) {
-                                        flatItem[key] = parseFloat(val);
-                                    } else {
-                                        flatItem[key] = val;
-                                    }
-                                } else {
-                                    flatItem[key] = val;
-                                }
+                                if (typeof val === 'string' && /^-?\d+(\.\d+)?$/.test(val.trim())) flatItem[key] = parseFloat(val);
+                                else flatItem[key] = val;
                             });
                         }
                         return flatItem;
                     };
-
                     if (Array.isArray(rawYield)) {
-                        rawYield.forEach(entry => {
-                            if (Array.isArray(entry) && entry.length === 2) {
-                                profitabilityData.push(parseYieldItem(entry[0], entry[1]));
-                            }
-                        });
-                    } else if (typeof rawYield === 'object' && rawYield !== null) {
-                        Object.keys(rawYield).forEach(symbol => {
-                            profitabilityData.push(parseYieldItem(symbol, rawYield[symbol]));
-                        });
+                        rawYield.forEach(entry => { if (Array.isArray(entry) && entry.length === 2) profitabilityData.push(parseYieldItem(entry[0], entry[1])); });
+                    } else if (typeof rawYield === 'object') {
+                        Object.keys(rawYield).forEach(symbol => profitabilityData.push(parseYieldItem(symbol, rawYield[symbol])));
                     }
-
                     if (profitabilityData.length > 0) {
-                        // Calculate percentage column for each item: (RISTOT / GIACMED) * 100
                         profitabilityData.forEach(item => {
-                            const ristot = item['RISTOT'];
-                            const giacmed = item['GIACMED'];
-                            if (typeof ristot === 'number' && typeof giacmed === 'number' && giacmed !== 0) {
-                                item['%'] = parseFloat(((ristot / giacmed) * 100).toFixed(1));
-                            } else {
-                                item['%'] = null;
-                            }
+                            const ristot = item['RISTOT']; const giacmed = item['GIACMED'];
+                            if (typeof ristot === 'number' && typeof giacmed === 'number' && giacmed !== 0) item['%'] = parseFloat(((ristot / giacmed) * 100).toFixed(1));
+                            else item['%'] = null;
                         });
-
-                        // Collect all unique keys from all items to ensure no columns are missed
-                        if (profitabilityColumns.length > 0) {
-                            profitabilityTableColumns = [...profitabilityColumns, '%'];
-                        } else {
+                        if (profitabilityColumns.length > 0) profitabilityTableColumns = [...profitabilityColumns, '%'];
+                        else {
                             const allKeys = new Set();
-                            profitabilityData.forEach(item => {
-                                Object.keys(item).forEach(k => allKeys.add(k));
-                            });
-                            // Convert to array and filter out Ticker
-                            const keys = Array.from(allKeys);
-                            profitabilityTableColumns = keys.filter(k => k !== 'Ticker');
+                            profitabilityData.forEach(item => Object.keys(item).forEach(k => allKeys.add(k)));
+                            profitabilityTableColumns = Array.from(allKeys).filter(k => k !== 'Ticker');
                         }
-
-                        console.log('✅ Profitability Data parsed:', profitabilityData.length, 'items');
-                        console.log('✅ Profitability Columns:', profitabilityTableColumns);
-                    } else {
-                        console.warn('⚠️ Profitability Data is empty after parsing');
                     }
-
-                    // Default sort: Quantity descending (items with quantity first)
                     profitabilityData.sort((a, b) => {
                         const getQty = (item) => {
                             const key = Object.keys(item).find(k => k.toLowerCase() === 'quantity' || k.toLowerCase() === 'quantità' || k.toLowerCase() === 'qta');
                             return key && item[key] ? Math.abs(parseFloat(item[key])) : 0;
                         };
-                        const qtyA = getQty(a);
-                        const qtyB = getQty(b);
-                        // Sort descending (larger quantity first)
-                        return qtyB - qtyA;
+                        return getQty(b) - getQty(a);
                     });
-
                     populateProfitabilityGroupingSelect(classificationList);
                     renderProfitabilityTable();
                     document.getElementById('profitability-section').style.display = 'block';
-                } else {
-                    console.error('Profitability error:', data);
                 }
-            } catch (error) {
-                console.error('Error loading profitability:', error);
-            }
+            } catch (error) { console.error('Error loading profitability:', error); }
         }
 
         function populateProfitabilityGroupingSelect(classificationList) {
             const select = document.getElementById('profitability-grouping-select');
             select.innerHTML = `<option value="">${getTranslation('int.noselection') || 'Nessun raggruppamento'}</option>`;
-
             let keys = [];
-            // Use classificationFilter from manifest if available
-            if (classificationFilter && classificationFilter.length > 0) {
-                keys = classificationFilter;
-            } else if (Array.isArray(classificationList) && classificationList.length > 0) {
-                // Fallback to keys from the first classification item
-                keys = Object.keys(classificationList[0]).filter(k => k !== 'id_instrument');
-            }
-
+            if (classificationFilter && classificationFilter.length > 0) keys = classificationFilter;
+            else if (Array.isArray(classificationList) && classificationList.length > 0) keys = Object.keys(classificationList[0]).filter(k => k !== 'id_instrument');
             keys.forEach(key => {
                 const opt = document.createElement('option');
-                opt.value = key;
-                opt.textContent = getTranslation(key) || key;
+                opt.value = key; opt.textContent = getTranslation(key) || key;
                 select.appendChild(opt);
             });
         }
@@ -2768,25 +1893,10 @@
         function renderProfitabilityTable() {
             const thead = document.getElementById('profitability-header-row');
             const tbody = document.getElementById('profitability-body');
-            thead.innerHTML = '';
-            tbody.innerHTML = '';
-
-            // Filter data by selected accounts
+            thead.innerHTML = ''; tbody.innerHTML = '';
             let displayData = [];
+            if (selectedAccounts.length > 0) displayData = profitabilityData.filter(item => isAccountSelected(item.id_account));
 
-            // Debug: check what accounts are actually in the data
-            const availableAccounts = [...new Set(profitabilityData.map(item => String(item.id_account).trim()))];
-            console.log('Profitability - available accounts in data:', availableAccounts);
-            console.log('Profitability - selectedAccounts:', selectedAccounts);
-
-            if (selectedAccounts.length > 0) {
-                displayData = profitabilityData.filter(item => isAccountSelected(item.id_account));
-                console.log('Profitability - filtered to:', displayData.length, 'items');
-            } else {
-                console.log('Profitability - no accounts selected, showing nothing');
-            }
-
-            // Headers
             profitabilityTableColumns.forEach((col, index) => {
                 const th = document.createElement('th');
                 th.draggable = true;
@@ -2794,109 +1904,53 @@
                 th.ondragover = (e) => handleProfitabilityDragOver(e);
                 th.ondrop = (e) => handleProfitabilityDrop(e, index);
                 th.onclick = () => sortProfitability(col);
-
                 const handle = document.createElement('span');
-                handle.className = 'drag-handle';
-                handle.textContent = '⋮';
-                th.appendChild(handle);
-
-                const text = document.createTextNode(getTranslation(col) || col);
-                th.appendChild(text);
-
-                if (currentProfitabilitySort.column === col) {
-                    th.classList.add(currentProfitabilitySort.direction === 'asc' ? 'sort-asc' : 'sort-desc');
-                }
+                handle.className = 'drag-handle'; handle.textContent = '⋮'; th.appendChild(handle);
+                th.appendChild(document.createTextNode(getTranslation(col) || col));
+                if (currentProfitabilitySort.column === col) th.classList.add(currentProfitabilitySort.direction === 'asc' ? 'sort-asc' : 'sort-desc');
                 thead.appendChild(th);
             });
 
-            // Data - use filtered displayData instead of profitabilityData
-            let sortedData = [...displayData];
-
-            // Sort
             if (currentProfitabilitySort.column) {
                 displayData.sort((a, b) => {
-                    const valA = a[currentProfitabilitySort.column];
-                    const valB = b[currentProfitabilitySort.column];
+                    const valA = a[currentProfitabilitySort.column]; const valB = b[currentProfitabilitySort.column];
                     if (valA < valB) return currentProfitabilitySort.direction === 'asc' ? -1 : 1;
                     if (valA > valB) return currentProfitabilitySort.direction === 'asc' ? 1 : -1;
                     return 0;
                 });
             }
 
-            // Calculate Totals Helper
             const calculateTotals = (items, columns) => {
                 const totals = {};
                 columns.forEach(col => {
-                    if (col === 'Ticker') {
-                        totals[col] = 'TOTAL';
-                        return;
-                    }
-
-                    // Skip totals for id_account column
-                    if (col === 'id_account') {
-                        totals[col] = '';
-                        return;
-                    }
-
-                    // Skip totals for calculated % column
-                    if (col === '%') {
-                        totals[col] = '';
-                        return;
-                    }
-
-                    // Skip totals for percentage columns containing "per@" or "%"
-                    // We allow "yield" and "rendite" to be summed as per user request
+                    if (col === 'Ticker') { totals[col] = 'TOTAL'; return; }
+                    if (col === 'id_account' || col === '%') { totals[col] = ''; return; }
                     const lower = col.toLowerCase();
-                    if (lower.includes('per@') || lower.includes('%')) {
-                        totals[col] = '';
-                        return;
-                    }
-
-                    // Check if column is numeric (scan all items to be sure)
-                    const isNumeric = items.some(item => {
-                        const val = item[col];
-                        return typeof val === 'number' || (typeof val === 'string' && /^-?\d+(\.\d+)?$/.test(val));
-                    });
-
+                    if (lower.includes('per@') || lower.includes('%')) { totals[col] = ''; return; }
+                    const isNumeric = items.some(item => { const val = item[col]; return typeof val === 'number' || (typeof val === 'string' && /^-?\d+(\.\d+)?$/.test(val)); });
                     if (isNumeric) {
                         const sum = items.reduce((acc, curr) => {
-                            let val = curr[col];
-                            if (typeof val === 'string') val = parseFloat(val);
+                            let val = curr[col]; if (typeof val === 'string') val = parseFloat(val);
                             return acc + (val || 0);
                         }, 0);
                         totals[col] = parseFloat(sum.toFixed(2));
-                    } else {
-                        totals[col] = '';
-                    }
+                    } else totals[col] = '';
                 });
                 return totals;
             };
 
-            // Group
             if (currentProfitabilityGroup) {
                 const groups = {};
                 displayData.forEach(item => {
                     let groupVal = 'int.other';
                     const instrumentId = item.id_instrument;
-                    // Lookup in classification map using id_instrument
-                    // Ensure we handle both string and number types for id_instrument
-                    if (instrumentId !== undefined && instrumentId !== null) {
-                        // Try direct match first
-                        let classObj = classificationMap[instrumentId];
-                        // If not found, try converting to string (if it's a number) or number (if it's a string)
-                        if (!classObj) {
-                            // If classificationMap keys are strings (from JSON), and instrumentId is number
-                            classObj = classificationMap[String(instrumentId)];
-                        }
-
-                        if (classObj && classObj[currentProfitabilityGroup]) {
-                            groupVal = classObj[currentProfitabilityGroup];
-                        }
+                    if (instrumentId) {
+                        let classObj = classificationMap[instrumentId] || classificationMap[String(instrumentId)];
+                        if (classObj && classObj[currentProfitabilityGroup]) groupVal = classObj[currentProfitabilityGroup];
                     }
                     if (!groups[groupVal]) groups[groupVal] = [];
                     groups[groupVal].push(item);
                 });
-
                 Object.keys(groups).sort().forEach(group => {
                     const groupItems = groups[group];
                     const trGroup = document.createElement('tr');
@@ -2906,16 +1960,12 @@
                     tdGroup.textContent = `${getTranslation(group) || group} (${groupItems.length})`;
                     trGroup.appendChild(tdGroup);
                     tbody.appendChild(trGroup);
-
                     groupItems.forEach(item => renderProfitabilityRow(item, tbody));
-
                     const groupTotal = calculateTotals(groupItems, profitabilityTableColumns);
                     renderProfitabilityRow(groupTotal, tbody, true);
                 });
-
                 const grandTotal = calculateTotals(displayData, profitabilityTableColumns);
                 renderProfitabilityRow(grandTotal, tbody, true, true);
-
             } else {
                 displayData.forEach(item => renderProfitabilityRow(item, tbody));
                 const grandTotal = calculateTotals(displayData, profitabilityTableColumns);
@@ -2930,70 +1980,43 @@
                 tr.style.background = isGrandTotal ? 'rgba(0, 243, 255, 0.15)' : 'rgba(0, 102, 255, 0.1)';
                 tr.style.borderTop = isGrandTotal ? '2px solid var(--neon-cyan)' : '1px solid var(--neon-blue)';
             } else {
-                // Make the whole row clickable
                 tr.onclick = () => {
                     selectProfitabilityRow(tr, item);
                     if (item.Ticker) openTradeYieldDetails(item.Ticker);
                 };
             }
-
             profitabilityTableColumns.forEach((col, index) => {
                 const td = document.createElement('td');
                 let val = item[col];
-
-                // If it's the first column and not a total row, style it like a link
                 if (index === 0 && !isTotal) {
                     const span = document.createElement('span');
                     span.textContent = val !== undefined ? val : '';
-                    span.style.cursor = 'pointer';
-                    span.style.color = 'var(--neon-cyan)';
+                    span.style.cursor = 'pointer'; span.style.color = 'var(--neon-cyan)';
                     td.appendChild(span);
                 } else if (val !== undefined) {
-                    // Check if column description contains "%" and absolute value > 5000
                     const colDescription = getTranslation(col) || col;
                     const isPercentageCol = colDescription.includes('%');
-
                     if (typeof val === 'number') {
-                        // Display "--" for percentage columns with absolute value > 5000
-                        if (isPercentageCol && Math.abs(val) > 5000) {
-                            td.textContent = '--';
-                        } else {
-                            td.textContent = val.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-                        }
+                        if (isPercentageCol && Math.abs(val) > 5000) td.textContent = '--';
+                        else td.textContent = val.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
                         td.style.textAlign = 'right';
-                        if (!isPercentageColumn(col)) { // This check was originally here, keep it.
-                            td.title = col; // Add column name as tooltip
-                        }
-                    } else {
-                        td.textContent = val;
-                    }
-                } else {
-                    td.textContent = '';
-                }
+                        if (!col.toLowerCase().includes('%')) td.title = col;
+                    } else td.textContent = val;
+                } else td.textContent = '';
                 tr.appendChild(td);
             });
             tbody.appendChild(tr);
         }
 
         function sortProfitability(col) {
-            if (currentProfitabilitySort.column === col) {
-                currentProfitabilitySort.direction = currentProfitabilitySort.direction === 'asc' ? 'desc' : 'asc';
-            } else {
-                currentProfitabilitySort.column = col;
-                currentProfitabilitySort.direction = 'asc';
-            }
+            if (currentProfitabilitySort.column === col) currentProfitabilitySort.direction = currentProfitabilitySort.direction === 'asc' ? 'desc' : 'asc';
+            else { currentProfitabilitySort.column = col; currentProfitabilitySort.direction = 'asc'; }
             renderProfitabilityTable();
         }
 
         let draggedProfitabilityColIndex = null;
-        function handleProfitabilityDragStart(e, index) {
-            draggedProfitabilityColIndex = index;
-            e.dataTransfer.effectAllowed = 'move';
-        }
-        function handleProfitabilityDragOver(e) {
-            e.preventDefault();
-            e.dataTransfer.dropEffect = 'move';
-        }
+        function handleProfitabilityDragStart(e, index) { draggedProfitabilityColIndex = index; e.dataTransfer.effectAllowed = 'move'; }
+        function handleProfitabilityDragOver(e) { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }
         function handleProfitabilityDrop(e, index) {
             e.preventDefault();
             if (draggedProfitabilityColIndex === index) return;
@@ -3005,32 +2028,6 @@
         async function selectProfitabilityRow(tr, item) {
             document.querySelectorAll('#profitability-body tr').forEach(r => r.classList.remove('selected'));
             tr.classList.add('selected');
-        }
-
-
-
-        // ========== LOGOUT ==========
-        async function loadPDF() {
-            try {
-                const pdfPath = `pdf/${credentials.username}/template.pdf`;
-
-                // Check if PDF exists and display it
-                const response = await fetch(pdfPath);
-                if (response.ok) {
-                    const blob = await response.blob();
-                    const url = URL.createObjectURL(blob);
-
-                    // Open PDF in new window
-                    window.open(url, '_blank');
-
-                    showMessage(getTranslation('int.pdf.loaded') || 'PDF caricato con successo', 'success');
-                } else {
-                    showMessage(getTranslation('int.pdf.notfound') || 'PDF non trovato', 'error');
-                }
-            } catch (error) {
-                console.error('Errore loadPDF', error);
-                showMessage((getTranslation('int.error.pdf') || 'Errore nel caricamento del PDF') + ': ' + (error.message || error), 'error');
-            }
         }
 
         // ========== LOGOUT ==========
@@ -3049,20 +2046,14 @@
                 });
                 const data = await response.json().catch(() => null);
                 if (data && data.status === 'ok') {
-                    showMessage(getTranslation('int.logout.success') || 'Logout effettuato con successo', 'success');
+                    showMessage(getTranslation('int.logout.success') || 'Logout successo', 'success');
                     localStorage.clear();
                     setTimeout(() => { window.location.href = 'login.html'; }, 1000);
-                } else {
-                    showMessage(getTranslation('int.error.logout') || 'Errore durante il logout', 'error');
-                }
-            } catch (error) {
-                console.error('logout error', error);
-                showMessage((getTranslation('int.connection.error') || 'Errore di connessione') + ': ' + (error.message || error), 'error');
-            }
+                } else showMessage('Logout error', 'error');
+            } catch (error) { console.error('logout error', error); }
         }
 
         function openTradingDashboard() {
-            // Open trading dashboard with credentials
             const params = new URLSearchParams({
                 username: credentials.username || "",
                 token: credentials.token || "",
@@ -3082,11 +2073,11 @@
                 await initializeLanguages();
                 await loadTranslations(credentials.language);
                 updatePageTranslations();
-                await updateUserInfo();  // Show user language/currency early
+                await updateUserInfo();
                 loadMenu();
                 await loadAccounts();
                 await loadFilter();
-                renderReportsList();
+                renderReportsList_patched();
                 loadPortfolio();
                 loadProfitability();
             }
@@ -3099,509 +2090,5 @@
 
     </script>
 </body>
-
-<!-- Chart Modal -->
-<div id="chartModal" class="modal-overlay">
-    <div class="modal-content">
-        <div class="modal-header">
-            <span class="modal-title" id="chartModalTitle">Portfolio Composition</span>
-            <button class="close-modal-btn" onclick="closeGraph()">
-                <i class="fa fa-times"></i>
-            </button>
-        </div>
-        <div class="chart-container">
-            <canvas id="chartCanvas"></canvas>
-        </div>
-    </div>
-</div>
-
-<script>
-    let chartInstance = null;
-    let currentChartType = 'portfolio'; // 'portfolio' or 'profitability'
-
-    function togglePortfolioGraph() {
-        openChartModal('portfolio');
-    }
-
-    function toggleProfitabilityGraph() {
-        openChartModal('profitability');
-    }
-
-    function openChartModal(type) {
-        currentChartType = type;
-        const modal = document.getElementById('chartModal');
-        const modalTitle = document.getElementById('chartModalTitle');
-
-        let titleKey = type === 'portfolio' ? 'int.portfolio' : 'int.profitability';
-        modalTitle.textContent = getTranslation(titleKey) + " " + getTranslation('int.graph');
-
-        if (modal.style.display === 'flex') {
-            closeGraph();
-        } else {
-            console.log("Opening Graph Modal for:", type);
-            modal.style.display = 'flex';
-            renderGenericChart();
-        }
-    }
-
-    function closeGraph() {
-        const modal = document.getElementById('chartModal');
-        modal.style.display = 'none';
-        if (chartInstance) {
-            chartInstance.destroy();
-            chartInstance = null;
-        }
-    }
-
-    function renderGenericChart() {
-        const ctx = document.getElementById('chartCanvas').getContext('2d');
-
-        if (chartInstance) {
-            chartInstance.destroy();
-        }
-
-        let groupingSelectId, dataFile, valueKey;
-        let isProfitability = false;
-
-        if (currentChartType === 'portfolio') {
-            groupingSelectId = 'grouping-select';
-            dataFile = portfolioData;
-            valueKey = 'CTVMKTTQ';
-        } else {
-            groupingSelectId = 'profitability-grouping-select';
-            dataFile = profitabilityData;
-            valueKey = 'RISTOT';
-            isProfitability = true;
-        }
-
-        // Determine Grouping
-        const groupValue = document.getElementById(groupingSelectId).value;
-        const isGrouped = groupValue && groupValue !== "";
-
-        // Prepare Data
-        let labels = [];
-        let dataValues = [];
-        let backgroundColors = [];
-
-        // Filter active data using isAccountSelected
-        // Both portfolio and profitability use 'id_account'
-        let activeData = dataFile.filter(item => isAccountSelected(item.id_account));
-        console.log(`   - Data after Account Filter: ${activeData.length}`);
-
-        // Filter valid items
-        activeData = activeData.filter(item => {
-            if (!item) return false;
-
-            if (isProfitability) {
-                // For profitability: Only check if RISTOT exists and is valid
-                let rawVal = item.RISTOT;
-                if (rawVal === undefined || rawVal === null || rawVal === '') return false;
-
-                if (typeof rawVal === 'string') rawVal = rawVal.replace(',', '.');
-                const val = parseFloat(rawVal);
-
-                if (isNaN(val)) {
-                    console.warn(`      Skipping ${item.Ticker}: Invalid RISTOT [${item.RISTOT}] -> Parsed: ${val}`);
-                    return false;
-                }
-
-                // Allow both positive and negative values for profitability
-                return true;
-            } else {
-                // For portfolio: Check quantity and positive values only
-                const getQty = (itm) => {
-                    if (itm.quantity !== undefined) return parseFloat(itm.quantity);
-                    const k = Object.keys(itm).find(key => key.toLowerCase() === 'quantity' || key.toLowerCase() === 'qta' || key.toLowerCase() === 'quantità');
-                    return k ? parseFloat(itm[k]) : 0;
-                };
-
-                const quantity = getQty(item);
-                if (!showHistorical && (isNaN(quantity) || quantity === 0)) {
-                    return false;
-                }
-
-                let rawVal = item[valueKey];
-                if (typeof rawVal === 'string') rawVal = rawVal.replace(',', '.');
-                const val = parseFloat(rawVal);
-
-                if (isNaN(val) || val <= 0) {
-                    return false;
-                }
-
-                return true;
-            }
-        });
-
-        console.log(`   - Data after Validation Filter: ${activeData.length}`);
-
-        // PROFITABILITY: Use bar chart with RISTOT
-        if (isProfitability) {
-            const groups = {};
-
-            if (isGrouped) {
-                // Grouped: Sum RISTOT by group
-                activeData.forEach(item => {
-                    let groupLabel = 'int.other';
-                    const instrumentId = item.id_instrument;
-
-                    if (instrumentId !== undefined && instrumentId !== null) {
-                        let classObj = classificationMap[instrumentId];
-                        if (!classObj) classObj = classificationMap[String(instrumentId)];
-                        if (classObj && classObj[groupValue]) groupLabel = classObj[groupValue];
-                    }
-
-                    if (!groups[groupLabel]) groups[groupLabel] = 0;
-
-                    let ristot = item.RISTOT;
-                    if (typeof ristot === 'string') ristot = parseFloat(ristot.replace(',', '.'));
-                    groups[groupLabel] += (ristot || 0);
-                });
-
-                // Sort by value (descending: largest to smallest)
-                const sortedGroups = Object.entries(groups).sort((a, b) => b[1] - a[1]);
-                labels = sortedGroups.map(entry => getTranslation(entry[0]) || entry[0]);
-                dataValues = sortedGroups.map(entry => entry[1]);
-            } else {
-                // Not grouped: Use instrument description and RISTOT
-                activeData.sort((a, b) => {
-                    const valA = parseFloat(a.RISTOT || 0);
-                    const valB = parseFloat(b.RISTOT || 0);
-                    return valB - valA; // Descending
-                });
-
-                labels = activeData.map(item => {
-                    if (item.instrument_description) return item.instrument_description;
-                    if (item.Ticker) return item.Ticker;
-                    if (item.id_instrument) {
-                        let classObj = classificationMap[item.id_instrument] || classificationMap[String(item.id_instrument)];
-                        if (classObj && classObj.instrument_description) return classObj.instrument_description;
-                    }
-                    return "Unknown";
-                });
-
-                dataValues = activeData.map(item => {
-                    let ristot = item.RISTOT;
-                    if (typeof ristot === 'string') ristot = parseFloat(ristot.replace(',', '.'));
-                    return ristot || 0;
-                });
-            }
-        } else {
-            // PORTFOLIO: Use pie chart with CTVMKTTQ
-            if (isGrouped) {
-                const groups = {};
-                activeData.forEach(item => {
-                    let groupLabel = 'int.other';
-                    const instrumentId = item.id_instrument;
-                    if (instrumentId !== undefined && instrumentId !== null) {
-                        let classObj = classificationMap[instrumentId];
-                        if (!classObj) classObj = classificationMap[String(instrumentId)];
-                        if (classObj && classObj[groupValue]) groupLabel = classObj[groupValue];
-                    }
-                    if (!groups[groupLabel]) groups[groupLabel] = 0;
-                    groups[groupLabel] += parseFloat(item[valueKey] || 0);
-                });
-                const sortedGroups = Object.entries(groups).sort((a, b) => b[1] - a[1]);
-                labels = sortedGroups.map(entry => getTranslation(entry[0]) || entry[0]);
-                dataValues = sortedGroups.map(entry => entry[1]);
-            } else {
-                activeData.sort((a, b) => parseFloat(b[valueKey] || 0) - parseFloat(a[valueKey] || 0));
-                labels = activeData.map(item => {
-                    if (item.instrument_description) return item.instrument_description;
-                    if (item.Ticker) return item.Ticker;
-                    if (item.id_instrument) {
-                        let classObj = classificationMap[item.id_instrument] || classificationMap[String(item.id_instrument)];
-                        if (classObj && classObj.instrument_description) return classObj.instrument_description;
-                    }
-                    return "Unknown";
-                });
-                dataValues = activeData.map(item => parseFloat(item[valueKey] || 0));
-            }
-        }
-
-        const grandTotal = dataValues.reduce((a, b) => a + b, 0);
-
-        // Determine chart type and colors
-        const chartType = isProfitability ? 'bar' : 'pie';
-
-        if (isProfitability) {
-            // Bar chart: Cyan for positive, Red for negative
-            backgroundColors = dataValues.map(v => v >= 0 ? 'rgba(0, 243, 255, 0.6)' : 'rgba(255, 0, 85, 0.6)');
-        } else {
-            // Pie chart: Tron colors
-            backgroundColors = generateTronColors(dataValues.length);
-        }
-
-        chartInstance = new Chart(ctx, {
-            type: chartType,
-            data: {
-                labels: labels,
-                datasets: [{
-                    data: dataValues,
-                    backgroundColor: backgroundColors,
-                    borderColor: isProfitability ? dataValues.map(v => v >= 0 ? '#00f3ff' : '#ff0055') : '#000510',
-                    borderWidth: 2,
-                    hoverOffset: isProfitability ? 0 : 10
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                layout: {
-                    padding: isProfitability ? 20 : 80
-                },
-                plugins: {
-                    legend: {
-                        display: false
-                    },
-                    tooltip: {
-                        callbacks: {
-                            label: function (context) {
-                                let label = context.label || '';
-                                if (label) label += ': ';
-                                const value = isProfitability ? context.parsed.y : context.parsed;
-                                if (value !== null) {
-                                    label += new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(value);
-                                }
-                                return label;
-                            }
-                        },
-                        backgroundColor: 'rgba(0, 5, 16, 0.9)',
-                        titleColor: '#00F3FF',
-                        bodyColor: '#fff',
-                        borderColor: '#0066FF',
-                        borderWidth: 1
-                    }
-                },
-                ...(isProfitability && {
-                    scales: {
-                        x: {
-                            ticks: {
-                                color: '#e0f7fa',
-                                font: { family: 'Orbitron', size: 10 }
-                            },
-                            grid: {
-                                color: 'rgba(0, 243, 255, 0.1)'
-                            }
-                        },
-                        y: {
-                            beginAtZero: true,
-                            ticks: {
-                                color: '#e0f7fa',
-                                callback: function (value) {
-                                    return new Intl.NumberFormat('it-IT', { notation: "compact", compactDisplay: "short" }).format(value);
-                                }
-                            },
-                            grid: {
-                                color: 'rgba(0, 243, 255, 0.1)'
-                            }
-                        }
-                    }
-                })
-            },
-            plugins: isProfitability ? [{
-                id: 'barValues',
-                afterDatasetsDraw: (chart) => {
-                    const ctx = chart.ctx;
-                    ctx.save();
-                    ctx.font = 'bold 11px "Segoe UI", Roboto, sans-serif';
-                    ctx.textAlign = 'center';
-                    ctx.textBaseline = 'middle';
-
-                    chart.data.datasets.forEach((dataset, i) => {
-                        const meta = chart.getDatasetMeta(i);
-                        if (meta.hidden) return;
-
-                        meta.data.forEach((element, index) => {
-                            const value = dataset.data[index];
-                            if (value === null || value === undefined) return;
-
-                            const formattedValue = new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(value);
-                            const x = element.x;
-                            let y = element.y;
-
-                            // Position above for positive, below for negative
-                            if (value >= 0) {
-                                y -= 15;
-                            } else {
-                                y += 15;
-                            }
-
-                            ctx.fillStyle = (value >= 0) ? '#00f3ff' : '#ff0055';
-                            ctx.shadowColor = 'rgba(0,0,0,0.8)';
-                            ctx.shadowBlur = 2;
-                            ctx.fillText(formattedValue, x, y);
-                        });
-                    });
-                    ctx.restore();
-                }
-            }] : [{
-                id: 'customLabels',
-                afterDraw: (chart) => {
-                    const ctx = chart.ctx;
-                    const { left, top, width, height } = chart.chartArea;
-                    const centerX = left + width / 2;
-                    const centerY = top + height / 2;
-
-                    ctx.save();
-                    ctx.font = '12px "Segoe UI", Roboto, sans-serif';
-
-                    // Collect Label Data
-                    const labelItems = [];
-                    const leftLabels = [];
-                    const rightLabels = [];
-
-                    chart.data.datasets.forEach((dataset, i) => {
-                        const meta = chart.getDatasetMeta(i);
-                        if (meta.hidden) return;
-
-                        meta.data.forEach((element, index) => {
-                            const value = dataset.data[index];
-                            if (value === 0) return; // Skip zero values
-
-                            const startAngle = element.startAngle;
-                            const endAngle = element.endAngle;
-                            const midAngle = startAngle + (endAngle - startAngle) / 2;
-
-                            // Determine side
-                            const isRight = midAngle < Math.PI / 2 || midAngle > 3 * Math.PI / 2;
-
-                            // Basic Coords
-                            const outerRadius = element.outerRadius;
-                            const labelRadius = outerRadius + 30;
-
-                            // Ideal Y position
-                            const endY = centerY + Math.sin(midAngle) * labelRadius;
-                            const endX = centerX + Math.cos(midAngle) * labelRadius;
-
-                            const label = chart.data.labels[index];
-                            const formattedValue = new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(value);
-                            const text = `${label}: ${formattedValue}`;
-
-                            const item = {
-                                index,
-                                text,
-                                value,
-                                midAngle,
-                                outerRadius,
-                                labelRadius,
-                                isRight,
-                                startX: centerX + Math.cos(midAngle) * outerRadius,
-                                startY: centerY + Math.sin(midAngle) * outerRadius,
-                                endX,
-                                endY, // Initial desired Y
-                                currentY: endY,
-                                height: 14 // Approximate text height
-                            };
-
-                            if (isRight) rightLabels.push(item);
-                            else leftLabels.push(item);
-                        });
-                    });
-
-                    // Anti-Collision Logic (Sort by Y and spread)
-                    const resolveCollisions = (items) => {
-                        items.sort((a, b) => a.currentY - b.currentY);
-                        for (let i = 1; i < items.length; i++) {
-                            const prev = items[i - 1];
-                            const curr = items[i];
-                            if (curr.currentY < prev.currentY + prev.height) {
-                                curr.currentY = prev.currentY + prev.height;
-                            }
-                        }
-                    };
-
-                    resolveCollisions(rightLabels);
-                    resolveCollisions(leftLabels);
-
-                    // Draw Everything
-                    const drawLabel = (item) => {
-                        // Re-calculate mid-points for line based on adjusted Y
-                        // Note: Bending the line
-                        const midX = centerX + Math.cos(item.midAngle) * (item.outerRadius + 15);
-                        // We keep midY natural to avoid weird sharp angles at start
-                        let midY = centerY + Math.sin(item.midAngle) * (item.outerRadius + 15);
-
-                        // If adjustment is huge, maybe adjust midY too? 
-                        // Let's keep it simple: Start -> Mid -> End(Adjusted)
-
-                        ctx.beginPath();
-                        ctx.moveTo(item.startX, item.startY);
-                        ctx.lineTo(midX, midY);
-                        ctx.lineTo(item.endX, item.currentY);
-                        ctx.strokeStyle = '#00F3FF';
-                        ctx.lineWidth = 1;
-                        ctx.shadowBlur = 4;
-                        ctx.shadowColor = '#00F3FF';
-                        ctx.stroke();
-
-                        // Text
-                        ctx.fillStyle = '#00F3FF';
-                        ctx.textAlign = item.isRight ? 'left' : 'right';
-                        ctx.textBaseline = 'middle';
-                        ctx.shadowBlur = 0;
-                        ctx.fillText(item.text, item.isRight ? item.endX + 5 : item.endX - 5, item.currentY);
-
-                        // Dot
-                        ctx.beginPath();
-                        ctx.arc(item.startX, item.startY, 2, 0, 2 * Math.PI);
-                        ctx.fillStyle = '#FFFFFF';
-                        ctx.fill();
-
-                        // --- INSIDE PERCENTAGE ---
-                        // Re-calculate inner position based on raw data (not adjusted)
-                        // Make sure slice is visible
-                        const element = chart.getDatasetMeta(0).data[item.index];
-                        if (!element) return;
-
-                        if (element.endAngle - element.startAngle > 0.1) {
-                            const percentage = ((item.value / grandTotal) * 100).toFixed(1) + '%';
-
-                            // Position
-                            const pX = centerX + Math.cos(item.midAngle) * (item.outerRadius * 0.7);
-                            const pY = centerY + Math.sin(item.midAngle) * (item.outerRadius * 0.7);
-
-                            ctx.save();
-                            // Stroke for readability
-                            ctx.font = 'bold 11px "Segoe UI", Roboto, sans-serif';
-                            ctx.lineWidth = 2;
-                            ctx.strokeStyle = '#000000'; // Black outline
-                            ctx.strokeText(percentage, pX, pY);
-
-                            ctx.fillStyle = '#FFFFFF'; // White text
-                            ctx.textAlign = 'center';
-                            ctx.textBaseline = 'middle';
-                            ctx.fillText(percentage, pX, pY);
-                            ctx.restore();
-                        }
-                    };
-
-                    rightLabels.forEach(drawLabel);
-                    leftLabels.forEach(drawLabel);
-
-                    ctx.restore();
-                }
-            }]
-        });
-    }
-
-    function generateTronColors(count) {
-        const colors = [];
-        const baseHues = [180, 210, 190, 200, 220];
-        for (let i = 0; i < count; i++) {
-            const hue = (180 + (i * 30)) % 360;
-            const color = `hsl(${hue}, 90%, 60%)`;
-            colors.push(color);
-        }
-        return colors;
-    }
-
-    // Ensure close on outside click
-    window.onclick = function (event) {
-        const modal = document.getElementById('chartModal');
-        if (event.target == modal) {
-            closeGraph();
-        }
-    }
-</script>
 
 </html>
