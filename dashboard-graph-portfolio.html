@@ -18,6 +18,14 @@
             --text-color: #e0f7fa;
         }
 
+        /* Garantisce che il body e l'HTML usino tutta l'altezza */
+        html,
+        body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+
         body {
             font-family: 'Orbitron', sans-serif;
             background-color: var(--bg-color);
@@ -25,10 +33,8 @@
                 linear-gradient(rgba(0, 243, 255, 0.1) 1px, transparent 1px),
                 linear-gradient(90deg, rgba(0, 243, 255, 0.1) 1px, transparent 1px);
             background-size: 50px 50px;
-            margin: 0;
             padding: 20px;
             color: var(--text-color);
-            height: 100vh;
             display: flex;
             flex-direction: column;
             overflow: hidden;
@@ -44,9 +50,9 @@
             box-shadow: 0 0 15px rgba(0, 102, 255, 0.3);
             border-radius: 8px;
             margin-bottom: 20px;
+            flex-shrink: 0;
         }
 
-        /* NUOVI STILI PER HEADER */
         .header-info {
             display: flex;
             align-items: center;
@@ -65,14 +71,12 @@
             width: 20px;
             height: 15px;
             background-color: #0066ff;
-            /* Colore di fallback per la bandiera */
             color: #fff;
             text-align: center;
             line-height: 15px;
             font-size: 8px;
             border: 1px solid var(--neon-cyan);
             box-shadow: 0 0 5px rgba(0, 243, 255, 0.5);
-            /* Potrebbe essere sostituito con un'immagine o una libreria di icone bandiera */
         }
 
         .close-button {
@@ -85,12 +89,8 @@
 
         .close-button:hover {
             color: #ff0044;
-            /* Colore neon rosso per l'azione di chiusura */
             text-shadow: 0 0 10px #ff0044;
         }
-
-        /* FINE NUOVI STILI */
-
 
         h1 {
             margin: 0;
@@ -122,11 +122,6 @@
             box-shadow: 0 0 10px var(--neon-cyan);
         }
 
-        option {
-            background: #000;
-            color: var(--neon-cyan);
-        }
-
         .chart-wrapper {
             flex: 1;
             position: relative;
@@ -138,6 +133,7 @@
             min-height: 0;
         }
 
+        /* ... Stili loading ... */
         #loading {
             position: fixed;
             top: 0;
@@ -202,13 +198,14 @@
     </div>
 
     <script>
-        // --- Simulazione Funzioni di Traduzione e Mappatura (da sostituire con la tua implementazione) ---
+        // --- Simulazione Funzioni di Traduzione e Mappatura (DA SOSTITUIRE) ---
         const translations = {
             'it_IT': {
                 'int.no_grouping': 'Nessun raggruppamento',
                 'int.group_by': 'Raggruppa per:',
                 'int.close': 'Chiudi',
                 'lang.it_IT': 'Italiano',
+                // 4. Traduzioni chiavi raggruppamento
                 'group.asset_type': 'Tipo Asset',
                 'group.geography': 'Geografia',
                 'group.currency': 'Valuta',
@@ -237,12 +234,10 @@
 
         function getFlagIcon(lang) {
             const langInfo = languageMap[lang] || languageMap['it_IT'];
-            // Usiamo le iniziali come placeholder per la bandiera (Punto 6)
             return `<div class="flag-icon" title="${langInfo.name}">${langInfo.initials}</div>`;
         }
 
         function closeWindow() {
-            // 3. Tasto Chiudi
             window.close();
         }
         // --- Fine Simulazione ---
@@ -252,8 +247,8 @@
         let chartInstance = null;
         let portfolioData = [];
         let classificationMap = {};
-        let selectedAccounts = [];
-        const groupingKeys = ['asset_type', 'geography', 'currency']; // 2. Chiavi di raggruppamento allineate
+        // 2. Chiavi di raggruppamento coerenti con dashboard.html
+        const groupingKeys = ['asset_type', 'geography', 'currency'];
 
         // Get params from URL
         const urlParams = new URLSearchParams(window.location.search);
@@ -267,26 +262,28 @@
                 document.getElementById('loadingText').textContent = "Unauthorized Access";
                 return;
             }
-            // 1. Imposta il raggruppamento iniziale
+
+            await loadPortfolio();
+            updateHeaderTranslations();
+            // 1. Seleziona il raggruppamento iniziale DOPO che il select è stato popolato in loadPortfolio
             if (initialGrouping) {
                 document.getElementById('grouping-select').value = initialGrouping;
             }
-            await loadPortfolio();
-            updateHeaderTranslations();
         }
 
         function updateHeaderTranslations() {
-            // 2. Traduzione etichetta Raggruppa per:
+            // 5. Traduzione etichetta Raggruppa per:
             document.getElementById('grouping-label').textContent = getTranslation('int.group_by');
-            // 3. Traduzione del titolo del tasto Chiudi
+            // Traduzione del titolo del tasto Chiudi
             const closeBtn = document.getElementById('close-btn');
             closeBtn.title = getTranslation('int.close');
-            // 6. Informazioni sulla lingua
+            // Informazioni sulla lingua
             const langIndicator = document.getElementById('language-indicator');
             const langName = getTranslation('lang.' + language);
             langIndicator.innerHTML = `${getFlagIcon(language)} <span>${langName}</span>`;
         }
 
+        // ... (loadPortfolio function remains essentially the same, removed for brevity) ...
         async function loadPortfolio() {
             try {
                 const payload = {
@@ -306,6 +303,7 @@
                 const data = await response.json();
 
                 if (data.status === 'ok') {
+                    // Parse Classification
                     let classificationList = data.classification;
                     if (typeof classificationList === 'string') {
                         try { classificationList = JSON.parse(classificationList.replace(/'/g, '"')); }
@@ -316,9 +314,10 @@
                         classificationList.forEach(item => {
                             if (item.id_instrument) classificationMap[item.id_instrument] = item;
                         });
-                        populateGroupingSelect(classificationList);
+                        populateGroupingSelect(classificationList); // Popola il select
                     }
 
+                    // Parse Portfolio
                     const rawPortfolio = data.portfolio || {};
                     portfolioData = [];
 
@@ -356,17 +355,18 @@
             }
         }
 
+
         function populateGroupingSelect(list) {
             const select = document.getElementById('grouping-select');
             select.innerHTML = '';
 
-            // 2. Opzione "Nessun raggruppamento" tradotta
+            // 4. Opzione "Nessun raggruppamento" tradotta
             let optNone = document.createElement('option');
             optNone.value = "";
             optNone.textContent = getTranslation('int.no_grouping');
             select.appendChild(optNone);
 
-            // 2. Opzioni di raggruppamento tradotte
+            // 4. Opzioni di raggruppamento tradotte
             groupingKeys.forEach(key => {
                 const opt = document.createElement('option');
                 opt.value = key;
@@ -383,7 +383,7 @@
         function generateTronColors(count) {
             const colors = [];
             for (let i = 0; i < count; i++) {
-                const hue = (180 + (i * 35)) % 360; // Gamma dal Ciano al Blu
+                const hue = (180 + (i * 35)) % 360;
                 colors.push(`hsl(${hue}, 90%, 60%)`);
             }
             return colors;
@@ -395,12 +395,11 @@
 
             const groupValue = document.getElementById('grouping-select').value;
             const isGrouped = groupValue && groupValue !== "";
-            const valueKey = 'CTVMKTTQ';
+            const valueKey = 'CTVMKTTQ'; // Valore di mercato totale
 
             let labels = [];
             let dataValues = [];
 
-            // ... (Logica di preparazione dati invariata) ...
             let activeData = portfolioData.filter(item => {
                 let rawVal = item[valueKey];
                 if (typeof rawVal === 'string') rawVal = rawVal.replace(',', '.');
@@ -408,6 +407,7 @@
                 return !isNaN(val) && val > 0;
             });
 
+            // ... (Logica di raggruppamento dati) ...
             if (isGrouped) {
                 const groups = {};
                 activeData.forEach(item => {
@@ -431,6 +431,7 @@
                 dataValues = activeData.map(item => parseFloat(item[valueKey] || 0));
             }
 
+
             const grandTotal = dataValues.reduce((a, b) => a + b, 0);
             const backgroundColors = generateTronColors(dataValues.length);
 
@@ -449,11 +450,12 @@
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    layout: { padding: 80 }, // 4. Aumento del padding per fare spazio alle label
+                    // 4. Aumento del padding per ospitare le label esterne
+                    layout: { padding: 80 },
                     plugins: {
                         legend: { display: false },
                         tooltip: {
-                            // ... (tooltip invariato) ...
+                            // ... (tooltip stile TRON) ...
                             backgroundColor: 'rgba(0, 5, 16, 0.9)',
                             titleColor: '#00F3FF',
                             bodyColor: '#fff',
@@ -468,6 +470,7 @@
                         }
                     }
                 },
+                // 3. Plugin custom per l'allineamento e la gestione delle collisioni delle label
                 plugins: [{
                     id: 'tronLabels',
                     afterDraw: (chart) => {
@@ -478,11 +481,9 @@
 
                         ctx.save();
 
-                        // 5. Dimensioni Label: 14px per la descrizione, 12px per il valore
                         const descriptionFontSize = 14;
                         const valueFontSize = 12;
 
-                        const labelItems = [];
                         const rightLabels = [];
                         const leftLabels = [];
 
@@ -495,9 +496,11 @@
                                 if (value === 0) return;
 
                                 const midAngle = element.startAngle + (element.endAngle - element.startAngle) / 2;
+                                // 3. Determinazione se il settore è a destra o a sinistra
                                 const isRight = midAngle < Math.PI / 2 || midAngle > 3 * Math.PI / 2;
                                 const outerRadius = element.outerRadius;
-                                // 4. Aumento labelRadius per allontanare le label e ridurre l'overlap con la torta
+
+                                // Allontana il punto finale della label
                                 const labelRadius = outerRadius + 60;
 
                                 const endX = centerX + Math.cos(midAngle) * labelRadius;
@@ -513,14 +516,15 @@
                                     startX: centerX + Math.cos(midAngle) * outerRadius,
                                     startY: centerY + Math.sin(midAngle) * outerRadius,
                                     endX, endY, currentY: endY,
-                                    height: descriptionFontSize + valueFontSize + 10 // 4. Altezza aumentata a circa 29px per collisioni
+                                    // Altezza necessaria per la collisione
+                                    height: descriptionFontSize + valueFontSize + 10
                                 };
 
                                 if (isRight) rightLabels.push(item); else leftLabels.push(item);
                             });
                         });
 
-                        // 4. Risoluzione delle collisioni (ordinamento e spostamento verticale)
+                        // 3. Funzione di risoluzione delle collisioni (sposta le label verticalmente)
                         const resolveCollisions = (items) => {
                             items.sort((a, b) => a.currentY - b.currentY);
                             for (let i = 1; i < items.length; i++) {
@@ -534,11 +538,11 @@
 
                         const draw = (item) => {
                             // Punto intermedio del segmento di linea
-                            const midX = centerX + Math.cos(item.midAngle) * (item.outerRadius + 30); // Punto intermedio più lontano
+                            const midX = centerX + Math.cos(item.midAngle) * (item.outerRadius + 30);
                             const midY = centerY + Math.sin(item.midAngle) * (item.outerRadius + 30);
-                            const lineToX = item.isRight ? item.endX + 5 : item.endX - 5; // Sposta leggermente il punto finale orizzontale
+                            const lineToX = item.isRight ? item.endX + 5 : item.endX - 5;
 
-                            // Line
+                            // Linea
                             ctx.beginPath();
                             ctx.moveTo(item.startX, item.startY);
                             ctx.lineTo(midX, midY);
@@ -549,7 +553,7 @@
                             ctx.shadowColor = '#00F3FF';
                             ctx.stroke();
 
-                            // Dot
+                            // Punto di partenza
                             ctx.beginPath();
                             ctx.arc(item.startX, item.startY, 2, 0, 2 * Math.PI);
                             ctx.fillStyle = '#fff';
@@ -557,16 +561,17 @@
 
                             // 5. Testo (Descrizione) - 14px
                             ctx.fillStyle = '#00F3FF';
+                            // 3. Allineamento testo: 'left' per destra, 'right' per sinistra
                             ctx.textAlign = item.isRight ? 'left' : 'right';
-                            ctx.textBaseline = 'bottom'; // Allinea il testo sulla linea
+                            ctx.textBaseline = 'bottom';
                             ctx.font = `${descriptionFontSize}px "Orbitron", sans-serif`;
-                            ctx.fillText(item.text, lineToX, item.currentY - 1); // Posiziona appena sopra la linea
+                            ctx.fillText(item.text, lineToX, item.currentY - 1);
 
                             // 5. Testo (Valore e Percentuale) - 12px
                             ctx.fillStyle = '#fff';
-                            ctx.textBaseline = 'top'; // Allinea il testo sulla linea
+                            ctx.textBaseline = 'top';
                             ctx.font = `${valueFontSize}px "Orbitron", sans-serif`;
-                            ctx.fillText(`${item.formattedValue} (${item.percentage})`, lineToX, item.currentY + 1); // Posiziona appena sotto la linea
+                            ctx.fillText(`${item.formattedValue} (${item.percentage})`, lineToX, item.currentY + 1);
                         };
 
                         rightLabels.forEach(draw);
