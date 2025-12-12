@@ -267,15 +267,15 @@
         </div>
     </div>
 
+    <script src="credentials-manager.js"></script>
     <script>
-        let credentials = { username: '', token: '', language: '', filter: '' };
+        let credentials = null;
         let translations = {};
         let registries = {};
         let manifest = null;
         let domine = null;
         const API_URL = "https://feweb-tunnel.fe-web.eu";
 
-        // Carica i file JSON di configurazione
         async function loadConfigurations() {
             try {
                 const [manifestResponse, domineResponse] = await Promise.all([
@@ -299,27 +299,6 @@
             }
         }
 
-        function getCredentialsFromURL() {
-            const params = new URLSearchParams(window.location.search);
-            credentials.username = params.get('username') || '';
-            credentials.token = params.get('token') || '';
-            credentials.language = params.get('language') || 'it_IT';
-            credentials.filter = params.get('filter') || '';
-
-            console.log('=== CREDENTIALS From URL ===');
-            console.log('Username:', credentials.username);
-            console.log('Token:', credentials.token);
-            console.log('Language:', credentials.language);
-            console.log('====================');
-
-            if (!credentials.username || !credentials.token) {
-                showMessage('Credenziali mancanti', 'error');
-                return false;
-            }
-            return true;
-        }
-
-        // Genera dinamicamente il form in base ai campi del manifest
         function generateForm() {
             const form = document.getElementById('accountForm');
             const fields = manifest['dashboard-account'];
@@ -328,38 +307,30 @@
                 const formGroup = document.createElement('div');
                 formGroup.className = 'form-group';
 
-                // Analizza il campo (potrebbe contenere @)
                 const parts = fieldDef.split('@');
                 const fieldName = parts[0];
                 const domainKey = parts.length > 1 ? parts[1] : null;
 
-                // Crea label
                 const label = document.createElement('label');
                 label.setAttribute('for', fieldName);
                 label.id = `${fieldName}Label`;
                 label.textContent = getTranslation(`int.account.${fieldName}`) || fieldName + ':';
                 formGroup.appendChild(label);
 
-                // Crea input o select in base al dominio
                 if (domainKey && domine[domainKey]) {
-                    // È un campo con dominio -> crea select
                     const select = document.createElement('select');
                     select.id = fieldName;
                     select.name = fieldName;
                     select.required = true;
 
-                    // Opzione vuota
                     const emptyOption = document.createElement('option');
                     emptyOption.value = '';
                     emptyOption.textContent = getTranslation('int.select.option') || '-- seleziona --';
                     select.appendChild(emptyOption);
 
-                    // Aggiungi opzioni dal dominio
                     const domainValues = domine[domainKey];
                     domainValues.forEach(domainValue => {
                         const option = document.createElement('option');
-                        // Il valore del dominio è nel formato "dom.key:value"
-                        // Estraiamo il valore dopo i due punti
                         const value = domainValue.split(':')[1];
                         option.value = value;
                         option.textContent = getTranslation(domainValue) || domainValue;
@@ -368,7 +339,6 @@
 
                     formGroup.appendChild(select);
                 } else if (fieldName === 'id_registry') {
-                    // Campo speciale per id_registry
                     const select = document.createElement('select');
                     select.id = fieldName;
                     select.name = fieldName;
@@ -381,14 +351,12 @@
 
                     formGroup.appendChild(select);
                 } else if (fieldName.includes('date_')) {
-                    // Campo data
                     const input = document.createElement('input');
                     input.type = 'date';
                     input.id = fieldName;
                     input.name = fieldName;
                     formGroup.appendChild(input);
                 } else {
-                    // Campo testo normale
                     const input = document.createElement('input');
                     input.type = 'text';
                     input.id = fieldName;
@@ -402,7 +370,6 @@
                 form.appendChild(formGroup);
             });
 
-            // Aggiungi i pulsanti di azione
             const buttonGroup = document.createElement('div');
             buttonGroup.className = 'button-group';
 
@@ -431,9 +398,7 @@
 
                 const response = await fetch(`${API_URL}/getregistries`, {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
                 });
 
@@ -465,7 +430,6 @@
             const select = document.getElementById('id_registry');
             if (!select) return;
 
-            // Rimuovi tutte le opzioni tranne la prima
             while (select.options.length > 1) {
                 select.remove(1);
             }
@@ -485,18 +449,14 @@
             const form = document.getElementById('accountForm');
             form.classList.add('form-disabled');
             const inputs = form.querySelectorAll('input, select, button[type="submit"]');
-            inputs.forEach(input => {
-                input.disabled = true;
-            });
+            inputs.forEach(input => input.disabled = true);
         }
 
         function enableForm() {
             const form = document.getElementById('accountForm');
             form.classList.remove('form-disabled');
             const inputs = form.querySelectorAll('input, select, button[type="submit"]');
-            inputs.forEach(input => {
-                input.disabled = false;
-            });
+            inputs.forEach(input => input.disabled = false);
         }
 
         async function loadAccountDefaults() {
@@ -516,13 +476,7 @@
         }
 
         function openRegistryForm() {
-            const params = new URLSearchParams({
-                username: credentials.username,
-                token: credentials.token,
-                language: credentials.language,
-                filter: credentials.filter
-            });
-            window.open(`dashboard-registry.html?${params.toString()}`, '_blank');
+            CredentialsManager.openWindow('dashboard-registry.html');
         }
 
         async function loadTranslations(lang) {
@@ -545,7 +499,6 @@
             document.getElementById('registryBtnText').textContent = getTranslation('int.newregistry') || 'Crea Anagrafica';
             document.getElementById('closeText').textContent = getTranslation('int.close');
 
-            // Aggiorna le label dei campi
             const fields = manifest['dashboard-account'];
             fields.forEach(fieldDef => {
                 const fieldName = fieldDef.split('@')[0];
@@ -554,14 +507,12 @@
                     labelElement.textContent = getTranslation(`int.account.${fieldName}`) || fieldName + ':';
                 }
 
-                // Aggiorna le opzioni delle select se esistono
                 const selectElement = document.getElementById(fieldName);
                 if (selectElement && selectElement.tagName === 'SELECT') {
                     Array.from(selectElement.options).forEach(option => {
                         if (option.value === '') {
                             option.textContent = getTranslation('int.select.option') || '-- seleziona --';
                         } else {
-                            // Trova il dominio corrispondente
                             const domainKey = fieldDef.split('@')[1];
                             if (domainKey && domine[domainKey]) {
                                 const domainValue = domine[domainKey].find(v => v.endsWith(`:${option.value}`));
@@ -574,7 +525,6 @@
                 }
             });
 
-            // Aggiorna i testi dei pulsanti
             const saveText = document.getElementById('saveText');
             const resetText = document.getElementById('resetText');
             if (saveText) saveText.textContent = getTranslation('int.save') || getTranslation('int.update');
@@ -606,7 +556,6 @@
                 }
             });
 
-            // Gestione speciale per account_level (combinazione di portfolio e yield)
             if (formData.account_level_portfolio && formData.account_level_yield) {
                 formData.account_level = `${formData.account_level_portfolio},${formData.account_level_yield}`;
             }
@@ -627,9 +576,7 @@
 
                 const response = await fetch(`${API_URL}/putaccount`, {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
                 });
 
@@ -663,7 +610,12 @@
         });
 
         window.addEventListener('load', async () => {
-            if (getCredentialsFromURL()) {
+            credentials = CredentialsManager.initialize({
+                requireAuth: true,
+                messageElementId: 'message'
+            });
+
+            if (credentials) {
                 const configLoaded = await loadConfigurations();
                 if (configLoaded) {
                     generateForm();

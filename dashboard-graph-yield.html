@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="it">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Yield Graph - Tron Style</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&display=swap');
+
+        :root {
+            --bg-color: #050505;
+            --neon-cyan: #00f3ff;
+            --neon-red: #ff0055;
+            --neon-blue: #0066ff;
+            --glass-bg: rgba(0, 20, 40, 0.85);
+            --text-color: #e0f7fa;
+        }
+
+        body {
+            font-family: 'Orbitron', sans-serif;
+            background-color: var(--bg-color);
+            background-image:
+                linear-gradient(rgba(255, 0, 85, 0.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 0, 85, 0.05) 1px, transparent 1px);
+            background-size: 50px 50px;
+            margin: 0;
+            padding: 20px;
+            color: var(--text-color);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .header-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 20px;
+            background: var(--glass-bg);
+            border: 1px solid var(--neon-red);
+            box-shadow: 0 0 15px rgba(255, 0, 85, 0.3);
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 1.5rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: var(--neon-red);
+            text-shadow: 0 0 10px var(--neon-red);
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
+        select {
+            padding: 8px 15px;
+            background: rgba(255, 0, 85, 0.1);
+            border: 1px solid var(--neon-red);
+            color: #fff;
+            font-family: 'Orbitron', sans-serif;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        select:focus {
+            outline: none;
+            box-shadow: 0 0 10px var(--neon-red);
+        }
+
+        option {
+            background: #000;
+            color: var(--neon-cyan);
+        }
+
+        .chart-wrapper {
+            flex: 1;
+            position: relative;
+            background: var(--glass-bg);
+            border: 1px solid var(--neon-blue);
+            border-radius: 8px;
+            box-shadow: 0 0 20px rgba(0, 102, 255, 0.1);
+            padding: 20px;
+            min-height: 0;
+        }
+
+        #loading {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 999;
+            color: var(--neon-red);
+            font-size: 1.2rem;
+            flex-direction: column;
+        }
+
+        .spinner {
+            border: 4px solid rgba(255, 0, 85, 0.1);
+            border-left: 4px solid var(--neon-red);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin-bottom: 15px;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="loading">
+        <div class="spinner"></div>
+        <div id="loadingText">Analyzing Yield Data...</div>
+    </div>
+
+    <div class="header-bar">
+        <h1>Profitability Analysis</h1>
+        <div class="controls">
+            <label for="grouping-select">Group By:</label>
+            <select id="grouping-select" onchange="renderChart()">
+                <option value="">Nessun raggruppamento</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="chart-wrapper">
+        <canvas id="chartCanvas"></canvas>
+    </div>
+
+    <script>
+        const API_URL = "https://feweb-tunnel.fe-web.eu";
+        let chartInstance = null;
+        let profitabilityData = [];
+        let classificationMap = {};
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const username = urlParams.get('username');
+        const token = urlParams.get('token');
+        const language = urlParams.get('language') || 'it_IT';
+
+        async function init() {
+            if (!username || !token) {
+                document.getElementById('loadingText').textContent = "Access Denied";
+                return;
+            }
+            await loadYield();
+        }
+
+        async function loadYield() {
+            try {
+                const payload = {
+                    username: username,
+                    token: token,
+                    language: language,
+                    filter: "",
+                    code: ""
+                };
+
+                const response = await fetch(`${API_URL}/getportfolioyield`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const data = await response.json();
+
+                if (data.status === 'ok') {
+                    // Parse Classification
+                    let classificationList = data.classification;
+                    if (typeof classificationList === 'string') {
+                        try { classificationList = JSON.parse(classificationList.replace(/'/g, '"')); }
+                        catch (e) { classificationList = []; }
+                    }
+
+                    if (Array.isArray(classificationList)) {
+                        classificationList.forEach(item => {
+                            if (item.id_instrument) classificationMap[item.id_instrument] = item;
+                        });
+                        populateGroupingSelect(classificationList);
+                    }
+
+                    // Parse Yield
+                    const rawYield = data.portfolioyield || {};
+                    profitabilityData = [];
+
+                    const parseYieldItem = (symbol, details) => {
+                        const flatItem = { Ticker: symbol };
+                        if (details && typeof details === 'object') {
+                            Object.keys(details).forEach(key => {
+                                let val = details[key];
+                                if (typeof val === 'string' && /^-?\d+(\.\d+)?$/.test(val.trim())) {
+                                    flatItem[key] = parseFloat(val);
+                                } else {
+                                    flatItem[key] = val;
+                                }
+                            });
+                        }
+                        return flatItem;
+                    };
+
+                    if (Array.isArray(rawYield)) {
+                        rawYield.forEach(entry => {
+                            if (Array.isArray(entry) && entry.length === 2) profitabilityData.push(parseYieldItem(entry[0], entry[1]));
+                        });
+                    } else if (typeof rawYield === 'object') {
+                        Object.keys(rawYield).forEach(symbol => profitabilityData.push(parseYieldItem(symbol, rawYield[symbol])));
+                    }
+
+                    document.getElementById('loading').style.display = 'none';
+                    renderChart();
+                } else {
+                    alert("Error loading data");
+                }
+            } catch (error) {
+                console.error(error);
+                document.getElementById('loadingText').textContent = "Data Corrupted";
+            }
+        }
+
+        function populateGroupingSelect(list) {
+            const select = document.getElementById('grouping-select');
+            if (list.length > 0) {
+                const keys = Object.keys(list[0]).filter(k => k !== 'id_instrument');
+                keys.forEach(key => {
+                    const opt = document.createElement('option');
+                    opt.value = key;
+                    opt.textContent = key.replace(/_/g, ' ').toUpperCase();
+                    select.appendChild(opt);
+                });
+            }
+        }
+
+        function renderChart() {
+            const ctx = document.getElementById('chartCanvas').getContext('2d');
+            if (chartInstance) chartInstance.destroy();
+
+            const groupValue = document.getElementById('grouping-select').value;
+            const isGrouped = groupValue && groupValue !== "";
+
+            let labels = [];
+            let dataValues = [];
+
+            // Filter valid numeric RISTOT
+            let activeData = profitabilityData.filter(item => {
+                let rawVal = item.RISTOT;
+                if (!rawVal) return false;
+                if (typeof rawVal === 'string') rawVal = rawVal.replace(',', '.');
+                return !isNaN(parseFloat(rawVal));
+            });
+
+            if (isGrouped) {
+                const groups = {};
+                activeData.forEach(item => {
+                    let groupLabel = 'Other';
+                    const instrumentId = item.id_instrument;
+                    if (instrumentId) {
+                        let classObj = classificationMap[instrumentId] || classificationMap[String(instrumentId)];
+                        if (classObj && classObj[groupValue]) groupLabel = classObj[groupValue];
+                    }
+                    if (!groups[groupLabel]) groups[groupLabel] = 0;
+
+                    let val = item.RISTOT;
+                    if (typeof val === 'string') val = parseFloat(val.replace(',', '.'));
+                    groups[groupLabel] += val;
+                });
+
+                const sorted = Object.entries(groups).sort((a, b) => b[1] - a[1]);
+                labels = sorted.map(e => e[0]);
+                dataValues = sorted.map(e => e[1]);
+            } else {
+                activeData.sort((a, b) => {
+                    let valA = parseFloat(a.RISTOT);
+                    let valB = parseFloat(b.RISTOT);
+                    return valB - valA;
+                });
+                // Limit for performance visual
+                if (activeData.length > 40) activeData = activeData.slice(0, 40);
+
+                labels = activeData.map(item => item.instrument_description || item.Ticker || "Unknown");
+                dataValues = activeData.map(item => parseFloat(item.RISTOT));
+            }
+
+            const backgroundColors = dataValues.map(v => v >= 0 ? 'rgba(0, 243, 255, 0.6)' : 'rgba(255, 0, 85, 0.6)');
+            const borderColors = dataValues.map(v => v >= 0 ? '#00f3ff' : '#ff0055');
+
+            chartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Total Result (EUR)',
+                        data: dataValues,
+                        backgroundColor: backgroundColors,
+                        borderColor: borderColors,
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            ticks: {
+                                color: '#e0f7fa',
+                                font: { family: 'Orbitron', size: 10 },
+                                maxRotation: 45,
+                                minRotation: 45
+                            },
+                            grid: { color: 'rgba(0, 243, 255, 0.1)' }
+                        },
+                        y: {
+                            ticks: {
+                                color: '#e0f7fa',
+                                callback: function (value) {
+                                    return new Intl.NumberFormat('it-IT', { notation: "compact" }).format(value);
+                                }
+                            },
+                            grid: { color: 'rgba(0, 243, 255, 0.1)' }
+                        }
+                    },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: 'rgba(0, 5, 16, 0.9)',
+                            titleColor: '#fff',
+                            bodyColor: '#e0f7fa',
+                            borderColor: '#0066FF',
+                            borderWidth: 1,
+                            callbacks: {
+                                label: function (context) {
+                                    let val = context.parsed.y;
+                                    return new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(val);
+                                }
+                            }
+                        }
+                    }
+                },
+                plugins: [{
+                    id: 'barValues',
+                    afterDatasetsDraw: (chart) => {
+                        const ctx = chart.ctx;
+                        ctx.save();
+                        ctx.font = 'bold 10px "Orbitron", sans-serif';
+                        ctx.textAlign = 'center';
+                        ctx.textBaseline = 'middle';
+
+                        chart.data.datasets.forEach((dataset, i) => {
+                            const meta = chart.getDatasetMeta(i);
+                            if (meta.hidden) return;
+                            meta.data.forEach((element, index) => {
+                                const value = dataset.data[index];
+                                if (value === 0) return;
+
+                                const formatted = new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(value);
+                                const x = element.x;
+                                let y = element.y;
+
+                                ctx.fillStyle = value >= 0 ? '#00f3ff' : '#ff0055';
+                                y += (value >= 0) ? -15 : 15;
+
+                                ctx.fillText(formatted, x, y);
+                            });
+                        });
+                        ctx.restore();
+                    }
+                }]
+            });
+        }
+
+        window.onload = init;
+    </script>
+</body>
+
+</html>
