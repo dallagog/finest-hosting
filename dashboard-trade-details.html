@@ -136,6 +136,7 @@
         </div>
     </div>
 
+    <script src="credential-manager.js"></script>
     <script>
         const API_URL = 'https://feweb-tunnel.fe-web.eu';
 
@@ -144,10 +145,17 @@
         const code = urlParams.get('code');
         const index = urlParams.get('index');
 
-        // Get Auth from LocalStorage
-        const username = localStorage.getItem("username");
-        const token = localStorage.getItem("token");
-        const language = localStorage.getItem("language") || 'it_IT';
+        // Initialize CredentialsManager
+        const credentials = CredentialsManager.initialize({
+            requireAuth: true,
+            onError: () => {
+                document.body.innerHTML = '<h2 style="color:red;text-align:center;margin-top:20%">Access Denied</h2>';
+            }
+        });
+
+        const username = credentials.username;
+        const token = credentials.token;
+        const language = credentials.language || 'it_IT';
 
         let translations = {};
 

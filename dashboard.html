@@ -8,6 +8,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <script src="js/dashboard-shared.js"></script>
+    <script src="credential-manager.js"></script>
 
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&display=swap');
@@ -737,24 +738,75 @@
             }
         })();
 
-        const API_URL = "https://feweb-tunnel.fe-web.eu";
-        let filterData = null;
-        let selectedAccounts = [];
-        let credentials = { username: '', token: '', language: '', filter: '' };
+        // Initialize CredentialsManager immediately
+        const credentials = CredentialsManager.initialize({
+            requireAuth: true,
+            onError: () => {
+                window.location.href = 'login.html';
+            }
+        });
+
+        const username = credentials.username;
+        const token = credentials.token;
+        const language = credentials.language;
+        let filterData = credentials.filter ? JSON.parse(credentials.filter) : null;
         let pdfBase64 = null;
+        let isMobile = false;
+
+        const API_URL = "https://feweb-tunnel.fe-web.eu";
+        const API_CHECK_INTERVAL = 30000; // 30 seconds
+
+        // Translations & Columns
         let translations = {};
         let availableLanguages = [];
         let currencies = [];
         let classificationFilter = [];
         let portfolioColumns = [];
         let profitabilityColumns = [];
+        let selectedAccounts = [];
         let showHistorical = false;
+
+        async function init() {
+            console.log("🚀 Dashboard initializing...");
+
+            // If we are here, credentials are valid (handled by CredentialsManager)
+            document.getElementById('usernameDisplay').textContent = username;
+            document.getElementById('headerBar').style.display = 'flex';
+            document.getElementById('authCheck').style.display = 'none';
+            document.getElementById('mainContent').style.display = 'block';
+
+            // Load translations
+            await initializeLanguages();
+            await loadTranslations(language);
+            updatePageTranslations();
+
+            // Mobile check
+            checkMobile();
+            window.addEventListener('resize', checkMobile);
+
+            // Load initial data
+            await updateUserInfo();
+            loadMenu();
+            await loadAccounts();
+            await loadFilter();        // filter might be in creds or fetched
+            // If filter is not in creds, loadFilter will fetch it.
+            // If it is in creds, loadFilter uses it? Let's check loadFilter.
+
+            // Start Health Check
+            startHealthCheck();
+
+            // Setup UI
+            setupCollapsibles();
+            setupDateInputs();
+
+            console.log("✅ Dashboard initialized");
+        }
 
         // ========== NEW GRAPH FUNCTION ==========
         function openGraphNewWindow(type) {
-            const u = credentials.username || localStorage.getItem('username');
-            const t = credentials.token || localStorage.getItem('token');
-            const l = credentials.language || localStorage.getItem('language') || 'it_IT';
+            const u = username;
+            const t = token;
+            const l = language;
 
             if (!u || !t) {
                 showMessage("Sessione non valida per aprire il grafico.", 'error');
@@ -927,6 +979,61 @@
         }
 
         // ========== UTILITY FUNCTIONS ==========
+        function checkMobile() {
+            isMobile = window.innerWidth <= 768;
+            // Additional logic for mobile view if needed
+        }
+
+        function startHealthCheck() {
+            setInterval(async () => {
+                try {
+                    const response = await fetch(`${API_URL}/health`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ username, token })
+                    });
+                    if (!response.ok) {
+                        console.warn('API health check failed, session might be invalid.');
+                        showMessage(getTranslation('int.session.expired') || 'Sessione scaduta.', 'error');
+                        setTimeout(logout, 2000); // Redirect to login on health check failure
+                    }
+                } catch (error) {
+                    console.error('Health check error:', error);
+                    showMessage(getTranslation('int.session.expired') || 'Sessione scaduta.', 'error');
+                    setTimeout(logout, 2000); // Redirect to login on health check failure
+                }
+            }, API_CHECK_INTERVAL);
+        }
+
+        function setupCollapsibles() {
+            document.querySelectorAll('.collapsible-container').forEach(container => {
+                const header = container.querySelector('.collapsible-header');
+                const content = container.querySelector('.collapsible-content');
+                const toggleBtn = header.querySelector('.toggle-btn');
+
+                if (content.classList.contains('active')) {
+                    toggleBtn.textContent = '-';
+                } else {
+                    toggleBtn.textContent = '+';
+                }
+            });
+        }
+
+        function setupDateInputs() {
+            const today = new Date();
+            const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+            const lastDayOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+
+            const formatDate = (date) => date.toISOString().split('T')[0];
+
+            if (!document.getElementById('date-start').value) {
+                document.getElementById('date-start').value = formatDate(firstDayOfMonth);
+            }
+            if (!document.getElementById('date-end').value) {
+                document.getElementById('date-end').value = formatDate(lastDayOfMonth);
+            }
+        }
+
         function toggleHistorical() {
             showHistorical = !showHistorical;
             const btn = document.getElementById('historicalBtn');
@@ -964,28 +1071,9 @@
         }
 
         // ========== AUTHENTICATION ==========
-        function checkAuthentication() {
-            const username = localStorage.getItem("username");
-            const token = localStorage.getItem("token");
-            const language = localStorage.getItem("language") || 'it_IT';
-            const filter = localStorage.getItem("filter");
-
-            credentials.username = username;
-            credentials.token = token;
-            credentials.language = language;
-            credentials.filter = filter;
-
-            document.getElementById('usernameDisplay').textContent = username || '-';
-            document.getElementById('headerBar').style.display = 'flex';
-            document.getElementById('authCheck').style.display = 'none';
-            document.getElementById('mainContent').style.display = 'block';
-
-            return true;
-        }
-
         async function updateUserInfo() {
             const f = (filterData && filterData.Filter) ? filterData.Filter : {};
-            const userLanguage = f.language || credentials.language || localStorage.getItem('language');
+            const userLanguage = f.language || language;
             const userCurrency = f.currency || localStorage.getItem('currency');
 
             if (userLanguage) {
@@ -1063,9 +1151,9 @@
 
         async function loadAccounts() {
             const payload = {
-                username: credentials.username || "",
-                token: credentials.token || "",
-                language: credentials.language || "",
+                username: username,
+                token: token,
+                language: language,
                 account: ""
             };
 
@@ -1275,11 +1363,22 @@
 
         async function loadFilter() {
             try {
+                if (filterData) { // If filterData is already loaded from CredentialsManager
+                    populateFilterUI();
+                    await _afterFilterLoaded_mergeAccounts();
+                    syncSelectedAccountsFromFilter();
+                    renderReportsList_patched();
+                    filterAndRenderTables();
+                    await updateUserInfo();
+                    showMessage(getTranslation('int.filters.loaded') || 'Filtri e account caricati', 'success');
+                    return;
+                }
+
                 showMessage(getTranslation('int.loading.filters') || 'Caricamento filtri e account in corso...', 'loading');
                 const payload = {
-                    username: credentials.username || "",
-                    token: credentials.token || "",
-                    language: credentials.language || "",
+                    username: username,
+                    token: token,
+                    language: language,
                     filter: credentials.filter || "",
                     code: ""
                 };
@@ -1293,7 +1392,7 @@
                 if (!response.ok) {
                     if (response.status === 401 || response.status === 403) {
                         showMessage(getTranslation('int.session.expired') || 'Sessione scaduta.', 'error');
-                        setTimeout(redirectToLogin, 2000);
+                        setTimeout(logout, 2000);
                         return;
                     }
                     throw new Error('HTTP ' + response.status);
@@ -1395,14 +1494,8 @@
             renderProfitabilityTable();
         }
 
-        function createNewAccount() {
-            const params = new URLSearchParams({
-                username: credentials.username || "",
-                token: credentials.token || "",
-                language: credentials.language || "",
-                filter: credentials.filter || ''
-            });
-            window.open(`dashboard-account.html?${params.toString()}`, '_blank');
+        function openAccountWindow() {
+            CredentialsManager.openWindow('dashboard-account.html');
         }
 
         // ========== APPLY FILTERS ==========
@@ -1427,9 +1520,9 @@
 
                 showMessage(getTranslation('int.sending.filters') || 'Invio filtri al server...', 'loading');
                 const payload = {
-                    username: credentials.username || "",
-                    token: credentials.token || "",
-                    language: credentials.language || "",
+                    username: username,
+                    token: token,
+                    language: language,
                     filter: filterData || "",
                     code: ""
                 };
@@ -1453,9 +1546,9 @@
             try {
                 showMessage(getTranslation('int.loading.pdf') || 'Caricamento PDF...', 'loading');
                 const payload = {
-                    username: credentials.username || "",
-                    token: credentials.token || "",
-                    language: credentials.language || "",
+                    username: username,
+                    token: token,
+                    language: language,
                     filter: credentials.filter || "",
                     code: ""
                 };
@@ -1469,6 +1562,7 @@
                 if (!data || data.status !== 'ok' || !data.pdf_data) throw new Error('PDF non disponibile');
                 displayPDF(data.pdf_data);
             } catch (error) {
+                console.error('displayPDF error', error);
                 showMessage((getTranslation('int.error.loading.pdf') || 'Errore') + ': ' + error.message, 'error');
             }
         }
@@ -1523,9 +1617,9 @@
         async function loadPortfolio() {
             try {
                 const payload = {
-                    username: credentials.username || "",
-                    token: credentials.token || "",
-                    language: credentials.language || "",
+                    username: username,
+                    token: token,
+                    language: language,
                     filter: "",
                     code: ""
                 };
@@ -1744,9 +1838,9 @@
         async function openPortfolioDetails(idAccount, idInstrument) {
             try {
                 const payload = {
-                    username: credentials.username || "",
-                    token: credentials.token || "",
-                    language: credentials.language || "",
+                    username: username,
+                    token: token,
+                    language: language,
                     filter: "",
                     code: `${idAccount}:${idInstrument}` || ""
                 };
@@ -1803,9 +1897,9 @@
         async function loadProfitability() {
             try {
                 const payload = {
-                    username: credentials.username || "",
-                    token: credentials.token || "",
-                    language: credentials.language || "",
+                    username: username,
+                    token: token,
+                    language: language,
                     filter: "",
                     code: ""
                 };
@@ -2032,56 +2126,32 @@
 
         // ========== LOGOUT ==========
         async function logout() {
-            try {
-                const payload = {
-                    username: credentials.username || "",
-                    token: credentials.token || "",
-                    language: credentials.language || "",
-                    filter: credentials.filter || ""
-                };
-                const response = await fetch(`${API_URL}/logout`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-                const data = await response.json().catch(() => null);
-                if (data && data.status === 'ok') {
-                    showMessage(getTranslation('int.logout.success') || 'Logout successo', 'success');
-                    localStorage.clear();
-                    setTimeout(() => { window.location.href = 'login.html'; }, 1000);
-                } else showMessage('Logout error', 'error');
-            } catch (error) { console.error('logout error', error); }
+            CredentialsManager.clearCredentials();
+            window.location.href = 'login.html';
         }
 
         function openTradingDashboard() {
             const params = new URLSearchParams({
-                username: credentials.username || "",
-                token: credentials.token || "",
-                language: credentials.language || ""
+                username: username,
+                token: token,
+                language: language
             });
             window.open(`dashboard-trading.html?${params.toString()}`, '_blank');
         }
 
-        function redirectToLogin() {
-            localStorage.clear();
-            window.location.href = 'login.html';
-        }
-
         // ========== INITIALIZATION ==========
         window.addEventListener('load', async () => {
-            if (checkAuthentication()) {
-                await initializeLanguages();
-                await loadTranslations(credentials.language);
-                updatePageTranslations();
-                await updateUserInfo();
-                loadMenu();
-                await loadAccounts();
-                await loadFilter();
-                renderReportsList_patched();
-                loadPortfolio();
-                loadProfitability();
-            }
-        });
+            await initializeLanguages();
+            await loadTranslations(credentials.language);
+            updatePageTranslations();
+            await updateUserInfo();
+            loadMenu();
+            await loadAccounts();
+            await loadFilter();
+            renderReportsList_patched();
+            loadPortfolio();
+            loadProfitability();
+        }); // End load listener
 
         document.getElementById('apply-filters')?.addEventListener('click', (e) => {
             e.preventDefault();

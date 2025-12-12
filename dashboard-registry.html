@@ -246,9 +246,15 @@
         </div>
     </div>
 
-    <script src="credentials-manager.js"></script>
+    <script src="credential-manager.js"></script>
     <script>
-        let credentials = { username: '', token: '', language: '', filter: '' };
+        // Init CredentialsManager
+        const credentials = CredentialsManager.initialize({
+            requireAuth: true,
+            onError: () => {
+                showMessage('Credenziali mancanti', 'error');
+            }
+        });
         let translations = {};
         let registryDefaults = null;
         let domainData = {};
@@ -536,7 +542,7 @@
         });
 
         window.addEventListener('load', async () => {
-            if (getCredentialsFromURL()) {
+            if (credentials.username && credentials.token) {
                 await loadManifestData();
                 await loadDomainData();
                 await loadTranslations(credentials.language);

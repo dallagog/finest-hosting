@@ -361,6 +361,7 @@
         <i class="fa fa-fingerprint"></i> Ruota il Tesseratto
     </div>
 
+    <script src="credential-manager.js"></script>
     <script>
         /* ========== LOGICA TRON 4D ========== */
 
@@ -524,17 +525,20 @@
             document.body.style.opacity = 0;
             document.body.style.transition = "opacity 0.3s";
             setTimeout(() => {
-                window.location.href = url;
+                CredentialsManager.navigate(url);
             }, 300);
         }
 
         function loadUser() {
-            const u = localStorage.getItem("username");
+            const creds = CredentialsManager.getCredentials();
+            const u = creds.username;
             if (u) usernameDisplay.innerText = "OP: " + u;
+            // Also ensure we have credentials saved/synced if needed
+            CredentialsManager.saveCredentials(creds);
         }
 
         function handleLogout() {
-            localStorage.clear();
+            CredentialsManager.clearCredentials();
             window.location.href = 'login.html';
         }
 
