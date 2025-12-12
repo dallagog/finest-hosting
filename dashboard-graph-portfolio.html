@@ -7,6 +7,7 @@
     <title>Portfolio Graph - Tron Style</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&display=swap');
 
@@ -42,7 +43,6 @@
             overflow: hidden;
         }
 
-        /* 1. Header con layout a 3 colonne (Sinistra-Centro-Destra) */
         .header-bar {
             display: grid;
             grid-template-columns: 1fr auto 1fr;
@@ -56,7 +56,6 @@
             flex-shrink: 0;
         }
 
-        /* Contenitore Sinistro: Username e Lingua */
         .header-left {
             display: flex;
             flex-direction: column;
@@ -80,7 +79,7 @@
             color: var(--text-color);
         }
 
-        .language-display .flag-icon {
+        .flag-icon {
             width: 20px;
             height: 15px;
             background-color: var(--neon-blue);
@@ -92,11 +91,6 @@
             box-shadow: 0 0 5px rgba(0, 243, 255, 0.5);
         }
 
-        /* Contenitore Centrale: Titolo */
-        .header-center {
-            text-align: center;
-        }
-
         h1 {
             margin: 0;
             font-size: 1.5rem;
@@ -106,7 +100,6 @@
             text-shadow: 0 0 10px var(--neon-cyan);
         }
 
-        /* Contenitore Destro: Raggruppamento e Chiudi */
         .header-right {
             display: flex;
             gap: 15px;
@@ -124,7 +117,6 @@
             cursor: pointer;
         }
 
-        /* 1. Stile Tasto Chiudi coerente con dashboard (Logout) */
         .close-button {
             padding: 8px 15px;
             background: var(--button-bg);
@@ -152,7 +144,7 @@
             border: 1px solid var(--neon-cyan);
             border-radius: 8px;
             box-shadow: 0 0 20px rgba(0, 243, 255, 0.1);
-            padding: 20px;
+            padding: 15px;
             min-height: 0;
             display: flex;
             justify-content: center;
@@ -161,14 +153,12 @@
 
         /* Grafico più piccolo */
         #chartContainerInner {
-            position: relative;
-            max-width: 80%;
-            max-height: 80%;
+            max-width: 55%;
+            max-height: 55%;
             width: 100%;
             height: 100%;
+            margin: auto;
         }
-
-        /* Stili loading omessi per brevità */
     </style>
 </head>
 
@@ -191,8 +181,7 @@
 
         <div class="header-right">
             <label for="grouping-select" id="grouping-label">Group By:</label>
-            <select id="grouping-select" onchange="renderChart()">
-            </select>
+            <select id="grouping-select" onchange="renderChart()"></select>
             <button class="close-button" onclick="closeWindow()" id="close-btn"></button>
         </div>
     </div>
@@ -204,387 +193,251 @@
     </div>
 
     <script>
-        // --- Simulazione Funzioni di Traduzione e Mappatura ---
+        /* -----------------------------------------------------------
+           SIMULAZIONE TRADUZIONI
+        ----------------------------------------------------------- */
         const translations = {
             'it_IT': {
                 'int.no_grouping': 'Nessun raggruppamento',
                 'int.group_by': 'Raggruppa per:',
                 'int.close': 'CHIUDI',
-                'lang.it_IT': 'Italiano',
-                'group.asset_type': 'Tipo Asset',
-                'group.geography': 'Geografia',
-                'group.currency': 'Valuta',
+                'int.no_grouping': 'Nessun raggruppamento'
             },
             'en_US': {
                 'int.no_grouping': 'No Grouping',
                 'int.group_by': 'Group By:',
-                'int.close': 'CLOSE',
-                'lang.it_IT': 'Italian',
-                'group.asset_type': 'Asset Type',
-                'group.geography': 'Geography',
-                'group.currency': 'Currency',
+                'int.close': 'CLOSE'
             }
         };
 
-        const languageMap = {
-            'it_IT': { name: 'Italiano', initials: 'IT' },
-            'en_US': { name: 'English', initials: 'EN' },
-        };
-
         function getTranslation(key) {
-            const lang = language;
-            const t = translations[lang] || translations['it_IT'];
-            return t[key] || key;
+            return translations[language]?.[key] || key;
         }
 
-        function getFlagIcon(lang) {
-            const langInfo = languageMap[lang] || languageMap['it_IT'];
-            return `<div class="flag-icon" title="${langInfo.name}">${langInfo.initials}</div>`;
-        }
-
-        function closeWindow() {
-            window.close();
-        }
-        // --- Fine Simulazione ---
-
-
+        /* -----------------------------------------------------------
+           VARIABILI GLOBALI
+        ----------------------------------------------------------- */
         const API_URL = "https://feweb-tunnel.fe-web.eu";
         let chartInstance = null;
         let portfolioData = [];
         let classificationMap = {};
-        // Codici di raggruppamento utilizzati in dashboard.html
-        const groupingKeys = ['asset_type', 'geography', 'currency'];
 
-        // Get params from URL
         const urlParams = new URLSearchParams(window.location.search);
-        const username = urlParams.get('username') || 'UTENTE_NON_AUTORIZZATO';
+        const username = urlParams.get('username') || 'USER';
         const token = urlParams.get('token');
         const language = urlParams.get('language') || 'it_IT';
-        const initialGrouping = urlParams.get('grouping') || ''; // 2. Deve contenere il CODICE (es. 'asset_type')
+        const initialGrouping = urlParams.get('grouping') || "";
+
+        /* -----------------------------------------------------------
+           INIT
+        ----------------------------------------------------------- */
+        window.onload = init;
 
         async function init() {
             document.getElementById('username-display').textContent = 'USER: ' + username;
-
-            if (!username || !token) {
-                document.getElementById('loadingText').textContent = "Unauthorized Access";
-                return;
-            }
-
-            await loadPortfolio();
-            updateHeaderTranslations();
-            // 2. Applicazione del raggruppamento di default (dal codice URL)
-            if (initialGrouping) {
-                // Importante: qui si usa il codice del raggruppamento (es. 'asset_type')
-                document.getElementById('grouping-select').value = initialGrouping;
-            }
+            loadPortfolio();
         }
 
-        function updateHeaderTranslations() {
-            document.getElementById('grouping-label').textContent = getTranslation('int.group_by');
-            document.getElementById('close-btn').textContent = getTranslation('int.close');
-
-            const langIndicator = document.getElementById('language-indicator');
-            const langName = getTranslation('lang.' + language);
-            langIndicator.innerHTML = `${getFlagIcon(language)} <span>${langName}</span>`;
-        }
-
+        /* -----------------------------------------------------------
+           CARICA PORTAFOGLIO + CLASSIFICAZIONE (come dashboard)
+        ----------------------------------------------------------- */
         async function loadPortfolio() {
-            // ... (Funzione omessa, la logica di chiamata API è la stessa) ...
             try {
+
                 const payload = {
-                    username: username,
-                    token: token,
-                    language: language,
+                    username,
+                    token,
+                    language,
                     filter: "",
                     code: ""
                 };
 
                 const response = await fetch(`${API_URL}/getportfolio`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
                     body: JSON.stringify(payload)
                 });
 
                 const data = await response.json();
 
-                if (data.status === 'ok') {
-                    let classificationList = data.classification;
-                    if (typeof classificationList === 'string') {
-                        try { classificationList = JSON.parse(classificationList.replace(/'/g, '"')); }
-                        catch (e) { classificationList = []; }
-                    }
-
-                    if (Array.isArray(classificationList)) {
-                        classificationList.forEach(item => {
-                            if (item.id_instrument) classificationMap[item.id_instrument] = item;
-                        });
-                        populateGroupingSelect(classificationList);
-                    }
-
-                    const rawPortfolio = data.portfolio || {};
-                    portfolioData = [];
-                    const parsePortfolioItem = (symbol, details) => {
-                        const flatItem = { Ticker: symbol };
-                        if (details && typeof details === 'object') {
-                            Object.keys(details).forEach(key => {
-                                let val = details[key];
-                                if (typeof val === 'string' && /^-?\d+(\.\d+)?$/.test(val.trim())) {
-                                    flatItem[key] = parseFloat(val);
-                                } else {
-                                    flatItem[key] = val;
-                                }
-                            });
-                        }
-                        return flatItem;
-                    };
-
-                    if (Array.isArray(rawPortfolio)) {
-                        rawPortfolio.forEach(entry => {
-                            if (Array.isArray(entry) && entry.length === 2) portfolioData.push(parsePortfolioItem(entry[0], entry[1]));
-                        });
-                    } else if (typeof rawPortfolio === 'object') {
-                        Object.keys(rawPortfolio).forEach(symbol => portfolioData.push(parsePortfolioItem(symbol, rawPortfolio[symbol])));
-                    }
-
-                    document.getElementById('loading').style.display = 'none';
-                    renderChart();
-                } else {
-                    alert("Error loading data");
+                if (data.status !== "ok") {
+                    alert("Errore caricamento dati");
+                    return;
                 }
-            } catch (error) {
-                console.error(error);
-                document.getElementById('loadingText').textContent = "System Failure";
+
+                /* ---- Classificazioni ---- */
+                let classificationList = data.classification;
+                if (typeof classificationList === "string") {
+                    try {
+                        classificationList = JSON.parse(classificationList.replace(/'/g, '"'));
+                    } catch { classificationList = []; }
+                }
+
+                if (Array.isArray(classificationList)) {
+                    classificationList.forEach(item => {
+                        if (item.id_instrument)
+                            classificationMap[item.id_instrument] = item;
+                    });
+                }
+
+                populateGroupingSelect(classificationList);
+
+                /* ---- Portafoglio ---- */
+                const rawPort = data.portfolio || {};
+                portfolioData = [];
+
+                const parseItem = (symbol, obj) => {
+                    const flat = { Ticker: symbol };
+                    for (let k in obj) {
+                        let v = obj[k];
+                        if (typeof v === "string" && /^-?\d+(\.\d+)?$/.test(v.trim()))
+                            flat[k] = parseFloat(v);
+                        else flat[k] = v;
+                    }
+                    return flat;
+                };
+
+                if (Array.isArray(rawPort)) {
+                    rawPort.forEach(e => {
+                        if (Array.isArray(e) && e.length === 2)
+                            portfolioData.push(parseItem(e[0], e[1]));
+                    });
+                } else {
+                    Object.keys(rawPort).forEach(key => {
+                        portfolioData.push(parseItem(key, rawPort[key]));
+                    });
+                }
+
+                document.getElementById("loading").style.display = "none";
+
+                renderChart();
+
+            } catch (err) {
+                console.error(err);
             }
         }
 
-        function populateGroupingSelect(list) {
+        /* -----------------------------------------------------------
+           RAGGRUPPAMENTI IDENTICI ALLA DASHBOARD
+        ----------------------------------------------------------- */
+        function populateGroupingSelect(classificationList) {
             const select = document.getElementById('grouping-select');
-            select.innerHTML = '';
+            select.innerHTML = `<option value="">${getTranslation('int.no_grouping')}</option>`;
 
-            let optNone = document.createElement('option');
-            // 2. Value è il codice: stringa vuota per 'Nessun raggruppamento'
-            optNone.value = "";
-            optNone.textContent = getTranslation('int.no_grouping');
-            select.appendChild(optNone);
+            let keys = [];
 
-            groupingKeys.forEach(key => {
-                const opt = document.createElement('option');
-                // 2. Value è il CODICE del raggruppamento (es. 'asset_type')
-                opt.value = key;
-                // Il testo è la traduzione (es. 'Tipo Asset')
-                opt.textContent = getTranslation('group.' + key) || key.replace(/_/g, ' ').toUpperCase();
+            if (Array.isArray(classificationList) && classificationList.length > 0) {
+                keys = Object.keys(classificationList[0]).filter(k => k !== "id_instrument");
+            }
+
+            keys.forEach(k => {
+                const opt = document.createElement("option");
+                opt.value = k;
+                opt.textContent = getTranslation(k) || k;
                 select.appendChild(opt);
             });
 
-            if (initialGrouping) {
+            if (initialGrouping)
                 select.value = initialGrouping;
-            }
         }
 
-        function generateTronColors(count) {
-            const colors = [];
-            for (let i = 0; i < count; i++) {
-                const hue = (180 + (i * 35)) % 360;
-                colors.push(`hsl(${hue}, 90%, 60%)`);
+        /* -----------------------------------------------------------
+           COLORI
+        ----------------------------------------------------------- */
+        function generateColors(n) {
+            const arr = [];
+            for (let i = 0; i < n; i++) {
+                const hue = (200 + i * 25) % 360;
+                arr.push(`hsl(${hue}, 90%, 50%)`);
             }
-            return colors;
+            return arr;
         }
 
+        /* -----------------------------------------------------------
+           RENDER GRAFICO
+        ----------------------------------------------------------- */
         function renderChart() {
-            const ctx = document.getElementById('chartCanvas').getContext('2d');
-            if (chartInstance) chartInstance.destroy();
+            const ctx = document.getElementById("chartCanvas").getContext("2d");
 
-            const groupValue = document.getElementById('grouping-select').value;
-            const isGrouped = groupValue && groupValue !== "";
-            const valueKey = 'CTVMKTTQ';
+            if (chartInstance)
+                chartInstance.destroy();
+
+            const grouping = document.getElementById("grouping-select").value;
+            const valueKey = "CTVMKTTQ";
+
+            let active = portfolioData.filter(x => parseFloat(x[valueKey]) > 0);
 
             let labels = [];
-            let dataValues = [];
+            let values = [];
 
-            // ... (Logica di raggruppamento dati omessa per brevità) ...
-            let activeData = portfolioData.filter(item => {
-                let rawVal = item[valueKey];
-                if (typeof rawVal === 'string') rawVal = rawVal.replace(',', '.');
-                const val = parseFloat(rawVal);
-                return !isNaN(val) && val > 0;
-            });
+            if (grouping) {
 
-            if (isGrouped) {
-                const groups = {};
-                activeData.forEach(item => {
-                    let groupLabel = 'Other';
-                    const instrumentId = item.id_instrument;
-                    if (instrumentId) {
-                        let classObj = classificationMap[instrumentId] || classificationMap[String(instrumentId)];
-                        if (classObj && classObj[groupValue]) groupLabel = classObj[groupValue];
-                    }
-                    if (!groups[groupLabel]) groups[groupLabel] = 0;
-                    groups[groupLabel] += parseFloat(item[valueKey] || 0);
+                const grp = {};
+
+                active.forEach(item => {
+                    let id = item.id_instrument;
+                    let cls = classificationMap[id];
+                    let label = cls?.[grouping] || "Other";
+
+                    if (!grp[label]) grp[label] = 0;
+
+                    grp[label] += parseFloat(item[valueKey]);
                 });
-                const sorted = Object.entries(groups).sort((a, b) => b[1] - a[1]);
-                labels = sorted.map(e => e[0]);
-                dataValues = sorted.map(e => e[1]);
-            } else {
-                activeData.sort((a, b) => parseFloat(b[valueKey] || 0) - parseFloat(a[valueKey] || 0));
-                if (activeData.length > 30) activeData = activeData.slice(0, 30);
 
-                labels = activeData.map(item => item.instrument_description || item.Ticker || "Unknown");
-                dataValues = activeData.map(item => parseFloat(item[valueKey] || 0));
+                const sorted = Object.entries(grp).sort((a, b) => b[1] - a[1]);
+                labels = sorted.map(e => e[0]);
+                values = sorted.map(e => e[1]);
+
+            } else {
+
+                active.sort((a, b) => b[valueKey] - a[valueKey]);
+                if (active.length > 30) active = active.slice(0, 30);
+
+                labels = active.map(x => x.instrument_description || x.Ticker);
+                values = active.map(x => x[valueKey]);
             }
 
-
-            const grandTotal = dataValues.reduce((a, b) => a + b, 0);
-            const backgroundColors = generateTronColors(dataValues.length);
+            const colors = generateColors(values.length);
 
             chartInstance = new Chart(ctx, {
-                type: 'pie',
+                type: "pie",
                 data: {
-                    labels: labels,
+                    labels,
                     datasets: [{
-                        data: dataValues,
-                        backgroundColor: backgroundColors,
-                        borderColor: '#050505',
-                        borderWidth: 2,
-                        hoverOffset: 15
+                        data: values,
+                        backgroundColor: colors,
+                        borderColor: "#050505",
+                        borderWidth: 2
                     }]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    // 3. Aumento estremo del padding per allontanare le label dai bordi
-                    layout: { padding: 150 },
+
+                    layout: { padding: 40 },
+
                     plugins: {
                         legend: { display: false },
                         tooltip: {
-                            backgroundColor: 'rgba(0, 5, 16, 0.9)',
-                            titleColor: '#00F3FF',
-                            bodyColor: '#fff',
-                            borderColor: '#0066FF',
-                            borderWidth: 1,
                             callbacks: {
-                                label: function (context) {
-                                    let val = context.parsed;
-                                    return new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(val);
+                                label: (ctx) => {
+                                    return new Intl.NumberFormat("it-IT", {
+                                        style: "currency",
+                                        currency: "EUR"
+                                    }).format(ctx.parsed);
                                 }
                             }
                         }
                     }
-                },
-                // 3. Plugin custom migliorato per l'allineamento e la gestione delle collisioni
-                plugins: [{
-                    id: 'tronLabels',
-                    afterDraw: (chart) => {
-                        const ctx = chart.ctx;
-                        const { left, top, width, height } = chart.chartArea;
-                        const centerX = left + width / 2;
-                        const centerY = top + height / 2;
-
-                        ctx.save();
-
-                        const descriptionFontSize = 14;
-                        const valueFontSize = 12;
-
-                        const rightLabels = [];
-                        const leftLabels = [];
-
-                        chart.data.datasets.forEach((dataset, i) => {
-                            const meta = chart.getDatasetMeta(i);
-                            if (meta.hidden) return;
-
-                            meta.data.forEach((element, index) => {
-                                const value = dataset.data[index];
-                                if (value === 0) return;
-
-                                const midAngle = element.startAngle + (element.endAngle - element.startAngle) / 2;
-                                const isRight = midAngle < Math.PI / 2 || midAngle > 3 * Math.PI / 2;
-                                const outerRadius = element.outerRadius;
-
-                                // 3. Aumento significativo del raggio (ancora di più)
-                                const labelRadius = outerRadius + 140;
-
-                                const endX = centerX + Math.cos(midAngle) * labelRadius;
-                                const endY = centerY + Math.sin(midAngle) * labelRadius;
-
-                                const formattedValue = new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(value);
-                                const percentage = ((value / grandTotal) * 100).toFixed(1) + '%';
-                                const text = `${chart.data.labels[index]}`;
-
-                                const item = {
-                                    index, text, formattedValue, percentage,
-                                    midAngle, outerRadius, isRight,
-                                    startX: centerX + Math.cos(midAngle) * outerRadius,
-                                    startY: centerY + Math.sin(midAngle) * outerRadius,
-                                    endX, endY, currentY: endY,
-                                    // 3. Altezza necessaria per maggiore spaziatura verticale
-                                    height: descriptionFontSize + valueFontSize + 20
-                                };
-
-                                if (isRight) rightLabels.push(item); else leftLabels.push(item);
-                            });
-                        });
-
-                        // 3. Risoluzione delle collisioni
-                        const resolveCollisions = (items) => {
-                            items.sort((a, b) => a.currentY - b.currentY);
-                            for (let i = 1; i < items.length; i++) {
-                                if (items[i].currentY < items[i - 1].currentY + items[i - 1].height) {
-                                    items[i].currentY = items[i - 1].currentY + items[i - 1].height;
-                                }
-                            }
-                        };
-                        resolveCollisions(rightLabels);
-                        resolveCollisions(leftLabels);
-
-                        const draw = (item) => {
-                            // Punto intermedio del segmento di linea
-                            const midX = centerX + Math.cos(item.midAngle) * (item.outerRadius + 40);
-                            const midY = centerY + Math.sin(item.midAngle) * (item.outerRadius + 40);
-
-                            // Punto X finale per il testo
-                            const textX = item.isRight ? item.endX + 5 : item.endX - 5;
-
-                            // Linea a tre segmenti
-                            ctx.beginPath();
-                            ctx.moveTo(item.startX, item.startY);
-                            ctx.lineTo(midX, midY);
-                            // La linea orizzontale finisce dove inizia il testo
-                            ctx.lineTo(textX, item.currentY);
-                            ctx.strokeStyle = '#00F3FF';
-                            ctx.lineWidth = 1;
-                            ctx.shadowBlur = 4;
-                            ctx.shadowColor = '#00F3FF';
-                            ctx.stroke();
-
-                            // Punto di partenza
-                            ctx.beginPath();
-                            ctx.arc(item.startX, item.startY, 2, 0, 2 * Math.PI);
-                            ctx.fillStyle = '#fff';
-                            ctx.fill();
-
-                            // Testo (Descrizione) - 14px
-                            ctx.fillStyle = '#00F3FF';
-                            ctx.textAlign = item.isRight ? 'left' : 'right';
-                            ctx.textBaseline = 'bottom';
-                            ctx.font = `${descriptionFontSize}px "Orbitron", sans-serif`;
-                            ctx.fillText(item.text, textX, item.currentY - 2);
-
-                            // Testo (Valore e Percentuale) - 12px
-                            ctx.fillStyle = '#fff';
-                            ctx.textBaseline = 'top';
-                            ctx.font = `${valueFontSize}px "Orbitron", sans-serif`;
-                            ctx.fillText(`${item.formattedValue} (${item.percentage})`, textX, item.currentY + 2);
-                        };
-
-                        rightLabels.forEach(draw);
-                        leftLabels.forEach(draw);
-                        ctx.restore();
-                    }
-                }]
+                }
             });
         }
 
-        window.onload = init;
+        /* ----------------------------------------------------------- */
+        function closeWindow() { window.close(); }
+
     </script>
+
 </body>
 
 </html>
