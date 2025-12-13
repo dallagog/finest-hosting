@@ -49,7 +49,6 @@
             position: relative;
         }
 
-        /* Effetto grid animato */
         body::before {
             content: '';
             position: fixed;
@@ -79,6 +78,7 @@
             backdrop-filter: blur(10px);
             position: relative;
             overflow: hidden;
+            flex-shrink: 0;
         }
 
         .header-bar::before {
@@ -270,75 +270,112 @@
             height: 100%;
             position: relative;
             display: flex;
-            justify-content: center;
-            align-items: center;
+            flex-direction: column;
             z-index: 1;
         }
 
+        .chart-area {
+            flex: 1;
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 0;
+        }
+
         #pieCanvas {
-            max-width: 600px;
-            max-height: 600px;
+            max-width: 500px;
+            max-height: 500px;
             filter: drop-shadow(0 0 20px rgba(0, 243, 255, 0.3));
+        }
+
+        .labels-area {
+            flex: 1;
+            position: relative;
+            min-height: 0;
+            overflow: visible;
         }
 
         .chart-label {
             position: absolute;
             font-family: 'Orbitron', sans-serif;
-            font-size: 12px;
+            font-size: 11px;
             font-weight: 700;
             color: var(--neon-cyan);
             text-shadow:
                 0 0 8px currentColor,
                 0 0 15px currentColor;
-            pointer-events: none;
+            pointer-events: auto;
             white-space: nowrap;
             letter-spacing: 1px;
             text-transform: uppercase;
-            background: rgba(0, 20, 40, 0.85);
-            padding: 8px 12px;
+            background: rgba(0, 20, 40, 0.9);
+            padding: 6px 10px;
             border: 1px solid;
             border-radius: 4px;
             box-shadow:
-                0 0 15px currentColor,
-                inset 0 0 10px rgba(255, 255, 255, 0.1);
+                0 0 12px currentColor,
+                inset 0 0 8px rgba(255, 255, 255, 0.1);
             backdrop-filter: blur(5px);
             z-index: 10;
-            transform-origin: center left;
-            transition: all 0.3s;
+            transform-origin: center;
+            transition: all 0.3s ease;
+            cursor: pointer;
         }
 
         .chart-label:hover {
-            transform: scale(1.05);
+            transform: scale(1.1);
             z-index: 100;
+            box-shadow:
+                0 0 20px currentColor,
+                inset 0 0 12px rgba(255, 255, 255, 0.2);
         }
 
-        .label-line {
+        .chart-label.compact {
+            white-space: normal;
+            max-width: 120px;
+            text-align: center;
+            line-height: 1.2;
+        }
+
+        .chart-label .label-line {
             position: absolute;
+            top: 50%;
+            width: 20px;
             height: 2px;
-            background: linear-gradient(to right, var(--neon-cyan), transparent);
-            box-shadow: 0 0 8px var(--neon-cyan);
+            background: linear-gradient(to right, currentColor, transparent);
+            box-shadow: 0 0 6px currentColor;
             pointer-events: none;
             z-index: 5;
-            transform-origin: 0 0;
         }
 
-        .label-value {
-            display: block;
-            font-size: 11px;
-            color: var(--neon-blue);
-            margin-top: 3px;
-            text-shadow: 0 0 5px var(--neon-blue);
+        .chart-label .label-line.left {
+            right: 100%;
+            transform-origin: right center;
+        }
+
+        .chart-label .label-line.right {
+            left: 100%;
+            transform-origin: left center;
         }
 
         .label-percentage {
             display: block;
-            font-size: 14px;
+            font-size: 12px;
             font-weight: 900;
             color: #ffffff;
-            margin-top: 3px;
+            margin-top: 2px;
             text-shadow:
-                0 0 10px #ffffff,
-                0 0 20px var(--neon-cyan);
+                0 0 8px #ffffff,
+                0 0 15px currentColor;
+        }
+
+        .label-value {
+            display: block;
+            font-size: 10px;
+            color: var(--neon-blue);
+            margin-top: 2px;
+            text-shadow: 0 0 5px var(--neon-blue);
         }
 
         #loading {
@@ -416,27 +453,168 @@
         }
 
         .total-label {
-            font-size: 14px;
+            font-size: 12px;
             color: var(--neon-blue);
             text-transform: uppercase;
             letter-spacing: 2px;
-            margin-bottom: 5px;
-            text-shadow: 0 0 10px var(--neon-blue);
+            margin-bottom: 3px;
+            text-shadow: 0 0 8px var(--neon-blue);
         }
 
         .total-value {
-            font-size: 22px;
+            font-size: 18px;
             font-weight: 900;
             color: var(--neon-cyan);
             text-shadow:
-                0 0 15px var(--neon-cyan),
-                0 0 25px rgba(0, 243, 255, 0.7);
+                0 0 12px var(--neon-cyan),
+                0 0 20px rgba(0, 243, 255, 0.7);
             letter-spacing: 1px;
         }
 
-        /* Glow effect per le label quando hover su fetta */
-        .slice-hover {
-            filter: brightness(1.3) drop-shadow(0 0 15px currentColor);
+        /* Stili per le linee di collegamento */
+        .connection-line {
+            position: absolute;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .connection-line::before {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 2px;
+            background: linear-gradient(90deg,
+                    rgba(0, 243, 255, 0.8) 0%,
+                    rgba(0, 243, 255, 0.4) 50%,
+                    transparent 100%);
+            box-shadow: 0 0 8px rgba(0, 243, 255, 0.5);
+        }
+
+        .connection-line::after {
+            content: '';
+            position: absolute;
+            width: 6px;
+            height: 6px;
+            background: var(--neon-cyan);
+            border-radius: 50%;
+            box-shadow: 0 0 10px var(--neon-cyan);
+            top: -2px;
+            left: 0;
+            animation: pulseDot 2s infinite;
+        }
+
+        @keyframes pulseDot {
+
+            0%,
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+
+            50% {
+                opacity: 0.5;
+                transform: scale(0.8);
+            }
+        }
+
+        /* Griglia per organizzazione label */
+        .label-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 10px;
+            padding: 10px;
+            max-height: 100%;
+            overflow-y: auto;
+        }
+
+        .label-grid-item {
+            background: rgba(0, 20, 40, 0.7);
+            border: 1px solid var(--neon-cyan);
+            border-radius: 6px;
+            padding: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .label-grid-item:hover {
+            background: rgba(0, 243, 255, 0.1);
+            transform: translateY(-2px);
+            box-shadow: 0 0 15px rgba(0, 243, 255, 0.3);
+        }
+
+        .label-grid-item::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+            background: currentColor;
+        }
+
+        .label-grid-content {
+            padding-left: 10px;
+        }
+
+        .grid-label-name {
+            font-size: 11px;
+            color: var(--text-color);
+            margin-bottom: 2px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .grid-label-percentage {
+            font-size: 14px;
+            font-weight: 900;
+            color: var(--neon-cyan);
+            margin-bottom: 2px;
+            text-shadow: 0 0 8px currentColor;
+        }
+
+        .grid-label-value {
+            font-size: 10px;
+            color: var(--neon-blue);
+        }
+
+        .grid-connection-line {
+            position: absolute;
+            pointer-events: none;
+            z-index: 1;
+            stroke: var(--neon-cyan);
+            stroke-width: 2;
+            stroke-dasharray: 5, 5;
+            fill: none;
+            filter: drop-shadow(0 0 3px var(--neon-cyan));
+        }
+
+        /* SVG per linee curve */
+        .connection-svg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .connection-path {
+            stroke: var(--neon-cyan);
+            stroke-width: 2;
+            fill: none;
+            filter: drop-shadow(0 0 3px var(--neon-cyan));
+            stroke-dasharray: 5, 5;
+            animation: dashMove 1s linear infinite;
+        }
+
+        @keyframes dashMove {
+            to {
+                stroke-dashoffset: -10;
+            }
         }
     </style>
 </head>
@@ -467,8 +645,14 @@
 
     <div class="chart-wrapper">
         <div id="chartContainer">
-            <canvas id="pieCanvas"></canvas>
-            <div id="totalDisplay" class="total-display"></div>
+            <div class="chart-area">
+                <canvas id="pieCanvas"></canvas>
+                <div id="totalDisplay" class="total-display"></div>
+                <svg class="connection-svg" id="connectionSvg"></svg>
+            </div>
+            <div class="labels-area">
+                <div class="label-grid" id="labelGrid"></div>
+            </div>
         </div>
     </div>
 
@@ -531,8 +715,9 @@
         let portfolioData = [];
         let classificationMap = {};
         let pieChart = null;
-        let chartLabels = [];
+        let chartData = [];
         let totalValue = 0;
+        let connectionLines = [];
 
         const urlParams = new URLSearchParams(window.location.search);
         const username = urlParams.get('username') || 'USER';
@@ -559,23 +744,10 @@
         ----------------------------------------------------------- */
         function generateTronColors(n) {
             const tronDisneyPalette = [
-                '#00F3FF', // Cyan Tron primario
-                '#0080FF', // Blu elettrico
-                '#CC00FF', // Viola neon
-                '#FF0066', // Rosa shock
-                '#00FFAA', // Verde ciano
-                '#FFAA00', // Arancio circuito
-                '#FF3300', // Rosso energia
-                '#00CCFF', // Azzurro luce
-                '#AA00FF', // Viola profondo
-                '#00FF33', // Verde acceso
-                '#FF00CC', // Magenta
-                '#00D4FF', // Celeste Tron
-                '#FF6600', // Arancio incandescenza
-                '#9900FF', // Viola reattivo
-                '#33FF00'  // Verde brillante
+                '#00F3FF', '#0080FF', '#CC00FF', '#FF0066', '#00FFAA',
+                '#FFAA00', '#FF3300', '#00CCFF', '#AA00FF', '#00FF33',
+                '#FF00CC', '#00D4FF', '#FF6600', '#9900FF', '#33FF00'
             ];
-
             const colors = [];
             for (let i = 0; i < n; i++) {
                 colors.push(tronDisneyPalette[i % tronDisneyPalette.length]);
@@ -645,47 +817,33 @@
         }
 
         /* -----------------------------------------------------------
-           RENDER 2D PIE CHART CON LABEL COLLEGATE
+           RENDER PIE CHART CON SISTEMA ANTI-SOVRAPPOSIZIONE
         ----------------------------------------------------------- */
         function renderChart() {
             const grouping = document.getElementById("grouping-select").value;
             const groupedData = getGroupedData(portfolioData, classificationMap, grouping);
 
-            // Limit to top 12 per evitare sovraffollamento
-            const slicedData = groupedData.length > 12 ? groupedData.slice(0, 12) : groupedData;
+            // Limita a 15 elementi per chiarezza
+            chartData = groupedData.length > 15 ? groupedData.slice(0, 15) : groupedData;
 
-            if (slicedData.length === 0) {
+            if (chartData.length === 0) {
                 document.getElementById('chartContainer').innerHTML =
                     '<div style="color: var(--neon-cyan); text-align: center; font-size: 1.5rem; padding: 40px; text-shadow: 0 0 10px var(--neon-cyan);">NESSUN DATO DISPONIBILE</div>';
                 document.getElementById('totalDisplay').innerHTML = '';
                 return;
             }
 
-            totalValue = slicedData.reduce((sum, item) => sum + item.value, 0);
-            const colors = generateTronColors(slicedData.length);
-
-            // Calcola percentuali
-            const percentages = slicedData.map(item => ((item.value / totalValue) * 100).toFixed(1));
-
-            // Formatta valori
-            const formattedValues = slicedData.map(item => {
-                return new Intl.NumberFormat("it-IT", {
-                    style: "currency",
-                    currency: "EUR",
-                    maximumFractionDigits: 0
-                }).format(item.value);
-            });
+            totalValue = chartData.reduce((sum, item) => sum + item.value, 0);
+            const colors = generateTronColors(chartData.length);
+            const percentages = chartData.map(item => ((item.value / totalValue) * 100).toFixed(1));
 
             // Distruggi chart precedente
             if (pieChart) {
                 pieChart.destroy();
-                // Rimuovi label esistenti
-                chartLabels.forEach(label => {
-                    if (label.element) label.element.remove();
-                    if (label.line) label.line.remove();
-                });
-                chartLabels = [];
             }
+
+            // Pulisci linee di collegamento precedenti
+            clearConnectionLines();
 
             const ctx = document.getElementById('pieCanvas').getContext('2d');
 
@@ -693,12 +851,11 @@
             pieChart = new Chart(ctx, {
                 type: 'pie',
                 data: {
-                    labels: slicedData.map(item => getTranslation(item.label) || item.label),
+                    labels: chartData.map(item => getTranslation(item.label) || item.label),
                     datasets: [{
-                        data: slicedData.map(item => item.value),
+                        data: chartData.map(item => item.value),
                         backgroundColor: colors,
                         borderColor: colors.map(color => {
-                            // Crea bordi luminosi
                             const r = parseInt(color.substr(1, 2), 16);
                             const g = parseInt(color.substr(3, 2), 16);
                             const b = parseInt(color.substr(5, 2), 16);
@@ -713,15 +870,11 @@
                 options: {
                     responsive: true,
                     maintainAspectRatio: true,
-                    cutout: '40%', // Torta a ciambella per spazio centrale
+                    cutout: '40%',
                     radius: '80%',
                     plugins: {
-                        legend: {
-                            display: false
-                        },
-                        tooltip: {
-                            enabled: false // Disabilita tooltip nativi, useremo i nostri
-                        }
+                        legend: { display: false },
+                        tooltip: { enabled: false }
                     },
                     animation: {
                         animateScale: true,
@@ -730,42 +883,14 @@
                         easing: 'easeOutQuart'
                     },
                     layout: {
-                        padding: 40
-                    },
-                    interaction: {
-                        mode: 'nearest',
-                        intersect: true
+                        padding: 20
                     },
                     onHover: function (event, chartElements) {
-                        const canvas = document.getElementById('pieCanvas');
                         if (chartElements && chartElements.length > 0) {
                             const index = chartElements[0].index;
-                            // Evidenzia la fetta
-                            chartElements[0].element.options.borderWidth = 6;
-                            chartElements[0].element.options.borderColor = '#FFFFFF';
-
-                            // Evidenzia la label corrispondente
-                            if (chartLabels[index]) {
-                                chartLabels[index].element.style.transform = 'scale(1.15)';
-                                chartLabels[index].element.style.boxShadow =
-                                    '0 0 25px currentColor, inset 0 0 15px rgba(255, 255, 255, 0.3)';
-                                chartLabels[index].element.style.zIndex = '100';
-                            }
+                            highlightSlice(index);
                         } else {
-                            // Ripristina
-                            if (pieChart) {
-                                pieChart.data.datasets.forEach(dataset => {
-                                    dataset.borderWidth = 3;
-                                });
-                            }
-                            chartLabels.forEach(label => {
-                                if (label.element) {
-                                    label.element.style.transform = 'scale(1)';
-                                    label.element.style.boxShadow =
-                                        '0 0 15px currentColor, inset 0 0 10px rgba(255, 255, 255, 0.1)';
-                                    label.element.style.zIndex = '10';
-                                }
-                            });
+                            resetHighlight();
                         }
                     }
                 },
@@ -775,7 +900,6 @@
                         const ctx = chart.ctx;
                         ctx.save();
 
-                        // Aggiungi effetto glow alle fette
                         chart.data.datasets.forEach((dataset, i) => {
                             const meta = chart.getDatasetMeta(i);
                             if (!meta.hidden) {
@@ -783,7 +907,7 @@
                                     const { x, y } = element.tooltipPosition();
                                     const color = dataset.backgroundColor[index];
 
-                                    // Disegna glow interno
+                                    // Effetto glow interno
                                     const gradient = ctx.createRadialGradient(x, y, 0, x, y, element.outerRadius);
                                     gradient.addColorStop(0, color + '80');
                                     gradient.addColorStop(1, color + '00');
@@ -793,19 +917,19 @@
                                     ctx.fillStyle = gradient;
                                     ctx.fill();
 
-                                    // Aggiungi percentuale al centro della fetta (solo se > 5%)
-                                    if (parseFloat(percentages[index]) > 5) {
+                                    // Percentuale sulla fetta (solo se > 4%)
+                                    if (parseFloat(percentages[index]) > 4) {
                                         const angle = element.startAngle + (element.endAngle - element.startAngle) / 2;
                                         const textRadius = element.outerRadius * 0.7;
                                         const textX = x + Math.cos(angle) * textRadius;
                                         const textY = y + Math.sin(angle) * textRadius;
 
-                                        ctx.font = 'bold 16px Orbitron, sans-serif';
+                                        ctx.font = 'bold 14px Orbitron, sans-serif';
                                         ctx.fillStyle = '#FFFFFF';
                                         ctx.textAlign = 'center';
                                         ctx.textBaseline = 'middle';
                                         ctx.shadowColor = color;
-                                        ctx.shadowBlur = 15;
+                                        ctx.shadowBlur = 10;
 
                                         ctx.fillText(percentages[index] + '%', textX, textY);
                                         ctx.shadowBlur = 0;
@@ -815,177 +939,221 @@
                         });
 
                         ctx.restore();
-
-                        // Crea label esterne collegate
-                        createExternalLabels(chart, slicedData, colors, percentages, formattedValues);
                     }
                 }]
             });
 
             // Aggiorna display totale
             updateTotalDisplay();
+
+            // Crea etichette organizzate
+            createOrganizedLabels();
+
+            // Crea linee di collegamento
+            createConnectionLines();
         }
 
         /* -----------------------------------------------------------
-           CREA LABEL ESTERNE COLLEGATE
+           CREA ETICHETTE ORGANIZZATE SENZA SOVRAPPOSIZIONE
         ----------------------------------------------------------- */
-        function createExternalLabels(chart, data, colors, percentages, formattedValues) {
-            const container = document.getElementById('chartContainer');
-            const canvas = document.getElementById('pieCanvas');
-            const canvasRect = canvas.getBoundingClientRect();
-            const containerRect = container.getBoundingClientRect();
+        function createOrganizedLabels() {
+            const labelGrid = document.getElementById('labelGrid');
+            labelGrid.innerHTML = '';
 
-            // Pulisci label esistenti
-            chartLabels.forEach(label => {
-                if (label.element) label.element.remove();
-                if (label.line) label.line.remove();
-            });
-            chartLabels = [];
-
-            const meta = chart.getDatasetMeta(0);
-
-            data.forEach((item, index) => {
-                const element = meta.data[index];
-                if (!element) return;
-
-                const percentage = parseFloat(percentages[index]);
-                // Mostra label solo se fetta > 2%
-                if (percentage < 2) return;
-
-                const color = colors[index];
+            chartData.forEach((item, index) => {
+                const percentage = parseFloat(((item.value / totalValue) * 100).toFixed(1));
+                const color = generateTronColors(chartData.length)[index];
                 const translatedLabel = getTranslation(item.label) || item.label;
+                const formattedValue = new Intl.NumberFormat("it-IT", {
+                    style: "currency",
+                    currency: "EUR",
+                    maximumFractionDigits: 0
+                }).format(item.value);
 
-                // Calcola posizione sulla circonferenza
-                const angle = element.startAngle + (element.endAngle - element.startAngle) / 2;
-                const sliceRadius = element.outerRadius;
+                // Crea elemento griglia
+                const gridItem = document.createElement('div');
+                gridItem.className = 'label-grid-item';
+                gridItem.dataset.index = index;
+                gridItem.style.color = color;
+                gridItem.style.borderColor = color;
 
-                // Punto sulla circonferenza (inizio linea)
-                const startX = element.x + Math.cos(angle) * sliceRadius;
-                const startY = element.y + Math.sin(angle) * sliceRadius;
-
-                // Punto label (fine linea) - più lontano
-                const labelDistance = sliceRadius + 60;
-                const labelX = element.x + Math.cos(angle) * labelDistance;
-                const labelY = element.y + Math.sin(angle) * labelDistance;
-
-                // Converti coordinate canvas a coordinate DOM
-                const scaleX = canvasRect.width / canvas.width;
-                const scaleY = canvasRect.height / canvas.height;
-
-                const domStartX = (startX * scaleX) + (canvasRect.left - containerRect.left);
-                const domStartY = (startY * scaleY) + (canvasRect.top - containerRect.top);
-                const domLabelX = (labelX * scaleX) + (canvasRect.left - containerRect.left);
-                const domLabelY = (labelY * scaleY) + (canvasRect.top - containerRect.top);
-
-                // Crea linea di collegamento
-                const lineDiv = document.createElement('div');
-                lineDiv.className = 'label-line';
-                lineDiv.style.left = domStartX + 'px';
-                lineDiv.style.top = domStartY + 'px';
-                lineDiv.style.backgroundColor = `linear-gradient(to right, ${color}, transparent)`;
-                lineDiv.style.boxShadow = `0 0 10px ${color}`;
-
-                // Calcola lunghezza e angolo della linea
-                const dx = domLabelX - domStartX;
-                const dy = domLabelY - domStartY;
-                const length = Math.sqrt(dx * dx + dy * dy);
-                const lineAngle = Math.atan2(dy, dx) * 180 / Math.PI;
-
-                lineDiv.style.width = length + 'px';
-                lineDiv.style.transform = `rotate(${lineAngle}deg)`;
-
-                // Crea label
-                const labelDiv = document.createElement('div');
-                labelDiv.className = 'chart-label';
-                labelDiv.style.left = domLabelX + 'px';
-                labelDiv.style.top = domLabelY + 'px';
-                labelDiv.style.borderColor = color;
-                labelDiv.style.color = color;
-
-                // Posiziona label in base all'angolo per evitare sovrapposizioni
-                let labelAlign = 'left';
-                let transformX = '0';
-                if (Math.cos(angle) > 0.7) { // Destra
-                    labelAlign = 'left';
-                    transformX = '10px';
-                } else if (Math.cos(angle) < -0.7) { // Sinistra
-                    labelAlign = 'right';
-                    transformX = '-10px';
-                } else if (Math.sin(angle) > 0) { // Basso
-                    labelAlign = 'center';
-                    transformY = '20px';
-                } else { // Alto
-                    labelAlign = 'center';
-                    transformY = '-40px';
-                }
-
-                labelDiv.style.textAlign = labelAlign;
-                labelDiv.style.transform = `translate(${transformX}, -50%)`;
-
-                labelDiv.innerHTML = `
-                    <span style="font-size: 11px; display: block; margin-bottom: 3px;">${translatedLabel}</span>
-                    <span class="label-percentage">${percentage}%</span>
-                    <span class="label-value">${formattedValues[index]}</span>
+                gridItem.innerHTML = `
+                    <div class="label-grid-content">
+                        <div class="grid-label-name" title="${translatedLabel}">${translatedLabel}</div>
+                        <div class="grid-label-percentage" style="color: ${color}">${percentage}%</div>
+                        <div class="grid-label-value">${formattedValue}</div>
+                    </div>
                 `;
 
-                // Aggiungi interattività
-                labelDiv.addEventListener('mouseenter', function () {
-                    // Evidenzia fetta corrispondente
-                    if (pieChart) {
-                        const dataset = pieChart.data.datasets[0];
-                        dataset.borderWidth[index] = 6;
-                        dataset.borderColor[index] = '#FFFFFF';
-                        pieChart.update('none');
-                    }
+                // Event listeners per interattività
+                gridItem.addEventListener('mouseenter', () => highlightSlice(index));
+                gridItem.addEventListener('mouseleave', resetHighlight);
+                gridItem.addEventListener('click', () => focusSlice(index));
 
-                    // Evidenzia label
-                    this.style.transform = `translate(${transformX}, -50%) scale(1.2)`;
-                    this.style.boxShadow =
-                        `0 0 25px ${color}, 
-                         inset 0 0 20px rgba(255, 255, 255, 0.3)`;
-                    this.style.zIndex = '100';
+                labelGrid.appendChild(gridItem);
+            });
+        }
 
-                    // Evidenzia linea
-                    lineDiv.style.height = '3px';
-                    lineDiv.style.boxShadow = `0 0 15px ${color}`;
-                });
+        /* -----------------------------------------------------------
+           CREA LINEE DI COLLEGAMENTO TRA FETTE E LABEL
+        ----------------------------------------------------------- */
+        function createConnectionLines() {
+            const svg = document.getElementById('connectionSvg');
+            svg.innerHTML = '';
+            connectionLines = [];
 
-                labelDiv.addEventListener('mouseleave', function () {
-                    // Ripristina
-                    if (pieChart) {
-                        const dataset = pieChart.data.datasets[0];
-                        dataset.borderWidth[index] = 3;
-                        dataset.borderColor[index] = colors.map(c => {
-                            const r = parseInt(c.substr(1, 2), 16);
-                            const g = parseInt(c.substr(3, 2), 16);
-                            const b = parseInt(c.substr(5, 2), 16);
-                            return `rgba(${Math.min(r + 100, 255)}, ${Math.min(g + 100, 255)}, ${Math.min(b + 100, 255)}, 0.9)`;
-                        })[index];
-                        pieChart.update('none');
-                    }
+            const canvas = document.getElementById('pieCanvas');
+            const canvasRect = canvas.getBoundingClientRect();
+            const containerRect = document.querySelector('.chart-area').getBoundingClientRect();
+            const labelGrid = document.getElementById('labelGrid');
+            const gridItems = labelGrid.querySelectorAll('.label-grid-item');
 
-                    this.style.transform = `translate(${transformX}, -50%) scale(1)`;
-                    this.style.boxShadow =
-                        `0 0 15px ${color}, 
-                         inset 0 0 10px rgba(255, 255, 255, 0.1)`;
-                    this.style.zIndex = '10';
+            if (!pieChart || gridItems.length === 0) return;
 
-                    lineDiv.style.height = '2px';
-                    lineDiv.style.boxShadow = `0 0 8px ${color}`;
-                });
+            const meta = pieChart.getDatasetMeta(0);
 
-                // Aggiungi al DOM
-                container.appendChild(lineDiv);
-                container.appendChild(labelDiv);
+            gridItems.forEach((gridItem, index) => {
+                if (!meta.data[index]) return;
 
-                // Salva riferimento
-                chartLabels.push({
-                    element: labelDiv,
-                    line: lineDiv,
-                    index: index,
-                    color: color
+                const slice = meta.data[index];
+                const angle = slice.startAngle + (slice.endAngle - slice.startAngle) / 2;
+
+                // Punto sulla circonferenza della fetta
+                const sliceRadius = slice.outerRadius;
+                const sliceX = slice.x + Math.cos(angle) * sliceRadius;
+                const sliceY = slice.y + Math.sin(angle) * sliceRadius;
+
+                // Converti coordinate canvas a coordinate relative al container
+                const scaleX = canvasRect.width / canvas.width;
+                const scaleY = canvasRect.height / canvas.height;
+                const containerSliceX = (sliceX * scaleX);
+                const containerSliceY = (sliceY * scaleY);
+
+                // Posizione dell'elemento label nella griglia
+                const gridItemRect = gridItem.getBoundingClientRect();
+                const containerGridX = gridItemRect.left - containerRect.left + gridItemRect.width / 2;
+                const containerGridY = gridItemRect.top - containerRect.top + gridItemRect.height / 2;
+
+                // Calcola la posizione ottimale per la linea curva
+                const midX = (containerSliceX + containerGridX) / 2;
+                const controlX = midX + (containerGridY - containerSliceY) * 0.3;
+                const controlY = midY - (containerGridX - containerSliceX) * 0.3;
+                const midY = (containerSliceY + containerGridY) / 2;
+
+                // Crea path SVG per la linea curva
+                const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                const pathData = `M ${containerSliceX} ${containerSliceY} Q ${controlX} ${controlY} ${containerGridX} ${containerGridY}`;
+                path.setAttribute('d', pathData);
+                path.setAttribute('class', 'connection-path');
+                path.setAttribute('data-index', index);
+                path.style.stroke = generateTronColors(chartData.length)[index];
+
+                // Aggiungi animazione
+                const pathLength = path.getTotalLength();
+                path.style.strokeDasharray = `${pathLength} ${pathLength}`;
+                path.style.strokeDashoffset = pathLength;
+
+                svg.appendChild(path);
+
+                // Anima la linea
+                setTimeout(() => {
+                    path.style.transition = 'stroke-dashoffset 1s ease-in-out';
+                    path.style.strokeDashoffset = '0';
+                }, 100 * index);
+
+                connectionLines.push({
+                    element: path,
+                    sliceIndex: index,
+                    color: generateTronColors(chartData.length)[index]
                 });
             });
+        }
+
+        /* -----------------------------------------------------------
+           PULISCI LINEE DI COLLEGAMENTO
+        ----------------------------------------------------------- */
+        function clearConnectionLines() {
+            const svg = document.getElementById('connectionSvg');
+            if (svg) svg.innerHTML = '';
+            connectionLines = [];
+        }
+
+        /* -----------------------------------------------------------
+           EVIDENTZIA FETTA
+        ----------------------------------------------------------- */
+        function highlightSlice(index) {
+            if (!pieChart) return;
+
+            // Evidenzia la fetta
+            const dataset = pieChart.data.datasets[0];
+            dataset.borderWidth = dataset.borderWidth.map((width, i) => i === index ? 6 : 3);
+            dataset.borderColor = dataset.borderColor.map((color, i) =>
+                i === index ? '#FFFFFF' : color
+            );
+            pieChart.update('none');
+
+            // Evidenzia l'elemento label corrispondente
+            const labelItems = document.querySelectorAll('.label-grid-item');
+            labelItems.forEach((item, i) => {
+                if (i === index) {
+                    item.style.transform = 'translateY(-4px) scale(1.05)';
+                    item.style.boxShadow = '0 0 20px ' + generateTronColors(chartData.length)[index];
+                    item.style.zIndex = '100';
+                } else {
+                    item.style.opacity = '0.6';
+                }
+            });
+
+            // Evidenzia la linea di collegamento
+            connectionLines.forEach(line => {
+                if (line.sliceIndex === index) {
+                    line.element.style.strokeWidth = '3';
+                    line.element.style.filter = 'drop-shadow(0 0 6px ' + line.color + ')';
+                } else {
+                    line.element.style.opacity = '0.3';
+                }
+            });
+        }
+
+        /* -----------------------------------------------------------
+           RIPRISTINA EVIDENTZIAZIONE
+        ----------------------------------------------------------- */
+        function resetHighlight() {
+            if (!pieChart) return;
+
+            // Ripristina fette
+            const dataset = pieChart.data.datasets[0];
+            dataset.borderWidth = dataset.borderWidth.map(() => 3);
+            pieChart.update('none');
+
+            // Ripristina label
+            const labelItems = document.querySelectorAll('.label-grid-item');
+            labelItems.forEach(item => {
+                item.style.transform = '';
+                item.style.boxShadow = '';
+                item.style.opacity = '1';
+                item.style.zIndex = '';
+            });
+
+            // Ripristina linee
+            connectionLines.forEach(line => {
+                line.element.style.strokeWidth = '2';
+                line.element.style.filter = 'drop-shadow(0 0 3px ' + line.color + ')';
+                line.element.style.opacity = '1';
+            });
+        }
+
+        /* -----------------------------------------------------------
+           FOCUS SU FETTA SPECIFICA
+        ----------------------------------------------------------- */
+        function focusSlice(index) {
+            highlightSlice(index);
+
+            // Scroll alla label se necessario
+            const labelItem = document.querySelector(`.label-grid-item[data-index="${index}"]`);
+            if (labelItem) {
+                labelItem.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
         }
 
         /* -----------------------------------------------------------
@@ -1018,22 +1186,8 @@
         window.addEventListener('resize', function () {
             if (pieChart) {
                 pieChart.resize();
-                // Ridisegna label dopo resize
                 setTimeout(() => {
-                    const grouping = document.getElementById('grouping-select').value;
-                    const groupedData = getGroupedData(portfolioData, classificationMap, grouping);
-                    const slicedData = groupedData.length > 12 ? groupedData.slice(0, 12) : groupedData;
-                    const colors = generateTronColors(slicedData.length);
-                    const percentages = slicedData.map(item => ((item.value / totalValue) * 100).toFixed(1));
-                    const formattedValues = slicedData.map(item => {
-                        return new Intl.NumberFormat("it-IT", {
-                            style: "currency",
-                            currency: "EUR",
-                            maximumFractionDigits: 0
-                        }).format(item.value);
-                    });
-
-                    createExternalLabels(pieChart, slicedData, colors, percentages, formattedValues);
+                    createConnectionLines();
                 }, 100);
             }
         });
