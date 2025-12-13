@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Portfolio Graph 0.2</title>
+    <title>Portfolio Graph 0.3</title>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
@@ -390,6 +390,13 @@
         window.onload = async () => {
             document.getElementById('username-display').textContent = username;
 
+            // **IMPORTANTE**: Assicurati che 'getTranslation' sia definito in dashboard-shared.js
+            if (typeof getTranslation === 'undefined') {
+                console.error("ERRORE: La funzione getTranslation non è definita. Assicurati che dashboard-shared.js sia caricato correttamente e contenga la funzione.");
+                // Placeholder se getTranslation non è disponibile
+                window.getTranslation = (k) => k;
+            }
+
             await Promise.all([
                 initializeLanguages(),
                 loadCurrencies(language)
@@ -450,9 +457,8 @@
             document.getElementById('currencyDisplay').textContent = `${symbol} ${currency}`;
         }
 
-        /* ================= DATA LOADING (Unchanged) ================= */
+        /* ================= DATA LOADING (Modificato per getTranslation) ================= */
         async function loadPortfolio() {
-            // ... (logica di loadPortfolio invariata) ...
             try {
                 const res = await fetch(`${API_URL}/getportfolio`, {
                     method: "POST",
@@ -471,14 +477,24 @@
                     try { cList = JSON.parse(cList.replace(/'/g, '"')); } catch { }
                 }
                 if (Array.isArray(cList)) {
-                    cList.forEach(i => { if (i.id_instrument) classificationMap[i.id_instrument] = i; });
+                    cList.forEach(i => {
+                        if (i.id_instrument) classificationMap[i.id_instrument] = i;
+
+                        // Modifica Chiave 1: Usa getTranslation per la chiave della classificazione
+                        // Questo assume che la classificazione sia un ID che si traduce in 'int.user.label.ID'
+                        if (i.label) {
+                            i.label = getTranslation(`int.user.label.${i.label}`);
+                        }
+                    });
                 }
 
                 const select = document.getElementById('grouping-select');
+                // Qui si assume che populateGroupingSelectSummary gestisca già la traduzione, 
+                // ma passiamo esplicitamente getTranslation.
                 populateGroupingSelectSummary(
                     select,
                     classificationFilter.length > 0 ? classificationFilter : (Array.isArray(cList) ? cList : []),
-                    (typeof getTranslation !== 'undefined' ? getTranslation : k => k),
+                    getTranslation, // Passa la funzione di traduzione
                     initialGrouping,
                     "Nessun raggruppamento"
                 );
@@ -501,7 +517,18 @@
 
         function renderChart() {
             const grouping = document.getElementById('grouping-select').value;
+            // Modifica Chiave 2: Assicurati che getGroupedData usi getTranslation per le etichette finali
             const grouped = getGroupedData(portfolioData, classificationMap, grouping);
+
+            // Applica la traduzione finale alle etichette del grafico se non è già stata fatta in getGroupedData
+            grouped.forEach(item => {
+                // Assumiamo che item.label contenga la chiave o la stringa. 
+                // Se è una chiave, usiamo getTranslation.
+                if (item.label && item.label.startsWith('int.user.label.')) {
+                    item.label = getTranslation(item.label);
+                }
+            });
+
             chartData = grouped.length > 12 ? grouped.slice(0, 12) : grouped;
 
             if (chartData.length === 0) {
@@ -577,7 +604,7 @@
             updateTotalDisplay();
         }
 
-        /* ================= EXTERNAL LABELS & LINES DRAWING LOGIC ================= */
+        /* ================= EXTERNAL LABELS & LINES DRAWING LOGIC (MODIFICATO) ================= */
         function drawExternalLabelsAndLines(chart, colors) {
             const container = document.getElementById('labelsContainer');
             const svg = document.getElementById('connectionSvg');
@@ -587,32 +614,36 @@
             const meta = chart.getDatasetMeta(0);
             if (meta.data.length === 0) return;
 
+            // Limiti verticali del canvas/wrapper
+            const chartWrapper = document.querySelector('.chart-wrapper');
+            const wrapperRect = chartWrapper.getBoundingClientRect();
+            // Ottieni i limiti verticali Y per il clamp
+            const chartTop = chart.canvas.offsetTop;
+            const chartBottom = chart.canvas.offsetTop + chart.canvas.height;
+
             // Centro del canvas
             const centerX = chart.width / 2;
             const centerY = chart.height / 2;
 
             // Distanza del punto esterno (End della linea)
-            // L'area del grafico è limitata da un padding virtuale (radius)
             const maxRadius = meta.data[0].outerRadius;
-            const externalRadius = maxRadius * 1.35; // Distanza fissa dal centro per l'elbow della linea
-            const labelPositionRadius = maxRadius * 1.45; // Distanza per la posizione finale della label
+            const externalRadius = maxRadius * 1.35;
+            const labelPositionRadius = maxRadius * 1.45;
 
-            // Array per evitare sovrapposizioni verticali (usato solo per le demo)
-            const verticalOffsets = [];
+            // Array per tenere traccia delle posizioni Y finali (per clamp)
+            const finalLabelPositions = []; // {y: number, height: number, index: number}
 
+            // Primo loop: Calcolo e posizionamento iniziale delle label HTML
             meta.data.forEach((element, index) => {
                 const model = element;
                 const midAngle = model.startAngle + (model.endAngle - model.startAngle) / 2;
 
-                // 1. Punto di START della Linea (sul bordo della fetta)
                 const startX = centerX + Math.cos(midAngle) * maxRadius;
                 const startY = centerY + Math.sin(midAngle) * maxRadius;
 
-                // 2. Punto ELBOW (gomito esterno)
                 const elbowX = centerX + Math.cos(midAngle) * externalRadius;
                 const elbowY = centerY + Math.sin(midAngle) * externalRadius;
 
-                // 3. Punto LABEL (posizione finale della label)
                 let labelX = centerX + Math.cos(midAngle) * labelPositionRadius;
                 let labelY = centerY + Math.sin(midAngle) * labelPositionRadius;
 
@@ -633,6 +664,7 @@
                 labelDiv.style.borderColor = colors[index];
                 labelDiv.style.color = colors[index];
 
+                // Append prima di misurare (necessario)
                 container.appendChild(labelDiv);
 
                 // Misura label
@@ -650,27 +682,55 @@
                 labelY -= height / 2;
                 labelDiv.style.top = `${labelY}px`;
 
-                // --- Disegno Linea SVG ---
+                // Salva la posizione Y iniziale e l'altezza
+                finalLabelPositions.push({
+                    initialY: labelY,
+                    y: labelY,
+                    height: height,
+                    index: index,
+                    isRight: isRight,
+                    element: labelDiv,
+                    // Punti della linea necessari per il secondo loop
+                    linePoints: { startX, startY, elbowX, elbowY }
+                });
+            });
 
+            // Secondo loop: Applicazione del CLAMP Verticale per la legenda allineata
+            const totalHeight = chartBottom - chartTop;
+            const labelPadding = 5; // Spazio extra tra le label
+
+            finalLabelPositions.forEach(item => {
+                // Vincola la parte superiore dell'etichetta
+                if (item.y < chartTop) {
+                    item.y = chartTop;
+                }
+                // Vincola la parte inferiore dell'etichetta
+                else if (item.y + item.height > chartBottom) {
+                    item.y = chartBottom - item.height;
+                }
+
+                // Aggiorna la posizione finale nel DOM
+                item.element.style.top = `${item.y}px`;
+            });
+
+            // Terzo loop: Disegno delle Linee SVG (dopo che le label sono state bloccate verticalmente)
+            finalLabelPositions.forEach(item => {
                 // Punto END della linea (punta al centro del lato della label più vicino al centro)
-                let endLineX = isRight ? labelX : (labelX - width);
-                let endLineY = labelY + height / 2;
+                let endLineX = item.isRight ? item.linePoints.labelX : (item.linePoints.labelX - item.width);
+                let endLineY = item.y + item.height / 2; // Usa la Y clambata
 
                 const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
                 path.setAttribute("class", "connection-line");
-                path.style.stroke = colors[index];
+                path.style.stroke = colors[item.index];
 
                 // Linea spezzata (Elbow)
-                // M Start L Elbow L End
-                // La linea va da bordo fetta -> punto esterno (elbow) -> lato label.
-                path.setAttribute("d", `M ${startX} ${startY} L ${elbowX} ${elbowY} L ${endLineX} ${endLineY}`);
+                // M Start L Elbow L End (dove End usa la Y finale/clamped)
+                path.setAttribute("d", `M ${item.linePoints.startX} ${item.linePoints.startY} 
+                                       L ${item.linePoints.elbowX} ${item.linePoints.elbowY} 
+                                       L ${item.isRight ? item.element.offsetLeft : (item.element.offsetLeft + item.element.offsetWidth)} ${endLineY}`);
 
                 svg.appendChild(path);
             });
-
-            // L'ottimizzazione per evitare sovrapposizioni verticali è un codice complesso
-            // che è meglio implementare solo su richiesta specifica, data la complessità
-            // del layout dinamico. Per ora, ci affidiamo al posizionamento radiale.
         }
 
 
