@@ -415,19 +415,9 @@
         </div>
     </div>
 
-    <script src="js/credential-manager.js"></script>
-    <script src="js/translations.js"></script>
     <script>
         const API_URL = "https://feweb-tunnel.fe-web.eu";
-
-        // Init CredentialsManager
-        const credentials = CredentialsManager.initialize({
-            requireAuth: true,
-            onError: () => {
-                showMessage('Credenziali mancanti', 'error');
-            }
-        });
-
+        let credentials = { username: '', token: '', language: '' };
         let action = '';
         let ticker = '';
         let portfolioData = null;
@@ -493,11 +483,11 @@
         }
 
         // ========== URL PARAMETERS ==========
-        // Managed by CredentialsManager for credentials
         function getDataFromURL() {
             const params = new URLSearchParams(window.location.search);
-            // credentials already handled by Manager
-
+            credentials.username = params.get('username') || '';
+            credentials.token = params.get('token') || '';
+            credentials.language = params.get('language') || 'it_IT';
             action = params.get('action') || '';
             ticker = params.get('ticker') || '';
 
@@ -611,13 +601,10 @@
         });
 
         // ========== INITIALIZATION ==========
-        // ========== INITIALIZATION ==========
         window.addEventListener('load', async () => {
-            if (credentials.username && credentials.token) {
-                getDataFromURL();
-                await loadTranslations(credentials.language);
-                calculateAmounts();
-            }
+            getDataFromURL();
+            await loadTranslations(credentials.language);
+            calculateAmounts();
         });
     </script>
 </body>
