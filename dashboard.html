@@ -1878,7 +1878,7 @@
                         };
                         return getQty(b) - getQty(a);
                     });
-                    populateProfitabilityGroupingSelect(classificationList);
+                    populateProfitabilityGroupingSelect(manifest.classification || []);
                     renderProfitabilityTable();
                     document.getElementById('profitability-section').style.display = 'block';
                 }
@@ -1887,15 +1887,16 @@
 
         function populateProfitabilityGroupingSelect(classificationList) {
             const select = document.getElementById('profitability-grouping-select');
-            select.innerHTML = `<option value="">${getTranslation('int.noselection') || 'Nessun raggruppamento'}</option>`;
-            let keys = [];
-            if (classificationFilter && classificationFilter.length > 0) keys = classificationFilter;
-            else if (Array.isArray(classificationList) && classificationList.length > 0) keys = Object.keys(classificationList[0]).filter(k => k !== 'id_instrument');
-            keys.forEach(key => {
-                const opt = document.createElement('option');
-                opt.value = key; opt.textContent = getTranslation(key) || key;
-                select.appendChild(opt);
-            });
+            const defaultLabel = getTranslation('int.noselection') || 'Nessun raggruppamento';
+
+            // Use shared function
+            populateGroupingSelectSummary(
+                select,
+                classificationList,
+                getTranslation,
+                '',
+                defaultLabel
+            );
         }
 
         function updateProfitabilityGrouping() {

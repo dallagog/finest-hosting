@@ -334,8 +334,20 @@
             await loadTranslations(language);
             updatePageTranslations();
 
+            await loadManifest();
             initThreeJS();
             loadPortfolio();
+        }
+
+        let manifest = {};
+        async function loadManifest() {
+            try {
+                const response = await fetch('lang/manifest.json');
+                if (!response.ok) throw new Error('Manifest file not found');
+                manifest = await response.json();
+            } catch (error) {
+                console.error('❌ Error loading manifest:', error);
+            }
         }
 
         /* -----------------------------------------------------------
@@ -421,7 +433,7 @@
                 const select = document.getElementById('grouping-select');
                 populateGroupingSelectSummary(
                     select,
-                    classificationList,
+                    manifest.classification || [],
                     getTranslation,
                     initialGrouping,
                     getTranslation('int.no_grouping') || "Nessun raggruppamento"
