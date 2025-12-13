@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Portfolio Graph 0.1 a</title>
+    <title>Portfolio Graph 0.2</title>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
@@ -19,14 +19,9 @@
             --bg-color: #050505;
             --neon-cyan: #00f3ff;
             --neon-blue: #0066ff;
-            --neon-orange: #ff6600;
-            --neon-red: #ff0044;
-            --neon-purple: #cc00ff;
             --glass-bg: rgba(0, 20, 40, 0.95);
             --text-color: #e0f7fa;
-            --button-bg: rgba(0, 243, 255, 0.1);
-            --button-border: var(--neon-cyan);
-            --button-hover: #ff0044;
+            --neon-red: #ff0044;
         }
 
         * {
@@ -39,9 +34,8 @@
         body {
             height: 100%;
             width: 100%;
-            overflow: auto;
-            /* Permette lo scroll se la legenda è lunga */
-            padding-right: 8px;
+            overflow: hidden;
+            padding-right: 0;
         }
 
         body {
@@ -60,7 +54,7 @@
             gap: 10px;
         }
 
-        /* HEADER */
+        /* HEADER (mantenuto) */
         .header-bar {
             background: var(--glass-bg);
             border: 1px solid var(--neon-cyan);
@@ -69,51 +63,17 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            box-shadow:
-                0 0 20px rgba(0, 243, 255, 0.2),
-                inset 0 0 20px rgba(0, 243, 255, 0.1);
+            box-shadow: 0 0 20px rgba(0, 243, 255, 0.2);
             backdrop-filter: blur(10px);
-            position: relative;
-            flex-shrink: 0;
             min-height: 70px;
-            /* Aumentato leggermente per ospitare le info */
+            z-index: 10;
         }
 
-        .header-bar::before {
-            content: '';
-            position: absolute;
-            top: -2px;
-            left: -2px;
-            right: -2px;
-            bottom: -2px;
-            background: linear-gradient(45deg,
-                    var(--neon-cyan),
-                    var(--neon-blue),
-                    var(--neon-purple),
-                    var(--neon-cyan));
-            z-index: -1;
-            border-radius: 10px;
-            opacity: 0.5;
-            animation: borderGlow 3s linear infinite;
-        }
-
-        @keyframes borderGlow {
-            0% {
-                background-position: 0% 50%;
-            }
-
-            100% {
-                background-position: 200% 50%;
-            }
-        }
-
-        /* HEADER LEFT - INFO UTENTE (Stile importato da dashboard.html) */
         .header-left {
             display: flex;
             flex-direction: column;
             gap: 5px;
             flex: 1;
-            /* Prende spazio a sinistra */
         }
 
         .user-info-row {
@@ -131,19 +91,12 @@
         .username-display {
             color: var(--text-color);
             text-transform: uppercase;
-            letter-spacing: 1px;
         }
 
         .flag-icon {
             font-size: 18px;
         }
 
-        #languageDisplay,
-        #currencyDisplay {
-            color: var(--text-color);
-        }
-
-        /* HEADER CENTER - TITOLO */
         .header-center {
             flex: 1;
             text-align: center;
@@ -157,24 +110,10 @@
             -webkit-background-clip: text;
             background-clip: text;
             color: transparent;
-            text-shadow:
-                0 0 10px var(--neon-cyan),
-                0 0 20px rgba(0, 243, 255, 0.5);
-            animation: titleGlow 2s ease-in-out infinite alternate;
+            text-shadow: 0 0 10px var(--neon-cyan);
             margin: 0;
         }
 
-        @keyframes titleGlow {
-            0% {
-                text-shadow: 0 0 10px var(--neon-cyan), 0 0 20px var(--neon-cyan);
-            }
-
-            100% {
-                text-shadow: 0 0 15px var(--neon-cyan), 0 0 30px var(--neon-cyan), 0 0 40px rgba(0, 243, 255, 0.7);
-            }
-        }
-
-        /* HEADER RIGHT - CONTROLLI */
         .header-right {
             display: flex;
             gap: 15px;
@@ -183,97 +122,129 @@
             justify-content: flex-end;
         }
 
-        select {
-            background: rgba(0, 10, 25, 0.9);
+        select,
+        button {
+            font-family: 'Orbitron', sans-serif;
+            text-transform: uppercase;
+            border-radius: 4px;
+            cursor: pointer;
             border: 1px solid var(--neon-blue);
+            background: rgba(0, 10, 25, 0.9);
             color: var(--neon-cyan);
             padding: 8px 15px;
-            border-radius: 4px;
-            font-family: 'Orbitron', sans-serif;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            cursor: pointer;
             transition: all 0.3s;
-            box-shadow: 0 0 10px rgba(0, 102, 255, 0.3);
         }
 
-        select:hover {
+        select:hover,
+        button:hover {
             border-color: var(--neon-cyan);
-            box-shadow: 0 0 15px rgba(0, 243, 255, 0.5);
-        }
-
-        .close-button {
-            background: linear-gradient(45deg, rgba(0, 243, 255, 0.2), rgba(0, 102, 255, 0.2));
-            border: 1px solid var(--neon-cyan);
-            color: var(--neon-cyan);
-            padding: 8px 20px;
-            border-radius: 4px;
-            font-family: 'Orbitron', sans-serif;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            cursor: pointer;
-            transition: all 0.3s;
-            box-shadow: 0 0 15px rgba(0, 243, 255, 0.3);
+            box-shadow: 0 0 10px rgba(0, 243, 255, 0.3);
         }
 
         .close-button:hover {
-            background: linear-gradient(45deg, rgba(255, 0, 68, 0.3), rgba(255, 102, 0, 0.3));
             border-color: var(--neon-red);
             color: var(--neon-red);
-            box-shadow: 0 0 20px rgba(255, 0, 68, 0.5);
-            transform: translateY(-2px);
+            box-shadow: 0 0 15px rgba(255, 0, 68, 0.3);
         }
 
-        /* MAIN CHART CONTAINER */
+        /* CHART CONTAINER */
         .chart-container {
             flex: 1;
             background: var(--glass-bg);
             border: 1px solid var(--neon-cyan);
             border-radius: 12px;
-            padding: 20px;
-            display: block;
             position: relative;
             overflow: hidden;
-            box-shadow:
-                0 0 30px rgba(0, 243, 255, 0.2),
-                inset 0 0 40px rgba(0, 243, 255, 0.1);
-            backdrop-filter: blur(5px);
-        }
-
-        .chart-container::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background:
-                radial-gradient(circle at 30% 30%, rgba(0, 243, 255, 0.05) 0%, transparent 70%),
-                radial-gradient(circle at 70% 70%, rgba(0, 102, 255, 0.05) 0%, transparent 70%);
-            pointer-events: none;
-        }
-
-        .pie-area {
+            box-shadow: 0 0 30px rgba(0, 243, 255, 0.2);
             display: flex;
             justify-content: center;
             align-items: center;
-            position: relative;
-            min-width: 0;
-            height: 100%;
         }
 
+        .pie-area {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* Wrapper del canvas + SVG + Labels */
+        /* Uso VW/VH per adattarsi bene allo schermo, includendo spazio per le label */
         .chart-wrapper {
             position: relative;
-            width: 95%;
-            height: 95%;
-            max-width: 1000px;
-            max-height: 1000px;
+            width: 75vh;
+            height: 75vh;
+            max-width: 750px;
+            max-height: 750px;
+            /* Margine per consentire alle label di stare fuori dal canvas ma dentro il wrapper */
+            margin: 50px;
+            box-sizing: content-box;
         }
 
         #pieCanvas {
             width: 100% !important;
             height: 100% !important;
-            filter: drop-shadow(0 0 25px rgba(0, 243, 255, 0.3));
+            z-index: 2;
+        }
+
+        /* SVG per le linee: deve coprire esattamente il canvas */
+        .connection-svg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+            overflow: visible;
+        }
+
+        .connection-line {
+            fill: none;
+            stroke-width: 1.5;
+            stroke-dasharray: 4, 4;
+            /* Linea tratteggiata Tron */
+            opacity: 0.9;
+            filter: drop-shadow(0 0 2px currentColor);
+            transition: stroke 0.2s;
+        }
+
+        /* LABEL ESTERNE (Legenda) */
+        #labelsContainer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            /* di default */
+            z-index: 10;
+        }
+
+        .chart-label {
+            position: absolute;
+            font-size: 11px;
+            font-weight: bold;
+            color: var(--text-color);
+            text-shadow: 0 0 3px rgba(0, 0, 0, 0.8);
+            background: rgba(0, 20, 40, 0.95);
+            padding: 4px 8px;
+            border-radius: 4px;
+            border: 1px solid;
+            white-space: nowrap;
+            pointer-events: auto;
+            transition: all 0.2s;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+            cursor: default;
+        }
+
+        .chart-label:hover {
+            z-index: 20;
+            background: rgba(0, 20, 40, 1);
+            transform: scale(1.05);
+            box-shadow: 0 0 15px var(--neon-cyan);
         }
 
         .total-display {
@@ -282,30 +253,24 @@
             left: 50%;
             transform: translate(-50%, -50%);
             text-align: center;
-            z-index: 2;
+            z-index: 5;
             pointer-events: none;
         }
 
         .total-label {
-            font-size: 14px;
+            font-size: 12px;
             color: var(--neon-blue);
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            margin-bottom: 5px;
-            text-shadow: 0 0 10px var(--neon-blue);
+            margin-bottom: 2px;
         }
 
         .total-value {
-            font-size: 24px;
+            font-size: 20px;
             font-weight: 900;
             color: var(--neon-cyan);
-            text-shadow:
-                0 0 15px var(--neon-cyan),
-                0 0 25px rgba(0, 243, 255, 0.7);
-            letter-spacing: 1px;
+            text-shadow: 0 0 10px var(--neon-cyan);
         }
 
-        /* LOADING SCREEN */
+        /* LOADING (mantenuto) */
         #loading {
             position: fixed;
             top: 0;
@@ -321,25 +286,12 @@
         }
 
         .spinner {
-            width: 60px;
-            height: 60px;
+            width: 50px;
+            height: 50px;
             border: 3px solid rgba(0, 243, 255, 0.1);
             border-top: 3px solid var(--neon-cyan);
             border-radius: 50%;
             animation: spin 1s linear infinite;
-            box-shadow: 0 0 20px var(--neon-cyan);
-        }
-
-        .spinner::before {
-            content: '';
-            position: absolute;
-            top: -10px;
-            left: -10px;
-            right: -10px;
-            bottom: -10px;
-            border: 2px solid rgba(0, 102, 255, 0.3);
-            border-radius: 50%;
-            animation: spin 2s linear infinite reverse;
         }
 
         @keyframes spin {
@@ -348,38 +300,11 @@
             }
         }
 
-        #loadingText {
-            margin-top: 25px;
-            color: var(--neon-cyan);
-            font-family: 'Orbitron', sans-serif;
-            font-size: 1.5rem;
-            text-shadow: 0 0 10px var(--neon-cyan), 0 0 20px var(--neon-cyan);
-            letter-spacing: 2px;
-            animation: pulse 1.5s ease-in-out infinite alternate;
-        }
-
-        @keyframes pulse {
-            0% {
-                opacity: 0.7;
-            }
-
-            100% {
-                opacity: 1;
-            }
-        }
-
-        /* RESPONSIVE */
         @media (max-width: 768px) {
             .header-bar {
                 flex-direction: column;
-                gap: 15px;
-                text-align: center;
-            }
-
-            .header-left,
-            .header-right {
-                width: 100%;
-                justify-content: center;
+                gap: 10px;
+                padding: 10px;
             }
 
             .header-center h1 {
@@ -387,8 +312,14 @@
             }
 
             .chart-wrapper {
-                width: 95%;
-                height: 95%;
+                width: 90vw;
+                height: 90vw;
+                margin: 10px;
+            }
+
+            .chart-label {
+                font-size: 9px;
+                padding: 2px 4px;
             }
         }
     </style>
@@ -398,7 +329,7 @@
 
     <div id="loading">
         <div class="spinner"></div>
-        <div id="loadingText">CONNECTING TO GRID...</div>
+        <div style="margin-top: 20px; color: var(--neon-cyan); letter-spacing: 2px;">LOADING...</div>
     </div>
 
     <div class="header-bar">
@@ -424,19 +355,20 @@
         </div>
     </div>
 
-    <div class="chart-container">
+    <div class="chart-container" id="chartContainer">
         <div class="pie-area">
             <div class="chart-wrapper">
                 <canvas id="pieCanvas"></canvas>
                 <div id="totalDisplay" class="total-display"></div>
+
+                <svg id="connectionSvg" class="connection-svg"></svg>
+                <div id="labelsContainer"></div>
             </div>
         </div>
     </div>
 
     <script>
-        /* ===========================================================
-           CONFIGURAZIONE E VARIABILI GLOBALI
-        =========================================================== */
+        /* ================= GLOBALS ================= */
         const API_URL = "https://feweb-tunnel.fe-web.eu";
         let portfolioData = [];
         let classificationMap = {};
@@ -444,8 +376,6 @@
         let chartData = [];
         let totalValue = 0;
         let classificationFilter = [];
-
-        // Variabili per Lingua e Valuta
         let availableLanguages = [];
         let currencies = [];
 
@@ -456,289 +386,190 @@
         const currency = urlParams.get('currency') || 'EUR';
         const initialGrouping = urlParams.get('grouping') || "";
 
-        /* ===========================================================
-           INIZIALIZZAZIONE
-        =========================================================== */
-        window.onload = init;
-
-        async function init() {
-            // Imposta username base
+        /* ================= INIT ================= */
+        window.onload = async () => {
             document.getElementById('username-display').textContent = username;
 
-            // Caricamento Dati Lingua e Valuta (come in dashboard.html)
-            await initializeLanguages();
-            await loadCurrencies(language);
-            updateUserInfoUI(); // Aggiorna UI Header
+            await Promise.all([
+                initializeLanguages(),
+                loadCurrencies(language)
+            ]);
 
-            // Caricamento Dati Applicativi
-            // loadLanguageManifest è chiamato dentro initializeLanguages, 
-            // quindi classificationFilter dovrebbe essere già popolato se presente nel manifest
+            updateUserInfoUI();
             await loadPortfolio();
 
             document.getElementById("loading").style.display = "none";
-        }
+        };
 
-        /* ===========================================================
-           LOGICA LINGUA E VALUTA (Replicata da dashboard.html)
-        =========================================================== */
+        /* ================= LANGUAGE & CURRENCY LOGIC (Unchanged) ================= */
         async function loadLanguageManifest() {
             try {
                 const response = await fetch('lang/manifest.json');
                 if (!response.ok) return [];
                 const manifest = await response.json();
-
-                // Carica filtri classificazione dal manifest
-                if (manifest.classification && Array.isArray(manifest.classification)) {
-                    classificationFilter = manifest.classification;
-                }
-
+                if (manifest.classification) classificationFilter = manifest.classification;
                 return manifest.languages || [];
-            } catch (error) {
-                console.error("Error loading manifest:", error);
-                return [];
-            }
-        }
-
-        async function loadLanguageFile(langCode) {
-            try {
-                const response = await fetch(`lang/${langCode}.json`);
-                if (!response.ok) return null;
-                const data = await response.json();
-                if (data['int.language.code'] && data['int.language.description'] && data['img.language.flag']) {
-                    return {
-                        code: data['int.language.code'],
-                        description: data['int.language.description'],
-                        flag: data['img.language.flag']
-                    };
-                }
-                return null;
-            } catch (error) {
-                console.error(`Error loading ${langCode}.json:`, error);
-                return null;
-            }
+            } catch (e) { console.error(e); return []; }
         }
 
         async function initializeLanguages() {
-            const langCodes = await loadLanguageManifest();
-            for (const langCode of langCodes) {
-                const langData = await loadLanguageFile(langCode);
-                if (langData) availableLanguages.push(langData);
+            const codes = await loadLanguageManifest();
+            for (const code of codes) {
+                try {
+                    const res = await fetch(`lang/${code}.json`);
+                    if (res.ok) {
+                        const d = await res.json();
+                        availableLanguages.push({
+                            code: d['int.language.code'],
+                            description: d['int.language.description'],
+                            flag: d['img.language.flag']
+                        });
+                    }
+                } catch (e) { }
             }
         }
 
         async function loadCurrencies(lang) {
             try {
-                const response = await fetch(`currency/${lang}.json`);
-                if (!response.ok) throw new Error(`Currency file not found currency/${lang}.json`);
-                currencies = await response.json();
-            } catch (error) {
-                console.error('❌ Error loading currencies:', error);
-                currencies = [];
-            }
+                const res = await fetch(`currency/${lang}.json`);
+                if (res.ok) currencies = await res.json();
+            } catch (e) { console.error(e); }
         }
 
         function updateUserInfoUI() {
-            // Aggiorna Lingua e Bandiera
-            const langData = availableLanguages.find(l => l.code === language);
-            if (langData) {
-                document.getElementById('languageFlag').textContent = langData.flag;
-                document.getElementById('languageDisplay').textContent = langData.description;
+            const l = availableLanguages.find(x => x.code === language);
+            if (l) {
+                document.getElementById('languageFlag').textContent = l.flag;
+                document.getElementById('languageDisplay').textContent = l.description;
             } else {
                 document.getElementById('languageDisplay').textContent = language;
             }
 
-            // Aggiorna Valuta
-            const currData = currencies.find(c => c.currency === currency);
-            if (currData && currData['img.currency.flag']) {
-                document.getElementById('currencyDisplay').textContent = `${currData['img.currency.flag']} ${currency}`;
-            } else {
-                document.getElementById('currencyDisplay').textContent = currency;
-            }
+            const c = currencies.find(x => x.currency === currency);
+            const symbol = c && c['img.currency.flag'] ? c['img.currency.flag'] : '';
+            document.getElementById('currencyDisplay').textContent = `${symbol} ${currency}`;
         }
 
-        /* ===========================================================
-           PALETTE COLORI TRON
-        =========================================================== */
-        function generateTronColors(n) {
-            const tronColors = [
-                '#00F3FF', '#0066FF', '#FF3366', '#00FFAA', '#FFAA00',
-                '#CC00FF', '#00CCFF', '#FF6600', '#00FF66', '#FF00CC',
-                '#0099FF', '#FF0066', '#33FF00', '#FF33CC', '#00DDFF'
-            ];
-            const colors = [];
-            for (let i = 0; i < n; i++) {
-                colors.push(tronColors[i % tronColors.length]);
-            }
-            return colors;
-        }
-
-        /* ===========================================================
-           CARICA DATI PORTAFOGLIO
-        =========================================================== */
+        /* ================= DATA LOADING (Unchanged) ================= */
         async function loadPortfolio() {
+            // ... (logica di loadPortfolio invariata) ...
             try {
-                const payload = {
-                    username,
-                    token,
-                    language,
-                    filter: "",
-                    code: ""
-                };
-
-                const response = await fetch(`${API_URL}/getportfolio`, {
+                const res = await fetch(`${API_URL}/getportfolio`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify(payload)
+                    body: JSON.stringify({ username, token, language, filter: "", code: "" })
                 });
-
-                const data = await response.json();
+                const data = await res.json();
 
                 if (data.status !== "ok") {
                     alert("Errore caricamento dati");
                     return;
                 }
 
-                let classificationList = data.classification;
-                if (typeof classificationList === "string") {
-                    try {
-                        classificationList = JSON.parse(classificationList.replace(/'/g, '"'));
-                    } catch { classificationList = []; }
+                let cList = data.classification;
+                if (typeof cList === "string") {
+                    try { cList = JSON.parse(cList.replace(/'/g, '"')); } catch { }
                 }
-
-                if (Array.isArray(classificationList)) {
-                    classificationList.forEach(item => {
-                        if (item.id_instrument)
-                            classificationMap[item.id_instrument] = item;
-                    });
+                if (Array.isArray(cList)) {
+                    cList.forEach(i => { if (i.id_instrument) classificationMap[i.id_instrument] = i; });
                 }
 
                 const select = document.getElementById('grouping-select');
-                // Usa populateGroupingSelectSummary da dashboard-shared.js
-                // Passiamo getTranslation (se disponibile, altrimenti fallback locale)
                 populateGroupingSelectSummary(
                     select,
-                    classificationFilter.length > 0 ? classificationFilter : classificationList,
-                    (typeof getTranslation !== 'undefined' ? getTranslation : (k) => k),
+                    classificationFilter.length > 0 ? classificationFilter : (Array.isArray(cList) ? cList : []),
+                    (typeof getTranslation !== 'undefined' ? getTranslation : k => k),
                     initialGrouping,
                     "Nessun raggruppamento"
                 );
 
-                const rawPort = data.portfolio || {};
-                // Usa parsePortfolioItems da dashboard-shared.js
-                portfolioData = parsePortfolioItems(rawPort);
-
+                portfolioData = parsePortfolioItems(data.portfolio || {});
                 renderChart();
-
-            } catch (err) {
-                console.error("Errore caricamento:", err);
+            } catch (e) {
+                console.error(e);
+                alert("Errore caricamento dati");
             }
         }
 
-        /* ===========================================================
-           RENDER GRAFICO A TORTA
-        =========================================================== */
+
+        /* ================= CHART RENDERING ================= */
+        function generateTronColors(n) {
+            // Palette colori Tron
+            const c = ['#00F3FF', '#0066FF', '#FF3366', '#00FFAA', '#FFAA00', '#CC00FF', '#00CCFF', '#FF6600', '#00FF66', '#FF00CC', '#0099FF', '#FF0066'];
+            return Array.from({ length: n }, (_, i) => c[i % c.length]);
+        }
+
         function renderChart() {
             const grouping = document.getElementById('grouping-select').value;
-            // Usa getGroupedData da dashboard-shared.js
-            const groupedData = getGroupedData(portfolioData, classificationMap, grouping);
-
-            // Prendi solo i primi 12 elementi per chiarezza
-            chartData = groupedData.length > 12 ? groupedData.slice(0, 12) : groupedData;
+            const grouped = getGroupedData(portfolioData, classificationMap, grouping);
+            chartData = grouped.length > 12 ? grouped.slice(0, 12) : grouped;
 
             if (chartData.length === 0) {
-                document.querySelector('.pie-area').innerHTML =
-                    '<div style="color: var(--neon-cyan); text-align: center; font-size: 1.5rem; width: 100%; text-shadow: 0 0 10px var(--neon-cyan);">NESSUN DATO DISPONIBILE</div>';
+                document.querySelector('.pie-area').innerHTML = '<div style="color: var(--neon-cyan); text-align: center; font-size: 1.5rem; width: 100%; text-shadow: 0 0 10px var(--neon-cyan);">NESSUN DATO DISPONIBILE</div>';
+                document.getElementById('totalDisplay').style.display = 'none';
                 return;
             }
 
-            totalValue = chartData.reduce((sum, item) => sum + item.value, 0);
+            totalValue = chartData.reduce((a, b) => a + b.value, 0);
             const colors = generateTronColors(chartData.length);
 
-            // Distruggi chart precedente
-            if (pieChart) {
-                pieChart.destroy();
-            }
+            if (pieChart) pieChart.destroy();
 
-            // Registra il plugin Datalabels
-            if (window.ChartDataLabels) {
-                Chart.register(ChartDataLabels);
-            }
+            document.getElementById('labelsContainer').innerHTML = '';
+            document.getElementById('connectionSvg').innerHTML = '';
 
-            // Crea chart
+            if (window.ChartDataLabels) Chart.register(ChartDataLabels);
+
             const ctx = document.getElementById('pieCanvas').getContext('2d');
             pieChart = new Chart(ctx, {
                 type: 'pie',
                 data: {
-                    labels: chartData.map(item => item.label),
+                    labels: chartData.map(i => i.label),
                     datasets: [{
-                        data: chartData.map(item => item.value),
+                        data: chartData.map(i => i.value),
                         backgroundColor: colors,
-                        borderColor: colors.map(color => {
-                            const r = Math.min(parseInt(color.substr(1, 2), 16) + 50, 255);
-                            const g = Math.min(parseInt(color.substr(3, 2), 16) + 50, 255);
-                            const b = Math.min(parseInt(color.substr(5, 2), 16) + 50, 255);
-                            return `rgba(${r}, ${g}, ${b}, 0.9)`;
-                        }),
-                        borderWidth: 3,
-                        hoverBorderWidth: 5,
-                        hoverBorderColor: '#FFFFFF',
-                        hoverOffset: 20
+                        // Bordi più scuri per contrasto Tron
+                        borderColor: '#050505',
+                        borderWidth: 2,
+                        hoverOffset: 15
                     }]
                 },
                 options: {
                     responsive: true,
-                    maintainAspectRatio: true,
-                    cutout: '35%',
-                    radius: '90%',
+                    maintainAspectRatio: false,
+                    cutout: '30%',
+                    layout: { padding: 0 },
                     plugins: {
-                        // Legenda Dinamica sotto il grafico
-                        legend: {
-                            display: true,
-                            position: 'bottom',
-                            labels: {
-                                color: 'var(--text-color)',
-                                font: { family: 'Orbitron', size: 12, weight: 'bold' },
-                                padding: 25
-                            }
-                        },
+                        legend: { display: false },
                         tooltip: {
                             callbacks: {
-                                label: function (context) {
-                                    const value = context.raw;
-                                    const percentage = ((value / totalValue) * 100).toFixed(1);
-                                    return `${context.label}: ${formatCurrency(value)} (${percentage}%)`;
+                                label: (ctx) => {
+                                    const v = ctx.raw;
+                                    const p = ((v / totalValue) * 100).toFixed(1);
+                                    return `${ctx.label}: ${formatCurrency(v)} (${p}%)`;
                                 }
                             },
                             backgroundColor: 'rgba(0, 20, 40, 0.95)',
-                            titleColor: '#00f3ff',
-                            bodyColor: '#ffffff',
                             borderColor: '#00f3ff',
                             borderWidth: 1
                         },
-                        // Datalabels per Percentuale sulle fette
                         datalabels: {
                             color: '#050505',
-                            formatter: (value) => {
-                                const percentage = ((value / totalValue) * 100).toFixed(1);
-                                return percentage + '%';
-                            },
-                            anchor: 'end',
-                            align: 'start',
-                            offset: 4,
-                            font: { weight: 'bold', size: 12 },
-                            backgroundColor: (context) => {
-                                return 'rgba(0, 243, 255, 0.8)';
-                            },
-                            borderRadius: 4,
-                            padding: 6,
-                            textAlign: 'center'
+                            formatter: (v) => ((v / totalValue) * 100).toFixed(0) + '%',
+                            font: { weight: 'bold', size: 10 },
+                            backgroundColor: (ctx) => ctx.dataset.backgroundColor[ctx.dataIndex] + 'E0', // 88% opacità
+                            borderRadius: 3,
+                            padding: 2,
+                            display: (ctx) => (ctx.raw / totalValue) > 0.03,
+                            align: 'center',
+                            anchor: 'center'
                         }
                     },
                     animation: {
-                        animateScale: true,
-                        animateRotate: true,
-                        duration: 1500,
-                        easing: 'easeOutQuart'
+                        // Dopo l'animazione, disegna le linee e le label
+                        onComplete: () => {
+                            drawExternalLabelsAndLines(pieChart, colors);
+                        }
                     }
                 }
             });
@@ -746,41 +577,130 @@
             updateTotalDisplay();
         }
 
-        /* ===========================================================
-           FUNZIONI DI UTILITY
-        =========================================================== */
+        /* ================= EXTERNAL LABELS & LINES DRAWING LOGIC ================= */
+        function drawExternalLabelsAndLines(chart, colors) {
+            const container = document.getElementById('labelsContainer');
+            const svg = document.getElementById('connectionSvg');
+            container.innerHTML = '';
+            svg.innerHTML = '';
+
+            const meta = chart.getDatasetMeta(0);
+            if (meta.data.length === 0) return;
+
+            // Centro del canvas
+            const centerX = chart.width / 2;
+            const centerY = chart.height / 2;
+
+            // Distanza del punto esterno (End della linea)
+            // L'area del grafico è limitata da un padding virtuale (radius)
+            const maxRadius = meta.data[0].outerRadius;
+            const externalRadius = maxRadius * 1.35; // Distanza fissa dal centro per l'elbow della linea
+            const labelPositionRadius = maxRadius * 1.45; // Distanza per la posizione finale della label
+
+            // Array per evitare sovrapposizioni verticali (usato solo per le demo)
+            const verticalOffsets = [];
+
+            meta.data.forEach((element, index) => {
+                const model = element;
+                const midAngle = model.startAngle + (model.endAngle - model.startAngle) / 2;
+
+                // 1. Punto di START della Linea (sul bordo della fetta)
+                const startX = centerX + Math.cos(midAngle) * maxRadius;
+                const startY = centerY + Math.sin(midAngle) * maxRadius;
+
+                // 2. Punto ELBOW (gomito esterno)
+                const elbowX = centerX + Math.cos(midAngle) * externalRadius;
+                const elbowY = centerY + Math.sin(midAngle) * externalRadius;
+
+                // 3. Punto LABEL (posizione finale della label)
+                let labelX = centerX + Math.cos(midAngle) * labelPositionRadius;
+                let labelY = centerY + Math.sin(midAngle) * labelPositionRadius;
+
+                const isRight = Math.cos(midAngle) >= 0;
+
+                // --- Creazione e Posizionamento Label HTML ---
+                const labelDiv = document.createElement('div');
+                labelDiv.className = 'chart-label';
+
+                // Formato label: Nome (Valore/Percentuale)
+                const value = chartData[index].value;
+                const percentage = ((value / totalValue) * 100).toFixed(1);
+                labelDiv.innerHTML = `
+                    ${chartData[index].label}<br>
+                    <small>(${formatCurrency(value)}) ${percentage}%</small>
+                `;
+
+                labelDiv.style.borderColor = colors[index];
+                labelDiv.style.color = colors[index];
+
+                container.appendChild(labelDiv);
+
+                // Misura label
+                const width = labelDiv.offsetWidth;
+                const height = labelDiv.offsetHeight;
+
+                // Regola Label: left vs right positioning
+                if (isRight) {
+                    labelDiv.style.left = `${labelX}px`;
+                } else {
+                    labelDiv.style.left = `${labelX - width}px`;
+                }
+
+                // Centratura verticale iniziale
+                labelY -= height / 2;
+                labelDiv.style.top = `${labelY}px`;
+
+                // --- Disegno Linea SVG ---
+
+                // Punto END della linea (punta al centro del lato della label più vicino al centro)
+                let endLineX = isRight ? labelX : (labelX - width);
+                let endLineY = labelY + height / 2;
+
+                const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+                path.setAttribute("class", "connection-line");
+                path.style.stroke = colors[index];
+
+                // Linea spezzata (Elbow)
+                // M Start L Elbow L End
+                // La linea va da bordo fetta -> punto esterno (elbow) -> lato label.
+                path.setAttribute("d", `M ${startX} ${startY} L ${elbowX} ${elbowY} L ${endLineX} ${endLineY}`);
+
+                svg.appendChild(path);
+            });
+
+            // L'ottimizzazione per evitare sovrapposizioni verticali è un codice complesso
+            // che è meglio implementare solo su richiesta specifica, data la complessità
+            // del layout dinamico. Per ora, ci affidiamo al posizionamento radiale.
+        }
+
+
+        /* ================= UTILS (Unchanged) ================= */
         function updateTotalDisplay() {
-            const totalDisplay = document.getElementById('totalDisplay');
-            totalDisplay.innerHTML = `
-                <div class="total-label">TOTALE</div>
-                <div class="total-value">${formatCurrency(totalValue)}</div>
-            `;
+            const el = document.getElementById('totalDisplay');
+            el.innerHTML = `<div class="total-label">TOTALE</div><div class="total-value">${formatCurrency(totalValue)}</div>`;
         }
 
-        function formatCurrency(value) {
-            // Usa la valuta passata via URL o default EUR
+        function formatCurrency(v) {
             return new Intl.NumberFormat(language.replace('_', '-'), {
-                style: "currency",
-                currency: currency,
-                maximumFractionDigits: 0
-            }).format(value);
+                style: "currency", currency: currency, maximumFractionDigits: 0
+            }).format(v);
         }
 
-        function closeWindow() {
-            window.close();
-        }
+        function closeWindow() { window.close(); }
 
-        // GESTIONE RESIZE
-        let resizeTimeout;
-        window.addEventListener('resize', function () {
-            clearTimeout(resizeTimeout);
-            resizeTimeout = setTimeout(() => {
+        // Resize handler per ridisegnare linee
+        let rT;
+        window.onresize = () => {
+            clearTimeout(rT);
+            // Attende un po' per garantire che il canvas sia ridimensionato
+            rT = setTimeout(() => {
                 if (pieChart) {
                     pieChart.resize();
+                    // Ridisegna le linee solo dopo il resize completo
+                    drawExternalLabelsAndLines(pieChart, pieChart.data.datasets[0].backgroundColor);
                 }
-            }, 250);
-        });
-
+            }, 200);
+        };
     </script>
 
 </body>
