@@ -63,11 +63,15 @@ function populateGroupingSelectSummary(selectElement, classificationList, transl
 
     let keys = [];
 
-    // classificationList can be an array of objects, each representing an instrument's classification
-    // We want to find all unique classification keys (columns) available.
-    // Usually taking the keys of the first item (excluding id_instrument) is enough if the structure is consistent.
+    // classificationList can be:
+    // 1. Array of strings (keys from manifest)
+    // 2. Array of objects (data rows)
     if (Array.isArray(classificationList) && classificationList.length > 0) {
-        keys = Object.keys(classificationList[0]).filter(k => k !== 'id_instrument');
+        if (typeof classificationList[0] === 'string') {
+            keys = classificationList;
+        } else {
+            keys = Object.keys(classificationList[0]).filter(k => k !== 'id_instrument');
+        }
     }
 
     keys.forEach(key => {

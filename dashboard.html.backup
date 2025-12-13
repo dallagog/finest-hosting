@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Dashboard 1.0 rice</title>
+    <title>Dashboard 2.9</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <script src="js/dashboard-shared.js"></script>
@@ -855,17 +855,6 @@
             }
         }
 
-        let manifest = {};
-        async function loadManifest() {
-            try {
-                const response = await fetch('lang/manifest.json');
-                if (!response.ok) throw new Error('Manifest file not found');
-                manifest = await response.json();
-            } catch (error) {
-                console.error('❌ Error loading manifest:', error);
-            }
-        }
-
         function getTranslation(key) {
             return translations[key] || key;
         }
@@ -1577,9 +1566,7 @@
                         }
                     }
 
-
-                    // Use manifest.classification for grouping options as requested
-                    populateGroupingSelect(manifest.classification || []);
+                    populateGroupingSelect(classificationList);
                     renderTable();
                     document.getElementById('portfolio-section').style.display = 'block';
                 }
@@ -2084,7 +2071,6 @@
         window.addEventListener('load', async () => {
             if (checkAuthentication()) {
                 await initializeLanguages();
-                await loadManifest();
                 await loadTranslations(credentials.language);
                 updatePageTranslations();
                 await updateUserInfo();
