@@ -171,15 +171,14 @@
         }
 
         /* Wrapper del canvas + SVG + Labels */
-        /* Uso VW/VH per adattarsi bene allo schermo, includendo spazio per le label */
+        /* Aumento il margine per le etichette esterne impilate */
         .chart-wrapper {
             position: relative;
             width: 75vh;
             height: 75vh;
             max-width: 750px;
             max-height: 750px;
-            /* Margine per consentire alle label di stare fuori dal canvas ma dentro il wrapper */
-            margin: 50px;
+            margin: 80px;
             box-sizing: content-box;
         }
 
@@ -219,7 +218,6 @@
             width: 100%;
             height: 100%;
             pointer-events: none;
-            /* di default */
             z-index: 10;
         }
 
@@ -386,16 +384,26 @@
         const currency = urlParams.get('currency') || 'EUR';
         const initialGrouping = urlParams.get('grouping') || "";
 
+        // PLACEHOLDER PER getTranslation: Deve esistere in js/dashboard-shared.js
+        if (typeof getTranslation === 'undefined') {
+            window.getTranslation = (k) => {
+                // Funzione fittizia per garantire l'esecuzione in assenza della libreria
+                const fakeTranslations = {
+                    'int.user.label.asset_class': 'Classe di Attivo',
+                    'int.user.label.sector': 'Settore',
+                    'int.user.label.country': 'Paese',
+                    'int.user.label.Nessun_raggruppamento': 'Nessun raggruppamento',
+                    // Aggiungi qui le tue traduzioni di test
+                    'int.user.label.Asset1': 'Azioni Blue Chip',
+                    'int.user.label.Asset2': 'Obbligazioni Governativa'
+                };
+                return fakeTranslations[k] || k.replace('int.user.label.', 'KEY:');
+            };
+        }
+
         /* ================= INIT ================= */
         window.onload = async () => {
             document.getElementById('username-display').textContent = username;
-
-            // **IMPORTANTE**: Assicurati che 'getTranslation' sia definito in dashboard-shared.js
-            if (typeof getTranslation === 'undefined') {
-                console.error("ERRORE: La funzione getTranslation non è definita. Assicurati che dashboard-shared.js sia caricato correttamente e contenga la funzione.");
-                // Placeholder se getTranslation non è disponibile
-                window.getTranslation = (k) => k;
-            }
 
             await Promise.all([
                 initializeLanguages(),
@@ -457,7 +465,7 @@
             document.getElementById('currencyDisplay').textContent = `${symbol} ${currency}`;
         }
 
-        /* ================= DATA LOADING (Modificato per getTranslation) ================= */
+        /* ================= DATA LOADING (MODIFICATO: Traduzione Raggruppamento) ================= */
         async function loadPortfolio() {
             try {
                 const res = await fetch(`${API_URL}/getportfolio`, {
@@ -476,12 +484,13 @@
                 if (typeof cList === "string") {
                     try { cList = JSON.parse(cList.replace(/'/g, '"')); } catch { }
                 }
+
+                // 1. APPLICA TRADUZIONE ALLA CLASSIFICAZIONE (per il selettore)
                 if (Array.isArray(cList)) {
                     cList.forEach(i => {
                         if (i.id_instrument) classificationMap[i.id_instrument] = i;
 
-                        // Modifica Chiave 1: Usa getTranslation per la chiave della classificazione
-                        // Questo assume che la classificazione sia un ID che si traduce in 'int.user.label.ID'
+                        // Modifica Chiave 1: Usa getTranslation per tradurre la chiave del raggruppamento
                         if (i.label) {
                             i.label = getTranslation(`int.user.label.${i.label}`);
                         }
@@ -489,14 +498,13 @@
                 }
 
                 const select = document.getElementById('grouping-select');
-                // Qui si assume che populateGroupingSelectSummary gestisca già la traduzione, 
-                // ma passiamo esplicitamente getTranslation.
                 populateGroupingSelectSummary(
                     select,
                     classificationFilter.length > 0 ? classificationFilter : (Array.isArray(cList) ? cList : []),
                     getTranslation, // Passa la funzione di traduzione
                     initialGrouping,
-                    "Nessun raggruppamento"
+                    // Modifica Chiave 2: Traduci l'etichetta di default
+                    getTranslation("int.user.label.Nessun_raggruppamento")
                 );
 
                 portfolioData = parsePortfolioItems(data.portfolio || {});
@@ -517,13 +525,10 @@
 
         function renderChart() {
             const grouping = document.getElementById('grouping-select').value;
-            // Modifica Chiave 2: Assicurati che getGroupedData usi getTranslation per le etichette finali
             const grouped = getGroupedData(portfolioData, classificationMap, grouping);
 
-            // Applica la traduzione finale alle etichette del grafico se non è già stata fatta in getGroupedData
+            // 3. ASSICURA LA TRADUZIONE DELLE LABEL DEL GRAFICO
             grouped.forEach(item => {
-                // Assumiamo che item.label contenga la chiave o la stringa. 
-                // Se è una chiave, usiamo getTranslation.
                 if (item.label && item.label.startsWith('int.user.label.')) {
                     item.label = getTranslation(item.label);
                 }
@@ -536,6 +541,8 @@
                 document.getElementById('totalDisplay').style.display = 'none';
                 return;
             }
+
+            // ... (resto della funzione renderChart invariato) ...
 
             totalValue = chartData.reduce((a, b) => a + b.value, 0);
             const colors = generateTronColors(chartData.length);
@@ -604,7 +611,7 @@
             updateTotalDisplay();
         }
 
-        /* ================= EXTERNAL LABELS & LINES DRAWING LOGIC (MODIFICATO) ================= */
+        /* ================= EXTERNAL LABELS & LINES DRAWING LOGIC (RISOLTO Sovrapposizioni) ================= */
         function drawExternalLabelsAndLines(chart, colors) {
             const container = document.getElementById('labelsContainer');
             const svg = document.getElementById('connectionSvg');
@@ -615,11 +622,8 @@
             if (meta.data.length === 0) return;
 
             // Limiti verticali del canvas/wrapper
-            const chartWrapper = document.querySelector('.chart-wrapper');
-            const wrapperRect = chartWrapper.getBoundingClientRect();
-            // Ottieni i limiti verticali Y per il clamp
-            const chartTop = chart.canvas.offsetTop;
-            const chartBottom = chart.canvas.offsetTop + chart.canvas.height;
+            const chartTop = 0;
+            const chartBottom = chart.height;
 
             // Centro del canvas
             const centerX = chart.width / 2;
@@ -629,11 +633,11 @@
             const maxRadius = meta.data[0].outerRadius;
             const externalRadius = maxRadius * 1.35;
             const labelPositionRadius = maxRadius * 1.45;
+            const labelPadding = 5; // Spazio verticale tra le etichette
 
-            // Array per tenere traccia delle posizioni Y finali (per clamp)
-            const finalLabelPositions = []; // {y: number, height: number, index: number}
+            const allLabels = [];
 
-            // Primo loop: Calcolo e posizionamento iniziale delle label HTML
+            // PRIMO LOOP: Creazione DOM, Misurazione e Calcolo Posizione Iniziale
             meta.data.forEach((element, index) => {
                 const model = element;
                 const midAngle = model.startAngle + (model.endAngle - model.startAngle) / 2;
@@ -649,85 +653,122 @@
 
                 const isRight = Math.cos(midAngle) >= 0;
 
-                // --- Creazione e Posizionamento Label HTML ---
+                // Creazione DOM e popolamento del contenuto
                 const labelDiv = document.createElement('div');
                 labelDiv.className = 'chart-label';
-
-                // Formato label: Nome (Valore/Percentuale)
                 const value = chartData[index].value;
                 const percentage = ((value / totalValue) * 100).toFixed(1);
                 labelDiv.innerHTML = `
                     ${chartData[index].label}<br>
                     <small>(${formatCurrency(value)}) ${percentage}%</small>
                 `;
-
                 labelDiv.style.borderColor = colors[index];
                 labelDiv.style.color = colors[index];
-
-                // Append prima di misurare (necessario)
                 container.appendChild(labelDiv);
 
                 // Misura label
                 const width = labelDiv.offsetWidth;
                 const height = labelDiv.offsetHeight;
 
-                // Regola Label: left vs right positioning
+                // Regolazione orizzontale
                 if (isRight) {
                     labelDiv.style.left = `${labelX}px`;
                 } else {
                     labelDiv.style.left = `${labelX - width}px`;
                 }
 
-                // Centratura verticale iniziale
+                // Centratura verticale iniziale (Y Iniziale)
                 labelY -= height / 2;
-                labelDiv.style.top = `${labelY}px`;
 
-                // Salva la posizione Y iniziale e l'altezza
-                finalLabelPositions.push({
-                    initialY: labelY,
-                    y: labelY,
+                allLabels.push({
+                    initialY: labelY, // Posizione Y calcolata radialmente
+                    y: labelY,        // Posizione Y che verrà aggiustata
                     height: height,
+                    width: width,
                     index: index,
                     isRight: isRight,
                     element: labelDiv,
-                    // Punti della linea necessari per il secondo loop
                     linePoints: { startX, startY, elbowX, elbowY }
                 });
             });
 
-            // Secondo loop: Applicazione del CLAMP Verticale per la legenda allineata
-            const totalHeight = chartBottom - chartTop;
-            const labelPadding = 5; // Spazio extra tra le label
+            // SECONDO LOOP: Implementazione Stacking Verticale e Clamping (Collision Avoidance)
 
-            finalLabelPositions.forEach(item => {
-                // Vincola la parte superiore dell'etichetta
-                if (item.y < chartTop) {
-                    item.y = chartTop;
-                }
-                // Vincola la parte inferiore dell'etichetta
-                else if (item.y + item.height > chartBottom) {
-                    item.y = chartBottom - item.height;
+            // Ordina le etichette in base alla posizione Y iniziale per l'algoritmo di stacking
+            const sortedLabels = allLabels.sort((a, b) => a.initialY - b.initialY);
+
+            // Filtra e prepara gli array per i due lati (sinistra e destra)
+            const rightLabels = sortedLabels.filter(l => l.isRight);
+            const leftLabels = sortedLabels.filter(l => !l.isRight);
+
+            // Funzione di Stacking e Clamping
+            function stackAndClamp(labels) {
+                if (labels.length === 0) return;
+
+                // PASSATA 1: Stacking verso il basso (se le etichette si sovrappongono, le sposta in basso)
+                for (let i = 1; i < labels.length; i++) {
+                    const current = labels[i];
+                    const previous = labels[i - 1];
+                    const minAllowedY = previous.y + previous.height + labelPadding;
+                    if (current.y < minAllowedY) {
+                        current.y = minAllowedY;
+                    }
                 }
 
+                // CLAMPING: Vincolo Top/Bottom
+                labels.forEach(l => {
+                    // Vincolo Bottom (non deve andare sotto il limite inferiore)
+                    if (l.y + l.height > chartBottom) {
+                        l.y = chartBottom - l.height;
+                    }
+                    // Vincolo Top (non deve andare sopra il limite superiore)
+                    if (l.y < chartTop) {
+                        l.y = chartTop;
+                    }
+                });
+
+                // PASSATA 2: Stacking verso l'alto (aggiusta le etichette superiori se quelle sotto sono state spinte su)
+                for (let i = labels.length - 2; i >= 0; i--) {
+                    const current = labels[i];
+                    const next = labels[i + 1];
+                    const maxAllowedY = next.y - current.height - labelPadding;
+                    if (current.y > maxAllowedY) {
+                        current.y = maxAllowedY;
+                    }
+                }
+
+                // CLAMPING Finale Top (se le modifiche hanno spinto troppo in alto)
+                labels.forEach(l => {
+                    if (l.y < chartTop) {
+                        l.y = chartTop;
+                    }
+                });
+            }
+
+            stackAndClamp(rightLabels);
+            stackAndClamp(leftLabels);
+
+
+            // TERZO LOOP: Applicazione Posizioni Finali e Disegno Linee SVG
+            allLabels.forEach(item => {
                 // Aggiorna la posizione finale nel DOM
                 item.element.style.top = `${item.y}px`;
-            });
 
-            // Terzo loop: Disegno delle Linee SVG (dopo che le label sono state bloccate verticalmente)
-            finalLabelPositions.forEach(item => {
                 // Punto END della linea (punta al centro del lato della label più vicino al centro)
-                let endLineX = item.isRight ? item.linePoints.labelX : (item.linePoints.labelX - item.width);
-                let endLineY = item.y + item.height / 2; // Usa la Y clambata
+                let endLineY = item.y + item.height / 2; // Usa la Y aggiustata
 
                 const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
                 path.setAttribute("class", "connection-line");
                 path.style.stroke = colors[item.index];
 
-                // Linea spezzata (Elbow)
-                // M Start L Elbow L End (dove End usa la Y finale/clamped)
+                // Calcola il punto di attacco sul bordo della label (sinistro o destro)
+                let labelAttachmentX = item.isRight ? item.element.offsetLeft : (item.element.offsetLeft + item.element.offsetWidth);
+
+                // Linea spezzata (Start -> Elbow X/Aggiusted Y -> Label Attachment X/Aggiusted Y)
+                // Usiamo la Y aggiustata anche per l'ElbowY per allineare la linea
                 path.setAttribute("d", `M ${item.linePoints.startX} ${item.linePoints.startY} 
-                                       L ${item.linePoints.elbowX} ${item.linePoints.elbowY} 
-                                       L ${item.isRight ? item.element.offsetLeft : (item.element.offsetLeft + item.element.offsetWidth)} ${endLineY}`);
+                                       L ${item.linePoints.elbowX} ${endLineY} 
+                                       L ${labelAttachmentX} ${endLineY}`);
 
                 svg.appendChild(path);
             });
@@ -752,11 +793,9 @@
         let rT;
         window.onresize = () => {
             clearTimeout(rT);
-            // Attende un po' per garantire che il canvas sia ridimensionato
             rT = setTimeout(() => {
                 if (pieChart) {
                     pieChart.resize();
-                    // Ridisegna le linee solo dopo il resize completo
                     drawExternalLabelsAndLines(pieChart, pieChart.data.datasets[0].backgroundColor);
                 }
             }, 200);
