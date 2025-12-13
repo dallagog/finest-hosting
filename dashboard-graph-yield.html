@@ -289,6 +289,7 @@
         let chartInstance = null;
         let profitabilityData = [];
         let classificationMap = {};
+        let classificationFilter = [];
 
         const urlParams = new URLSearchParams(window.location.search);
         const username = urlParams.get('username') || 'UTENTE_NON_AUTORIZZATO';
@@ -308,6 +309,7 @@
             await loadTranslations(language);
             updateHeaderTranslations();
 
+            await loadManifest();
             await loadYield();
 
             // Imposta il raggruppamento iniziale se specificato e se presente nelle opzioni
@@ -368,7 +370,7 @@
                         const select = document.getElementById('grouping-select');
                         populateGroupingSelectSummary(
                             select,
-                            classificationList,
+                            classificationFilter.length > 0 ? classificationFilter : classificationList,
                             getTranslation,
                             initialGrouping,
                             getTranslation('int.no_grouping') || "Nessun raggruppamento"
@@ -538,6 +540,20 @@
                     }
                 }]
             });
+        }
+
+        async function loadManifest() {
+            try {
+                const response = await fetch('lang/manifest.json');
+                if (response.ok) {
+                    const manifest = await response.json();
+                    if (manifest.classification && Array.isArray(manifest.classification)) {
+                        classificationFilter = manifest.classification;
+                    }
+                }
+            } catch (error) {
+                console.error("Error loading manifest:", error);
+            }
         }
 
         window.onload = init;

@@ -544,6 +544,7 @@
         let totalValue = 0;
         let connectionLines = [];
         let activeSliceIndex = -1;
+        let classificationFilter = [];
 
         const urlParams = new URLSearchParams(window.location.search);
         const username = urlParams.get('username') || 'USER';
@@ -558,8 +559,23 @@
 
         async function init() {
             document.getElementById('username-display').textContent = 'USER: ' + username;
+            await loadManifest();
             await loadPortfolio();
             document.getElementById("loading").style.display = "none";
+        }
+
+        async function loadManifest() {
+            try {
+                const response = await fetch('lang/manifest.json');
+                if (response.ok) {
+                    const manifest = await response.json();
+                    if (manifest.classification && Array.isArray(manifest.classification)) {
+                        classificationFilter = manifest.classification;
+                    }
+                }
+            } catch (error) {
+                console.error("Error loading manifest:", error);
+            }
         }
 
         /* ===========================================================
@@ -621,7 +637,7 @@
                 const select = document.getElementById('grouping-select');
                 populateGroupingSelectSummary(
                     select,
-                    classificationList,
+                    classificationFilter.length > 0 ? classificationFilter : classificationList,
                     getTranslation,
                     initialGrouping,
                     "Nessun raggruppamento"
