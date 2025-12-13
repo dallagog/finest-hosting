@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Portfolio Graph</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <script src="js/dashboard-shared.js"></script>
 
@@ -153,36 +154,72 @@
             align-items: center;
         }
 
-        #chartContainerInner {
+        #chartContainer {
             width: 100%;
             height: 100%;
             position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
 
-        .label-overlay {
+        #pieCanvas {
+            max-width: 90%;
+            max-height: 90%;
+        }
+
+        .legend-container {
             position: absolute;
-            font-family: 'Orbitron', sans-serif;
-            font-size: 11px;
-            font-weight: 700;
-            color: var(--neon-cyan);
-            text-shadow: 0 0 8px var(--neon-cyan), 0 0 15px rgba(0, 243, 255, 0.5);
-            pointer-events: none;
-            white-space: nowrap;
-            letter-spacing: 1px;
-            text-transform: uppercase;
-            background: rgba(0, 20, 40, 0.7);
-            padding: 4px 8px;
+            right: 20px;
+            top: 20px;
+            max-width: 300px;
+            max-height: 80%;
+            overflow-y: auto;
+            background: rgba(0, 20, 40, 0.8);
             border: 1px solid var(--neon-cyan);
-            border-radius: 3px;
-            box-shadow: 0 0 10px rgba(0, 243, 255, 0.3);
+            border-radius: 8px;
+            padding: 15px;
+            box-shadow: 0 0 15px rgba(0, 243, 255, 0.3);
         }
 
-        .label-line {
-            position: absolute;
-            height: 1px;
-            background: linear-gradient(to right, var(--neon-cyan), transparent);
-            pointer-events: none;
-            box-shadow: 0 0 5px var(--neon-cyan);
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+            padding: 5px;
+            border-radius: 4px;
+            transition: background 0.3s;
+        }
+
+        .legend-item:hover {
+            background: rgba(0, 243, 255, 0.1);
+        }
+
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            margin-right: 10px;
+            border-radius: 3px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .legend-text {
+            font-size: 0.85rem;
+            color: var(--text-color);
+        }
+
+        .legend-percentage {
+            margin-left: auto;
+            color: var(--neon-cyan);
+            font-weight: bold;
+            font-size: 0.9rem;
+        }
+
+        .legend-value {
+            display: block;
+            font-size: 0.75rem;
+            color: var(--neon-blue);
+            margin-top: 2px;
         }
 
         #loading {
@@ -221,6 +258,22 @@
             font-size: 1.2rem;
             text-shadow: 0 0 10px var(--neon-cyan);
         }
+
+        /* Responsive adjustments */
+        @media (max-width: 1200px) {
+            .legend-container {
+                position: relative;
+                right: auto;
+                top: auto;
+                max-width: 100%;
+                max-height: 200px;
+                margin-top: 20px;
+            }
+
+            #chartContainer {
+                flex-direction: column;
+            }
+        }
     </style>
 </head>
 
@@ -249,7 +302,10 @@
     </div>
 
     <div class="chart-wrapper">
-        <div id="chartContainerInner"></div>
+        <div id="chartContainer">
+            <canvas id="pieCanvas"></canvas>
+            <div id="legendContainer" class="legend-container"></div>
+        </div>
     </div>
 
     <script>
@@ -310,17 +366,13 @@
         const API_URL = "https://feweb-tunnel.fe-web.eu";
         let portfolioData = [];
         let classificationMap = {};
+        let pieChart = null;
 
         const urlParams = new URLSearchParams(window.location.search);
         const username = urlParams.get('username') || 'USER';
         const token = urlParams.get('token');
         const language = urlParams.get('language') || 'it_IT';
         const initialGrouping = urlParams.get('grouping') || "";
-
-        // Three.js variables
-        let scene, camera, renderer;
-        let pieSegments = [];
-        let labelElements = [];
 
         /* -----------------------------------------------------------
            INIT
@@ -333,48 +385,29 @@
             await loadTranslations(language);
             updatePageTranslations();
 
-            initThreeJS();
             loadPortfolio();
         }
 
         /* -----------------------------------------------------------
-           THREE.JS SETUP
+           COLORI TRON
         ----------------------------------------------------------- */
-        function initThreeJS() {
-            const container = document.getElementById('chartContainerInner');
+        function generateTronColors(n) {
+            const tronPalette = [
+                '#00f3ff', // Cyan neon
+                '#0066ff', // Blue neon
+                '#ff3333', // Red/Orange neon
+                '#ff00ff', // Magenta neon
+                '#ccff00', // Lime
+                '#ffffff', // White
+                '#00ccff', // Light Blue
+                '#ff6600', // Orange
+                '#9900ff', // Purple
+                '#00ff99'  // Green
+            ];
 
-            scene = new THREE.Scene();
-            scene.background = new THREE.Color(0x050505);
-
-            camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 1000);
-            camera.position.set(0, 5, 15);
-            camera.lookAt(0, 0, 0);
-
-            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-            renderer.setSize(container.clientWidth, container.clientHeight);
-            container.appendChild(renderer.domElement);
-
-            // Lights
-            const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
-            scene.add(ambientLight);
-
-            const pointLight1 = new THREE.PointLight(0x00f3ff, 1.5);
-            pointLight1.position.set(10, 10, 10);
-            scene.add(pointLight1);
-
-            const pointLight2 = new THREE.PointLight(0x0066ff, 1);
-            pointLight2.position.set(-10, 5, 5);
-            scene.add(pointLight2);
-
-            window.addEventListener('resize', onWindowResize);
-        }
-
-        function onWindowResize() {
-            const container = document.getElementById('chartContainerInner');
-            camera.aspect = container.clientWidth / container.clientHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(container.clientWidth, container.clientHeight);
-            updateLabelPositions();
+            const colors = [];
+            for (let i = 0; i < n; i++) colors.push(tronPalette[i % tronPalette.length]);
+            return colors;
         }
 
         /* -----------------------------------------------------------
@@ -432,7 +465,6 @@
                 document.getElementById("loading").style.display = "none";
 
                 renderChart();
-                animate();
 
             } catch (err) {
                 console.error(err);
@@ -440,250 +472,178 @@
         }
 
         /* -----------------------------------------------------------
-           COLORI TRON
+           RENDER 2D PIE CHART
         ----------------------------------------------------------- */
-        function generateTronColors(n) {
-            const tronPalette = [
-                0x00f3ff, // Cyan neon
-                0x0066ff, // Blue neon
-                0xff3333, // Red/Orange neon
-                0xff00ff, // Magenta neon
-                0xccff00, // Lime
-                0xffffff  // White
-            ];
-
-            const colors = [];
-            for (let i = 0; i < n; i++) colors.push(tronPalette[i % tronPalette.length]);
-            return colors;
-        }
-
-        /* -----------------------------------------------------------
-           RENDER 3D PIE CHART
-        ----------------------------------------------------------- */
-        let chartLabels = []; // Stores objects { overlay, line, percent, anchorPos, labelPos, percentPos }
-
         function renderChart() {
-            // Clear previous items
-            pieSegments.forEach(s => scene.remove(s));
-            pieSegments = [];
-
-            chartLabels.forEach(item => {
-                if (item.overlay) item.overlay.remove();
-                if (item.line) item.line.remove();
-                if (item.percent) item.percent.remove();
-            });
-            chartLabels = [];
-
             const grouping = document.getElementById("grouping-select").value;
             const groupedData = getGroupedData(portfolioData, classificationMap, grouping);
-            // Limit to top 20 to reduce clutter
-            const slicedData = groupedData.length > 20 ? groupedData.slice(0, 20) : groupedData;
 
-            if (slicedData.length === 0) return;
+            // Limit to top 15 to avoid clutter
+            const slicedData = groupedData.length > 15 ? groupedData.slice(0, 15) : groupedData;
+
+            if (slicedData.length === 0) {
+                document.getElementById('chartContainer').innerHTML =
+                    '<div style="color: var(--neon-cyan); text-align: center; font-size: 1.2rem;">Nessun dato disponibile</div>';
+                document.getElementById('legendContainer').innerHTML = '';
+                return;
+            }
 
             const total = slicedData.reduce((sum, item) => sum + item.value, 0);
             const colors = generateTronColors(slicedData.length);
 
-            let currentAngle = 0;
-            const radius = 4;
-            const thickness = 0.4;
-
-            slicedData.forEach((item, index) => {
-                const percentage = item.value / total;
-                const angle = percentage * Math.PI * 2;
-
-                // Create pie segment
-                const shape = new THREE.Shape();
-                shape.moveTo(0, 0);
-                shape.arc(0, 0, radius, currentAngle, currentAngle + angle, false);
-                shape.lineTo(0, 0);
-
-                const extrudeSettings = {
-                    depth: thickness,
-                    bevelEnabled: true,
-                    bevelThickness: 0.05,
-                    bevelSize: 0.05,
-                    bevelSegments: 8, // Smoother bevel
-                    curveSegments: 64, // Smoother curves
-                    steps: 2
-                };
-
-                const geometry = new THREE.ExtrudeGeometry(shape, extrudeSettings);
-                const material = new THREE.MeshPhongMaterial({
-                    color: colors[index],
-                    emissive: colors[index],
-                    emissiveIntensity: 0.3,
-                    shininess: 100,
-                    specular: 0x00f3ff
-                });
-
-                const segment = new THREE.Mesh(geometry, material);
-                segment.rotation.x = -Math.PI / 2;
-                segment.position.y = -thickness / 2;
-
-                // Add glow edges
-                const edges = new THREE.EdgesGeometry(geometry);
-                const lineMaterial = new THREE.LineBasicMaterial({
-                    color: 0x00f3ff,
-                    linewidth: 1,
-                    opacity: 0.3,
-                    transparent: true
-                });
-                const wireframe = new THREE.LineSegments(edges, lineMaterial);
-                segment.add(wireframe);
-
-                scene.add(segment);
-                pieSegments.push(segment);
-
-                // --- Calculate Core Positions ---
-                const midAngle = currentAngle + angle / 2;
-
-                // 1. Percentage Label Position (on slice)
-                const percRadius = radius * 0.6;
-                const percX = Math.cos(midAngle) * percRadius;
-                const percZ = Math.sin(midAngle) * percRadius;
-
-                // Create Percentage Element
-                const percDiv = document.createElement('div');
-                percDiv.className = 'label-percentage';
-                percDiv.textContent = (percentage * 100).toFixed(0) + '%';
-                // Improve contrast - use black text if needed or just white shadow
-                document.getElementById('chartContainerInner').appendChild(percDiv);
-
-                // 2. External Label Position
-                const labelDistance = radius + 1.5; // reduced distance slightly
-                const labelX = Math.cos(midAngle) * labelDistance;
-                const labelZ = Math.sin(midAngle) * labelDistance;
-
-                // Create Overlay Element
-                const labelDiv = document.createElement('div');
-                labelDiv.className = 'label-overlay';
+            // Prepare data for Chart.js
+            const labels = slicedData.map(item => {
                 const translatedLabel = getTranslation(item.label) || item.label;
-                const formattedValue = new Intl.NumberFormat("it-IT", {
+                // Truncate long labels
+                return translatedLabel.length > 20 ? translatedLabel.substring(0, 20) + '...' : translatedLabel;
+            });
+
+            const values = slicedData.map(item => item.value);
+            const percentages = slicedData.map(item => ((item.value / total) * 100).toFixed(1));
+
+            // Format currency values
+            const formattedValues = slicedData.map(item => {
+                return new Intl.NumberFormat("it-IT", {
                     style: "currency",
                     currency: "EUR",
                     maximumFractionDigits: 0
                 }).format(item.value);
-                labelDiv.innerHTML = `<span style="color:${'#' + colors[index].toString(16).padStart(6, '0')}">${translatedLabel}</span><br>${formattedValue}`;
-                document.getElementById('chartContainerInner').appendChild(labelDiv);
-
-                // Create connecting line
-                const lineDiv = document.createElement('div');
-                lineDiv.className = 'label-line';
-                lineDiv.style.backgroundColor = '#' + colors[index].toString(16).padStart(6, '0');
-                document.getElementById('chartContainerInner').appendChild(lineDiv);
-
-                // Store all visual elements and their 3D anchors
-                chartLabels.push({
-                    overlay: labelDiv,
-                    line: lineDiv,
-                    percent: percDiv,
-                    anchorPos: new THREE.Vector3(Math.cos(midAngle) * radius, 0, Math.sin(midAngle) * radius), // Edge of pie
-                    labelPos: new THREE.Vector3(labelX, 0, labelZ), // Theoretical label pos
-                    percentPos: new THREE.Vector3(percX, thickness / 2 + 0.1, percZ) // On top of slice
-                });
-
-                currentAngle += angle;
             });
 
-            updateLabelPositions();
-        }
+            // Destroy previous chart if exists
+            if (pieChart) {
+                pieChart.destroy();
+            }
 
-        /* -----------------------------------------------------------
-           UPDATE LABEL POSITIONS
-        ----------------------------------------------------------- */
-        function updateLabelPositions() {
-            const container = document.getElementById('chartContainerInner');
-            if (!container) return;
-            const rect = container.getBoundingClientRect();
+            const ctx = document.getElementById('pieCanvas').getContext('2d');
 
-            // 1. Project all raw positions to 2D
-            chartLabels.forEach(item => {
-                // Percent
-                const pVec = item.percentPos.clone().project(camera);
-                item.pX = (pVec.x * 0.5 + 0.5) * rect.width;
-                item.pY = (-pVec.y * 0.5 + 0.5) * rect.height;
-
-                // Label Target
-                const lVec = item.labelPos.clone().project(camera);
-                item.lX = (lVec.x * 0.5 + 0.5) * rect.width;
-                item.lY = (-lVec.y * 0.5 + 0.5) * rect.height;
-
-                // Anchor (start of line)
-                const aVec = item.anchorPos.clone().project(camera);
-                item.aX = (aVec.x * 0.5 + 0.5) * rect.width;
-                item.aY = (-aVec.y * 0.5 + 0.5) * rect.height;
-            });
-
-            // 2. Anti-collision logic for External Labels
-            // Sort by projected Y to handle vertical stacking
-            // We'll separate left-side and right-side labels logic if needed, 
-            // but simple vertical collision check is often enough.
-            const sortedLabels = [...chartLabels].sort((a, b) => a.lY - b.lY);
-
-            sortedLabels.forEach((item, i) => {
-                if (i > 0) {
-                    const prev = sortedLabels[i - 1];
-                    // Check if they are horizontally close enough to overlap
-                    // If X distance > 150px, they probably don't overlap visually even at same Y
-                    if (Math.abs(item.lX - prev.lX) < 150) {
-                        const minSpacing = 40; // Approx height + margin
-                        if (item.lY < prev.lY + minSpacing) {
-                            item.lY = prev.lY + minSpacing;
+            // Create the pie chart
+            pieChart = new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: values,
+                        backgroundColor: colors,
+                        borderColor: colors.map(color => color.replace(')', ', 0.8)').replace('rgb', 'rgba')),
+                        borderWidth: 2,
+                        borderAlign: 'inner',
+                        hoverBorderWidth: 3,
+                        hoverBorderColor: '#ffffff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: {
+                            display: false // We'll use custom legend
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function (context) {
+                                    const label = context.label || '';
+                                    const value = context.raw || 0;
+                                    const percentage = ((value / total) * 100).toFixed(1);
+                                    const formattedValue = new Intl.NumberFormat("it-IT", {
+                                        style: "currency",
+                                        currency: "EUR",
+                                        maximumFractionDigits: 0
+                                    }).format(value);
+                                    return `${label}: ${formattedValue} (${percentage}%)`;
+                                }
+                            },
+                            backgroundColor: 'rgba(0, 20, 40, 0.9)',
+                            titleColor: '#00f3ff',
+                            bodyColor: '#e0f7fa',
+                            borderColor: '#00f3ff',
+                            borderWidth: 1,
+                            boxPadding: 5
+                        }
+                    },
+                    // Add percentage labels on slices
+                    animation: {
+                        animateScale: true,
+                        animateRotate: true,
+                        duration: 1000
+                    },
+                    layout: {
+                        padding: {
+                            top: 20,
+                            bottom: 20,
+                            left: 20,
+                            right: 20
                         }
                     }
-                }
+                },
+                plugins: [{
+                    id: 'percentageLabels',
+                    afterDraw: function (chart) {
+                        const ctx = chart.ctx;
+                        ctx.save();
+
+                        chart.data.datasets.forEach((dataset, i) => {
+                            const meta = chart.getDatasetMeta(i);
+                            if (!meta.hidden) {
+                                meta.data.forEach((element, index) => {
+                                    // Get the slice data
+                                    const value = dataset.data[index];
+                                    const percentage = percentages[index];
+
+                                    // Only show percentage if slice is big enough
+                                    if (parseFloat(percentage) > 3) {
+                                        const { x, y } = element.tooltipPosition();
+
+                                        // Draw percentage text
+                                        ctx.font = 'bold 14px Orbitron, sans-serif';
+                                        ctx.fillStyle = '#ffffff';
+                                        ctx.textAlign = 'center';
+                                        ctx.textBaseline = 'middle';
+                                        ctx.shadowColor = '#00f3ff';
+                                        ctx.shadowBlur = 10;
+
+                                        ctx.fillText(percentage + '%', x, y);
+
+                                        // Reset shadow
+                                        ctx.shadowBlur = 0;
+                                    }
+                                });
+                            }
+                        });
+
+                        ctx.restore();
+                    }
+                }]
             });
 
-            // 3. Apply positions
-            chartLabels.forEach(item => {
-                // Percentage
-                if (item.percent) {
-                    item.percent.style.left = item.pX + 'px';
-                    item.percent.style.top = item.pY + 'px';
-                }
-
-                // External Label
-                if (item.overlay) {
-                    item.overlay.style.left = item.lX + 'px';
-                    item.overlay.style.top = item.lY + 'px';
-                }
-
-                // Line: connects Anchor to Adjusted Label Position
-                if (item.line) {
-                    const startX = item.aX;
-                    const startY = item.aY;
-                    const endX = item.lX;
-                    const endY = item.lY; // Adjusted Y
-
-                    const dx = endX - startX;
-                    const dy = endY - startY;
-                    const len = Math.sqrt(dx * dx + dy * dy);
-                    const angle = Math.atan2(dy, dx) * 180 / Math.PI;
-
-                    item.line.style.left = startX + 'px';
-                    item.line.style.top = startY + 'px';
-                    item.line.style.width = len + 'px';
-                    item.line.style.transform = `rotate(${angle}deg)`;
-                }
-            });
+            // Create custom legend
+            createLegend(slicedData, colors, percentages, formattedValues);
         }
 
         /* -----------------------------------------------------------
-           ANIMATION LOOP
+           CREATE CUSTOM LEGEND
         ----------------------------------------------------------- */
-        function animate() {
-            requestAnimationFrame(animate);
+        function createLegend(data, colors, percentages, formattedValues) {
+            const legendContainer = document.getElementById('legendContainer');
+            legendContainer.innerHTML = '';
 
-            // Static - no rotation
-            /*
-            pieSegments.forEach(segment => {
-                segment.rotation.z += 0.002;
+            data.forEach((item, index) => {
+                const legendItem = document.createElement('div');
+                legendItem.className = 'legend-item';
+
+                const translatedLabel = getTranslation(item.label) || item.label;
+
+                legendItem.innerHTML = `
+                    <div class="legend-color" style="background-color: ${colors[index]}; box-shadow: 0 0 8px ${colors[index]}"></div>
+                    <div class="legend-text">
+                        ${translatedLabel}
+                        <span class="legend-value">${formattedValues[index]}</span>
+                    </div>
+                    <div class="legend-percentage">${percentages[index]}%</div>
+                `;
+
+                legendContainer.appendChild(legendItem);
             });
-            */
-
-            renderer.render(scene, camera);
-            updateLabelPositions();
         }
 
         /* -----------------------------------------------------------
@@ -692,6 +652,15 @@
         function closeWindow() {
             window.close();
         }
+
+        /* -----------------------------------------------------------
+           RESIZE HANDLER
+        ----------------------------------------------------------- */
+        window.addEventListener('resize', function () {
+            if (pieChart) {
+                pieChart.resize();
+            }
+        });
 
     </script>
 
