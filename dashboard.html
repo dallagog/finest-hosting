@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Dashboard 1.0 rice</title>
+    <title>Dashboard 2.9</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <script src="js/dashboard-shared.js"></script>
@@ -855,17 +855,6 @@
             }
         }
 
-        let manifest = {};
-        async function loadManifest() {
-            try {
-                const response = await fetch('lang/manifest.json');
-                if (!response.ok) throw new Error('Manifest file not found');
-                manifest = await response.json();
-            } catch (error) {
-                console.error('❌ Error loading manifest:', error);
-            }
-        }
-
         function getTranslation(key) {
             return translations[key] || key;
         }
@@ -1577,9 +1566,7 @@
                         }
                     }
 
-
-                    // Use manifest.classification for grouping options as requested
-                    populateGroupingSelect(manifest.classification || []);
+                    populateGroupingSelect(classificationList);
                     renderTable();
                     document.getElementById('portfolio-section').style.display = 'block';
                 }
@@ -1878,7 +1865,7 @@
                         };
                         return getQty(b) - getQty(a);
                     });
-                    populateProfitabilityGroupingSelect(manifest.classification || []);
+                    populateProfitabilityGroupingSelect(classificationList);
                     renderProfitabilityTable();
                     document.getElementById('profitability-section').style.display = 'block';
                 }
@@ -1887,16 +1874,15 @@
 
         function populateProfitabilityGroupingSelect(classificationList) {
             const select = document.getElementById('profitability-grouping-select');
-            const defaultLabel = getTranslation('int.noselection') || 'Nessun raggruppamento';
-
-            // Use shared function
-            populateGroupingSelectSummary(
-                select,
-                classificationList,
-                getTranslation,
-                '',
-                defaultLabel
-            );
+            select.innerHTML = `<option value="">${getTranslation('int.noselection') || 'Nessun raggruppamento'}</option>`;
+            let keys = [];
+            if (classificationFilter && classificationFilter.length > 0) keys = classificationFilter;
+            else if (Array.isArray(classificationList) && classificationList.length > 0) keys = Object.keys(classificationList[0]).filter(k => k !== 'id_instrument');
+            keys.forEach(key => {
+                const opt = document.createElement('option');
+                opt.value = key; opt.textContent = getTranslation(key) || key;
+                select.appendChild(opt);
+            });
         }
 
         function updateProfitabilityGrouping() {
@@ -2085,7 +2071,6 @@
         window.addEventListener('load', async () => {
             if (checkAuthentication()) {
                 await initializeLanguages();
-                await loadManifest();
                 await loadTranslations(credentials.language);
                 updatePageTranslations();
                 await updateUserInfo();

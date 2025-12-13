@@ -334,20 +334,8 @@
             await loadTranslations(language);
             updatePageTranslations();
 
-            await loadManifest();
             initThreeJS();
             loadPortfolio();
-        }
-
-        let manifest = {};
-        async function loadManifest() {
-            try {
-                const response = await fetch('lang/manifest.json');
-                if (!response.ok) throw new Error('Manifest file not found');
-                manifest = await response.json();
-            } catch (error) {
-                console.error('❌ Error loading manifest:', error);
-            }
         }
 
         /* -----------------------------------------------------------
@@ -360,7 +348,7 @@
             scene.background = new THREE.Color(0x050505);
 
             camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 1000);
-            camera.position.set(0, 3, 12);
+            camera.position.set(0, 5, 15);
             camera.lookAt(0, 0, 0);
 
             renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
@@ -433,7 +421,7 @@
                 const select = document.getElementById('grouping-select');
                 populateGroupingSelectSummary(
                     select,
-                    manifest.classification || [],
+                    classificationList,
                     getTranslation,
                     initialGrouping,
                     getTranslation('int.no_grouping') || "Nessun raggruppamento"
@@ -500,7 +488,7 @@
 
             let currentAngle = 0;
             const radius = 4;
-            const thickness = 0.4;
+            const thickness = 1.2;
 
             slicedData.forEach((item, index) => {
                 const percentage = item.value / total;
@@ -515,9 +503,9 @@
                 const extrudeSettings = {
                     depth: thickness,
                     bevelEnabled: true,
-                    bevelThickness: 0.05,
-                    bevelSize: 0.05,
-                    bevelSegments: 2
+                    bevelThickness: 0.1,
+                    bevelSize: 0.1,
+                    bevelSegments: 3
                 };
 
                 const geometry = new THREE.ExtrudeGeometry(shape, extrudeSettings);
@@ -643,7 +631,10 @@
         function animate() {
             requestAnimationFrame(animate);
 
-            // Static - no rotation
+            // Slow rotation
+            pieSegments.forEach(segment => {
+                segment.rotation.z += 0.002;
+            });
 
             renderer.render(scene, camera);
             updateLabelPositions();

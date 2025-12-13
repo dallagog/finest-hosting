@@ -308,8 +308,17 @@
             await loadTranslations(language);
             updateHeaderTranslations();
 
-            await loadManifest();
-            loadYield();
+            await loadYield();
+
+            // Imposta il raggruppamento iniziale se specificato e se presente nelle opzioni
+            if (initialGrouping) {
+                const select = document.getElementById('grouping-select');
+                if (select.querySelector(`option[value="${initialGrouping}"]`)) {
+                    select.value = initialGrouping;
+                }
+            }
+
+            renderChart();
         }
 
         function updateHeaderTranslations() {
@@ -354,54 +363,19 @@
                         classificationList.forEach(item => {
                             if (item.id_instrument) classificationMap[item.id_instrument] = item;
                         });
+
+                        // Use shared function
+                        const select = document.getElementById('grouping-select');
+                        populateGroupingSelectSummary(
+                            select,
+                            classificationList,
+                            getTranslation,
+                            initialGrouping,
+                            getTranslation('int.no_grouping') || "Nessun raggruppamento"
+                        );
                     }
-                } else {
-                    console.error("Error loading manifest:", data.message);
-                }
-            } catch (error) {
-                console.error("Error loading manifest:", error);
-            }
-        }
 
-        function updateHeaderTranslations() {
-            document.getElementById('grouping-label').textContent = getTranslation('int.group_by');
-            document.getElementById('close-btn').textContent = getTranslation('int.close');
-
-            const langIndicator = document.getElementById('language-indicator');
-            const langName = getTranslation('lang.' + language);
-            langIndicator.innerHTML = `${getFlagIcon(language)} <span>${langName}</span>`;
-        }
-
-        async function loadYield() {
-            try {
-                const payload = {
-                    username: username,
-                    token: token,
-                    language: language,
-                    filter: "",
-                    code: ""
-                };
-
-                const response = await fetch(`${API_URL}/getportfolioyield`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-
-                const data = await response.json();
-
-                if (data.status === 'ok') {
-                    // Use shared function
-                    const select = document.getElementById('grouping-select');
-                    populateGroupingSelectSummary(
-                        select,
-                        manifest.classification || [],
-                        getTranslation,
-                        initialGrouping,
-                        getTranslation('int.no_grouping') || "Nessun raggruppamento"
-                    );
-
-                    const rawYield = data.portfolio_yield || {};
+                    const rawYield = data.portfolioyield || {};
                     // Use shared parsing logic
                     profitabilityData = parsePortfolioItems(rawYield);
 
