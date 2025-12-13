@@ -755,6 +755,14 @@
             const u = credentials.username || localStorage.getItem('username');
             const t = credentials.token || localStorage.getItem('token');
             const l = credentials.language || localStorage.getItem('language') || 'it_IT';
+            // Get currency from text content or localStorage as fallback
+            let c = localStorage.getItem('currency') || 'EUR';
+            const currencyDisplay = document.getElementById('currencyDisplay');
+            if (currencyDisplay && currencyDisplay.textContent && currencyDisplay.textContent !== '-') {
+                // Try to extract currency code (e.g. from "🇮🇹 EUR")
+                const parts = currencyDisplay.textContent.split(' ');
+                c = parts.length > 1 ? parts[1] : parts[0];
+            }
 
             if (!u || !t) {
                 showMessage("Sessione non valida per aprire il grafico.", 'error');
@@ -764,7 +772,8 @@
             const params = new URLSearchParams({
                 username: u,
                 token: t,
-                language: l
+                language: l,
+                currency: c
             });
 
             let filename = '';

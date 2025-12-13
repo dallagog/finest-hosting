@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Portfolio Graph</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/js/all.min.js"></script>
     <script src="js/dashboard-shared.js"></script>
 
@@ -36,7 +37,10 @@
         body {
             height: 100%;
             width: 100%;
-            overflow: hidden;
+            /* L'overflow è necessario se la legenda va sotto */
+            overflow: auto;
+            padding-right: 8px;
+            /* Previene il flash di scrollbar */
         }
 
         body {
@@ -55,7 +59,7 @@
             gap: 10px;
         }
 
-        /* HEADER */
+        /* HEADER (Nessuna modifica qui) */
         .header-bar {
             background: var(--glass-bg);
             border: 1px solid var(--neon-cyan);
@@ -186,14 +190,15 @@
             transform: translateY(-2px);
         }
 
-        /* MAIN CHART CONTAINER */
+        /* MAIN CHART CONTAINER (MODIFICATO: per singolo grafico) */
         .chart-container {
             flex: 1;
             background: var(--glass-bg);
             border: 1px solid var(--neon-cyan);
             border-radius: 12px;
             padding: 20px;
-            display: flex;
+            display: block;
+            /* Modificato */
             position: relative;
             overflow: hidden;
             box-shadow:
@@ -215,22 +220,26 @@
             pointer-events: none;
         }
 
-        /* PIE CHART AREA */
+        /* PIE CHART AREA (MODIFICATO: per centratura) */
         .pie-area {
-            flex: 1;
             display: flex;
             justify-content: center;
             align-items: center;
             position: relative;
             min-width: 0;
+            height: 100%;
         }
 
         .chart-wrapper {
             position: relative;
-            width: 80%;
-            height: 80%;
-            max-width: 700px;
-            max-height: 700px;
+            width: 95%;
+            /* Aumentato */
+            height: 95%;
+            /* Aumentato */
+            max-width: 1000px;
+            /* Aumentato */
+            max-height: 1000px;
+            /* Aumentato */
         }
 
         #pieCanvas {
@@ -268,126 +277,10 @@
             letter-spacing: 1px;
         }
 
-        /* LABELS AREA */
-        .labels-area {
-            width: 35%;
-            padding-left: 30px;
-            display: flex;
-            flex-direction: column;
-            border-left: 1px solid rgba(0, 243, 255, 0.2);
-            overflow-y: auto;
-            max-height: 100%;
-        }
+        /* RIMOSSO: LABELS AREA CSS */
+        /* RIMOSSO: CONNECTION LINES CSS */
 
-        .labels-area::-webkit-scrollbar {
-            width: 6px;
-        }
-
-        .labels-area::-webkit-scrollbar-track {
-            background: rgba(0, 20, 40, 0.5);
-            border-radius: 3px;
-        }
-
-        .labels-area::-webkit-scrollbar-thumb {
-            background: var(--neon-cyan);
-            border-radius: 3px;
-            box-shadow: 0 0 10px var(--neon-cyan);
-        }
-
-        .label-item {
-            background: rgba(0, 20, 40, 0.7);
-            border: 1px solid;
-            border-radius: 6px;
-            padding: 12px 15px;
-            margin-bottom: 10px;
-            cursor: pointer;
-            transition: all 0.3s;
-            position: relative;
-            overflow: hidden;
-            min-height: 60px;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-        }
-
-        .label-item:hover {
-            transform: translateX(5px);
-            box-shadow:
-                0 0 20px currentColor,
-                inset 0 0 20px rgba(255, 255, 255, 0.1);
-        }
-
-        .label-item.active {
-            background: rgba(0, 243, 255, 0.15);
-            transform: translateX(10px);
-        }
-
-        .label-item::before {
-            content: '';
-            position: absolute;
-            left: 0;
-            top: 0;
-            bottom: 0;
-            width: 4px;
-            background: currentColor;
-            box-shadow: 0 0 10px currentColor;
-        }
-
-        .label-name {
-            font-size: 12px;
-            font-weight: 500;
-            color: var(--text-color);
-            margin-bottom: 4px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        .label-percentage {
-            font-size: 16px;
-            font-weight: 900;
-            color: inherit;
-            text-shadow: 0 0 8px currentColor;
-            margin-bottom: 2px;
-        }
-
-        .label-value {
-            font-size: 11px;
-            color: var(--neon-blue);
-            text-shadow: 0 0 5px var(--neon-blue);
-        }
-
-        /* CONNECTION LINES */
-        .connection-svg {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-            z-index: 1;
-        }
-
-        .connection-line {
-            stroke-width: 2;
-            fill: none;
-            stroke-dasharray: 5, 5;
-            animation: dashMove 1s linear infinite;
-            transition: all 0.3s;
-        }
-
-        @keyframes dashMove {
-            to {
-                stroke-dashoffset: -10;
-            }
-        }
-
-        .connection-line.highlight {
-            stroke-width: 3;
-            filter: drop-shadow(0 0 8px currentColor);
-        }
-
-        /* LOADING SCREEN */
+        /* LOADING SCREEN (Nessuna modifica qui) */
         #loading {
             position: fixed;
             top: 0;
@@ -452,31 +345,7 @@
             }
         }
 
-        /* RESPONSIVE */
-        @media (max-width: 1200px) {
-            .chart-container {
-                flex-direction: column;
-            }
-
-            .labels-area {
-                width: 100%;
-                height: 30%;
-                padding-left: 0;
-                padding-top: 20px;
-                border-left: none;
-                border-top: 1px solid rgba(0, 243, 255, 0.2);
-                flex-direction: row;
-                flex-wrap: wrap;
-                gap: 10px;
-            }
-
-            .label-item {
-                flex: 1;
-                min-width: 200px;
-                margin-bottom: 0;
-            }
-        }
-
+        /* RESPONSIVE (Aggiornato per rimuovere riferimenti alla legenda laterale) */
         @media (max-width: 768px) {
             .header-bar {
                 flex-direction: column;
@@ -486,10 +355,6 @@
 
             .header-center h1 {
                 font-size: 1.4rem;
-            }
-
-            .label-item {
-                min-width: 150px;
             }
 
             .chart-wrapper {
@@ -525,11 +390,9 @@
             <div class="chart-wrapper">
                 <canvas id="pieCanvas"></canvas>
                 <div id="totalDisplay" class="total-display"></div>
-                <svg class="connection-svg" id="connectionSvg"></svg>
             </div>
         </div>
 
-        <div class="labels-area" id="labelsArea"></div>
     </div>
 
     <script>
@@ -542,8 +405,8 @@
         let pieChart = null;
         let chartData = [];
         let totalValue = 0;
-        let connectionLines = [];
-        let activeSliceIndex = -1;
+        // Rimosso: let connectionLines = [];
+        // Rimosso: let activeSliceIndex = -1;
         let classificationFilter = [];
 
         const urlParams = new URLSearchParams(window.location.search);
@@ -635,6 +498,8 @@
                 }
 
                 const select = document.getElementById('grouping-select');
+                // Mantengo la chiamata originale, assumendo che populateGroupingSelectSummary
+                // utilizzi la funzione getTranslation per l'output.
                 populateGroupingSelectSummary(
                     select,
                     classificationFilter.length > 0 ? classificationFilter : classificationList,
@@ -654,15 +519,22 @@
         }
 
         /* ===========================================================
-           FUNZIONI DI SUPPORTO PER TRADUZIONI
+           FUNZIONI DI SUPPORTO PER TRADUZIONI (Placeholder)
         =========================================================== */
         function getTranslation(key) {
             // Funzione placeholder - da implementare con sistema traduzioni
-            return key;
+            // Aggiungo alcune traduzioni comuni per dimostrazione
+            const translations = {
+                'Nessun raggruppamento': 'No Grouping',
+                'Area': 'Area',
+                'Settore': 'Sector',
+                'AssetClass': 'Asset Class'
+            };
+            return translations[key] || key;
         }
 
         /* ===========================================================
-           RENDER GRAFICO A TORTA
+           RENDER GRAFICO A TORTA (MODIFICATO: Legenda e Datalabels)
         =========================================================== */
         function renderChart() {
             const grouping = document.getElementById('grouping-select').value;
@@ -674,7 +546,6 @@
             if (chartData.length === 0) {
                 document.querySelector('.pie-area').innerHTML =
                     '<div style="color: var(--neon-cyan); text-align: center; font-size: 1.5rem; width: 100%; text-shadow: 0 0 10px var(--neon-cyan);">NESSUN DATO DISPONIBILE</div>';
-                document.getElementById('labelsArea').innerHTML = '';
                 return;
             }
 
@@ -686,9 +557,10 @@
                 pieChart.destroy();
             }
 
-            // Pulisci linee e label
-            clearConnectionLines();
-            clearLabels();
+            // *** Registra il plugin Datalabels ***
+            if (window.ChartDataLabels) {
+                Chart.register(ChartDataLabels);
+            }
 
             // Crea chart
             const ctx = document.getElementById('pieCanvas').getContext('2d');
@@ -718,7 +590,16 @@
                     cutout: '35%', // Torta a ciambella
                     radius: '90%', // Più grande possibile
                     plugins: {
-                        legend: { display: false },
+                        // *** Legenda Dinamica sotto il grafico ***
+                        legend: {
+                            display: true,
+                            position: 'bottom', // Posiziona in basso
+                            labels: {
+                                color: 'var(--text-color)', // Colore del testo della legenda
+                                font: { family: 'Orbitron', size: 12, weight: 'bold' },
+                                padding: 25
+                            }
+                        },
                         tooltip: {
                             callbacks: {
                                 label: function (context) {
@@ -732,6 +613,24 @@
                             bodyColor: '#ffffff',
                             borderColor: '#00f3ff',
                             borderWidth: 1
+                        },
+                        // *** Datalabels per Percentuale sulle fette ***
+                        datalabels: {
+                            color: '#050505', // Testo scuro
+                            formatter: (value) => {
+                                const percentage = ((value / totalValue) * 100).toFixed(1);
+                                return percentage + '%';
+                            },
+                            anchor: 'end',
+                            align: 'start',
+                            offset: 4,
+                            font: { weight: 'bold', size: 12 },
+                            backgroundColor: (context) => {
+                                return 'rgba(0, 243, 255, 0.8)'; // Sfondo neon
+                            },
+                            borderRadius: 4,
+                            padding: 6,
+                            textAlign: 'center'
                         }
                     },
                     animation: {
@@ -740,216 +639,24 @@
                         duration: 1500,
                         easing: 'easeOutQuart'
                     },
-                    onHover: function (event, elements) {
-                        if (elements && elements.length > 0) {
-                            const index = elements[0].index;
-                            highlightSlice(index);
-                        } else if (activeSliceIndex === -1) {
-                            resetHighlight();
-                        }
-                    }
+                    // RIMOSSO: onHover per interazione con legenda laterale
                 }
             });
 
             // Aggiorna display totale
             updateTotalDisplay();
 
-            // Crea label
-            createLabels();
-
-            // Crea linee di collegamento
-            createConnectionLines();
+            // RIMOSSO: createLabels();
+            // RIMOSSO: createConnectionLines();
         }
 
         /* ===========================================================
-           CREA LABEL NELLA COLONNA DESTRA
+           FUNZIONI RIMOSSE: createLabels, createConnectionLines, highlightSlice, ecc.
         =========================================================== */
-        function createLabels() {
-            const labelsArea = document.getElementById('labelsArea');
-
-            chartData.forEach((item, index) => {
-                const percentage = ((item.value / totalValue) * 100).toFixed(1);
-                const color = generateTronColors(chartData.length)[index];
-                const labelText = item.label.length > 30 ? item.label.substring(0, 27) + '...' : item.label;
-                const formattedValue = formatCurrency(item.value);
-
-                const labelItem = document.createElement('div');
-                labelItem.className = 'label-item';
-                labelItem.dataset.index = index;
-                labelItem.style.color = color;
-                labelItem.style.borderColor = color;
-
-                labelItem.innerHTML = `
-                    <div class="label-name" title="${item.label}">${labelText}</div>
-                    <div class="label-percentage">${percentage}%</div>
-                    <div class="label-value">${formattedValue}</div>
-                `;
-
-                // Event listeners
-                labelItem.addEventListener('mouseenter', () => highlightSlice(index));
-                labelItem.addEventListener('mouseleave', () => {
-                    if (activeSliceIndex === -1) resetHighlight();
-                });
-                labelItem.addEventListener('click', () => toggleSliceFocus(index));
-
-                labelsArea.appendChild(labelItem);
-            });
-        }
-
-        /* ===========================================================
-           CREA LINEE DI COLLEGAMENTO
-        =========================================================== */
-        function createConnectionLines() {
-            const svg = document.getElementById('connectionSvg');
-            svg.innerHTML = '';
-            connectionLines = [];
-
-            if (!pieChart) return;
-
-            const canvas = document.getElementById('pieCanvas');
-            const canvasRect = canvas.getBoundingClientRect();
-            const chartArea = document.querySelector('.pie-area').getBoundingClientRect();
-            const labelsArea = document.getElementById('labelsArea').getBoundingClientRect();
-
-            const meta = pieChart.getDatasetMeta(0);
-
-            chartData.forEach((item, index) => {
-                if (!meta.data[index]) return;
-
-                const slice = meta.data[index];
-                const angle = slice.startAngle + (slice.endAngle - slice.startAngle) / 2;
-
-                // Punto sulla circonferenza della fetta
-                const sliceRadius = slice.outerRadius * 0.9;
-                const sliceX = slice.x + Math.cos(angle) * sliceRadius;
-                const sliceY = slice.y + Math.sin(angle) * sliceRadius;
-
-                // Converti coordinate canvas a coordinate SVG
-                const scaleX = canvasRect.width / canvas.width;
-                const scaleY = canvasRect.height / canvas.height;
-                const svgSliceX = (sliceX * scaleX);
-                const svgSliceY = (sliceY * scaleY);
-
-                // Trova la label corrispondente
-                const labelItem = document.querySelector(`.label-item[data-index="${index}"]`);
-                if (!labelItem) return;
-
-                const labelRect = labelItem.getBoundingClientRect();
-                const svgLabelX = labelRect.left - chartArea.left + 5; // Inizio label
-                const svgLabelY = labelRect.top - chartArea.top + (labelRect.height / 2);
-
-                // Colore della linea
-                const lineColor = generateTronColors(chartData.length)[index];
-
-                // Calcola punto di controllo per curva Bézier
-                const midX = (svgSliceX + svgLabelX) / 2;
-                const midY = (svgSliceY + svgLabelY) / 2;
-
-                // Crea linea curva con Bézier
-                const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-                const pathData = `M ${svgSliceX} ${svgSliceY} C ${midX + 50} ${svgSliceY}, ${midX - 50} ${svgLabelY}, ${svgLabelX} ${svgLabelY}`;
-
-                path.setAttribute('d', pathData);
-                path.setAttribute('class', 'connection-line');
-                path.setAttribute('data-index', index);
-                path.style.stroke = lineColor;
-                path.setAttribute('stroke', lineColor);
-
-                // Anima la linea
-                const pathLength = path.getTotalLength();
-                path.style.strokeDasharray = `${pathLength} ${pathLength}`;
-                path.style.strokeDashoffset = pathLength;
-
-                svg.appendChild(path);
-
-                // Anima l'apparizione
-                setTimeout(() => {
-                    path.style.transition = 'stroke-dashoffset 1s ease-out';
-                    path.style.strokeDashoffset = '0';
-                }, 100 * index);
-
-                connectionLines.push({
-                    element: path,
-                    index: index,
-                    color: lineColor
-                });
-            });
-        }
-
-        /* ===========================================================
-           FUNZIONI DI HIGHLIGHT
-        =========================================================== */
-        function highlightSlice(index) {
-            if (activeSliceIndex === index || !pieChart) return;
-
-            // Evidenzia fetta
-            const dataset = pieChart.data.datasets[0];
-            dataset.borderWidth = Array(chartData.length).fill(3);
-            dataset.borderWidth[index] = 6;
-            dataset.borderColor[index] = '#FFFFFF';
-            pieChart.update('none');
-
-            // Evidenzia label
-            document.querySelectorAll('.label-item').forEach((item, i) => {
-                item.classList.toggle('active', i === index);
-            });
-
-            // Evidenzia linee
-            connectionLines.forEach(line => {
-                if (line.index === index) {
-                    line.element.classList.add('highlight');
-                } else {
-                    line.element.style.opacity = '0.3';
-                }
-            });
-
-            activeSliceIndex = index;
-        }
-
-        function resetHighlight() {
-            if (!pieChart || activeSliceIndex === -1) return;
-
-            // Ripristina fette
-            const dataset = pieChart.data.datasets[0];
-            dataset.borderWidth = Array(chartData.length).fill(3);
-            pieChart.update('none');
-
-            // Ripristina label
-            document.querySelectorAll('.label-item').forEach(item => {
-                item.classList.remove('active');
-            });
-
-            // Ripristina linee
-            connectionLines.forEach(line => {
-                line.element.classList.remove('highlight');
-                line.element.style.opacity = '1';
-            });
-
-            activeSliceIndex = -1;
-        }
-
-        function toggleSliceFocus(index) {
-            if (activeSliceIndex === index) {
-                resetHighlight();
-            } else {
-                highlightSlice(index);
-            }
-        }
 
         /* ===========================================================
            FUNZIONI DI UTILITY
         =========================================================== */
-        function clearConnectionLines() {
-            const svg = document.getElementById('connectionSvg');
-            if (svg) svg.innerHTML = '';
-            connectionLines = [];
-            activeSliceIndex = -1;
-        }
-
-        function clearLabels() {
-            document.getElementById('labelsArea').innerHTML = '';
-        }
-
         function updateTotalDisplay() {
             const totalDisplay = document.getElementById('totalDisplay');
             totalDisplay.innerHTML = `
@@ -971,7 +678,7 @@
         }
 
         /* ===========================================================
-           GESTIONE RESIZE
+           GESTIONE RESIZE (Semplificata)
         =========================================================== */
         let resizeTimeout;
         window.addEventListener('resize', function () {
@@ -979,10 +686,7 @@
             resizeTimeout = setTimeout(() => {
                 if (pieChart) {
                     pieChart.resize();
-                    setTimeout(() => {
-                        clearConnectionLines();
-                        createConnectionLines();
-                    }, 100);
+                    // RIMOSSO: Logica per rigenerare le linee di connessione
                 }
             }, 250);
         });
