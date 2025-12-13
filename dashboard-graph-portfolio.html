@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Portfolio Graph 3D - Tron Style</title>
+    <title>Portfolio Graph</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <script src="js/dashboard-shared.js"></script>
@@ -238,11 +238,11 @@
         </div>
 
         <div class="header-center">
-            <h1>Portfolio Composition</h1>
+            <h1>Grafico</h1>
         </div>
 
         <div class="header-right">
-            <label for="grouping-select" id="grouping-label">Group By:</label>
+            <label for="grouping-select" id="grouping-label">Raggruppamento</label>
             <select id="grouping-select" onchange="renderChart()"></select>
             <button class="close-button" onclick="closeWindow()" id="close-btn"></button>
         </div>
@@ -283,7 +283,7 @@
 
         function updatePageTranslations() {
             const mapping = {
-                'grouping-label': 'int.group_by',
+                'grouping-label': 'int.groupby',
                 'close-btn': 'int.close'
             };
 
@@ -299,9 +299,8 @@
 
             const title = document.querySelector("h1");
             if (title) {
-                const t = getTranslation('int.portfolio.composition');
-                if (t && t !== 'int.portfolio.composition') title.textContent = t;
-                else if (!t || t === 'int.portfolio.composition') title.textContent = 'Portfolio Composition';
+                const t = getTranslation('int.graph');
+                title.textContent = t || 'Graph';
             }
         }
 
@@ -447,39 +446,38 @@
             const tronPalette = [
                 0x00f3ff, // Cyan neon
                 0x0066ff, // Blue neon
-                0xff6600, // Orange neon
-                0xff0044, // Pink/Red neon
-                0x00ffcc, // Turquoise
-                0x9900ff, // Purple
-                0xffcc00, // Yellow
-                0x00ff66  // Green
+                0xff3333, // Red/Orange neon
+                0xff00ff, // Magenta neon
+                0xccff00, // Lime
+                0xffffff  // White
             ];
 
             const colors = [];
-            for (let i = 0; i < n; i++) {
-                colors.push(tronPalette[i % tronPalette.length]);
-            }
+            for (let i = 0; i < n; i++) colors.push(tronPalette[i % tronPalette.length]);
             return colors;
         }
 
         /* -----------------------------------------------------------
            RENDER 3D PIE CHART
         ----------------------------------------------------------- */
+        let chartLabels = []; // Stores objects { overlay, line, percent, anchorPos, labelPos, percentPos }
+
         function renderChart() {
-            // Clear previous segments and labels
-            pieSegments.forEach(segment => {
-                scene.remove(segment);
-            });
+            // Clear previous items
+            pieSegments.forEach(s => scene.remove(s));
             pieSegments = [];
 
-            labelElements.forEach(label => {
-                label.remove();
+            chartLabels.forEach(item => {
+                if (item.overlay) item.overlay.remove();
+                if (item.line) item.line.remove();
+                if (item.percent) item.percent.remove();
             });
-            labelElements = [];
+            chartLabels = [];
 
             const grouping = document.getElementById("grouping-select").value;
             const groupedData = getGroupedData(portfolioData, classificationMap, grouping);
-            const slicedData = groupedData.length > 30 ? groupedData.slice(0, 30) : groupedData;
+            // Limit to top 20 to reduce clutter
+            const slicedData = groupedData.length > 20 ? groupedData.slice(0, 20) : groupedData;
 
             if (slicedData.length === 0) return;
 
@@ -503,9 +501,11 @@
                 const extrudeSettings = {
                     depth: thickness,
                     bevelEnabled: true,
-                    bevelThickness: 0.1,
-                    bevelSize: 0.1,
-                    bevelSegments: 3
+                    bevelThickness: 0.05,
+                    bevelSize: 0.05,
+                    bevelSegments: 8, // Smoother bevel
+                    curveSegments: 64, // Smoother curves
+                    steps: 2
                 };
 
                 const geometry = new THREE.ExtrudeGeometry(shape, extrudeSettings);
@@ -525,7 +525,9 @@
                 const edges = new THREE.EdgesGeometry(geometry);
                 const lineMaterial = new THREE.LineBasicMaterial({
                     color: 0x00f3ff,
-                    linewidth: 2
+                    linewidth: 1,
+                    opacity: 0.3,
+                    transparent: true
                 });
                 const wireframe = new THREE.LineSegments(edges, lineMaterial);
                 segment.add(wireframe);
@@ -533,12 +535,27 @@
                 scene.add(segment);
                 pieSegments.push(segment);
 
-                // Create external label
+                // --- Calculate Core Positions ---
                 const midAngle = currentAngle + angle / 2;
-                const labelDistance = radius + 2;
+
+                // 1. Percentage Label Position (on slice)
+                const percRadius = radius * 0.6;
+                const percX = Math.cos(midAngle) * percRadius;
+                const percZ = Math.sin(midAngle) * percRadius;
+
+                // Create Percentage Element
+                const percDiv = document.createElement('div');
+                percDiv.className = 'label-percentage';
+                percDiv.textContent = (percentage * 100).toFixed(0) + '%';
+                // Improve contrast - use black text if needed or just white shadow
+                document.getElementById('chartContainerInner').appendChild(percDiv);
+
+                // 2. External Label Position
+                const labelDistance = radius + 1.5; // reduced distance slightly
                 const labelX = Math.cos(midAngle) * labelDistance;
                 const labelZ = Math.sin(midAngle) * labelDistance;
 
+                // Create Overlay Element
                 const labelDiv = document.createElement('div');
                 labelDiv.className = 'label-overlay';
                 const translatedLabel = getTranslation(item.label) || item.label;
@@ -547,25 +564,24 @@
                     currency: "EUR",
                     maximumFractionDigits: 0
                 }).format(item.value);
-                labelDiv.innerHTML = `${translatedLabel}<br>${formattedValue}`;
-
-                labelDiv.dataset.x = labelX;
-                labelDiv.dataset.y = 0;
-                labelDiv.dataset.z = labelZ;
-
+                labelDiv.innerHTML = `<span style="color:${'#' + colors[index].toString(16).padStart(6, '0')}">${translatedLabel}</span><br>${formattedValue}`;
                 document.getElementById('chartContainerInner').appendChild(labelDiv);
-                labelElements.push(labelDiv);
 
                 // Create connecting line
                 const lineDiv = document.createElement('div');
                 lineDiv.className = 'label-line';
-                lineDiv.dataset.startX = Math.cos(midAngle) * radius;
-                lineDiv.dataset.startZ = Math.sin(midAngle) * radius;
-                lineDiv.dataset.endX = labelX;
-                lineDiv.dataset.endZ = labelZ;
-
+                lineDiv.style.backgroundColor = '#' + colors[index].toString(16).padStart(6, '0');
                 document.getElementById('chartContainerInner').appendChild(lineDiv);
-                labelElements.push(lineDiv);
+
+                // Store all visual elements and their 3D anchors
+                chartLabels.push({
+                    overlay: labelDiv,
+                    line: lineDiv,
+                    percent: percDiv,
+                    anchorPos: new THREE.Vector3(Math.cos(midAngle) * radius, 0, Math.sin(midAngle) * radius), // Edge of pie
+                    labelPos: new THREE.Vector3(labelX, 0, labelZ), // Theoretical label pos
+                    percentPos: new THREE.Vector3(percX, thickness / 2 + 0.1, percZ) // On top of slice
+                });
 
                 currentAngle += angle;
             });
@@ -578,49 +594,77 @@
         ----------------------------------------------------------- */
         function updateLabelPositions() {
             const container = document.getElementById('chartContainerInner');
+            if (!container) return;
             const rect = container.getBoundingClientRect();
 
-            labelElements.forEach(element => {
-                if (element.classList.contains('label-overlay')) {
-                    const x = parseFloat(element.dataset.x);
-                    const y = parseFloat(element.dataset.y);
-                    const z = parseFloat(element.dataset.z);
+            // 1. Project all raw positions to 2D
+            chartLabels.forEach(item => {
+                // Percent
+                const pVec = item.percentPos.clone().project(camera);
+                item.pX = (pVec.x * 0.5 + 0.5) * rect.width;
+                item.pY = (-pVec.y * 0.5 + 0.5) * rect.height;
 
-                    const vector = new THREE.Vector3(x, y, z);
-                    vector.project(camera);
+                // Label Target
+                const lVec = item.labelPos.clone().project(camera);
+                item.lX = (lVec.x * 0.5 + 0.5) * rect.width;
+                item.lY = (-lVec.y * 0.5 + 0.5) * rect.height;
 
-                    const screenX = (vector.x * 0.5 + 0.5) * rect.width;
-                    const screenY = (-vector.y * 0.5 + 0.5) * rect.height;
+                // Anchor (start of line)
+                const aVec = item.anchorPos.clone().project(camera);
+                item.aX = (aVec.x * 0.5 + 0.5) * rect.width;
+                item.aY = (-aVec.y * 0.5 + 0.5) * rect.height;
+            });
 
-                    element.style.left = screenX + 'px';
-                    element.style.top = screenY + 'px';
-                } else if (element.classList.contains('label-line')) {
-                    const startX = parseFloat(element.dataset.startX);
-                    const startZ = parseFloat(element.dataset.startZ);
-                    const endX = parseFloat(element.dataset.endX);
-                    const endZ = parseFloat(element.dataset.endZ);
+            // 2. Anti-collision logic for External Labels
+            // Sort by projected Y to handle vertical stacking
+            // We'll separate left-side and right-side labels logic if needed, 
+            // but simple vertical collision check is often enough.
+            const sortedLabels = [...chartLabels].sort((a, b) => a.lY - b.lY);
 
-                    const start = new THREE.Vector3(startX, 0, startZ);
-                    const end = new THREE.Vector3(endX, 0, endZ);
+            sortedLabels.forEach((item, i) => {
+                if (i > 0) {
+                    const prev = sortedLabels[i - 1];
+                    // Check if they are horizontally close enough to overlap
+                    // If X distance > 150px, they probably don't overlap visually even at same Y
+                    if (Math.abs(item.lX - prev.lX) < 150) {
+                        const minSpacing = 40; // Approx height + margin
+                        if (item.lY < prev.lY + minSpacing) {
+                            item.lY = prev.lY + minSpacing;
+                        }
+                    }
+                }
+            });
 
-                    start.project(camera);
-                    end.project(camera);
+            // 3. Apply positions
+            chartLabels.forEach(item => {
+                // Percentage
+                if (item.percent) {
+                    item.percent.style.left = item.pX + 'px';
+                    item.percent.style.top = item.pY + 'px';
+                }
 
-                    const screenStartX = (start.x * 0.5 + 0.5) * rect.width;
-                    const screenStartY = (-start.y * 0.5 + 0.5) * rect.height;
-                    const screenEndX = (end.x * 0.5 + 0.5) * rect.width;
-                    const screenEndY = (-end.y * 0.5 + 0.5) * rect.height;
+                // External Label
+                if (item.overlay) {
+                    item.overlay.style.left = item.lX + 'px';
+                    item.overlay.style.top = item.lY + 'px';
+                }
 
-                    const dx = screenEndX - screenStartX;
-                    const dy = screenEndY - screenStartY;
-                    const length = Math.sqrt(dx * dx + dy * dy);
+                // Line: connects Anchor to Adjusted Label Position
+                if (item.line) {
+                    const startX = item.aX;
+                    const startY = item.aY;
+                    const endX = item.lX;
+                    const endY = item.lY; // Adjusted Y
+
+                    const dx = endX - startX;
+                    const dy = endY - startY;
+                    const len = Math.sqrt(dx * dx + dy * dy);
                     const angle = Math.atan2(dy, dx) * 180 / Math.PI;
 
-                    element.style.left = screenStartX + 'px';
-                    element.style.top = screenStartY + 'px';
-                    element.style.width = length + 'px';
-                    element.style.transform = `rotate(${angle}deg)`;
-                    element.style.transformOrigin = '0 0';
+                    item.line.style.left = startX + 'px';
+                    item.line.style.top = startY + 'px';
+                    item.line.style.width = len + 'px';
+                    item.line.style.transform = `rotate(${angle}deg)`;
                 }
             });
         }
