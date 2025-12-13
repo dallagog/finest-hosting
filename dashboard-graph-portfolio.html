@@ -5,9 +5,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Portfolio Graph</title>
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/js/all.min.js"></script>
+
     <script src="js/dashboard-shared.js"></script>
 
     <style>
@@ -37,10 +39,9 @@
         body {
             height: 100%;
             width: 100%;
-            /* L'overflow è necessario se la legenda va sotto */
             overflow: auto;
+            /* Permette lo scroll se la legenda è lunga */
             padding-right: 8px;
-            /* Previene il flash di scrollbar */
         }
 
         body {
@@ -59,7 +60,7 @@
             gap: 10px;
         }
 
-        /* HEADER (Nessuna modifica qui) */
+        /* HEADER */
         .header-bar {
             background: var(--glass-bg);
             border: 1px solid var(--neon-cyan);
@@ -74,7 +75,8 @@
             backdrop-filter: blur(10px);
             position: relative;
             flex-shrink: 0;
-            min-height: 60px;
+            min-height: 70px;
+            /* Aumentato leggermente per ospitare le info */
         }
 
         .header-bar::before {
@@ -105,18 +107,46 @@
             }
         }
 
+        /* HEADER LEFT - INFO UTENTE (Stile importato da dashboard.html) */
         .header-left {
             display: flex;
             flex-direction: column;
             gap: 5px;
+            flex: 1;
+            /* Prende spazio a sinistra */
+        }
+
+        .user-info-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+        }
+
+        .user-label {
+            color: var(--neon-cyan);
+            font-weight: bold;
         }
 
         .username-display {
-            color: var(--neon-cyan);
-            font-size: 0.9rem;
+            color: var(--text-color);
             text-transform: uppercase;
             letter-spacing: 1px;
-            text-shadow: 0 0 10px var(--neon-cyan);
+        }
+
+        .flag-icon {
+            font-size: 18px;
+        }
+
+        #languageDisplay,
+        #currencyDisplay {
+            color: var(--text-color);
+        }
+
+        /* HEADER CENTER - TITOLO */
+        .header-center {
+            flex: 1;
+            text-align: center;
         }
 
         .header-center h1 {
@@ -131,6 +161,7 @@
                 0 0 10px var(--neon-cyan),
                 0 0 20px rgba(0, 243, 255, 0.5);
             animation: titleGlow 2s ease-in-out infinite alternate;
+            margin: 0;
         }
 
         @keyframes titleGlow {
@@ -143,10 +174,13 @@
             }
         }
 
+        /* HEADER RIGHT - CONTROLLI */
         .header-right {
             display: flex;
             gap: 15px;
             align-items: center;
+            flex: 1;
+            justify-content: flex-end;
         }
 
         select {
@@ -190,7 +224,7 @@
             transform: translateY(-2px);
         }
 
-        /* MAIN CHART CONTAINER (MODIFICATO: per singolo grafico) */
+        /* MAIN CHART CONTAINER */
         .chart-container {
             flex: 1;
             background: var(--glass-bg);
@@ -198,7 +232,6 @@
             border-radius: 12px;
             padding: 20px;
             display: block;
-            /* Modificato */
             position: relative;
             overflow: hidden;
             box-shadow:
@@ -220,7 +253,6 @@
             pointer-events: none;
         }
 
-        /* PIE CHART AREA (MODIFICATO: per centratura) */
         .pie-area {
             display: flex;
             justify-content: center;
@@ -233,13 +265,9 @@
         .chart-wrapper {
             position: relative;
             width: 95%;
-            /* Aumentato */
             height: 95%;
-            /* Aumentato */
             max-width: 1000px;
-            /* Aumentato */
             max-height: 1000px;
-            /* Aumentato */
         }
 
         #pieCanvas {
@@ -277,10 +305,7 @@
             letter-spacing: 1px;
         }
 
-        /* RIMOSSO: LABELS AREA CSS */
-        /* RIMOSSO: CONNECTION LINES CSS */
-
-        /* LOADING SCREEN (Nessuna modifica qui) */
+        /* LOADING SCREEN */
         #loading {
             position: fixed;
             top: 0;
@@ -328,9 +353,7 @@
             color: var(--neon-cyan);
             font-family: 'Orbitron', sans-serif;
             font-size: 1.5rem;
-            text-shadow:
-                0 0 10px var(--neon-cyan),
-                0 0 20px var(--neon-cyan);
+            text-shadow: 0 0 10px var(--neon-cyan), 0 0 20px var(--neon-cyan);
             letter-spacing: 2px;
             animation: pulse 1.5s ease-in-out infinite alternate;
         }
@@ -345,12 +368,18 @@
             }
         }
 
-        /* RESPONSIVE (Aggiornato per rimuovere riferimenti alla legenda laterale) */
+        /* RESPONSIVE */
         @media (max-width: 768px) {
             .header-bar {
                 flex-direction: column;
-                gap: 10px;
+                gap: 15px;
                 text-align: center;
+            }
+
+            .header-left,
+            .header-right {
+                width: 100%;
+                justify-content: center;
             }
 
             .header-center h1 {
@@ -374,8 +403,18 @@
 
     <div class="header-bar">
         <div class="header-left">
-            <div id="username-display" class="username-display"></div>
+            <div class="user-info-row">
+                <strong class="user-label">USER:</strong>
+                <span id="username-display" class="username-display"></span>
+            </div>
+            <div class="user-info-row">
+                <span class="flag-icon" id="languageFlag"></span>
+                <span id="languageDisplay"></span>
+                <span style="margin: 0 5px; color: var(--neon-blue);">|</span>
+                <span id="currencyDisplay"></span>
+            </div>
         </div>
+
         <div class="header-center">
             <h1>Grafico Portfolio</h1>
         </div>
@@ -392,7 +431,6 @@
                 <div id="totalDisplay" class="total-display"></div>
             </div>
         </div>
-
     </div>
 
     <script>
@@ -405,14 +443,17 @@
         let pieChart = null;
         let chartData = [];
         let totalValue = 0;
-        // Rimosso: let connectionLines = [];
-        // Rimosso: let activeSliceIndex = -1;
         let classificationFilter = [];
+
+        // Variabili per Lingua e Valuta
+        let availableLanguages = [];
+        let currencies = [];
 
         const urlParams = new URLSearchParams(window.location.search);
         const username = urlParams.get('username') || 'USER';
         const token = urlParams.get('token');
         const language = urlParams.get('language') || 'it_IT';
+        const currency = urlParams.get('currency') || 'EUR';
         const initialGrouping = urlParams.get('grouping') || "";
 
         /* ===========================================================
@@ -421,23 +462,97 @@
         window.onload = init;
 
         async function init() {
-            document.getElementById('username-display').textContent = 'USER: ' + username;
-            await loadManifest();
+            // Imposta username base
+            document.getElementById('username-display').textContent = username;
+
+            // Caricamento Dati Lingua e Valuta (come in dashboard.html)
+            await initializeLanguages();
+            await loadCurrencies(language);
+            updateUserInfoUI(); // Aggiorna UI Header
+
+            // Caricamento Dati Applicativi
+            // loadLanguageManifest è chiamato dentro initializeLanguages, 
+            // quindi classificationFilter dovrebbe essere già popolato se presente nel manifest
             await loadPortfolio();
+
             document.getElementById("loading").style.display = "none";
         }
 
-        async function loadManifest() {
+        /* ===========================================================
+           LOGICA LINGUA E VALUTA (Replicata da dashboard.html)
+        =========================================================== */
+        async function loadLanguageManifest() {
             try {
                 const response = await fetch('lang/manifest.json');
-                if (response.ok) {
-                    const manifest = await response.json();
-                    if (manifest.classification && Array.isArray(manifest.classification)) {
-                        classificationFilter = manifest.classification;
-                    }
+                if (!response.ok) return [];
+                const manifest = await response.json();
+
+                // Carica filtri classificazione dal manifest
+                if (manifest.classification && Array.isArray(manifest.classification)) {
+                    classificationFilter = manifest.classification;
                 }
+
+                return manifest.languages || [];
             } catch (error) {
                 console.error("Error loading manifest:", error);
+                return [];
+            }
+        }
+
+        async function loadLanguageFile(langCode) {
+            try {
+                const response = await fetch(`lang/${langCode}.json`);
+                if (!response.ok) return null;
+                const data = await response.json();
+                if (data['int.language.code'] && data['int.language.description'] && data['img.language.flag']) {
+                    return {
+                        code: data['int.language.code'],
+                        description: data['int.language.description'],
+                        flag: data['img.language.flag']
+                    };
+                }
+                return null;
+            } catch (error) {
+                console.error(`Error loading ${langCode}.json:`, error);
+                return null;
+            }
+        }
+
+        async function initializeLanguages() {
+            const langCodes = await loadLanguageManifest();
+            for (const langCode of langCodes) {
+                const langData = await loadLanguageFile(langCode);
+                if (langData) availableLanguages.push(langData);
+            }
+        }
+
+        async function loadCurrencies(lang) {
+            try {
+                const response = await fetch(`currency/${lang}.json`);
+                if (!response.ok) throw new Error(`Currency file not found currency/${lang}.json`);
+                currencies = await response.json();
+            } catch (error) {
+                console.error('❌ Error loading currencies:', error);
+                currencies = [];
+            }
+        }
+
+        function updateUserInfoUI() {
+            // Aggiorna Lingua e Bandiera
+            const langData = availableLanguages.find(l => l.code === language);
+            if (langData) {
+                document.getElementById('languageFlag').textContent = langData.flag;
+                document.getElementById('languageDisplay').textContent = langData.description;
+            } else {
+                document.getElementById('languageDisplay').textContent = language;
+            }
+
+            // Aggiorna Valuta
+            const currData = currencies.find(c => c.currency === currency);
+            if (currData && currData['img.currency.flag']) {
+                document.getElementById('currencyDisplay').textContent = `${currData['img.currency.flag']} ${currency}`;
+            } else {
+                document.getElementById('currencyDisplay').textContent = currency;
             }
         }
 
@@ -498,17 +613,18 @@
                 }
 
                 const select = document.getElementById('grouping-select');
-                // Mantengo la chiamata originale, assumendo che populateGroupingSelectSummary
-                // utilizzi la funzione getTranslation per l'output.
+                // Usa populateGroupingSelectSummary da dashboard-shared.js
+                // Passiamo getTranslation (se disponibile, altrimenti fallback locale)
                 populateGroupingSelectSummary(
                     select,
                     classificationFilter.length > 0 ? classificationFilter : classificationList,
-                    getTranslation,
+                    (typeof getTranslation !== 'undefined' ? getTranslation : (k) => k),
                     initialGrouping,
                     "Nessun raggruppamento"
                 );
 
                 const rawPort = data.portfolio || {};
+                // Usa parsePortfolioItems da dashboard-shared.js
                 portfolioData = parsePortfolioItems(rawPort);
 
                 renderChart();
@@ -519,25 +635,11 @@
         }
 
         /* ===========================================================
-           FUNZIONI DI SUPPORTO PER TRADUZIONI (Placeholder)
-        =========================================================== */
-        function getTranslation(key) {
-            // Funzione placeholder - da implementare con sistema traduzioni
-            // Aggiungo alcune traduzioni comuni per dimostrazione
-            const translations = {
-                'Nessun raggruppamento': 'No Grouping',
-                'Area': 'Area',
-                'Settore': 'Sector',
-                'AssetClass': 'Asset Class'
-            };
-            return translations[key] || key;
-        }
-
-        /* ===========================================================
-           RENDER GRAFICO A TORTA (MODIFICATO: Legenda e Datalabels)
+           RENDER GRAFICO A TORTA
         =========================================================== */
         function renderChart() {
             const grouping = document.getElementById('grouping-select').value;
+            // Usa getGroupedData da dashboard-shared.js
             const groupedData = getGroupedData(portfolioData, classificationMap, grouping);
 
             // Prendi solo i primi 12 elementi per chiarezza
@@ -557,7 +659,7 @@
                 pieChart.destroy();
             }
 
-            // *** Registra il plugin Datalabels ***
+            // Registra il plugin Datalabels
             if (window.ChartDataLabels) {
                 Chart.register(ChartDataLabels);
             }
@@ -572,7 +674,6 @@
                         data: chartData.map(item => item.value),
                         backgroundColor: colors,
                         borderColor: colors.map(color => {
-                            // Bordi più luminosi
                             const r = Math.min(parseInt(color.substr(1, 2), 16) + 50, 255);
                             const g = Math.min(parseInt(color.substr(3, 2), 16) + 50, 255);
                             const b = Math.min(parseInt(color.substr(5, 2), 16) + 50, 255);
@@ -587,15 +688,15 @@
                 options: {
                     responsive: true,
                     maintainAspectRatio: true,
-                    cutout: '35%', // Torta a ciambella
-                    radius: '90%', // Più grande possibile
+                    cutout: '35%',
+                    radius: '90%',
                     plugins: {
-                        // *** Legenda Dinamica sotto il grafico ***
+                        // Legenda Dinamica sotto il grafico
                         legend: {
                             display: true,
-                            position: 'bottom', // Posiziona in basso
+                            position: 'bottom',
                             labels: {
-                                color: 'var(--text-color)', // Colore del testo della legenda
+                                color: 'var(--text-color)',
                                 font: { family: 'Orbitron', size: 12, weight: 'bold' },
                                 padding: 25
                             }
@@ -614,9 +715,9 @@
                             borderColor: '#00f3ff',
                             borderWidth: 1
                         },
-                        // *** Datalabels per Percentuale sulle fette ***
+                        // Datalabels per Percentuale sulle fette
                         datalabels: {
-                            color: '#050505', // Testo scuro
+                            color: '#050505',
                             formatter: (value) => {
                                 const percentage = ((value / totalValue) * 100).toFixed(1);
                                 return percentage + '%';
@@ -626,7 +727,7 @@
                             offset: 4,
                             font: { weight: 'bold', size: 12 },
                             backgroundColor: (context) => {
-                                return 'rgba(0, 243, 255, 0.8)'; // Sfondo neon
+                                return 'rgba(0, 243, 255, 0.8)';
                             },
                             borderRadius: 4,
                             padding: 6,
@@ -638,21 +739,12 @@
                         animateRotate: true,
                         duration: 1500,
                         easing: 'easeOutQuart'
-                    },
-                    // RIMOSSO: onHover per interazione con legenda laterale
+                    }
                 }
             });
 
-            // Aggiorna display totale
             updateTotalDisplay();
-
-            // RIMOSSO: createLabels();
-            // RIMOSSO: createConnectionLines();
         }
-
-        /* ===========================================================
-           FUNZIONI RIMOSSE: createLabels, createConnectionLines, highlightSlice, ecc.
-        =========================================================== */
 
         /* ===========================================================
            FUNZIONI DI UTILITY
@@ -666,9 +758,10 @@
         }
 
         function formatCurrency(value) {
-            return new Intl.NumberFormat("it-IT", {
+            // Usa la valuta passata via URL o default EUR
+            return new Intl.NumberFormat(language.replace('_', '-'), {
                 style: "currency",
-                currency: "EUR",
+                currency: currency,
                 maximumFractionDigits: 0
             }).format(value);
         }
@@ -677,16 +770,13 @@
             window.close();
         }
 
-        /* ===========================================================
-           GESTIONE RESIZE (Semplificata)
-        =========================================================== */
+        // GESTIONE RESIZE
         let resizeTimeout;
         window.addEventListener('resize', function () {
             clearTimeout(resizeTimeout);
             resizeTimeout = setTimeout(() => {
                 if (pieChart) {
                     pieChart.resize();
-                    // RIMOSSO: Logica per rigenerare le linee di connessione
                 }
             }, 250);
         });
