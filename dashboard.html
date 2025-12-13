@@ -4,12 +4,11 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Dashboard 1.0 alfa</title>
+    <title>Dashboard 1.1 alfa</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <script src="js/dashboard-shared.js"></script>
     <script src="js/credential-manager.js"></script>
-    <script src="js/translations.js"></script>
 
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&display=swap');
@@ -747,10 +746,19 @@
             }
         });
 
-        const username = credentials.username;
-        const token = credentials.token;
-        const language = credentials.language;
-        let filterData = credentials.filter ? JSON.parse(credentials.filter) : null;
+        let username = null;
+        let token = null;
+        let language = 'it_IT';
+        let filterData = null;
+
+        if (credentials) {
+            username = credentials.username;
+            token = credentials.token;
+            language = credentials.language;
+            // filterData must remain null so loadFilter fetches the data from server
+            // credentials.filter contains the ID, not the data
+            filterData = null;
+        }
         let pdfBase64 = null;
         let isMobile = false;
 
