@@ -5,7 +5,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Portfolio Graph</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <script src="js/dashboard-shared.js"></script>
@@ -18,11 +17,14 @@
             --neon-cyan: #00f3ff;
             --neon-blue: #0066ff;
             --neon-orange: #ff6600;
-            --glass-bg: rgba(0, 20, 40, 0.85);
+            --neon-red: #ff0044;
+            --neon-purple: #cc00ff;
+            --glass-bg: rgba(0, 20, 40, 0.9);
             --text-color: #e0f7fa;
             --button-bg: rgba(0, 243, 255, 0.1);
             --button-border: var(--neon-cyan);
             --button-hover: #ff0044;
+            --grid-line: rgba(0, 243, 255, 0.15);
         }
 
         html,
@@ -30,20 +32,36 @@
             height: 100%;
             margin: 0;
             padding: 0;
+            overflow: hidden;
         }
 
         body {
             font-family: 'Orbitron', sans-serif;
             background-color: var(--bg-color);
             background-image:
-                linear-gradient(rgba(0, 243, 255, 0.1) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(0, 243, 255, 0.1) 1px, transparent 1px);
+                linear-gradient(var(--grid-line) 1px, transparent 1px),
+                linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
             background-size: 50px 50px;
             padding: 15px;
             color: var(--text-color);
             display: flex;
             flex-direction: column;
-            overflow: hidden;
+            position: relative;
+        }
+
+        /* Effetto grid animato */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background:
+                radial-gradient(circle at 20% 30%, rgba(0, 243, 255, 0.05) 0%, transparent 50%),
+                radial-gradient(circle at 80% 70%, rgba(0, 102, 255, 0.05) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: -1;
         }
 
         .header-bar {
@@ -52,11 +70,43 @@
             align-items: center;
             padding: 15px 20px;
             background: var(--glass-bg);
-            border: 1px solid var(--neon-blue);
-            box-shadow: 0 0 15px rgba(0, 102, 255, 0.3);
+            border: 1px solid var(--neon-cyan);
+            box-shadow:
+                0 0 20px rgba(0, 243, 255, 0.3),
+                inset 0 0 20px rgba(0, 243, 255, 0.1);
             border-radius: 8px;
             margin-bottom: 15px;
-            flex-shrink: 0;
+            backdrop-filter: blur(10px);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header-bar::before {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            right: -2px;
+            bottom: -2px;
+            background: linear-gradient(45deg,
+                    transparent,
+                    var(--neon-cyan),
+                    transparent,
+                    var(--neon-blue),
+                    transparent);
+            z-index: -1;
+            animation: borderFlow 3s linear infinite;
+            border-radius: 10px;
+        }
+
+        @keyframes borderFlow {
+            0% {
+                background-position: 0% 50%;
+            }
+
+            100% {
+                background-position: 200% 50%;
+            }
         }
 
         .header-left {
@@ -72,6 +122,7 @@
             text-transform: uppercase;
             letter-spacing: 1px;
             margin-bottom: 5px;
+            text-shadow: 0 0 10px var(--neon-cyan);
         }
 
         .language-display {
@@ -91,16 +142,34 @@
             line-height: 15px;
             font-size: 8px;
             border: 1px solid var(--neon-cyan);
-            box-shadow: 0 0 5px rgba(0, 243, 255, 0.5);
+            box-shadow: 0 0 8px rgba(0, 243, 255, 0.7);
         }
 
         h1 {
             margin: 0;
-            font-size: 1.5rem;
+            font-size: 1.8rem;
             text-transform: uppercase;
-            letter-spacing: 2px;
+            letter-spacing: 3px;
             color: var(--neon-cyan);
-            text-shadow: 0 0 10px var(--neon-cyan);
+            text-shadow:
+                0 0 10px var(--neon-cyan),
+                0 0 20px var(--neon-cyan),
+                0 0 30px rgba(0, 243, 255, 0.5);
+            background: linear-gradient(90deg, var(--neon-cyan), var(--neon-blue));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            animation: titleGlow 2s ease-in-out infinite alternate;
+        }
+
+        @keyframes titleGlow {
+            0% {
+                text-shadow: 0 0 10px var(--neon-cyan), 0 0 20px var(--neon-cyan);
+            }
+
+            100% {
+                text-shadow: 0 0 15px var(--neon-cyan), 0 0 30px var(--neon-cyan), 0 0 40px rgba(0, 243, 255, 0.7);
+            }
         }
 
         .header-right {
@@ -112,17 +181,27 @@
 
         select {
             padding: 8px 15px;
-            background: var(--button-bg);
+            background: rgba(0, 10, 25, 0.8);
             border: 1px solid var(--neon-blue);
             color: var(--neon-cyan);
             font-family: 'Orbitron', sans-serif;
             border-radius: 4px;
             cursor: pointer;
+            text-transform: uppercase;
+            font-size: 0.85rem;
+            letter-spacing: 1px;
+            transition: all 0.3s;
+            box-shadow: 0 0 10px rgba(0, 102, 255, 0.3);
+        }
+
+        select:hover {
+            border-color: var(--neon-cyan);
+            box-shadow: 0 0 15px rgba(0, 243, 255, 0.5);
         }
 
         .close-button {
-            padding: 8px 15px;
-            background: var(--button-bg);
+            padding: 8px 20px;
+            background: linear-gradient(45deg, rgba(0, 243, 255, 0.2), rgba(0, 102, 255, 0.2));
             border: 1px solid var(--neon-cyan);
             color: var(--neon-cyan);
             font-family: 'Orbitron', sans-serif;
@@ -130,14 +209,21 @@
             cursor: pointer;
             text-transform: uppercase;
             font-size: 0.9rem;
-            transition: background 0.3s, color 0.3s, border-color 0.3s;
+            letter-spacing: 2px;
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 0 15px rgba(0, 243, 255, 0.3);
         }
 
         .close-button:hover {
-            background: rgba(255, 0, 85, 0.2);
-            border-color: var(--button-hover);
-            color: var(--button-hover);
-            box-shadow: 0 0 10px rgba(255, 0, 85, 0.5);
+            background: linear-gradient(45deg, rgba(255, 0, 68, 0.3), rgba(255, 102, 0, 0.3));
+            border-color: var(--neon-red);
+            color: var(--neon-red);
+            box-shadow:
+                0 0 20px rgba(255, 0, 68, 0.5),
+                inset 0 0 20px rgba(255, 0, 68, 0.2);
+            transform: translateY(-2px);
         }
 
         .chart-wrapper {
@@ -145,13 +231,38 @@
             position: relative;
             background: var(--glass-bg);
             border: 1px solid var(--neon-cyan);
-            border-radius: 8px;
-            box-shadow: 0 0 20px rgba(0, 243, 255, 0.1);
-            padding: 15px;
+            border-radius: 12px;
+            box-shadow:
+                0 0 30px rgba(0, 243, 255, 0.2),
+                inset 0 0 40px rgba(0, 243, 255, 0.1);
+            padding: 20px;
             min-height: 0;
             display: flex;
             justify-content: center;
             align-items: center;
+            backdrop-filter: blur(5px);
+            overflow: hidden;
+        }
+
+        .chart-wrapper::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: conic-gradient(from 0deg,
+                    transparent,
+                    rgba(0, 243, 255, 0.1),
+                    transparent 30%);
+            animation: rotate 20s linear infinite;
+            z-index: 0;
+        }
+
+        @keyframes rotate {
+            100% {
+                transform: rotate(360deg);
+            }
         }
 
         #chartContainer {
@@ -161,65 +272,73 @@
             display: flex;
             justify-content: center;
             align-items: center;
+            z-index: 1;
         }
 
         #pieCanvas {
-            max-width: 90%;
-            max-height: 90%;
+            max-width: 600px;
+            max-height: 600px;
+            filter: drop-shadow(0 0 20px rgba(0, 243, 255, 0.3));
         }
 
-        .legend-container {
+        .chart-label {
             position: absolute;
-            right: 20px;
-            top: 20px;
-            max-width: 300px;
-            max-height: 80%;
-            overflow-y: auto;
-            background: rgba(0, 20, 40, 0.8);
-            border: 1px solid var(--neon-cyan);
-            border-radius: 8px;
-            padding: 15px;
-            box-shadow: 0 0 15px rgba(0, 243, 255, 0.3);
-        }
-
-        .legend-item {
-            display: flex;
-            align-items: center;
-            margin-bottom: 10px;
-            padding: 5px;
-            border-radius: 4px;
-            transition: background 0.3s;
-        }
-
-        .legend-item:hover {
-            background: rgba(0, 243, 255, 0.1);
-        }
-
-        .legend-color {
-            width: 20px;
-            height: 20px;
-            margin-right: 10px;
-            border-radius: 3px;
-            border: 1px solid rgba(255, 255, 255, 0.3);
-        }
-
-        .legend-text {
-            font-size: 0.85rem;
-            color: var(--text-color);
-        }
-
-        .legend-percentage {
-            margin-left: auto;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 12px;
+            font-weight: 700;
             color: var(--neon-cyan);
-            font-weight: bold;
-            font-size: 0.9rem;
+            text-shadow:
+                0 0 8px currentColor,
+                0 0 15px currentColor;
+            pointer-events: none;
+            white-space: nowrap;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            background: rgba(0, 20, 40, 0.85);
+            padding: 8px 12px;
+            border: 1px solid;
+            border-radius: 4px;
+            box-shadow:
+                0 0 15px currentColor,
+                inset 0 0 10px rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(5px);
+            z-index: 10;
+            transform-origin: center left;
+            transition: all 0.3s;
         }
 
-        .legend-value {
+        .chart-label:hover {
+            transform: scale(1.05);
+            z-index: 100;
+        }
+
+        .label-line {
+            position: absolute;
+            height: 2px;
+            background: linear-gradient(to right, var(--neon-cyan), transparent);
+            box-shadow: 0 0 8px var(--neon-cyan);
+            pointer-events: none;
+            z-index: 5;
+            transform-origin: 0 0;
+        }
+
+        .label-value {
             display: block;
-            font-size: 0.75rem;
+            font-size: 11px;
             color: var(--neon-blue);
-            margin-top: 2px;
+            margin-top: 3px;
+            text-shadow: 0 0 5px var(--neon-blue);
+        }
+
+        .label-percentage {
+            display: block;
+            font-size: 14px;
+            font-weight: 900;
+            color: #ffffff;
+            margin-top: 3px;
+            text-shadow:
+                0 0 10px #ffffff,
+                0 0 20px var(--neon-cyan);
         }
 
         #loading {
@@ -228,7 +347,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0, 0, 0, 0.9);
+            background: rgba(5, 5, 5, 0.95);
             display: flex;
             flex-direction: column;
             justify-content: center;
@@ -237,12 +356,25 @@
         }
 
         .spinner {
-            width: 50px;
-            height: 50px;
-            border: 3px solid rgba(0, 243, 255, 0.3);
+            width: 60px;
+            height: 60px;
+            border: 3px solid rgba(0, 243, 255, 0.1);
             border-top: 3px solid var(--neon-cyan);
             border-radius: 50%;
             animation: spin 1s linear infinite;
+            box-shadow: 0 0 20px var(--neon-cyan);
+        }
+
+        .spinner::before {
+            content: '';
+            position: absolute;
+            top: -10px;
+            left: -10px;
+            right: -10px;
+            bottom: -10px;
+            border: 2px solid rgba(0, 102, 255, 0.3);
+            border-radius: 50%;
+            animation: spin 2s linear infinite reverse;
         }
 
         @keyframes spin {
@@ -252,27 +384,59 @@
         }
 
         #loadingText {
-            margin-top: 20px;
+            margin-top: 25px;
             color: var(--neon-cyan);
             font-family: 'Orbitron', sans-serif;
-            font-size: 1.2rem;
-            text-shadow: 0 0 10px var(--neon-cyan);
+            font-size: 1.5rem;
+            text-shadow:
+                0 0 10px var(--neon-cyan),
+                0 0 20px var(--neon-cyan);
+            letter-spacing: 2px;
+            animation: pulse 1.5s ease-in-out infinite alternate;
         }
 
-        /* Responsive adjustments */
-        @media (max-width: 1200px) {
-            .legend-container {
-                position: relative;
-                right: auto;
-                top: auto;
-                max-width: 100%;
-                max-height: 200px;
-                margin-top: 20px;
+        @keyframes pulse {
+            0% {
+                opacity: 0.7;
             }
 
-            #chartContainer {
-                flex-direction: column;
+            100% {
+                opacity: 1;
             }
+        }
+
+        .total-display {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            z-index: 2;
+            pointer-events: none;
+        }
+
+        .total-label {
+            font-size: 14px;
+            color: var(--neon-blue);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 5px;
+            text-shadow: 0 0 10px var(--neon-blue);
+        }
+
+        .total-value {
+            font-size: 22px;
+            font-weight: 900;
+            color: var(--neon-cyan);
+            text-shadow:
+                0 0 15px var(--neon-cyan),
+                0 0 25px rgba(0, 243, 255, 0.7);
+            letter-spacing: 1px;
+        }
+
+        /* Glow effect per le label quando hover su fetta */
+        .slice-hover {
+            filter: brightness(1.3) drop-shadow(0 0 15px currentColor);
         }
     </style>
 </head>
@@ -281,7 +445,7 @@
 
     <div id="loading">
         <div class="spinner"></div>
-        <div id="loadingText">Connecting to Grid...</div>
+        <div id="loadingText">CONNECTING TO GRID...</div>
     </div>
 
     <div class="header-bar">
@@ -304,7 +468,7 @@
     <div class="chart-wrapper">
         <div id="chartContainer">
             <canvas id="pieCanvas"></canvas>
-            <div id="legendContainer" class="legend-container"></div>
+            <div id="totalDisplay" class="total-display"></div>
         </div>
     </div>
 
@@ -367,6 +531,8 @@
         let portfolioData = [];
         let classificationMap = {};
         let pieChart = null;
+        let chartLabels = [];
+        let totalValue = 0;
 
         const urlParams = new URLSearchParams(window.location.search);
         const username = urlParams.get('username') || 'USER';
@@ -389,24 +555,31 @@
         }
 
         /* -----------------------------------------------------------
-           COLORI TRON
+           COLORI TRON DISNEY
         ----------------------------------------------------------- */
         function generateTronColors(n) {
-            const tronPalette = [
-                '#00f3ff', // Cyan neon
-                '#0066ff', // Blue neon
-                '#ff3333', // Red/Orange neon
-                '#ff00ff', // Magenta neon
-                '#ccff00', // Lime
-                '#ffffff', // White
-                '#00ccff', // Light Blue
-                '#ff6600', // Orange
-                '#9900ff', // Purple
-                '#00ff99'  // Green
+            const tronDisneyPalette = [
+                '#00F3FF', // Cyan Tron primario
+                '#0080FF', // Blu elettrico
+                '#CC00FF', // Viola neon
+                '#FF0066', // Rosa shock
+                '#00FFAA', // Verde ciano
+                '#FFAA00', // Arancio circuito
+                '#FF3300', // Rosso energia
+                '#00CCFF', // Azzurro luce
+                '#AA00FF', // Viola profondo
+                '#00FF33', // Verde acceso
+                '#FF00CC', // Magenta
+                '#00D4FF', // Celeste Tron
+                '#FF6600', // Arancio incandescenza
+                '#9900FF', // Viola reattivo
+                '#33FF00'  // Verde brillante
             ];
 
             const colors = [];
-            for (let i = 0; i < n; i++) colors.push(tronPalette[i % tronPalette.length]);
+            for (let i = 0; i < n; i++) {
+                colors.push(tronDisneyPalette[i % tronDisneyPalette.length]);
+            }
             return colors;
         }
 
@@ -472,36 +645,29 @@
         }
 
         /* -----------------------------------------------------------
-           RENDER 2D PIE CHART
+           RENDER 2D PIE CHART CON LABEL COLLEGATE
         ----------------------------------------------------------- */
         function renderChart() {
             const grouping = document.getElementById("grouping-select").value;
             const groupedData = getGroupedData(portfolioData, classificationMap, grouping);
 
-            // Limit to top 15 to avoid clutter
-            const slicedData = groupedData.length > 15 ? groupedData.slice(0, 15) : groupedData;
+            // Limit to top 12 per evitare sovraffollamento
+            const slicedData = groupedData.length > 12 ? groupedData.slice(0, 12) : groupedData;
 
             if (slicedData.length === 0) {
                 document.getElementById('chartContainer').innerHTML =
-                    '<div style="color: var(--neon-cyan); text-align: center; font-size: 1.2rem;">Nessun dato disponibile</div>';
-                document.getElementById('legendContainer').innerHTML = '';
+                    '<div style="color: var(--neon-cyan); text-align: center; font-size: 1.5rem; padding: 40px; text-shadow: 0 0 10px var(--neon-cyan);">NESSUN DATO DISPONIBILE</div>';
+                document.getElementById('totalDisplay').innerHTML = '';
                 return;
             }
 
-            const total = slicedData.reduce((sum, item) => sum + item.value, 0);
+            totalValue = slicedData.reduce((sum, item) => sum + item.value, 0);
             const colors = generateTronColors(slicedData.length);
 
-            // Prepare data for Chart.js
-            const labels = slicedData.map(item => {
-                const translatedLabel = getTranslation(item.label) || item.label;
-                // Truncate long labels
-                return translatedLabel.length > 20 ? translatedLabel.substring(0, 20) + '...' : translatedLabel;
-            });
+            // Calcola percentuali
+            const percentages = slicedData.map(item => ((item.value / totalValue) * 100).toFixed(1));
 
-            const values = slicedData.map(item => item.value);
-            const percentages = slicedData.map(item => ((item.value / total) * 100).toFixed(1));
-
-            // Format currency values
+            // Formatta valori
             const formattedValues = slicedData.map(item => {
                 return new Intl.NumberFormat("it-IT", {
                     style: "currency",
@@ -510,101 +676,138 @@
                 }).format(item.value);
             });
 
-            // Destroy previous chart if exists
+            // Distruggi chart precedente
             if (pieChart) {
                 pieChart.destroy();
+                // Rimuovi label esistenti
+                chartLabels.forEach(label => {
+                    if (label.element) label.element.remove();
+                    if (label.line) label.line.remove();
+                });
+                chartLabels = [];
             }
 
             const ctx = document.getElementById('pieCanvas').getContext('2d');
 
-            // Create the pie chart
+            // Crea il grafico a torta
             pieChart = new Chart(ctx, {
                 type: 'pie',
                 data: {
-                    labels: labels,
+                    labels: slicedData.map(item => getTranslation(item.label) || item.label),
                     datasets: [{
-                        data: values,
+                        data: slicedData.map(item => item.value),
                         backgroundColor: colors,
-                        borderColor: colors.map(color => color.replace(')', ', 0.8)').replace('rgb', 'rgba')),
-                        borderWidth: 2,
-                        borderAlign: 'inner',
-                        hoverBorderWidth: 3,
-                        hoverBorderColor: '#ffffff'
+                        borderColor: colors.map(color => {
+                            // Crea bordi luminosi
+                            const r = parseInt(color.substr(1, 2), 16);
+                            const g = parseInt(color.substr(3, 2), 16);
+                            const b = parseInt(color.substr(5, 2), 16);
+                            return `rgba(${Math.min(r + 100, 255)}, ${Math.min(g + 100, 255)}, ${Math.min(b + 100, 255)}, 0.9)`;
+                        }),
+                        borderWidth: 3,
+                        hoverBorderWidth: 5,
+                        hoverBorderColor: '#FFFFFF',
+                        hoverOffset: 15
                     }]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: true,
+                    cutout: '40%', // Torta a ciambella per spazio centrale
+                    radius: '80%',
                     plugins: {
                         legend: {
-                            display: false // We'll use custom legend
+                            display: false
                         },
                         tooltip: {
-                            callbacks: {
-                                label: function (context) {
-                                    const label = context.label || '';
-                                    const value = context.raw || 0;
-                                    const percentage = ((value / total) * 100).toFixed(1);
-                                    const formattedValue = new Intl.NumberFormat("it-IT", {
-                                        style: "currency",
-                                        currency: "EUR",
-                                        maximumFractionDigits: 0
-                                    }).format(value);
-                                    return `${label}: ${formattedValue} (${percentage}%)`;
-                                }
-                            },
-                            backgroundColor: 'rgba(0, 20, 40, 0.9)',
-                            titleColor: '#00f3ff',
-                            bodyColor: '#e0f7fa',
-                            borderColor: '#00f3ff',
-                            borderWidth: 1,
-                            boxPadding: 5
+                            enabled: false // Disabilita tooltip nativi, useremo i nostri
                         }
                     },
-                    // Add percentage labels on slices
                     animation: {
                         animateScale: true,
                         animateRotate: true,
-                        duration: 1000
+                        duration: 1200,
+                        easing: 'easeOutQuart'
                     },
                     layout: {
-                        padding: {
-                            top: 20,
-                            bottom: 20,
-                            left: 20,
-                            right: 20
+                        padding: 40
+                    },
+                    interaction: {
+                        mode: 'nearest',
+                        intersect: true
+                    },
+                    onHover: function (event, chartElements) {
+                        const canvas = document.getElementById('pieCanvas');
+                        if (chartElements && chartElements.length > 0) {
+                            const index = chartElements[0].index;
+                            // Evidenzia la fetta
+                            chartElements[0].element.options.borderWidth = 6;
+                            chartElements[0].element.options.borderColor = '#FFFFFF';
+
+                            // Evidenzia la label corrispondente
+                            if (chartLabels[index]) {
+                                chartLabels[index].element.style.transform = 'scale(1.15)';
+                                chartLabels[index].element.style.boxShadow =
+                                    '0 0 25px currentColor, inset 0 0 15px rgba(255, 255, 255, 0.3)';
+                                chartLabels[index].element.style.zIndex = '100';
+                            }
+                        } else {
+                            // Ripristina
+                            if (pieChart) {
+                                pieChart.data.datasets.forEach(dataset => {
+                                    dataset.borderWidth = 3;
+                                });
+                            }
+                            chartLabels.forEach(label => {
+                                if (label.element) {
+                                    label.element.style.transform = 'scale(1)';
+                                    label.element.style.boxShadow =
+                                        '0 0 15px currentColor, inset 0 0 10px rgba(255, 255, 255, 0.1)';
+                                    label.element.style.zIndex = '10';
+                                }
+                            });
                         }
                     }
                 },
                 plugins: [{
-                    id: 'percentageLabels',
+                    id: 'tronStyle',
                     afterDraw: function (chart) {
                         const ctx = chart.ctx;
                         ctx.save();
 
+                        // Aggiungi effetto glow alle fette
                         chart.data.datasets.forEach((dataset, i) => {
                             const meta = chart.getDatasetMeta(i);
                             if (!meta.hidden) {
                                 meta.data.forEach((element, index) => {
-                                    // Get the slice data
-                                    const value = dataset.data[index];
-                                    const percentage = percentages[index];
+                                    const { x, y } = element.tooltipPosition();
+                                    const color = dataset.backgroundColor[index];
 
-                                    // Only show percentage if slice is big enough
-                                    if (parseFloat(percentage) > 3) {
-                                        const { x, y } = element.tooltipPosition();
+                                    // Disegna glow interno
+                                    const gradient = ctx.createRadialGradient(x, y, 0, x, y, element.outerRadius);
+                                    gradient.addColorStop(0, color + '80');
+                                    gradient.addColorStop(1, color + '00');
 
-                                        // Draw percentage text
-                                        ctx.font = 'bold 14px Orbitron, sans-serif';
-                                        ctx.fillStyle = '#ffffff';
+                                    ctx.beginPath();
+                                    ctx.arc(x, y, element.outerRadius, 0, Math.PI * 2);
+                                    ctx.fillStyle = gradient;
+                                    ctx.fill();
+
+                                    // Aggiungi percentuale al centro della fetta (solo se > 5%)
+                                    if (parseFloat(percentages[index]) > 5) {
+                                        const angle = element.startAngle + (element.endAngle - element.startAngle) / 2;
+                                        const textRadius = element.outerRadius * 0.7;
+                                        const textX = x + Math.cos(angle) * textRadius;
+                                        const textY = y + Math.sin(angle) * textRadius;
+
+                                        ctx.font = 'bold 16px Orbitron, sans-serif';
+                                        ctx.fillStyle = '#FFFFFF';
                                         ctx.textAlign = 'center';
                                         ctx.textBaseline = 'middle';
-                                        ctx.shadowColor = '#00f3ff';
-                                        ctx.shadowBlur = 10;
+                                        ctx.shadowColor = color;
+                                        ctx.shadowBlur = 15;
 
-                                        ctx.fillText(percentage + '%', x, y);
-
-                                        // Reset shadow
+                                        ctx.fillText(percentages[index] + '%', textX, textY);
                                         ctx.shadowBlur = 0;
                                     }
                                 });
@@ -612,38 +815,194 @@
                         });
 
                         ctx.restore();
+
+                        // Crea label esterne collegate
+                        createExternalLabels(chart, slicedData, colors, percentages, formattedValues);
                     }
                 }]
             });
 
-            // Create custom legend
-            createLegend(slicedData, colors, percentages, formattedValues);
+            // Aggiorna display totale
+            updateTotalDisplay();
         }
 
         /* -----------------------------------------------------------
-           CREATE CUSTOM LEGEND
+           CREA LABEL ESTERNE COLLEGATE
         ----------------------------------------------------------- */
-        function createLegend(data, colors, percentages, formattedValues) {
-            const legendContainer = document.getElementById('legendContainer');
-            legendContainer.innerHTML = '';
+        function createExternalLabels(chart, data, colors, percentages, formattedValues) {
+            const container = document.getElementById('chartContainer');
+            const canvas = document.getElementById('pieCanvas');
+            const canvasRect = canvas.getBoundingClientRect();
+            const containerRect = container.getBoundingClientRect();
+
+            // Pulisci label esistenti
+            chartLabels.forEach(label => {
+                if (label.element) label.element.remove();
+                if (label.line) label.line.remove();
+            });
+            chartLabels = [];
+
+            const meta = chart.getDatasetMeta(0);
 
             data.forEach((item, index) => {
-                const legendItem = document.createElement('div');
-                legendItem.className = 'legend-item';
+                const element = meta.data[index];
+                if (!element) return;
 
+                const percentage = parseFloat(percentages[index]);
+                // Mostra label solo se fetta > 2%
+                if (percentage < 2) return;
+
+                const color = colors[index];
                 const translatedLabel = getTranslation(item.label) || item.label;
 
-                legendItem.innerHTML = `
-                    <div class="legend-color" style="background-color: ${colors[index]}; box-shadow: 0 0 8px ${colors[index]}"></div>
-                    <div class="legend-text">
-                        ${translatedLabel}
-                        <span class="legend-value">${formattedValues[index]}</span>
-                    </div>
-                    <div class="legend-percentage">${percentages[index]}%</div>
+                // Calcola posizione sulla circonferenza
+                const angle = element.startAngle + (element.endAngle - element.startAngle) / 2;
+                const sliceRadius = element.outerRadius;
+
+                // Punto sulla circonferenza (inizio linea)
+                const startX = element.x + Math.cos(angle) * sliceRadius;
+                const startY = element.y + Math.sin(angle) * sliceRadius;
+
+                // Punto label (fine linea) - più lontano
+                const labelDistance = sliceRadius + 60;
+                const labelX = element.x + Math.cos(angle) * labelDistance;
+                const labelY = element.y + Math.sin(angle) * labelDistance;
+
+                // Converti coordinate canvas a coordinate DOM
+                const scaleX = canvasRect.width / canvas.width;
+                const scaleY = canvasRect.height / canvas.height;
+
+                const domStartX = (startX * scaleX) + (canvasRect.left - containerRect.left);
+                const domStartY = (startY * scaleY) + (canvasRect.top - containerRect.top);
+                const domLabelX = (labelX * scaleX) + (canvasRect.left - containerRect.left);
+                const domLabelY = (labelY * scaleY) + (canvasRect.top - containerRect.top);
+
+                // Crea linea di collegamento
+                const lineDiv = document.createElement('div');
+                lineDiv.className = 'label-line';
+                lineDiv.style.left = domStartX + 'px';
+                lineDiv.style.top = domStartY + 'px';
+                lineDiv.style.backgroundColor = `linear-gradient(to right, ${color}, transparent)`;
+                lineDiv.style.boxShadow = `0 0 10px ${color}`;
+
+                // Calcola lunghezza e angolo della linea
+                const dx = domLabelX - domStartX;
+                const dy = domLabelY - domStartY;
+                const length = Math.sqrt(dx * dx + dy * dy);
+                const lineAngle = Math.atan2(dy, dx) * 180 / Math.PI;
+
+                lineDiv.style.width = length + 'px';
+                lineDiv.style.transform = `rotate(${lineAngle}deg)`;
+
+                // Crea label
+                const labelDiv = document.createElement('div');
+                labelDiv.className = 'chart-label';
+                labelDiv.style.left = domLabelX + 'px';
+                labelDiv.style.top = domLabelY + 'px';
+                labelDiv.style.borderColor = color;
+                labelDiv.style.color = color;
+
+                // Posiziona label in base all'angolo per evitare sovrapposizioni
+                let labelAlign = 'left';
+                let transformX = '0';
+                if (Math.cos(angle) > 0.7) { // Destra
+                    labelAlign = 'left';
+                    transformX = '10px';
+                } else if (Math.cos(angle) < -0.7) { // Sinistra
+                    labelAlign = 'right';
+                    transformX = '-10px';
+                } else if (Math.sin(angle) > 0) { // Basso
+                    labelAlign = 'center';
+                    transformY = '20px';
+                } else { // Alto
+                    labelAlign = 'center';
+                    transformY = '-40px';
+                }
+
+                labelDiv.style.textAlign = labelAlign;
+                labelDiv.style.transform = `translate(${transformX}, -50%)`;
+
+                labelDiv.innerHTML = `
+                    <span style="font-size: 11px; display: block; margin-bottom: 3px;">${translatedLabel}</span>
+                    <span class="label-percentage">${percentage}%</span>
+                    <span class="label-value">${formattedValues[index]}</span>
                 `;
 
-                legendContainer.appendChild(legendItem);
+                // Aggiungi interattività
+                labelDiv.addEventListener('mouseenter', function () {
+                    // Evidenzia fetta corrispondente
+                    if (pieChart) {
+                        const dataset = pieChart.data.datasets[0];
+                        dataset.borderWidth[index] = 6;
+                        dataset.borderColor[index] = '#FFFFFF';
+                        pieChart.update('none');
+                    }
+
+                    // Evidenzia label
+                    this.style.transform = `translate(${transformX}, -50%) scale(1.2)`;
+                    this.style.boxShadow =
+                        `0 0 25px ${color}, 
+                         inset 0 0 20px rgba(255, 255, 255, 0.3)`;
+                    this.style.zIndex = '100';
+
+                    // Evidenzia linea
+                    lineDiv.style.height = '3px';
+                    lineDiv.style.boxShadow = `0 0 15px ${color}`;
+                });
+
+                labelDiv.addEventListener('mouseleave', function () {
+                    // Ripristina
+                    if (pieChart) {
+                        const dataset = pieChart.data.datasets[0];
+                        dataset.borderWidth[index] = 3;
+                        dataset.borderColor[index] = colors.map(c => {
+                            const r = parseInt(c.substr(1, 2), 16);
+                            const g = parseInt(c.substr(3, 2), 16);
+                            const b = parseInt(c.substr(5, 2), 16);
+                            return `rgba(${Math.min(r + 100, 255)}, ${Math.min(g + 100, 255)}, ${Math.min(b + 100, 255)}, 0.9)`;
+                        })[index];
+                        pieChart.update('none');
+                    }
+
+                    this.style.transform = `translate(${transformX}, -50%) scale(1)`;
+                    this.style.boxShadow =
+                        `0 0 15px ${color}, 
+                         inset 0 0 10px rgba(255, 255, 255, 0.1)`;
+                    this.style.zIndex = '10';
+
+                    lineDiv.style.height = '2px';
+                    lineDiv.style.boxShadow = `0 0 8px ${color}`;
+                });
+
+                // Aggiungi al DOM
+                container.appendChild(lineDiv);
+                container.appendChild(labelDiv);
+
+                // Salva riferimento
+                chartLabels.push({
+                    element: labelDiv,
+                    line: lineDiv,
+                    index: index,
+                    color: color
+                });
             });
+        }
+
+        /* -----------------------------------------------------------
+           AGGIORNA DISPLAY TOTALE
+        ----------------------------------------------------------- */
+        function updateTotalDisplay() {
+            const totalDisplay = document.getElementById('totalDisplay');
+            const formattedTotal = new Intl.NumberFormat("it-IT", {
+                style: "currency",
+                currency: "EUR",
+                maximumFractionDigits: 0
+            }).format(totalValue);
+
+            totalDisplay.innerHTML = `
+                <div class="total-label">TOTALE</div>
+                <div class="total-value">${formattedTotal}</div>
+            `;
         }
 
         /* -----------------------------------------------------------
@@ -659,6 +1018,23 @@
         window.addEventListener('resize', function () {
             if (pieChart) {
                 pieChart.resize();
+                // Ridisegna label dopo resize
+                setTimeout(() => {
+                    const grouping = document.getElementById('grouping-select').value;
+                    const groupedData = getGroupedData(portfolioData, classificationMap, grouping);
+                    const slicedData = groupedData.length > 12 ? groupedData.slice(0, 12) : groupedData;
+                    const colors = generateTronColors(slicedData.length);
+                    const percentages = slicedData.map(item => ((item.value / totalValue) * 100).toFixed(1));
+                    const formattedValues = slicedData.map(item => {
+                        return new Intl.NumberFormat("it-IT", {
+                            style: "currency",
+                            currency: "EUR",
+                            maximumFractionDigits: 0
+                        }).format(item.value);
+                    });
+
+                    createExternalLabels(pieChart, slicedData, colors, percentages, formattedValues);
+                }, 100);
             }
         });
 
