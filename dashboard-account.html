@@ -52,6 +52,26 @@
             border-radius: 8px;
         }
 
+        .user-info-left {
+            flex: 1;
+            text-align: left;
+            font-size: 14px;
+            color: var(--neon-cyan);
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .user-info-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .flag-icon {
+            font-size: 18px;
+        }
+
         h1 {
             text-align: center;
             margin: 0;
@@ -65,9 +85,11 @@
         }
 
         .button-group-header {
+            flex: 1;
             display: flex;
             gap: 10px;
             align-items: center;
+            justify-content: flex-end;
         }
 
         button {
@@ -244,6 +266,18 @@
 <body>
     <div class="main-container">
         <div class="header-bar">
+            <div class="user-info-left">
+                <div class="user-info-row">
+                    <strong id="userLabel">Utente:</strong>
+                    <span id="usernameDisplay">-</span>
+                </div>
+                <div class="user-info-row">
+                    <span class="flag-icon" id="languageFlag"></span>
+                    <span id="languageDisplay">-</span>
+                    <span style="margin: 0 5px;">|</span>
+                    <span id="currencyDisplay">-</span>
+                </div>
+            </div>
             <h1 id="pageTitle">Crea Nuovo Rapporto</h1>
             <div class="button-group-header">
                 <button class="registry-btn" id="createRegistryBtn" onclick="openRegistryForm()">
@@ -259,7 +293,7 @@
 
         <div id="loadingSection" class="loading" style="display: none;">
             <i class="fa fa-spinner fa-2x"></i>
-            <p>Caricamento dati...</p>
+            <p id="loadingText">Caricamento dati...</p>
         </div>
 
         <div class="content-section" id="formSection">
@@ -274,7 +308,95 @@
         let registries = {};
         let manifest = null;
         let domine = null;
+        let availableLanguages = [];
+        let currencies = [];
         const API_URL = "https://feweb-tunnel.fe-web.eu";
+
+        // ========== LANGUAGE & TRANSLATION SYSTEM ==========
+        async function loadLanguageManifest() {
+            try {
+                const response = await fetch('lang/manifest.json');
+                if (!response.ok) return [];
+                const data = await response.json();
+                return data.languages || [];
+            } catch (error) {
+                console.error("Error loading language manifest:", error);
+                return [];
+            }
+        }
+
+        async function loadLanguageFile(langCode) {
+            try {
+                const response = await fetch(`lang/${langCode}.json`);
+                if (!response.ok) return null;
+                const data = await response.json();
+                if (data['int.language.code'] && data['int.language.description'] && data['img.language.flag']) {
+                    return {
+                        code: data['int.language.code'],
+                        description: data['int.language.description'],
+                        flag: data['img.language.flag']
+                    };
+                }
+                return null;
+            } catch (error) {
+                console.error(`Error loading ${langCode}.json:`, error);
+                return null;
+            }
+        }
+
+        async function initializeLanguages() {
+            const langCodes = await loadLanguageManifest();
+            for (const langCode of langCodes) {
+                const langData = await loadLanguageFile(langCode);
+                if (langData) availableLanguages.push(langData);
+            }
+            availableLanguages.sort((a, b) => a.code.localeCompare(b.code));
+        }
+
+        async function loadCurrencies(lang) {
+            try {
+                const response = await fetch(`currency/${lang}.json`);
+                if (!response.ok) throw new Error(`Currency file not found currency/${lang}.json`);
+                currencies = await response.json();
+            } catch (error) {
+                console.error('Error loading currencies:', error);
+                currencies = [];
+            }
+        }
+
+        async function updateUserInfo() {
+            const userLanguage = credentials.language || localStorage.getItem('language');
+            const userCurrency = localStorage.getItem('currency') || 'EUR';
+
+            // Update username
+            document.getElementById('usernameDisplay').textContent = credentials.username || '-';
+
+            // Update language
+            if (userLanguage) {
+                if (availableLanguages.length === 0) await initializeLanguages();
+                const langData = availableLanguages.find(l => l.code === userLanguage);
+                if (langData) {
+                    document.getElementById('languageFlag').textContent = langData.flag;
+                    const langDescription = getTranslation('int.language.description');
+                    document.getElementById('languageDisplay').textContent =
+                        langDescription !== 'int.language.description' ? langDescription : userLanguage;
+                } else {
+                    document.getElementById('languageDisplay').textContent = userLanguage;
+                }
+            }
+
+            // Update currency
+            if (userCurrency) {
+                if (currencies.length === 0) await loadCurrencies(userLanguage || 'it_IT');
+                const currData = currencies.find(c => c.currency === userCurrency);
+                if (currData && currData['img.currency.flag']) {
+                    document.getElementById('currencyDisplay').textContent =
+                        `${currData['img.currency.flag']} ${userCurrency}`;
+                } else {
+                    document.getElementById('currencyDisplay').textContent = userCurrency;
+                }
+            }
+        }
 
         async function loadConfigurations() {
             try {
@@ -294,7 +416,7 @@
                 return true;
             } catch (error) {
                 console.error('Error loading configurations:', error);
-                showMessage('Errore nel caricamento delle configurazioni', 'error');
+                showMessage(getTranslation('int.error.loading.config') || 'Errore nel caricamento delle configurazioni', 'error');
                 return false;
             }
         }
@@ -484,6 +606,7 @@
                 const response = await fetch(`lang/${lang}.json`);
                 if (!response.ok) throw new Error('Translation file not found');
                 translations = await response.json();
+                await loadCurrencies(lang);
                 updatePageTranslations();
             } catch (error) {
                 console.error('Error loading translations:', error);
@@ -495,10 +618,14 @@
         }
 
         function updatePageTranslations() {
+            // Update static labels
             document.getElementById('pageTitle').textContent = getTranslation('int.newaccount');
+            document.getElementById('userLabel').textContent = getTranslation('int.user.label');
             document.getElementById('registryBtnText').textContent = getTranslation('int.newregistry') || 'Crea Anagrafica';
             document.getElementById('closeText').textContent = getTranslation('int.close');
+            document.getElementById('loadingText').textContent = getTranslation('int.loading.data') || 'Caricamento dati...';
 
+            // Update form field labels
             const fields = manifest['dashboard-account'];
             fields.forEach(fieldDef => {
                 const fieldName = fieldDef.split('@')[0];
@@ -511,7 +638,11 @@
                 if (selectElement && selectElement.tagName === 'SELECT') {
                     Array.from(selectElement.options).forEach(option => {
                         if (option.value === '') {
-                            option.textContent = getTranslation('int.select.option') || '-- seleziona --';
+                            if (fieldName === 'id_registry') {
+                                option.textContent = getTranslation('int.select.registry') || '-- seleziona anagrafica --';
+                            } else {
+                                option.textContent = getTranslation('int.select.option') || '-- seleziona --';
+                            }
                         } else {
                             const domainKey = fieldDef.split('@')[1];
                             if (domainKey && domine[domainKey]) {
@@ -525,6 +656,7 @@
                 }
             });
 
+            // Update button texts
             const saveText = document.getElementById('saveText');
             const resetText = document.getElementById('resetText');
             if (saveText) saveText.textContent = getTranslation('int.save') || getTranslation('int.update');
@@ -598,8 +730,8 @@
                         window.close();
                     }, 2000);
                 } else {
-                    const errorMsg = data.message || data.error || 'Errore durante il salvataggio dell\'account';
-                    showMessage(getTranslation('int.error.save') || errorMsg, 'error');
+                    const errorMsg = data.message || data.error || getTranslation('int.error.save') || 'Errore durante il salvataggio dell\'account';
+                    showMessage(errorMsg, 'error');
                 }
 
             } catch (error) {
@@ -616,10 +748,12 @@
             });
 
             if (credentials) {
+                await initializeLanguages();
                 const configLoaded = await loadConfigurations();
                 if (configLoaded) {
                     generateForm();
                     await loadTranslations(credentials.language);
+                    await updateUserInfo();
                     await loadAccountDefaults();
                 }
             }
