@@ -52,6 +52,26 @@
             border-radius: 8px;
         }
 
+        .user-info-left {
+            flex: 1;
+            text-align: left;
+            font-size: 14px;
+            color: var(--neon-cyan);
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .user-info-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .flag-icon {
+            font-size: 18px;
+        }
+
         h1 {
             text-align: center;
             margin: 0;
@@ -62,6 +82,12 @@
             color: #fff;
             font-size: 1.8em;
             flex: 1;
+        }
+
+        .button-group-header {
+            flex: 1;
+            display: flex;
+            justify-content: flex-end;
         }
 
         button {
@@ -196,17 +222,31 @@
 <body>
     <div class="main-container">
         <div class="header-bar">
+            <div class="user-info-left">
+                <div class="user-info-row">
+                    <strong id="userLabel">Utente:</strong>
+                    <span id="usernameDisplay">-</span>
+                </div>
+                <div class="user-info-row">
+                    <span class="flag-icon" id="languageFlag"></span>
+                    <span id="languageDisplay">-</span>
+                    <span style="margin: 0 5px;">|</span>
+                    <span id="currencyDisplay">-</span>
+                </div>
+            </div>
             <h1 id="pageTitle">Crea Nuova Anagrafica</h1>
-            <button class="close-btn" onclick="window.close()">
-                <i class="fa fa-times"></i> <span id="closeText">Chiudi</span>
-            </button>
+            <div class="button-group-header">
+                <button class="close-btn" onclick="window.close()">
+                    <i class="fa fa-times"></i> <span id="closeText">Chiudi</span>
+                </button>
+            </div>
         </div>
 
         <div id="message" class="message"></div>
 
         <div id="loadingSection" class="loading" style="display: none;">
             <i class="fa fa-spinner fa-2x"></i>
-            <p>Caricamento dati...</p>
+            <p id="loadingText">Caricamento dati...</p>
         </div>
 
         <div class="content-section" id="formSection">
@@ -246,14 +286,126 @@
         </div>
     </div>
 
-    <script src="js/credentials-manager.js"></script>
     <script>
         let credentials = { username: '', token: '', language: '', filter: '' };
         let translations = {};
         let registryDefaults = null;
         let domainData = {};
         let manifestData = {};
+        let availableLanguages = [];
+        let currencies = [];
         const API_URL = "https://feweb-tunnel.fe-web.eu";
+
+        // ========== CREDENTIALS MANAGEMENT ==========
+        function getCredentialsFromURL() {
+            const params = new URLSearchParams(window.location.search);
+            credentials.username = params.get('username') || localStorage.getItem('username') || '';
+            credentials.token = params.get('token') || localStorage.getItem('token') || '';
+            credentials.language = params.get('language') || localStorage.getItem('language') || 'it_IT';
+            credentials.filter = params.get('filter') || localStorage.getItem('filter') || '';
+
+            if (!credentials.username || !credentials.token) {
+                showMessage('Credenziali mancanti', 'error');
+                setTimeout(() => {
+                    window.location.href = 'login.html';
+                }, 2000);
+                return false;
+            }
+
+            // Store in localStorage
+            localStorage.setItem('username', credentials.username);
+            localStorage.setItem('token', credentials.token);
+            localStorage.setItem('language', credentials.language);
+            if (credentials.filter) localStorage.setItem('filter', credentials.filter);
+
+            return true;
+        }
+
+        // ========== LANGUAGE & TRANSLATION SYSTEM ==========
+        async function loadLanguageManifest() {
+            try {
+                const response = await fetch('lang/manifest.json');
+                if (!response.ok) return [];
+                const data = await response.json();
+                return data.languages || [];
+            } catch (error) {
+                console.error("Error loading language manifest:", error);
+                return [];
+            }
+        }
+
+        async function loadLanguageFile(langCode) {
+            try {
+                const response = await fetch(`lang/${langCode}.json`);
+                if (!response.ok) return null;
+                const data = await response.json();
+                if (data['int.language.code'] && data['int.language.description'] && data['img.language.flag']) {
+                    return {
+                        code: data['int.language.code'],
+                        description: data['int.language.description'],
+                        flag: data['img.language.flag']
+                    };
+                }
+                return null;
+            } catch (error) {
+                console.error(`Error loading ${langCode}.json:`, error);
+                return null;
+            }
+        }
+
+        async function initializeLanguages() {
+            const langCodes = await loadLanguageManifest();
+            for (const langCode of langCodes) {
+                const langData = await loadLanguageFile(langCode);
+                if (langData) availableLanguages.push(langData);
+            }
+            availableLanguages.sort((a, b) => a.code.localeCompare(b.code));
+        }
+
+        async function loadCurrencies(lang) {
+            try {
+                const response = await fetch(`currency/${lang}.json`);
+                if (!response.ok) throw new Error(`Currency file not found currency/${lang}.json`);
+                currencies = await response.json();
+            } catch (error) {
+                console.error('Error loading currencies:', error);
+                currencies = [];
+            }
+        }
+
+        async function updateUserInfo() {
+            const userLanguage = credentials.language || localStorage.getItem('language');
+            const userCurrency = localStorage.getItem('currency') || 'EUR';
+
+            // Update username
+            document.getElementById('usernameDisplay').textContent = credentials.username || '-';
+
+            // Update language
+            if (userLanguage) {
+                if (availableLanguages.length === 0) await initializeLanguages();
+                const langData = availableLanguages.find(l => l.code === userLanguage);
+                if (langData) {
+                    document.getElementById('languageFlag').textContent = langData.flag;
+                    const langDescription = getTranslation('int.language.description');
+                    document.getElementById('languageDisplay').textContent =
+                        langDescription !== 'int.language.description' ? langDescription : userLanguage;
+                } else {
+                    document.getElementById('languageDisplay').textContent = userLanguage;
+                }
+            }
+
+            // Update currency
+            if (userCurrency) {
+                if (currencies.length === 0) await loadCurrencies(userLanguage || 'it_IT');
+                const currData = currencies.find(c => c.currency === userCurrency);
+                if (currData && currData['img.currency.flag']) {
+                    document.getElementById('currencyDisplay').textContent =
+                        `${currData['img.currency.flag']} ${userCurrency}`;
+                } else {
+                    document.getElementById('currencyDisplay').textContent = userCurrency;
+                }
+            }
+        }
 
         async function loadManifestData() {
             try {
@@ -342,20 +494,6 @@
             }
         }
 
-        function getCredentialsFromURL() {
-            const params = new URLSearchParams(window.location.search);
-            credentials.username = params.get('username') || '';
-            credentials.token = params.get('token') || '';
-            credentials.language = params.get('language') || 'it_IT';
-            credentials.filter = params.get('filter') || '';
-
-            if (!credentials.username || !credentials.token) {
-                showMessage('Credenziali mancanti', 'error');
-                return false;
-            }
-            return true;
-        }
-
         async function loadRegistryDefaults() {
             try {
                 showLoading(true);
@@ -418,6 +556,7 @@
                 const response = await fetch(`lang/${lang}.json`);
                 if (!response.ok) throw new Error('Translation file not found');
                 translations = await response.json();
+                await loadCurrencies(lang);
                 updatePageTranslations();
             } catch (error) {
                 console.error('Error loading translations:', error);
@@ -430,13 +569,15 @@
 
         function updatePageTranslations() {
             document.getElementById('pageTitle').textContent = getTranslation('int.newregistry') || 'Crea Nuova Anagrafica';
-            document.getElementById('closeText').textContent = getTranslation('int.close');
-            document.getElementById('descriptionLabel').textContent = getTranslation('int.registry.description') || 'Descrizione' + ':';
-            document.getElementById('nameLabel').textContent = getTranslation('int.registry.name') || 'Nome' + ':';
-            document.getElementById('surnameLabel').textContent = getTranslation('int.registry.surname') || 'Cognome' + ':';
-            document.getElementById('typeLabel').textContent = getTranslation('int.registry.type') || 'Tipo' + ':';
-            document.getElementById('saveText').textContent = getTranslation('int.save') || getTranslation('int.update');
-            document.getElementById('resetText').textContent = getTranslation('int.reset') || getTranslation('int.close');
+            document.getElementById('userLabel').textContent = getTranslation('int.user.label') || 'Utente:';
+            document.getElementById('closeText').textContent = getTranslation('int.close') || 'Chiudi';
+            document.getElementById('loadingText').textContent = getTranslation('int.loading.data') || 'Caricamento dati...';
+            document.getElementById('descriptionLabel').textContent = getTranslation('int.registry.description') || 'Descrizione:';
+            document.getElementById('nameLabel').textContent = getTranslation('int.registry.name') || 'Nome:';
+            document.getElementById('surnameLabel').textContent = getTranslation('int.registry.surname') || 'Cognome:';
+            document.getElementById('typeLabel').textContent = getTranslation('int.registry.type') || 'Tipo:';
+            document.getElementById('saveText').textContent = getTranslation('int.save') || 'Salva';
+            document.getElementById('resetText').textContent = getTranslation('int.reset') || 'Annulla';
 
             // Update select options
             const typeSelect = document.getElementById('type_registry');
@@ -481,7 +622,7 @@
             console.log('Registry data:', registryData);
 
             try {
-                showMessage('Salvataggio in corso...', 'info');
+                showMessage(getTranslation('int.saving') || 'Salvataggio in corso...', 'info');
 
                 const payload = {
                     username: credentials.username,
@@ -536,13 +677,17 @@
         });
 
         window.addEventListener('load', async () => {
-            if (getCredentialsFromURL()) {
-                await loadManifestData();
-                await loadDomainData();
-                await loadTranslations(credentials.language);
-                populateTypeDropdown();
-                await loadRegistryDefaults();
+            if (!getCredentialsFromURL()) {
+                return;
             }
+
+            await initializeLanguages();
+            await loadManifestData();
+            await loadDomainData();
+            await loadTranslations(credentials.language);
+            await updateUserInfo();
+            populateTypeDropdown();
+            await loadRegistryDefaults();
         });
     </script>
 </body>
