@@ -301,9 +301,8 @@
         </div>
     </div>
 
-    <script src="credentials-manager.js"></script>
     <script>
-        let credentials = null;
+        let credentials = { username: '', token: '', language: '', filter: '' };
         let translations = {};
         let registries = {};
         let manifest = null;
@@ -311,6 +310,37 @@
         let availableLanguages = [];
         let currencies = [];
         const API_URL = "https://feweb-tunnel.fe-web.eu";
+
+        // ========== CREDENTIALS MANAGEMENT ==========
+        function getCredentialsFromURL() {
+            const params = new URLSearchParams(window.location.search);
+            return {
+                username: params.get('username') || localStorage.getItem('username') || '',
+                token: params.get('token') || localStorage.getItem('token') || '',
+                language: params.get('language') || localStorage.getItem('language') || 'it_IT',
+                filter: params.get('filter') || localStorage.getItem('filter') || ''
+            };
+        }
+
+        function checkAuthentication() {
+            credentials = getCredentialsFromURL();
+
+            if (!credentials.username || !credentials.token) {
+                showMessage('Sessione non valida. Reindirizzamento al login...', 'error');
+                setTimeout(() => {
+                    window.location.href = 'login.html';
+                }, 2000);
+                return false;
+            }
+
+            // Store in localStorage
+            localStorage.setItem('username', credentials.username);
+            localStorage.setItem('token', credentials.token);
+            localStorage.setItem('language', credentials.language);
+            if (credentials.filter) localStorage.setItem('filter', credentials.filter);
+
+            return true;
+        }
 
         // ========== LANGUAGE & TRANSLATION SYSTEM ==========
         async function loadLanguageManifest() {
@@ -598,7 +628,13 @@
         }
 
         function openRegistryForm() {
-            CredentialsManager.openWindow('dashboard-registry.html');
+            const params = new URLSearchParams({
+                username: credentials.username,
+                token: credentials.token,
+                language: credentials.language,
+                filter: credentials.filter || ''
+            });
+            window.open(`dashboard-registry.html?${params.toString()}`, '_blank');
         }
 
         async function loadTranslations(lang) {
@@ -619,48 +655,50 @@
 
         function updatePageTranslations() {
             // Update static labels
-            document.getElementById('pageTitle').textContent = getTranslation('int.newaccount');
-            document.getElementById('userLabel').textContent = getTranslation('int.user.label');
+            document.getElementById('pageTitle').textContent = getTranslation('int.newaccount') || 'Crea Nuovo Rapporto';
+            document.getElementById('userLabel').textContent = getTranslation('int.user.label') || 'Utente:';
             document.getElementById('registryBtnText').textContent = getTranslation('int.newregistry') || 'Crea Anagrafica';
-            document.getElementById('closeText').textContent = getTranslation('int.close');
+            document.getElementById('closeText').textContent = getTranslation('int.close') || 'Chiudi';
             document.getElementById('loadingText').textContent = getTranslation('int.loading.data') || 'Caricamento dati...';
 
             // Update form field labels
-            const fields = manifest['dashboard-account'];
-            fields.forEach(fieldDef => {
-                const fieldName = fieldDef.split('@')[0];
-                const labelElement = document.getElementById(`${fieldName}Label`);
-                if (labelElement) {
-                    labelElement.textContent = getTranslation(`int.account.${fieldName}`) || fieldName + ':';
-                }
+            if (manifest && manifest['dashboard-account']) {
+                const fields = manifest['dashboard-account'];
+                fields.forEach(fieldDef => {
+                    const fieldName = fieldDef.split('@')[0];
+                    const labelElement = document.getElementById(`${fieldName}Label`);
+                    if (labelElement) {
+                        labelElement.textContent = getTranslation(`int.account.${fieldName}`) || fieldName + ':';
+                    }
 
-                const selectElement = document.getElementById(fieldName);
-                if (selectElement && selectElement.tagName === 'SELECT') {
-                    Array.from(selectElement.options).forEach(option => {
-                        if (option.value === '') {
-                            if (fieldName === 'id_registry') {
-                                option.textContent = getTranslation('int.select.registry') || '-- seleziona anagrafica --';
+                    const selectElement = document.getElementById(fieldName);
+                    if (selectElement && selectElement.tagName === 'SELECT') {
+                        Array.from(selectElement.options).forEach(option => {
+                            if (option.value === '') {
+                                if (fieldName === 'id_registry') {
+                                    option.textContent = getTranslation('int.select.registry') || '-- seleziona anagrafica --';
+                                } else {
+                                    option.textContent = getTranslation('int.select.option') || '-- seleziona --';
+                                }
                             } else {
-                                option.textContent = getTranslation('int.select.option') || '-- seleziona --';
-                            }
-                        } else {
-                            const domainKey = fieldDef.split('@')[1];
-                            if (domainKey && domine[domainKey]) {
-                                const domainValue = domine[domainKey].find(v => v.endsWith(`:${option.value}`));
-                                if (domainValue) {
-                                    option.textContent = getTranslation(domainValue) || domainValue;
+                                const domainKey = fieldDef.split('@')[1];
+                                if (domainKey && domine && domine[domainKey]) {
+                                    const domainValue = domine[domainKey].find(v => v.endsWith(`:${option.value}`));
+                                    if (domainValue) {
+                                        option.textContent = getTranslation(domainValue) || domainValue;
+                                    }
                                 }
                             }
-                        }
-                    });
-                }
-            });
+                        });
+                    }
+                });
+            }
 
             // Update button texts
             const saveText = document.getElementById('saveText');
             const resetText = document.getElementById('resetText');
-            if (saveText) saveText.textContent = getTranslation('int.save') || getTranslation('int.update');
-            if (resetText) resetText.textContent = getTranslation('int.reset') || getTranslation('int.close');
+            if (saveText) saveText.textContent = getTranslation('int.save') || 'Salva';
+            if (resetText) resetText.textContent = getTranslation('int.reset') || 'Annulla';
         }
 
         function showMessage(text, type) {
@@ -742,20 +780,17 @@
         });
 
         window.addEventListener('load', async () => {
-            credentials = CredentialsManager.initialize({
-                requireAuth: true,
-                messageElementId: 'message'
-            });
+            if (!checkAuthentication()) {
+                return;
+            }
 
-            if (credentials) {
-                await initializeLanguages();
-                const configLoaded = await loadConfigurations();
-                if (configLoaded) {
-                    generateForm();
-                    await loadTranslations(credentials.language);
-                    await updateUserInfo();
-                    await loadAccountDefaults();
-                }
+            await initializeLanguages();
+            const configLoaded = await loadConfigurations();
+            if (configLoaded) {
+                generateForm();
+                await loadTranslations(credentials.language);
+                await updateUserInfo();
+                await loadAccountDefaults();
             }
         });
     </script>
