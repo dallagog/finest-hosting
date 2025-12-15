@@ -84,12 +84,13 @@
             flex-direction: column;
         }
 
+        /* 2. Etichette non maiuscole - rimosso text-transform: uppercase */
         .form-label {
             font-weight: 500;
             color: var(--neon-blue);
             margin-bottom: 6px;
             font-size: 0.9rem;
-            text-transform: uppercase;
+            /* text-transform: uppercase; <--- Rimosso */
         }
 
         .required-mark {
@@ -98,9 +99,10 @@
             text-shadow: 0 0 5px var(--error-color);
         }
 
+        /* 3. Altezza ridotta per input/select (30px) */
         .form-input,
         .form-select {
-            padding: 8px 12px;
+            padding: 6px 12px;
             background: rgba(0, 243, 255, 0.1);
             border: 1px solid var(--neon-blue);
             border-radius: 4px;
@@ -108,7 +110,7 @@
             font-family: 'Orbitron', sans-serif;
             color: var(--text-color);
             transition: all 0.3s;
-            height: 36px;
+            height: 30px;
         }
 
         .form-input:focus,
@@ -132,6 +134,49 @@
 
         .combo-input {
             width: 100%;
+        }
+
+        /* 4. Style per campo valuta (FE_Decimal) */
+        .currency-input-group {
+            display: flex;
+            border: 1px solid var(--neon-blue);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .currency-input-group:focus-within {
+            border-color: var(--neon-cyan);
+            box-shadow: 0 0 10px var(--neon-cyan);
+        }
+
+        /* Input field inside currency group */
+        .currency-input-group .form-input {
+            flex-grow: 1;
+            border: none;
+            background: rgba(0, 243, 255, 0.1);
+            border-radius: 0;
+            padding: 6px 12px;
+            height: 30px;
+        }
+
+        /* Currency suffix (":€") */
+        .currency-suffix {
+            background: rgba(0, 102, 255, 0.2);
+            color: var(--neon-cyan);
+            padding: 6px 12px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            height: 30px;
+            /* Border-left per separare visualmente input e suffisso */
+            border-left: 1px solid var(--neon-blue);
+        }
+
+        /* Reset focus on inner input to avoid double shadow */
+        .currency-input-group .form-input:focus {
+            box-shadow: none;
+            border-color: transparent;
+            background: rgba(0, 243, 255, 0.15);
         }
 
         .error-message {
@@ -307,7 +352,7 @@
             }
         }
 
-        // Funzione mock per le traduzioni
+        // Funzione mock per le traduzioni (traduzioni usate senza uppercase)
         function getTranslations(key) {
             const translations = {
                 'int.id_account': 'Account',
@@ -364,9 +409,23 @@
                 // Sovrascrive con parametri URL
                 if (urlParams.id_account) this.values.id_account = urlParams.id_account;
                 if (urlParams.type_event) this.values.type_event = urlParams.type_event;
-                if (urlParams.id_instrument) this.values.id_instrument = urlParams.id_instrument;
+
+                // 1. Modifica per id_instrument: prende solo il codice (prima parte)
+                if (urlParams.id_instrument) {
+                    // Assumiamo che il codice sia la prima parola o il testo prima di un separatore comune come '-'
+                    let code = urlParams.id_instrument.split(' ')[0];
+                    if (code.includes('-')) {
+                        code = code.split('-')[0].trim();
+                    }
+                    this.values.id_instrument = code.trim();
+                }
 
                 this.render(containerId);
+            }
+
+            // Funzione helper per identificare i campi valuta
+            isCurrencyField(fieldName) {
+                return fieldName.includes('amount') || fieldName.includes('cost') || fieldName.includes('fee') || fieldName.includes('tax');
             }
 
             render(containerId) {
@@ -384,7 +443,7 @@
 
                     const label = document.createElement('label');
                     label.className = 'form-label';
-                    label.textContent = getTranslations(field.label);
+                    label.textContent = getTranslations(field.label); // Testo della label non in uppercase
                     if (field.required) {
                         const req = document.createElement('span');
                         req.className = 'required-mark';
@@ -392,9 +451,11 @@
                         label.appendChild(req);
                     }
 
-                    let input;
+                    let input; // L'elemento input HTML
+                    let inputContainer = null; // Il container da appendere al group (input, combo-wrapper, o currency-input-group)
+
                     if (field.type === 'combo') {
-                        // Usa input con datalist per permettere inserimento libero
+                        // Combo Input (datalist)
                         const wrapper = document.createElement('div');
                         wrapper.className = 'combo-wrapper';
 
@@ -417,9 +478,13 @@
 
                         wrapper.appendChild(input);
                         wrapper.appendChild(datalist);
-                        group.appendChild(label);
-                        group.appendChild(wrapper);
-                    } else {
+                        inputContainer = wrapper;
+
+                    } else if (this.isCurrencyField(field.name)) {
+                        // 4. Input Valuta (FE_Decimal)
+                        const wrapper = document.createElement('div');
+                        wrapper.className = 'currency-input-group';
+
                         input = document.createElement('input');
                         input.type = field.type;
                         input.className = 'form-input';
@@ -430,9 +495,30 @@
                             input.step = '0.01';
                         }
 
-                        group.appendChild(label);
-                        group.appendChild(input);
+                        const suffix = document.createElement('div');
+                        suffix.className = 'currency-suffix';
+                        suffix.textContent = ': €'; // Formato richiesto
+
+                        wrapper.appendChild(input);
+                        wrapper.appendChild(suffix);
+                        inputContainer = wrapper;
+
+                    } else {
+                        // Input Standard (text, number, date)
+                        input = document.createElement('input');
+                        input.type = field.type;
+                        input.className = 'form-input';
+                        input.name = field.name;
+                        input.value = this.values[field.name] || '';
+
+                        if (field.type === 'number') {
+                            input.step = '0.01';
+                        }
+                        inputContainer = input;
                     }
+
+                    group.appendChild(label);
+                    group.appendChild(inputContainer);
 
                     if (field.required) {
                         input.required = true;
@@ -442,6 +528,7 @@
                     error.className = 'error-message';
                     group.appendChild(error);
 
+                    // L'event listener è sempre sull'elemento input effettivo
                     input.addEventListener('change', (e) => {
                         this.values[field.name] = e.target.value;
                         if (this.config.onChange) {
