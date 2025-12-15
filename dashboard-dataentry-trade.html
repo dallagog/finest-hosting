@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Trade Data Entry 1.0 beta</title>
+    <title>Trade Data Entry 1.1</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&display=swap');
@@ -196,6 +196,50 @@
             color: #888;
         }
 
+        /* Style per campo exchange (FE_Exchange) */
+        .exchange-input-group {
+            display: flex;
+            border: 1px solid var(--neon-blue);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .exchange-input-group:focus-within {
+            border-color: var(--neon-cyan);
+            box-shadow: 0 0 10px var(--neon-cyan);
+        }
+
+        .exchange-input-group .form-input {
+            flex-grow: 1;
+            border: none;
+            background: rgba(0, 243, 255, 0.1);
+            border-radius: 0;
+            padding: 6px 12px;
+            height: 30px;
+        }
+
+        .exchange-suffix {
+            background: rgba(0, 102, 255, 0.2);
+            color: var(--neon-cyan);
+            padding: 6px 12px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            height: 30px;
+            border-left: 1px solid var(--neon-blue);
+        }
+
+        .exchange-input-group.fixed .form-input {
+            background: rgba(100, 100, 100, 0.2);
+            color: #aaa;
+            cursor: not-allowed;
+        }
+
+        .exchange-input-group.fixed .exchange-suffix {
+            background: rgba(100, 100, 100, 0.3);
+            color: #888;
+        }
+
         .error-message {
             color: var(--error-color);
             font-size: 0.85rem;
@@ -375,90 +419,244 @@
             }
         }
 
-        // Helper function to format FE_Decimal values
-        function formatDecimalValue(value, fieldName) {
-            if (!value) return '';
+        // Helper functions for FE_Decimal and FE_Exchange formats
+        const FormatHelper = {
+            // Parse FE_Decimal value (returns {number, currency})
+            parseDecimal(value) {
+                if (!value) return { number: '', currency: 'EUR' };
 
-            // Se il valore è già formattato, restituiscilo così com'è
-            if (typeof value === 'string' && value.includes(':')) {
-                return value;
+                if (value.includes(':')) {
+                    const parts = value.split(':');
+                    return {
+                        number: parts[0] || '',
+                        currency: parts[1] || 'EUR'
+                    };
+                }
+
+                return { number: value, currency: 'EUR' };
+            },
+
+            // Format FE_Decimal value
+            formatDecimal(number, currency = 'EUR') {
+                if (!number) return '';
+                return `${number}:${currency}`;
+            },
+
+            // Parse FE_Exchange value (returns {number, fromCurrency, toCurrency})
+            parseExchange(value) {
+                if (!value) return { number: '', fromCurrency: 'EUR', toCurrency: 'USD' };
+
+                if (value.includes(':')) {
+                    const firstParts = value.split(':');
+                    if (firstParts[1] && firstParts[1].includes('/')) {
+                        const secondParts = firstParts[1].split('/');
+                        return {
+                            number: firstParts[0] || '',
+                            fromCurrency: secondParts[0] || 'EUR',
+                            toCurrency: secondParts[1] || 'USD'
+                        };
+                    }
+                    return {
+                        number: firstParts[0] || '',
+                        fromCurrency: firstParts[1] || 'EUR',
+                        toCurrency: 'USD'
+                    };
+                }
+
+                return { number: value, fromCurrency: 'EUR', toCurrency: 'USD' };
+            },
+
+            // Format FE_Exchange value
+            formatExchange(number, fromCurrency = 'EUR', toCurrency = 'USD') {
+                if (!number) return '';
+                return `${number}:${fromCurrency}/${toCurrency}`;
+            },
+
+            // Validate FE_Decimal format
+            validateDecimal(value) {
+                if (!value) return false;
+
+                if (!value.includes(':')) return false;
+
+                const parts = value.split(':');
+                if (parts.length !== 2) return false;
+
+                const number = parts[0];
+                const currency = parts[1];
+
+                // Validate number
+                const numRegex = /^-?\d+(\.\d{1,6})?$/;
+                if (!numRegex.test(number)) return false;
+
+                // Validate currency (3 uppercase letters)
+                const currencyRegex = /^[A-Z]{3}$/;
+                if (!currencyRegex.test(currency)) return false;
+
+                return true;
+            },
+
+            // Validate FE_Exchange format
+            validateExchange(value) {
+                if (!value) return false;
+
+                if (!value.includes(':')) return false;
+
+                const firstParts = value.split(':');
+                if (firstParts.length !== 2) return false;
+
+                const number = firstParts[0];
+                const currencies = firstParts[1];
+
+                if (!currencies.includes('/')) return false;
+
+                const currencyParts = currencies.split('/');
+                if (currencyParts.length !== 2) return false;
+
+                // Validate number
+                const numRegex = /^-?\d+(\.\d{1,6})?$/;
+                if (!numRegex.test(number)) return false;
+
+                // Validate currencies (3 uppercase letters each)
+                const currencyRegex = /^[A-Z]{3}$/;
+                if (!currencyRegex.test(currencyParts[0]) || !currencyRegex.test(currencyParts[1])) return false;
+
+                return true;
+            },
+
+            // Format instrument code (remove everything after first space or hyphen)
+            formatInstrumentCode(value) {
+                if (!value) return '';
+
+                let code = value.split(' ')[0];
+                if (code.includes('-')) {
+                    code = code.split('-')[0];
+                }
+                return code.trim();
             }
-
-            // Altrimenti formatta con EUR di default
-            const num = parseFloat(value);
-            if (isNaN(num)) return value;
-
-            return `${num.toFixed(2)}:EUR`;
-        }
-
-        // Helper function to parse FE_Decimal values
-        function parseDecimalValue(formattedValue) {
-            if (!formattedValue) return '';
-
-            if (formattedValue.includes(':')) {
-                return formattedValue.split(':')[0];
-            }
-            return formattedValue;
-        }
-
-        // Helper function to get currency code
-        function getCurrencyCode(formattedValue) {
-            if (!formattedValue || !formattedValue.includes(':')) return 'EUR';
-
-            const parts = formattedValue.split(':');
-            return parts.length > 1 ? parts[1].trim() : 'EUR';
-        }
+        };
 
         // Custom field renderer for DataEntryManager
         function createCustomFieldRenderer() {
             return {
+                // Override the method to get translation for labels
+                getTranslation: function (label) {
+                    // First try TranslationManager
+                    if (window.TranslationManager) {
+                        return TranslationManager.getTranslation(label);
+                    }
+                    // Fallback to direct translation
+                    return label;
+                },
+
                 generateFieldInput: function (field) {
-                    const { name, format, defaultValue, required } = field;
+                    const { name, label, format, defaultValue, required } = field;
                     const formatType = format.format || 'text';
                     const isFixed = format.fixed === true && defaultValue;
-                    const value = defaultValue || '';
+
+                    // Special handling for id_instrument - extract only the code
+                    let value = defaultValue || '';
+                    if (name === 'id_instrument' && value) {
+                        value = FormatHelper.formatInstrumentCode(value);
+                    }
 
                     let input = '';
-                    let inputContainer = null;
-
-                    // Attributi comuni
-                    const commonAttrs = `name="${name}" id="field_${name}" ${required ? 'required' : ''} data-format="${formatType}" ${isFixed ? 'readonly' : ''}`;
                     const fixedClass = isFixed ? ' fixed-field' : '';
+                    const fieldId = `field_${name}`;
 
                     switch (formatType) {
                         case 'FE_Decimal':
-                            // Formatta il valore per FE_Decimal
-                            const formattedValue = formatDecimalValue(value, name);
-                            const displayValue = parseDecimalValue(formattedValue);
-                            const currencyCode = getCurrencyCode(formattedValue);
+                            // Parse the decimal value
+                            const decimalValue = FormatHelper.parseDecimal(value);
 
                             input = `
                                 <div class="currency-input-group${isFixed ? ' fixed' : ''}">
-                                    <input type="text" ${commonAttrs} 
-                                           value="${displayValue}" 
+                                    <input type="text" 
+                                           name="${name}" 
+                                           id="${fieldId}"
+                                           ${required ? 'required' : ''}
+                                           ${isFixed ? 'readonly' : ''}
+                                           value="${decimalValue.number}"
                                            class="form-input${fixedClass}"
-                                           data-currency="${currencyCode}"
-                                           pattern="^-?\\d+(\\.\\d{1,2})?$"
-                                           title="Inserire un numero (es: 123.45)">
-                                    <div class="currency-suffix">:${currencyCode}</div>
+                                           data-format="FE_Decimal"
+                                           data-currency="${decimalValue.currency}"
+                                           placeholder="0.00:USD"
+                                           title="Formato: numero:VALUTA (es: 123.45:EUR)">
+                                    <div class="currency-suffix">:${decimalValue.currency}</div>
+                                </div>
+                            `;
+                            break;
+
+                        case 'FE_Exchange':
+                            // Parse the exchange value
+                            const exchangeValue = FormatHelper.parseExchange(value);
+
+                            input = `
+                                <div class="exchange-input-group${isFixed ? ' fixed' : ''}">
+                                    <input type="text" 
+                                           name="${name}" 
+                                           id="${fieldId}"
+                                           ${required ? 'required' : ''}
+                                           ${isFixed ? 'readonly' : ''}
+                                           value="${exchangeValue.number}"
+                                           class="form-input${fixedClass}"
+                                           data-format="FE_Exchange"
+                                           data-from-currency="${exchangeValue.fromCurrency}"
+                                           data-to-currency="${exchangeValue.toCurrency}"
+                                           placeholder="1.00:EUR/USD"
+                                           title="Formato: numero:VALUTA1/VALUTA2 (es: 1.10:EUR/USD)">
+                                    <div class="exchange-suffix">:${exchangeValue.fromCurrency}/${exchangeValue.toCurrency}</div>
                                 </div>
                             `;
                             break;
 
                         case 'FE_Date':
-                            input = `<input type="date" ${commonAttrs} value="${value}" class="form-input${fixedClass}">`;
+                            input = `<input type="date" 
+                                           name="${name}" 
+                                           id="${fieldId}"
+                                           ${required ? 'required' : ''}
+                                           ${isFixed ? 'readonly' : ''}
+                                           value="${value}" 
+                                           class="form-input${fixedClass}"
+                                           data-format="FE_Date">`;
                             break;
 
                         case 'FE_DateTime':
-                            input = `<input type="datetime-local" ${commonAttrs} value="${value}" class="form-input${fixedClass}">`;
+                            input = `<input type="datetime-local" 
+                                           name="${name}" 
+                                           id="${fieldId}"
+                                           ${required ? 'required' : ''}
+                                           ${isFixed ? 'readonly' : ''}
+                                           value="${value}" 
+                                           class="form-input${fixedClass}"
+                                           data-format="FE_DateTime">`;
                             break;
 
                         case 'FE_Account':
                         case 'FE_Instrument':
                         case 'FE_Event':
-                            // Per ora usiamo input text con datalist, potremmo migliorare con fetch dinamico
-                            input = `<input type="text" ${commonAttrs} value="${value}" class="form-input${fixedClass}" list="${name}-list">
-                                     <datalist id="${name}-list"></datalist>`;
+                            // Special handling for id_instrument field
+                            if (name === 'id_instrument') {
+                                input = `<input type="text" 
+                                               name="${name}" 
+                                               id="${fieldId}"
+                                               ${required ? 'required' : ''}
+                                               ${isFixed ? 'readonly' : ''}
+                                               value="${value}" 
+                                               class="form-input${fixedClass}"
+                                               data-format="${formatType}"
+                                               placeholder="Codice strumento">`;
+                            } else {
+                                input = `<input type="text" 
+                                               name="${name}" 
+                                               id="${fieldId}"
+                                               ${required ? 'required' : ''}
+                                               ${isFixed ? 'readonly' : ''}
+                                               value="${value}" 
+                                               class="form-input${fixedClass}"
+                                               data-format="${formatType}"
+                                               list="${name}-list">
+                                         <datalist id="${name}-list"></datalist>`;
+                            }
                             break;
 
                         default:
@@ -469,15 +667,32 @@
                                         `<option value="${v}" ${v == value ? 'selected' : ''}>${v}</option>`
                                     ).join('');
 
-                                    input = `<select ${commonAttrs} class="form-select${fixedClass}">
+                                    input = `<select name="${name}" 
+                                                     id="${fieldId}"
+                                                     ${required ? 'required' : ''}
+                                                     ${isFixed ? 'disabled' : ''}
+                                                     class="form-select${fixedClass}"
+                                                     data-format="list">
                                                 <option value="">-- Seleziona --</option>
                                                 ${options}
                                             </select>`;
                                 } catch (e) {
-                                    input = `<input type="text" ${commonAttrs} value="${value}" class="form-input${fixedClass}">`;
+                                    input = `<input type="text" 
+                                                   name="${name}" 
+                                                   id="${fieldId}"
+                                                   ${required ? 'required' : ''}
+                                                   ${isFixed ? 'readonly' : ''}
+                                                   value="${value}" 
+                                                   class="form-input${fixedClass}">`;
                                 }
                             } else {
-                                input = `<input type="text" ${commonAttrs} value="${value}" class="form-input${fixedClass}">`;
+                                input = `<input type="text" 
+                                               name="${name}" 
+                                               id="${fieldId}"
+                                               ${required ? 'required' : ''}
+                                               ${isFixed ? 'readonly' : ''}
+                                               value="${value}" 
+                                               class="form-input${fixedClass}">`;
                             }
                     }
 
@@ -485,69 +700,193 @@
                 },
 
                 attachFieldListeners: function (field, inputElement) {
-                    const { name, format } = field;
+                    const { name, required, format } = field;
                     const formatType = format.format || 'text';
                     const isFixed = format.fixed === true && field.defaultValue;
 
                     if (isFixed) return;
 
+                    const input = inputElement.querySelector('input') || inputElement;
+
                     if (formatType === 'FE_Decimal') {
-                        const input = inputElement.querySelector('input') || inputElement;
+                        this.attachDecimalListeners(input, required);
+                    } else if (formatType === 'FE_Exchange') {
+                        this.attachExchangeListeners(input, required);
+                    }
+                },
 
-                        // Input filter per permettere solo numeri, punto e segno meno
-                        input.addEventListener('input', (e) => {
-                            e.target.value = e.target.value.replace(/[^-0-9.]/g, '');
+                attachDecimalListeners: function (input, required) {
+                    // Allow only numbers, decimal point, and minus sign
+                    input.addEventListener('input', (e) => {
+                        let value = e.target.value;
 
-                            // Permette solo un punto decimale
-                            const dots = e.target.value.split('.');
-                            if (dots.length > 2) {
-                                e.target.value = dots[0] + '.' + dots.slice(1).join('');
-                            }
-                        });
+                        // Remove any existing colon and currency to prevent user from breaking the format
+                        if (value.includes(':')) {
+                            const parts = value.split(':');
+                            e.target.value = parts[0];
+                            return;
+                        }
 
-                        // On change, formatta il valore
-                        input.addEventListener('change', (e) => {
-                            const value = e.target.value;
-                            const currencyCode = input.getAttribute('data-currency') || 'EUR';
+                        // Allow only numbers, decimal point, and minus
+                        value = value.replace(/[^-0-9.]/g, '');
 
-                            if (value && value !== '') {
-                                const numRegex = /^-?\d+(\.\d{1,2})?$/;
-                                if (numRegex.test(value)) {
-                                    const formattedValue = `${value}:${currencyCode}`;
-                                    input.setAttribute('data-formatted-value', formattedValue);
+                        // Allow only one decimal point
+                        const dots = value.split('.');
+                        if (dots.length > 2) {
+                            value = dots[0] + '.' + dots.slice(1).join('');
+                        }
 
-                                    // Update the currency suffix display
-                                    const suffix = input.closest('.currency-input-group')?.querySelector('.currency-suffix');
-                                    if (suffix) {
-                                        suffix.textContent = `:${currencyCode}`;
-                                    }
+                        // Limit decimal places to 6
+                        if (dots.length === 2 && dots[1].length > 6) {
+                            value = dots[0] + '.' + dots[1].substring(0, 6);
+                        }
+
+                        e.target.value = value;
+                    });
+
+                    // On blur, validate and format
+                    input.addEventListener('blur', (e) => {
+                        let value = e.target.value;
+                        const currency = input.getAttribute('data-currency') || 'EUR';
+
+                        if (value) {
+                            // Validate number format
+                            const numRegex = /^-?\d+(\.\d{1,6})?$/;
+                            if (!numRegex.test(value)) {
+                                e.target.classList.add('error');
+                                const errorDiv = input.closest('.form-group')?.querySelector('.error-message');
+                                if (errorDiv) {
+                                    errorDiv.textContent = required
+                                        ? 'Formato non valido. Usa: numero:VALUTA (es: 123.45:EUR)'
+                                        : '';
+                                }
+                            } else {
+                                e.target.classList.remove('error');
+                                const errorDiv = input.closest('.form-group')?.querySelector('.error-message');
+                                if (errorDiv) errorDiv.textContent = '';
+
+                                // Update the currency suffix if it changed
+                                const suffix = input.closest('.currency-input-group')?.querySelector('.currency-suffix');
+                                if (suffix) {
+                                    suffix.textContent = `:${currency}`;
                                 }
                             }
-                        });
-                    }
+                        } else if (required) {
+                            e.target.classList.add('error');
+                            const errorDiv = input.closest('.form-group')?.querySelector('.error-message');
+                            if (errorDiv) errorDiv.textContent = 'Campo obbligatorio';
+                        }
+                    });
+                },
+
+                attachExchangeListeners: function (input, required) {
+                    // Allow only numbers, decimal point, and minus sign
+                    input.addEventListener('input', (e) => {
+                        let value = e.target.value;
+
+                        // Remove any existing colon or slash to prevent user from breaking the format
+                        if (value.includes(':') || value.includes('/')) {
+                            const parts = value.split(':');
+                            e.target.value = parts[0];
+                            return;
+                        }
+
+                        // Allow only numbers, decimal point, and minus
+                        value = value.replace(/[^-0-9.]/g, '');
+
+                        // Allow only one decimal point
+                        const dots = value.split('.');
+                        if (dots.length > 2) {
+                            value = dots[0] + '.' + dots.slice(1).join('');
+                        }
+
+                        // Limit decimal places to 6
+                        if (dots.length === 2 && dots[1].length > 6) {
+                            value = dots[0] + '.' + dots[1].substring(0, 6);
+                        }
+
+                        e.target.value = value;
+                    });
+
+                    // On blur, validate and format
+                    input.addEventListener('blur', (e) => {
+                        let value = e.target.value;
+                        const fromCurrency = input.getAttribute('data-from-currency') || 'EUR';
+                        const toCurrency = input.getAttribute('data-to-currency') || 'USD';
+
+                        if (value) {
+                            // Validate number format
+                            const numRegex = /^-?\d+(\.\d{1,6})?$/;
+                            if (!numRegex.test(value)) {
+                                e.target.classList.add('error');
+                                const errorDiv = input.closest('.form-group')?.querySelector('.error-message');
+                                if (errorDiv) {
+                                    errorDiv.textContent = required
+                                        ? 'Formato non valido. Usa: numero:VALUTA1/VALUTA2 (es: 1.10:EUR/USD)'
+                                        : '';
+                                }
+                            } else {
+                                e.target.classList.remove('error');
+                                const errorDiv = input.closest('.form-group')?.querySelector('.error-message');
+                                if (errorDiv) errorDiv.textContent = '';
+
+                                // Update the exchange suffix if it changed
+                                const suffix = input.closest('.exchange-input-group')?.querySelector('.exchange-suffix');
+                                if (suffix) {
+                                    suffix.textContent = `:${fromCurrency}/${toCurrency}`;
+                                }
+                            }
+                        } else if (required) {
+                            e.target.classList.add('error');
+                            const errorDiv = input.closest('.form-group')?.querySelector('.error-message');
+                            if (errorDiv) errorDiv.textContent = 'Campo obbligatorio';
+                        }
+                    });
                 }
             };
         }
 
-        // Custom form validator for FE_Decimal fields
+        // Custom form validator
         function createCustomValidator() {
             return {
                 validateField: function (field, inputElement) {
-                    const { name, format } = field;
+                    const { name, required, format } = field;
                     const formatType = format.format || 'text';
+                    const input = inputElement.querySelector('input') || inputElement;
+                    const value = input.value;
 
-                    if (formatType === 'FE_Decimal') {
-                        const input = inputElement.querySelector('input') || inputElement;
-                        const value = input.value;
+                    // Check required fields
+                    if (required && !value.trim()) {
+                        return {
+                            isValid: false,
+                            message: 'Campo obbligatorio'
+                        };
+                    }
 
-                        if (value && value !== '') {
-                            const numRegex = /^-?\d+(\.\d{1,2})?$/;
-                            if (!numRegex.test(value)) {
-                                return {
-                                    isValid: false,
-                                    message: 'Formato non valido. Inserire un numero (es: 123.45)'
-                                };
-                            }
+                    // Validate FE_Decimal format
+                    if (formatType === 'FE_Decimal' && value.trim()) {
+                        const currency = input.getAttribute('data-currency') || 'EUR';
+                        const fullValue = `${value}:${currency}`;
+
+                        if (!FormatHelper.validateDecimal(fullValue)) {
+                            return {
+                                isValid: false,
+                                message: 'Formato non valido. Usa: numero:VALUTA (es: 123.45:EUR)'
+                            };
+                        }
+                    }
+
+                    // Validate FE_Exchange format
+                    if (formatType === 'FE_Exchange' && value.trim()) {
+                        const fromCurrency = input.getAttribute('data-from-currency') || 'EUR';
+                        const toCurrency = input.getAttribute('data-to-currency') || 'USD';
+                        const fullValue = `${value}:${fromCurrency}/${toCurrency}`;
+
+                        if (!FormatHelper.validateExchange(fullValue)) {
+                            return {
+                                isValid: false,
+                                message: 'Formato non valido. Usa: numero:VALUTA1/VALUTA2 (es: 1.10:EUR/USD)'
+                            };
                         }
                     }
 
@@ -555,29 +894,25 @@
                 },
 
                 getFormData: function (formElement) {
-                    const formData = new FormData(formElement);
                     const data = {};
+                    const fields = formElement.querySelectorAll('[name]');
 
-                    for (let [key, value] of formData.entries()) {
-                        const input = formElement.querySelector(`[name="${key}"]`);
-                        const format = input?.getAttribute('data-format');
+                    fields.forEach(field => {
+                        const name = field.name;
+                        const format = field.getAttribute('data-format');
+                        const value = field.value;
 
                         if (format === 'FE_Decimal') {
-                            const currencyInput = input.closest('.currency-input-group')?.querySelector('input');
-                            const currencyCode = currencyInput?.getAttribute('data-currency') || 'EUR';
-                            const formattedValue = currencyInput?.getAttribute('data-formatted-value');
-
-                            if (formattedValue) {
-                                data[key] = formattedValue;
-                            } else if (value) {
-                                data[key] = `${value}:${currencyCode}`;
-                            } else {
-                                data[key] = '';
-                            }
+                            const currency = field.getAttribute('data-currency') || 'EUR';
+                            data[name] = value ? `${value}:${currency}` : '';
+                        } else if (format === 'FE_Exchange') {
+                            const fromCurrency = field.getAttribute('data-from-currency') || 'EUR';
+                            const toCurrency = field.getAttribute('data-to-currency') || 'USD';
+                            data[name] = value ? `${value}:${fromCurrency}/${toCurrency}` : '';
                         } else {
-                            data[key] = value;
+                            data[name] = value;
                         }
-                    }
+                    });
 
                     return data;
                 }
@@ -595,31 +930,29 @@
 
                 console.log('Translations loaded for:', language);
 
-                // Valori di default dai parametri URL
+                // Valori di default
                 const defaultValues = {
                     price_divisor: '1',
-                    exchange: '1.00:EUR',
+                    exchange: '1.00:EUR/USD',  // FE_Exchange format
                     'cost:expense': '0.00:EUR',
                     'fee:commission': '0.00:EUR',
-                    'tax:tobin': '0.00:EUR'
+                    'tax:tobin': '0.00:EUR',
+                    'amount:gross': '0.00:EUR',
+                    'amount:net': '0.00:EUR'
                 };
 
                 // Aggiorna con parametri URL
                 if (urlParams.id_account) defaultValues.id_account = urlParams.id_account;
                 if (urlParams.type_event) defaultValues.type_event = urlParams.type_event;
                 if (urlParams.id_instrument) {
-                    let code = urlParams.id_instrument.split(' ')[0];
-                    if (code.includes('-')) {
-                        code = code.split('-')[0].trim();
-                    }
-                    defaultValues.id_instrument = code.trim();
+                    defaultValues.id_instrument = FormatHelper.formatInstrumentCode(urlParams.id_instrument);
                 }
 
                 // Crea i custom renderer e validator
                 const customRenderer = createCustomFieldRenderer();
                 const customValidator = createCustomValidator();
 
-                // Crea il DataEntryManager con configurazione personalizzata
+                // Crea il DataEntryManager
                 const manager = new DataEntryManager({
                     basePath: './dataentry/',
                     folder: 'trade',
@@ -641,19 +974,68 @@
                     }
                 });
 
-                // Sovrascrivi i metodi con le nostre implementazioni personalizzate
-                manager.generateFieldInput = customRenderer.generateFieldInput.bind(manager);
+                // Override del metodo getTranslation per usare TranslationManager
+                manager.getTranslation = function (label) {
+                    return customRenderer.getTranslation(label);
+                };
 
-                // Estendi l'attachEventListeners per gestire i campi FE_Decimal
-                const originalAttachListeners = manager.attachEventListeners.bind(manager);
-                manager.attachEventListeners = function () {
-                    originalAttachListeners();
+                // Override del metodo generateForm per usare il nostro renderer
+                const originalGenerateForm = manager.generateForm.bind(manager);
+                manager.generateForm = function (containerId) {
+                    const fields = this.getFields();
+                    const container = document.getElementById(containerId);
 
-                    // Aggiungi listener per campi FE_Decimal
+                    if (!container) {
+                        console.error(`Container ${containerId} non trovato`);
+                        return;
+                    }
+
+                    let html = `
+                        <form id="dataentry-form" class="dataentry-form">
+                            <div class="form-grid">
+                    `;
+
+                    fields.forEach(field => {
+                        const labelText = this.getTranslation(field.label) || field.name;
+                        const requiredMark = field.required ? '<span class="required-mark">*</span>' : '';
+
+                        html += `
+                            <div class="form-group ${field.required ? 'required' : ''}">
+                                <label for="field_${field.name}" class="form-label">
+                                    ${labelText}${requiredMark}
+                                </label>
+                                ${customRenderer.generateFieldInput.call(this, field)}
+                                <span class="error-message" id="error_${field.name}"></span>
+                            </div>
+                        `;
+                    });
+
+                    html += `
+                            </div>
+                            <div class="form-actions">
+                                <button type="button" id="reset-btn" class="btn btn-secondary">
+                                    <i class="fa fa-undo"></i> Reset
+                                </button>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fa fa-save"></i> Salva
+                                </button>
+                            </div>
+                        </form>
+                    `;
+
+                    container.innerHTML = html;
+
+                    // Attach custom listeners
+                    this.attachCustomEventListeners(customRenderer, customValidator);
+                };
+
+                // Metodo per attach custom listeners
+                manager.attachCustomEventListeners = function (customRenderer, customValidator) {
                     const form = document.getElementById('dataentry-form');
                     if (!form) return;
 
-                    const fields = manager.getFields();
+                    // Attach listeners to each field
+                    const fields = this.getFields();
                     fields.forEach(field => {
                         const input = document.getElementById(`field_${field.name}`);
                         if (input) {
@@ -661,34 +1043,82 @@
                         }
                     });
 
-                    // Sovrascrivi la validazione del form
-                    const originalValidate = manager.validateForm.bind(manager);
-                    manager.validateForm = function () {
-                        const isValid = originalValidate();
+                    // Form submit
+                    form.addEventListener('submit', (e) => {
+                        e.preventDefault();
+                        if (this.validateForm(customValidator)) {
+                            const data = customValidator.getFormData(form);
+                            if (this.onSubmit) {
+                                this.onSubmit(data);
+                            }
+                        }
+                    });
 
-                        // Validazione aggiuntiva per FE_Decimal
-                        const fields = this.getFields();
-                        let hasDecimalErrors = false;
+                    // Reset button
+                    const resetBtn = document.getElementById('reset-btn');
+                    if (resetBtn) {
+                        resetBtn.addEventListener('click', () => {
+                            form.reset();
+                            this.clearErrors();
 
-                        fields.forEach(field => {
-                            const input = document.getElementById(`field_${field.name}`);
-                            if (input && field.format?.format === 'FE_Decimal') {
-                                const validation = customValidator.validateField(field, input);
-                                if (!validation.isValid) {
-                                    manager.showError(field.name, validation.message);
-                                    hasDecimalErrors = true;
+                            // Reset to default values
+                            fields.forEach(field => {
+                                const input = document.getElementById(`field_${field.name}`);
+                                if (input && field.defaultValue) {
+                                    input.value = field.defaultValue;
                                 }
+                            });
+                        });
+                    }
+
+                    // Change events
+                    if (this.onChange) {
+                        form.addEventListener('change', (e) => {
+                            const target = e.target;
+                            if (target.name) {
+                                this.onChange(target.name, target.value);
                             }
                         });
+                    }
+                };
 
-                        return isValid && !hasDecimalErrors;
-                    };
+                // Override validateForm
+                manager.validateForm = function (customValidator) {
+                    this.clearErrors();
 
-                    // Sovrascrivi getFormData per formattare FE_Decimal
-                    manager.getFormData = function () {
-                        const form = document.getElementById('dataentry-form');
-                        return customValidator.getFormData(form);
-                    };
+                    const form = document.getElementById('dataentry-form');
+                    if (!form) return false;
+
+                    const fields = this.getFields();
+                    let isValid = true;
+
+                    fields.forEach(field => {
+                        const input = document.getElementById(`field_${field.name}`);
+                        if (!input) return;
+
+                        const validation = customValidator.validateField(field, input);
+                        if (!validation.isValid) {
+                            this.showError(field.name, validation.message);
+                            isValid = false;
+                        }
+                    });
+
+                    return isValid;
+                };
+
+                // Keep original showError and clearErrors methods
+                manager.showError = function (fieldName, message) {
+                    const errorEl = document.getElementById(`error_${fieldName}`);
+                    const inputEl = document.getElementById(`field_${fieldName}`);
+
+                    if (errorEl) errorEl.textContent = message;
+                    if (inputEl) inputEl.classList.add('error');
+                };
+
+                manager.clearErrors = function () {
+                    document.querySelectorAll('.error-message').forEach(el => el.textContent = '');
+                    document.querySelectorAll('.form-input').forEach(el => el.classList.remove('error'));
+                    document.querySelectorAll('.form-select').forEach(el => el.classList.remove('error'));
                 };
 
                 // Inizializza il manager
@@ -697,7 +1127,7 @@
             } catch (error) {
                 console.error('Errore durante l\'inizializzazione:', error);
                 document.getElementById('form-container').innerHTML = `
-                    <div class="auth-error" style="border-color: var(--error-color); color: var(--error-color); padding: 20px; border-radius: 4px;">
+                    <div style="border: 1px solid var(--error-color); color: var(--error-color); padding: 20px; border-radius: 4px;">
                         <h3><i class="fa fa-exclamation-triangle"></i> Errore Sistema</h3>
                         <p>Errore caricamento modulo: ${error.message}</p>
                         <p style="margin-top: 10px; font-size: 0.8rem; color: #ccc;">
