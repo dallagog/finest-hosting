@@ -580,15 +580,28 @@
                 username: credentials.username,
                 token: credentials.token,
                 language: credentials.language,
-                action: action
+                action: action,
+                type_event: action === 'buy' ? 'FI-BB' : 'FI-BA'
             });
 
+            // Passa ticker/strumento
             if (item && item.Ticker) {
-                params.append('ticker', item.Ticker);
-                params.append('data', JSON.stringify(item));
+                params.append('id_instrument', item.Ticker);
             }
 
-            window.open(`dashboard-trading-trade.html?${params.toString()}`, '_blank');
+            // Passa l'account se disponibile
+            const accountKey = Object.keys(item).find(k =>
+                k.toLowerCase().includes('account') ||
+                k.toLowerCase().includes('conto')
+            );
+            if (accountKey && item[accountKey]) {
+                params.append('id_account', item[accountKey]);
+            }
+
+            // Passa tutti i campi disponibili come JSON per referenza
+            params.append('portfolio_data', JSON.stringify(item));
+
+            window.open(`dashboard-dataentry-trade.html?${params.toString()}`, '_blank');
         }
 
         function sortTable(column) {
