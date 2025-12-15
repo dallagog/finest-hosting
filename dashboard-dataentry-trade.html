@@ -84,13 +84,11 @@
             flex-direction: column;
         }
 
-        /* 2. Etichette non maiuscole - rimosso text-transform: uppercase */
         .form-label {
             font-weight: 500;
             color: var(--neon-blue);
             margin-bottom: 6px;
             font-size: 0.9rem;
-            /* text-transform: uppercase; <--- Rimosso */
         }
 
         .required-mark {
@@ -99,7 +97,6 @@
             text-shadow: 0 0 5px var(--error-color);
         }
 
-        /* 3. Altezza ridotta per input/select (30px) */
         .form-input,
         .form-select {
             padding: 6px 12px;
@@ -127,6 +124,14 @@
             box-shadow: 0 0 5px var(--error-color);
         }
 
+        /* Stile per campi non editabili (fixed) */
+        .form-input.fixed-field {
+            background: rgba(100, 100, 100, 0.2);
+            border-color: #666;
+            color: #aaa;
+            cursor: not-allowed;
+        }
+
         /* Style per select con datalist combo */
         .combo-wrapper {
             position: relative;
@@ -136,7 +141,7 @@
             width: 100%;
         }
 
-        /* 4. Style per campo valuta (FE_Decimal) */
+        /* Style per campo valuta (FE_Decimal) */
         .currency-input-group {
             display: flex;
             border: 1px solid var(--neon-blue);
@@ -159,7 +164,7 @@
             height: 30px;
         }
 
-        /* Currency suffix (":€") */
+        /* Currency suffix (":EUR", ":USD", ecc) */
         .currency-suffix {
             background: rgba(0, 102, 255, 0.2);
             color: var(--neon-cyan);
@@ -177,6 +182,18 @@
             box-shadow: none;
             border-color: transparent;
             background: rgba(0, 243, 255, 0.15);
+        }
+
+        /* Stile per campi fixed nella currency group */
+        .currency-input-group.fixed .form-input {
+            background: rgba(100, 100, 100, 0.2);
+            color: #aaa;
+            cursor: not-allowed;
+        }
+
+        .currency-input-group.fixed .currency-suffix {
+            background: rgba(100, 100, 100, 0.3);
+            color: #888;
         }
 
         .error-message {
@@ -327,6 +344,12 @@
         </div>
     </div>
 
+    <!-- Includi la libreria di traduzioni -->
+    <script src="./js/translations.js"></script>
+
+    <!-- Includi la libreria DataEntryManager -->
+    <script src="./js/dataentry-manager.js"></script>
+
     <script>
         // Parametri passati dall'URL
         let urlParams = {};
@@ -352,267 +375,329 @@
             }
         }
 
-        // Funzione mock per le traduzioni (traduzioni usate senza uppercase)
-        function getTranslations(key) {
-            const translations = {
-                'int.id_account': 'Account',
-                'int.type_event': 'Tipo Evento',
-                'int.id_instrument': 'Strumento',
-                'int.date_settlement': 'Data Regolamento',
-                'int.date_trade': 'Data Trade',
-                'int.quantity': 'Quantità',
-                'int.exchange': 'Cambio',
-                'int.price_divisor': 'Divisore Prezzo',
-                'int.price': 'Prezzo',
-                'int.cost:expense': 'Spese',
-                'int.fee:commission': 'Commissioni',
-                'int.tax:tobin': 'Tassa Tobin',
-                'int.amount:gross': 'Importo Lordo',
-                'int.amount:net': 'Importo Netto'
-            };
-            return translations[key] || key;
+        // Helper function to format FE_Decimal values
+        function formatDecimalValue(value, fieldName) {
+            if (!value) return '';
+
+            // Se il valore è già formattato, restituiscilo così com'è
+            if (typeof value === 'string' && value.includes(':')) {
+                return value;
+            }
+
+            // Altrimenti formatta con EUR di default
+            const num = parseFloat(value);
+            if (isNaN(num)) return value;
+
+            return `${num.toFixed(2)}:EUR`;
         }
 
-        // Mock DataEntry Manager con supporto combobox editabili
-        class DataEntryManager {
-            constructor(config) {
-                this.config = config;
-                this.fields = [];
-                this.values = {};
+        // Helper function to parse FE_Decimal values
+        function parseDecimalValue(formattedValue) {
+            if (!formattedValue) return '';
+
+            if (formattedValue.includes(':')) {
+                return formattedValue.split(':')[0];
             }
+            return formattedValue;
+        }
 
-            async init(containerId) {
-                // Simula caricamento schema
-                await new Promise(resolve => setTimeout(resolve, 500));
+        // Helper function to get currency code
+        function getCurrencyCode(formattedValue) {
+            if (!formattedValue || !formattedValue.includes(':')) return 'EUR';
 
-                // Definisci campi form
-                this.fields = [
-                    { name: 'id_account', label: 'int.id_account', type: 'combo', required: true, options: ['Account 1', 'Account 2', 'Trading'] },
-                    { name: 'type_event', label: 'int.type_event', type: 'combo', required: true, options: ['FI-BB', 'FI-BA', 'FI-DIV'] },
-                    { name: 'id_instrument', label: 'int.id_instrument', type: 'text', required: true },
-                    { name: 'date_settlement', label: 'int.date_settlement', type: 'date', required: false },
-                    { name: 'date_trade', label: 'int.date_trade', type: 'date', required: true },
-                    { name: 'quantity', label: 'int.quantity', type: 'number', required: true },
-                    { name: 'exchange', label: 'int.exchange', type: 'number', required: false },
-                    { name: 'price_divisor', label: 'int.price_divisor', type: 'number', required: false },
-                    { name: 'price', label: 'int.price', type: 'number', required: true },
-                    { name: 'cost:expense', label: 'int.cost:expense', type: 'number', required: false },
-                    { name: 'fee:commission', label: 'int.fee:commission', type: 'number', required: false },
-                    { name: 'tax:tobin', label: 'int.tax:tobin', type: 'number', required: false },
-                    { name: 'amount:gross', label: 'int.amount:gross', type: 'number', required: false },
-                    { name: 'amount:net', label: 'int.amount:net', type: 'number', required: false }
-                ];
+            const parts = formattedValue.split(':');
+            return parts.length > 1 ? parts[1].trim() : 'EUR';
+        }
 
-                // Imposta valori di default
-                this.values = { ...this.config.defaultValues };
+        // Custom field renderer for DataEntryManager
+        function createCustomFieldRenderer() {
+            return {
+                generateFieldInput: function (field) {
+                    const { name, format, defaultValue, required } = field;
+                    const formatType = format.format || 'text';
+                    const isFixed = format.fixed === true && defaultValue;
+                    const value = defaultValue || '';
 
-                // Sovrascrive con parametri URL
-                if (urlParams.id_account) this.values.id_account = urlParams.id_account;
-                if (urlParams.type_event) this.values.type_event = urlParams.type_event;
+                    let input = '';
+                    let inputContainer = null;
 
-                // 1. Modifica per id_instrument: prende solo il codice (prima parte)
-                if (urlParams.id_instrument) {
-                    // Assumiamo che il codice sia la prima parola o il testo prima di un separatore comune come '-'
-                    let code = urlParams.id_instrument.split(' ')[0];
-                    if (code.includes('-')) {
-                        code = code.split('-')[0].trim();
+                    // Attributi comuni
+                    const commonAttrs = `name="${name}" id="field_${name}" ${required ? 'required' : ''} data-format="${formatType}" ${isFixed ? 'readonly' : ''}`;
+                    const fixedClass = isFixed ? ' fixed-field' : '';
+
+                    switch (formatType) {
+                        case 'FE_Decimal':
+                            // Formatta il valore per FE_Decimal
+                            const formattedValue = formatDecimalValue(value, name);
+                            const displayValue = parseDecimalValue(formattedValue);
+                            const currencyCode = getCurrencyCode(formattedValue);
+
+                            input = `
+                                <div class="currency-input-group${isFixed ? ' fixed' : ''}">
+                                    <input type="text" ${commonAttrs} 
+                                           value="${displayValue}" 
+                                           class="form-input${fixedClass}"
+                                           data-currency="${currencyCode}"
+                                           pattern="^-?\\d+(\\.\\d{1,2})?$"
+                                           title="Inserire un numero (es: 123.45)">
+                                    <div class="currency-suffix">:${currencyCode}</div>
+                                </div>
+                            `;
+                            break;
+
+                        case 'FE_Date':
+                            input = `<input type="date" ${commonAttrs} value="${value}" class="form-input${fixedClass}">`;
+                            break;
+
+                        case 'FE_DateTime':
+                            input = `<input type="datetime-local" ${commonAttrs} value="${value}" class="form-input${fixedClass}">`;
+                            break;
+
+                        case 'FE_Account':
+                        case 'FE_Instrument':
+                        case 'FE_Event':
+                            // Per ora usiamo input text con datalist, potremmo migliorare con fetch dinamico
+                            input = `<input type="text" ${commonAttrs} value="${value}" class="form-input${fixedClass}" list="${name}-list">
+                                     <datalist id="${name}-list"></datalist>`;
+                            break;
+
+                        default:
+                            if (formatType.startsWith('list:')) {
+                                try {
+                                    const listValues = JSON.parse(formatType.replace('list:', ''));
+                                    const options = listValues.map(v =>
+                                        `<option value="${v}" ${v == value ? 'selected' : ''}>${v}</option>`
+                                    ).join('');
+
+                                    input = `<select ${commonAttrs} class="form-select${fixedClass}">
+                                                <option value="">-- Seleziona --</option>
+                                                ${options}
+                                            </select>`;
+                                } catch (e) {
+                                    input = `<input type="text" ${commonAttrs} value="${value}" class="form-input${fixedClass}">`;
+                                }
+                            } else {
+                                input = `<input type="text" ${commonAttrs} value="${value}" class="form-input${fixedClass}">`;
+                            }
                     }
-                    this.values.id_instrument = code.trim();
-                }
 
-                this.render(containerId);
-            }
+                    return input;
+                },
 
-            // Funzione helper per identificare i campi valuta
-            isCurrencyField(fieldName) {
-                return fieldName.includes('amount') || fieldName.includes('cost') || fieldName.includes('fee') || fieldName.includes('tax');
-            }
+                attachFieldListeners: function (field, inputElement) {
+                    const { name, format } = field;
+                    const formatType = format.format || 'text';
+                    const isFixed = format.fixed === true && field.defaultValue;
 
-            render(containerId) {
-                const container = document.getElementById(containerId);
+                    if (isFixed) return;
 
-                const form = document.createElement('form');
-                form.className = 'dataentry-form';
+                    if (formatType === 'FE_Decimal') {
+                        const input = inputElement.querySelector('input') || inputElement;
 
-                const grid = document.createElement('div');
-                grid.className = 'form-grid';
+                        // Input filter per permettere solo numeri, punto e segno meno
+                        input.addEventListener('input', (e) => {
+                            e.target.value = e.target.value.replace(/[^-0-9.]/g, '');
 
-                this.fields.forEach(field => {
-                    const group = document.createElement('div');
-                    group.className = 'form-group';
-
-                    const label = document.createElement('label');
-                    label.className = 'form-label';
-                    label.textContent = getTranslations(field.label); // Testo della label non in uppercase
-                    if (field.required) {
-                        const req = document.createElement('span');
-                        req.className = 'required-mark';
-                        req.textContent = '*';
-                        label.appendChild(req);
-                    }
-
-                    let input; // L'elemento input HTML
-                    let inputContainer = null; // Il container da appendere al group (input, combo-wrapper, o currency-input-group)
-
-                    if (field.type === 'combo') {
-                        // Combo Input (datalist)
-                        const wrapper = document.createElement('div');
-                        wrapper.className = 'combo-wrapper';
-
-                        const datalistId = `${field.name}-datalist`;
-
-                        input = document.createElement('input');
-                        input.type = 'text';
-                        input.className = 'form-input combo-input';
-                        input.name = field.name;
-                        input.setAttribute('list', datalistId);
-                        input.value = this.values[field.name] || '';
-
-                        const datalist = document.createElement('datalist');
-                        datalist.id = datalistId;
-                        field.options.forEach(opt => {
-                            const option = document.createElement('option');
-                            option.value = opt;
-                            datalist.appendChild(option);
+                            // Permette solo un punto decimale
+                            const dots = e.target.value.split('.');
+                            if (dots.length > 2) {
+                                e.target.value = dots[0] + '.' + dots.slice(1).join('');
+                            }
                         });
 
-                        wrapper.appendChild(input);
-                        wrapper.appendChild(datalist);
-                        inputContainer = wrapper;
+                        // On change, formatta il valore
+                        input.addEventListener('change', (e) => {
+                            const value = e.target.value;
+                            const currencyCode = input.getAttribute('data-currency') || 'EUR';
 
-                    } else if (this.isCurrencyField(field.name)) {
-                        // 4. Input Valuta (FE_Decimal)
-                        const wrapper = document.createElement('div');
-                        wrapper.className = 'currency-input-group';
+                            if (value && value !== '') {
+                                const numRegex = /^-?\d+(\.\d{1,2})?$/;
+                                if (numRegex.test(value)) {
+                                    const formattedValue = `${value}:${currencyCode}`;
+                                    input.setAttribute('data-formatted-value', formattedValue);
 
-                        input = document.createElement('input');
-                        input.type = field.type;
-                        input.className = 'form-input';
-                        input.name = field.name;
-                        input.value = this.values[field.name] || '';
+                                    // Update the currency suffix display
+                                    const suffix = input.closest('.currency-input-group')?.querySelector('.currency-suffix');
+                                    if (suffix) {
+                                        suffix.textContent = `:${currencyCode}`;
+                                    }
+                                }
+                            }
+                        });
+                    }
+                }
+            };
+        }
 
-                        if (field.type === 'number') {
-                            input.step = '0.01';
+        // Custom form validator for FE_Decimal fields
+        function createCustomValidator() {
+            return {
+                validateField: function (field, inputElement) {
+                    const { name, format } = field;
+                    const formatType = format.format || 'text';
+
+                    if (formatType === 'FE_Decimal') {
+                        const input = inputElement.querySelector('input') || inputElement;
+                        const value = input.value;
+
+                        if (value && value !== '') {
+                            const numRegex = /^-?\d+(\.\d{1,2})?$/;
+                            if (!numRegex.test(value)) {
+                                return {
+                                    isValid: false,
+                                    message: 'Formato non valido. Inserire un numero (es: 123.45)'
+                                };
+                            }
                         }
-
-                        const suffix = document.createElement('div');
-                        suffix.className = 'currency-suffix';
-                        suffix.textContent = ': €'; // Formato richiesto
-
-                        wrapper.appendChild(input);
-                        wrapper.appendChild(suffix);
-                        inputContainer = wrapper;
-
-                    } else {
-                        // Input Standard (text, number, date)
-                        input = document.createElement('input');
-                        input.type = field.type;
-                        input.className = 'form-input';
-                        input.name = field.name;
-                        input.value = this.values[field.name] || '';
-
-                        if (field.type === 'number') {
-                            input.step = '0.01';
-                        }
-                        inputContainer = input;
                     }
 
-                    group.appendChild(label);
-                    group.appendChild(inputContainer);
+                    return { isValid: true };
+                },
 
-                    if (field.required) {
-                        input.required = true;
-                    }
+                getFormData: function (formElement) {
+                    const formData = new FormData(formElement);
+                    const data = {};
 
-                    const error = document.createElement('div');
-                    error.className = 'error-message';
-                    group.appendChild(error);
+                    for (let [key, value] of formData.entries()) {
+                        const input = formElement.querySelector(`[name="${key}"]`);
+                        const format = input?.getAttribute('data-format');
 
-                    // L'event listener è sempre sull'elemento input effettivo
-                    input.addEventListener('change', (e) => {
-                        this.values[field.name] = e.target.value;
-                        if (this.config.onChange) {
-                            this.config.onChange(field.name, e.target.value);
+                        if (format === 'FE_Decimal') {
+                            const currencyInput = input.closest('.currency-input-group')?.querySelector('input');
+                            const currencyCode = currencyInput?.getAttribute('data-currency') || 'EUR';
+                            const formattedValue = currencyInput?.getAttribute('data-formatted-value');
+
+                            if (formattedValue) {
+                                data[key] = formattedValue;
+                            } else if (value) {
+                                data[key] = `${value}:${currencyCode}`;
+                            } else {
+                                data[key] = '';
+                            }
+                        } else {
+                            data[key] = value;
                         }
-                    });
-
-                    grid.appendChild(group);
-                });
-
-                form.appendChild(grid);
-
-                const actions = document.createElement('div');
-                actions.className = 'form-actions';
-
-                const resetBtn = document.createElement('button');
-                resetBtn.type = 'button';
-                resetBtn.className = 'btn btn-secondary';
-                resetBtn.innerHTML = '<i class="fa fa-undo"></i> Reset';
-                resetBtn.onclick = () => {
-                    form.reset();
-                    this.values = { ...this.config.defaultValues };
-                };
-
-                const submitBtn = document.createElement('button');
-                submitBtn.type = 'submit';
-                submitBtn.className = 'btn btn-primary';
-                submitBtn.innerHTML = '<i class="fa fa-save"></i> Salva';
-
-                actions.appendChild(resetBtn);
-                actions.appendChild(submitBtn);
-                form.appendChild(actions);
-
-                form.onsubmit = (e) => {
-                    e.preventDefault();
-                    if (this.config.onSubmit) {
-                        this.config.onSubmit(this.values);
                     }
-                };
 
-                container.innerHTML = '';
-                container.appendChild(form);
-            }
+                    return data;
+                }
+            };
         }
 
         // Inizializzazione
         document.addEventListener('DOMContentLoaded', async () => {
             getURLParams();
 
-            // Valori di default
-            const defaultValues = {
-                price_divisor: '1',
-                exchange: '1.00',
-                'cost:expense': '0.00',
-                'fee:commission': '0.00',
-                'tax:tobin': '0.00'
-            };
-
-            const manager = new DataEntryManager({
-                basePath: './dataentry/',
-                folder: 'trade',
-                defaultValues: defaultValues,
-                onSubmit: (data) => {
-                    console.log('Dati inviati:', data);
-
-                    const successMsg = document.getElementById('success-msg');
-                    successMsg.classList.add('show');
-
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
-
-                    setTimeout(() => {
-                        successMsg.classList.remove('show');
-                    }, 3000);
-                },
-                onChange: (fieldName, value) => {
-                    console.log(`Campo ${fieldName} modificato:`, value);
-                }
-            });
-
             try {
+                // Carica le traduzioni per la lingua specificata
+                const language = urlParams.language || 'it_IT';
+                await TranslationManager.loadTranslations(language);
+
+                console.log('Translations loaded for:', language);
+
+                // Valori di default dai parametri URL
+                const defaultValues = {
+                    price_divisor: '1',
+                    exchange: '1.00:EUR',
+                    'cost:expense': '0.00:EUR',
+                    'fee:commission': '0.00:EUR',
+                    'tax:tobin': '0.00:EUR'
+                };
+
+                // Aggiorna con parametri URL
+                if (urlParams.id_account) defaultValues.id_account = urlParams.id_account;
+                if (urlParams.type_event) defaultValues.type_event = urlParams.type_event;
+                if (urlParams.id_instrument) {
+                    let code = urlParams.id_instrument.split(' ')[0];
+                    if (code.includes('-')) {
+                        code = code.split('-')[0].trim();
+                    }
+                    defaultValues.id_instrument = code.trim();
+                }
+
+                // Crea i custom renderer e validator
+                const customRenderer = createCustomFieldRenderer();
+                const customValidator = createCustomValidator();
+
+                // Crea il DataEntryManager con configurazione personalizzata
+                const manager = new DataEntryManager({
+                    basePath: './dataentry/',
+                    folder: 'trade',
+                    defaultValues: defaultValues,
+                    onSubmit: (data) => {
+                        console.log('Dati inviati:', data);
+
+                        const successMsg = document.getElementById('success-msg');
+                        successMsg.classList.add('show');
+
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+
+                        setTimeout(() => {
+                            successMsg.classList.remove('show');
+                        }, 3000);
+                    },
+                    onChange: (fieldName, value) => {
+                        console.log(`Campo ${fieldName} modificato:`, value);
+                    }
+                });
+
+                // Sovrascrivi i metodi con le nostre implementazioni personalizzate
+                manager.generateFieldInput = customRenderer.generateFieldInput.bind(manager);
+
+                // Estendi l'attachEventListeners per gestire i campi FE_Decimal
+                const originalAttachListeners = manager.attachEventListeners.bind(manager);
+                manager.attachEventListeners = function () {
+                    originalAttachListeners();
+
+                    // Aggiungi listener per campi FE_Decimal
+                    const form = document.getElementById('dataentry-form');
+                    if (!form) return;
+
+                    const fields = manager.getFields();
+                    fields.forEach(field => {
+                        const input = document.getElementById(`field_${field.name}`);
+                        if (input) {
+                            customRenderer.attachFieldListeners(field, input);
+                        }
+                    });
+
+                    // Sovrascrivi la validazione del form
+                    const originalValidate = manager.validateForm.bind(manager);
+                    manager.validateForm = function () {
+                        const isValid = originalValidate();
+
+                        // Validazione aggiuntiva per FE_Decimal
+                        const fields = this.getFields();
+                        let hasDecimalErrors = false;
+
+                        fields.forEach(field => {
+                            const input = document.getElementById(`field_${field.name}`);
+                            if (input && field.format?.format === 'FE_Decimal') {
+                                const validation = customValidator.validateField(field, input);
+                                if (!validation.isValid) {
+                                    manager.showError(field.name, validation.message);
+                                    hasDecimalErrors = true;
+                                }
+                            }
+                        });
+
+                        return isValid && !hasDecimalErrors;
+                    };
+
+                    // Sovrascrivi getFormData per formattare FE_Decimal
+                    manager.getFormData = function () {
+                        const form = document.getElementById('dataentry-form');
+                        return customValidator.getFormData(form);
+                    };
+                };
+
+                // Inizializza il manager
                 await manager.init('form-container');
+
             } catch (error) {
+                console.error('Errore durante l\'inizializzazione:', error);
                 document.getElementById('form-container').innerHTML = `
-                    <div class="auth-error" style="border-color: var(--error-color); color: var(--error-color);">
+                    <div class="auth-error" style="border-color: var(--error-color); color: var(--error-color); padding: 20px; border-radius: 4px;">
                         <h3><i class="fa fa-exclamation-triangle"></i> Errore Sistema</h3>
                         <p>Errore caricamento modulo: ${error.message}</p>
                         <p style="margin-top: 10px; font-size: 0.8rem; color: #ccc;">
