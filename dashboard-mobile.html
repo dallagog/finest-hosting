@@ -171,6 +171,7 @@
             box-shadow: 0 0 30px var(--tron-cyan);
         }
 
+        /* Icona di default (rimossa la rotella) */
         .face i {
             font-size: 2.5rem;
             color: var(--tron-cyan);
@@ -313,7 +314,7 @@
 
             <div class="outer-cube">
                 <div class="face front" id="face-0">
-                    <i class="fa fa-circle-notch fa-spin"></i>
+                    <i class="fa fa-cube"></i>
                     <span class="face-title">Loading...</span>
                     <div class="face-data-container"></div>
                 </div>
@@ -411,16 +412,15 @@
         let lastPos = { x: 0, y: 0 };
         let velocity = { x: 0, y: 0 };
 
-        /* Valori Modificati per Movimento più Fluido e Rotazione Continua */
-        const DRAG_SPEED = 0.35; // Leggermente più lento
-        const INERTIA = 0.98; // Maggiore inerzia: rotazione più lunga
-        const SMOOTHING = 0.08; // Minore smorzamento: transizione più fluida
+        /* Valori Modificati per Massima Sensibilità e Fluidità */
+        const DRAG_SPEED = 0.5; // Aumentato per maggiore sensibilità (risposta rapida anche a movimenti lenti)
+        const INERTIA = 0.985; // Altissima inerzia per rotazione prolungata
+        const SMOOTHING = 0.05; // Molto basso per minimizzare lo smorzamento durante il drag (rotazione più "diretta")
         /* Fine Modifiche */
 
 
         // Init
         document.addEventListener('DOMContentLoaded', async () => {
-            // RIMOSSO: initConnections();
             if (checkAuth()) {
                 loadUser();
                 await loadCubeData();
@@ -569,24 +569,24 @@
             if (!isDragging) {
                 targetRot.x -= velocity.y;
                 targetRot.y += velocity.x;
-                velocity.x *= INERTIA; // Mantiene l'inerzia alta
+                velocity.x *= INERTIA;
                 velocity.y *= INERTIA;
 
-                // Opzionale: azzera la velocità solo se è molto bassa
+                // Mantiene il cubo in rotazione indefinitamente se l'inerzia è alta
                 if (Math.abs(velocity.x) < 0.0005) velocity.x = 0;
                 if (Math.abs(velocity.y) < 0.0005) velocity.y = 0;
             }
 
+            // SMOOTHING basso garantisce che il cubo segua il dito quasi istantaneamente
             currentRot.x += (targetRot.x - currentRot.x) * SMOOTHING;
             currentRot.y += (targetRot.y - currentRot.y) * SMOOTHING;
 
-            // Applica la rotazione solo al cubo esterno
             tesseract.style.transform = `rotateX(${currentRot.x}deg) rotateY(${currentRot.y}deg)`;
 
             requestAnimationFrame(animate);
         }
 
-        /* ========== GESTIONE TOUCH (Invariata) ========== */
+        /* ========== GESTIONE TOUCH (DRAG_SPEED Modificato) ========== */
 
         scene.addEventListener('touchstart', (e) => {
             isDragging = true;
@@ -601,8 +601,11 @@
             const t = e.touches[0];
             const dx = t.clientX - lastPos.x;
             const dy = t.clientY - lastPos.y;
+
+            // L'alto DRAG_SPEED rende il movimento del dito più reattivo
             targetRot.y += dx * DRAG_SPEED;
             targetRot.x -= dy * DRAG_SPEED;
+
             velocity.x = dx * DRAG_SPEED;
             velocity.y = dy * DRAG_SPEED;
             lastPos = { x: t.clientX, y: t.clientY };
