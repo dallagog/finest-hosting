@@ -18,7 +18,8 @@
             --tron-blue: #0066ff;
             --tron-glass: rgba(0, 20, 30, 0.85);
             --tron-text: #ffffff;
-            --cube-size: 280px;
+            /* RIDUZIONE DELLA DIMENSIONE DEL CUBO */
+            --cube-size: 200px;
         }
 
         * {
@@ -146,13 +147,16 @@
             border: 2px solid var(--tron-cyan);
             display: flex;
             flex-direction: column;
-            justify-content: center;
+            /* Modificato: Rimosso justify-content: center per far spazio ai dati */
             align-items: center;
             box-shadow: 0 0 15px var(--tron-cyan-dim), inset 0 0 20px var(--tron-cyan-dim);
             backface-visibility: visible;
             transition: background 0.2s, box-shadow 0.2s;
             cursor: pointer;
             text-align: center;
+            /* Aggiunto padding per il contenuto */
+            padding: 10px;
+            overflow: hidden;
         }
 
         .face.disabled {
@@ -170,17 +174,19 @@
         }
 
         .face i {
-            font-size: 3.5rem;
+            font-size: 2.5rem;
+            /* Icona leggermente più piccola */
             color: var(--tron-cyan);
-            margin-bottom: 15px;
+            margin-bottom: 5px;
             text-shadow: 0 0 15px var(--tron-cyan);
             transform: translateZ(20px);
         }
 
         .face .face-title {
-            font-size: 1rem;
+            font-size: 0.9rem;
+            /* Titolo leggermente più piccolo */
             text-transform: uppercase;
-            letter-spacing: 2px;
+            letter-spacing: 1px;
             font-weight: 700;
             color: #fff;
             text-shadow: 0 0 10px var(--tron-cyan);
@@ -188,15 +194,48 @@
             margin-bottom: 5px;
         }
 
-        .face .face-data {
-            font-size: 0.75rem;
-            color: var(--tron-blue);
+        /* NUOVO CONTENITORE DATI */
+        .face-data-container {
+            width: 100%;
+            flex-grow: 1;
+            /* Prende lo spazio rimanente */
+            overflow-y: auto;
+            /* Rende scrollabile */
+            padding-top: 5px;
+            font-size: 0.65rem;
+            text-align: left;
             transform: translateZ(20px);
-            max-width: 90%;
+            scrollbar-width: none;
+            /* Firefox */
+        }
+
+        .face-data-container::-webkit-scrollbar {
+            display: none;
+            /* Chrome, Safari, Opera */
+        }
+
+        .data-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 2px 0;
+            border-bottom: 1px dotted var(--tron-cyan-dim);
+        }
+
+        .data-item-label {
+            color: var(--tron-cyan);
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
+            max-width: 60%;
         }
+
+        .data-item-value {
+            color: var(--tron-blue);
+            font-weight: 700;
+            margin-left: 5px;
+        }
+
+        /* FINE NUOVO CONTENITORE DATI */
 
         /* Loading State */
         .loading-text {
@@ -350,32 +389,32 @@
                 <div class="face front" id="face-0">
                     <i class="fa fa-circle-notch fa-spin"></i>
                     <span class="face-title">Loading...</span>
-                    <span class="face-data"></span>
+                    <div class="face-data-container"></div>
                 </div>
                 <div class="face back" id="face-1">
                     <i class="fa fa-cube"></i>
                     <span class="face-title"></span>
-                    <span class="face-data"></span>
+                    <div class="face-data-container"></div>
                 </div>
                 <div class="face right" id="face-2">
                     <i class="fa fa-cube"></i>
                     <span class="face-title"></span>
-                    <span class="face-data"></span>
+                    <div class="face-data-container"></div>
                 </div>
                 <div class="face left" id="face-3">
                     <i class="fa fa-cube"></i>
                     <span class="face-title"></span>
-                    <span class="face-data"></span>
+                    <div class="face-data-container"></div>
                 </div>
                 <div class="face top" id="face-4">
                     <i class="fa fa-cube"></i>
                     <span class="face-title"></span>
-                    <span class="face-data"></span>
+                    <div class="face-data-container"></div>
                 </div>
                 <div class="face bottom" id="face-5">
                     <i class="fa fa-cube"></i>
                     <span class="face-title"></span>
-                    <span class="face-data"></span>
+                    <div class="face-data-container"></div>
                 </div>
             </div>
 
@@ -469,6 +508,8 @@
         // Init
         document.addEventListener('DOMContentLoaded', async () => {
             initConnections();
+            // Aggiustamento della dimensione del cubo per i calcoli delle connessioni
+            document.documentElement.style.setProperty('--cube-size', '200px');
             if (checkAuth()) {
                 loadUser();
                 await loadCubeData();
@@ -514,15 +555,12 @@
                 const data = await response.json();
 
                 // Gestione della risposta
-                // Potrebbe essere { status: "ok", data: { ... } } oppure direttamente l'oggetto { ... }
-                // Cerchiamo di normalizzare
                 let cubeData = {};
                 if (data.status === 'ok' && data.data) {
-                    cubeData = data.data; // Struttura standard
+                    cubeData = data.data;
                 } else if (data.Portfolio || data.New) {
-                    cubeData = data; // Struttura piatta come da esempio file json
+                    cubeData = data;
                 } else if (data.groups) {
-                    // Fallback se struttura diversa
                     cubeData = data.groups;
                 }
 
@@ -546,7 +584,7 @@
                 const el = document.getElementById(id);
                 el.classList.add('disabled');
                 el.querySelector('.face-title').innerText = "Vuoto";
-                el.querySelector('.face-data').innerText = "";
+                el.querySelector('.face-data-container').innerHTML = "";
                 el.querySelector('i').className = "fa fa-ban";
                 el.onclick = null;
             });
@@ -571,26 +609,58 @@
                     // Set Titolo
                     el.querySelector('.face-title').innerText = config.label;
 
-                    // Prova a estrarre un dato significativo da mostrare
-                    // Es: Se Portfolio ha "Controvalore", mostriamolo
-                    let dataText = "";
+                    // NUOVA LOGICA: Inserisci tutti i campi (Nome Campo: Valore) in un contenitore scrollabile
+                    const dataContainer = el.querySelector('.face-data-container');
+                    dataContainer.innerHTML = '';
+
                     if (itemData && typeof itemData === 'object') {
-                        if (itemData["Controvalore"]) {
-                            // Pulisce "265950.24:EUR" -> "€ 265,950.24" approssimativo
-                            const raw = itemData["Controvalore"].split(':')[0];
-                            const num = parseFloat(raw).toLocaleString('it-IT', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
-                            dataText = `€ ${num}`;
-                        } else {
-                            // Se non c'è controvalore, prendi il primo valore disponibile se è semplice
-                            const firstKey = Object.keys(itemData)[0];
-                            const firstVal = itemData[firstKey];
-                            if (typeof firstVal === 'string' && firstVal.length < 15) {
-                                // Mostra solo se breve
-                                dataText = firstVal;
+                        const allKeys = Object.keys(itemData);
+                        let count = 0;
+                        const MAX_FIELDS = 10;
+
+                        allKeys.forEach((dataKey) => {
+                            if (count >= MAX_FIELDS) return;
+
+                            let dataValue = itemData[dataKey];
+
+                            // Normalizzazione: Pulisce il formato "VALORE:UNITÀ" se presente
+                            if (typeof dataValue === 'string' && dataValue.includes(':')) {
+                                dataValue = dataValue.split(':')[0];
                             }
+
+                            // Formattazione (es. numeri)
+                            if (!isNaN(parseFloat(dataValue)) && isFinite(dataValue)) {
+                                const numVal = parseFloat(dataValue);
+                                // Aggiunge € e formattazione italiana se è un numero grande (es. > 100)
+                                if (Math.abs(numVal) > 1000) {
+                                    // Valore grande, formattazione valuta senza decimali per risparmiare spazio
+                                    dataValue = `€ ${numVal.toLocaleString('it-IT', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
+                                } else if (Math.abs(numVal) > 1) {
+                                    // Valore medio, 2 decimali
+                                    dataValue = numVal.toLocaleString('it-IT', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+                                } else {
+                                    // Valore piccolo/percentuale, usa il valore originale
+                                    dataValue = numVal.toLocaleString('it-IT');
+                                }
+                            }
+
+                            // Limita il valore per evitare overflow
+                            if (typeof dataValue === 'string' && dataValue.length > 20) {
+                                dataValue = dataValue.substring(0, 17) + '...';
+                            }
+
+                            const itemDiv = document.createElement('div');
+                            itemDiv.className = 'data-item';
+                            itemDiv.innerHTML = `<span class="data-item-label">${dataKey}:</span><span class="data-item-value">${dataValue}</span>`;
+                            dataContainer.appendChild(itemDiv);
+                            count++;
+                        });
+
+                        // Messaggio se ci sono troppi campi
+                        if (allKeys.length > MAX_FIELDS) {
+                            dataContainer.innerHTML += `<div class="data-item"><span class="data-item-label">... +${allKeys.length - MAX_FIELDS} voci</span></div>`;
                         }
                     }
-                    el.querySelector('.face-data').innerText = dataText;
 
                     // Azione Click
                     el.onclick = () => {
@@ -648,9 +718,10 @@
             isDragging = false;
         });
 
-        /* ========== GENERATORE CONNESSIONI (Invariato) ========== */
+        /* ========== GENERATORE CONNESSIONI (Aggiornato con la nuova dimensione) ========== */
         function initConnections() {
-            const size = 280;
+            // Usa la dimensione ridotta di 200px
+            const size = 200;
             const half = size / 2;
             const innerSize = size * 0.5;
             const innerHalf = innerSize / 2;
@@ -666,7 +737,7 @@
                 const outerZ = c[2] * half;
                 const innerX = c[0] * innerHalf;
                 const innerY = c[1] * innerHalf;
-                const innerZ = c[2] * innerHalf - 50;
+                const innerZ = c[2] * innerHalf - (size / 5.6); // Mantiene la proporzione Z tra cubi
                 createLine3D(outerX, outerY, outerZ, innerX, innerY, innerZ);
             });
         }
