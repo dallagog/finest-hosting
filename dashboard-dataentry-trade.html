@@ -888,21 +888,60 @@
                     basePath: './dataentry/',
                     folder: 'trade',
                     defaultValues: defaultValues,
-                    onSubmit: (data) => {
+                    onSubmit: async (data) => { // Aggiungi 'async'
                         console.log('Dati inviati:', data);
 
+                        const API_URL = "https://feweb-tunnel.fe-web.eu";
                         const successMsg = document.getElementById('success-msg');
-                        successMsg.classList.add('show');
+                        const formContainer = document.getElementById('form-container');
 
-                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                        const payload = {
+                            username: credentials.username,
+                            token: credentials.token,
+                            language: credentials.language,
+                            trade: JSON.stringify(data)
+                        };
 
-                        setTimeout(() => {
-                            successMsg.classList.remove('show');
-                        }, 3000);
+                        formContainer.style.opacity = 0.5;
+
+                        try {
+                            console.log('=== PUTTRADE PAYLOAD ===');
+                            console.log('Payload:', JSON.stringify(data, null, 2));
+                            console.log('====================');
+
+                            const response = await fetch(`${API_URL}/puttrade`, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'Authorization': `Bearer ${credentials.token}`
+                                },
+                                body: JSON.stringify(data)
+                            });
+
+                            if (!response.ok) {
+                                throw new Error(`HTTP error! status: ${response.status}`);
+                            }
+
+                            const result = await response.json();
+
+                            console.log('=== PUTTRADE RESPONSE ===');
+                            console.log('Response:', JSON.stringify(result, null, 2));
+                            console.log('====================');
+
+                            successMsg.classList.add('show');
+                            window.scrollTo({ top: 0, behavior: 'smooth' });
+
+                            setTimeout(() => {
+                                successMsg.classList.remove('show');
+                            }, 3000);
+
+                        } catch (error) {
+                            console.error('Errore durante il salvataggio:', error);
+                            alert(getTranslation('int.error.save.failed') || `Errore nel salvataggio: ${error.message}`);
+                        } finally {
+                            formContainer.style.opacity = 1;
+                        }
                     },
-                    onChange: (fieldName, value) => {
-                        console.log(`Campo ${fieldName} modificato:`, value);
-                    }
                 });
 
                 // Override del metodo getTranslation per usare il nostro getTranslation

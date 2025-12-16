@@ -19,7 +19,6 @@
             --tron-glass: rgba(0, 20, 30, 0.85);
             --tron-text: #ffffff;
             --cube-size: 280px;
-            /* Dimensione ottimizzata per mobile */
         }
 
         * {
@@ -37,12 +36,10 @@
             height: 100vh;
             width: 100vw;
             overflow: hidden;
-            /* Blocca scroll pagina */
             display: flex;
             flex-direction: column;
             perspective: 1000px;
             touch-action: none;
-            /* Disabilita zoom/scroll nativi */
         }
 
         /* --- SFONDO GRIGLIA TRON --- */
@@ -146,7 +143,6 @@
             width: var(--cube-size);
             height: var(--cube-size);
             background: rgba(0, 10, 20, 0.6);
-            /* Semi-trasparente per vedere dentro */
             border: 2px solid var(--tron-cyan);
             display: flex;
             flex-direction: column;
@@ -154,24 +150,28 @@
             align-items: center;
             box-shadow: 0 0 15px var(--tron-cyan-dim), inset 0 0 20px var(--tron-cyan-dim);
             backface-visibility: visible;
-            /* Importante per l'effetto ologramma */
             transition: background 0.2s, box-shadow 0.2s;
             cursor: pointer;
         }
 
-        .face:active {
+        .face.disabled {
+            filter: grayscale(100%);
+            opacity: 0.5;
+            cursor: default;
+            pointer-events: none;
+        }
+
+        .face:active:not(.disabled) {
             background: rgba(0, 243, 255, 0.15);
             box-shadow: 0 0 30px var(--tron-cyan);
         }
 
-        /* Contenuto Faccia */
         .face i {
             font-size: 3.5rem;
             color: var(--tron-cyan);
             margin-bottom: 15px;
             text-shadow: 0 0 15px var(--tron-cyan);
             transform: translateZ(20px);
-            /* Effetto parallasse */
         }
 
         .face span {
@@ -182,6 +182,24 @@
             color: #fff;
             text-shadow: 0 0 10px var(--tron-cyan);
             transform: translateZ(20px);
+            text-align: center;
+            padding: 0 10px;
+        }
+
+        /* Loading State */
+        .loading-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: var(--tron-cyan);
+            font-size: 1.2rem;
+            animation: pulse 1s infinite;
+            z-index: 200;
+            pointer-events: none;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 20px;
+            border: 1px solid var(--tron-cyan);
         }
 
         /* Posizioni Faccia Esterna */
@@ -218,7 +236,6 @@
             left: 25%;
             transform-style: preserve-3d;
             pointer-events: none;
-            /* Non cliccabile, solo visuale */
         }
 
         .inner-face {
@@ -230,7 +247,6 @@
             box-shadow: 0 0 10px var(--tron-cyan-dim);
         }
 
-        /* Posizioni Faccia Interna (metà della Z esterna) */
         .inner-front {
             transform: translateZ(calc(var(--cube-size)/4));
         }
@@ -313,33 +329,35 @@
         <button class="logout-btn" onclick="handleLogout()">ESCI</button>
     </div>
 
+    <div id="loadingIndicator" class="loading-text" style="display: none;">SYSTEM SYNC...</div>
+
     <div class="scene" id="touchScene">
         <div class="tesseract-wrapper" id="tesseract">
 
             <div class="outer-cube">
-                <div class="face front" onclick="nav('dashboard-mobile-portfolio.html')">
-                    <i class="fa fa-chart-pie"></i>
-                    <span>Portafoglio</span>
+                <div class="face front" id="face-0">
+                    <i class="fa fa-circle-notch fa-spin"></i>
+                    <span>Loading...</span>
                 </div>
-                <div class="face back" onclick="nav('dashboard-mobile-trading.html')">
-                    <i class="fa fa-rocket"></i>
-                    <span>Go Live</span>
+                <div class="face back" id="face-1">
+                    <i class="fa fa-lock"></i>
+                    <span>N/A</span>
                 </div>
-                <div class="face right" onclick="nav('dashboard-mobile-news.html')">
-                    <i class="fa fa-newspaper"></i>
-                    <span>News</span>
+                <div class="face right" id="face-2">
+                    <i class="fa fa-lock"></i>
+                    <span>N/A</span>
                 </div>
-                <div class="face left" onclick="nav('dashboard-mobile-account.html')">
-                    <i class="fa fa-file-invoice-dollar"></i>
-                    <span>Rapporti</span>
+                <div class="face left" id="face-3">
+                    <i class="fa fa-lock"></i>
+                    <span>N/A</span>
                 </div>
-                <div class="face top" onclick="nav('dashboard-mobile-market.html')">
-                    <i class="fa fa-globe"></i>
-                    <span>Mercati</span>
+                <div class="face top" id="face-4">
+                    <i class="fa fa-lock"></i>
+                    <span>N/A</span>
                 </div>
-                <div class="face bottom" onclick="nav('dashboard-mobile-trend.html')">
-                    <i class="fa fa-chart-line"></i>
-                    <span>Trend</span>
+                <div class="face bottom" id="face-5">
+                    <i class="fa fa-lock"></i>
+                    <span>N/A</span>
                 </div>
             </div>
 
@@ -362,13 +380,28 @@
     </div>
 
     <script>
-        /* ========== LOGICA TRON 4D ========== */
+        /* ========== CONFIG & STATE ========== */
+        const API_URL = "https://feweb-tunnel.fe-web.eu";
 
-        // Elementi
+        // Elementi DOM
         const scene = document.getElementById('touchScene');
         const tesseract = document.getElementById('tesseract');
         const connContainer = document.getElementById('connections');
         const usernameDisplay = document.getElementById('username');
+        const loadingIndicator = document.getElementById('loadingIndicator');
+
+        // Mappatura delle 6 facce del cubo
+        const faceMap = ['face-0', 'face-1', 'face-2', 'face-3', 'face-4', 'face-5'];
+
+        // Icone di default se non fornite dall'API (fallback per indice)
+        const defaultIcons = [
+            'fa-chart-pie',         // Front
+            'fa-rocket',            // Back
+            'fa-newspaper',         // Right
+            'fa-file-invoice-dollar', // Left
+            'fa-globe',             // Top
+            'fa-chart-line'         // Bottom
+        ];
 
         // Stato Rotazione
         let currentRot = { x: -15, y: 35 };
@@ -377,44 +410,137 @@
         let lastPos = { x: 0, y: 0 };
         let velocity = { x: 0, y: 0 };
 
-        // Fisica
         const DRAG_SPEED = 0.4;
-        const INERTIA = 0.95; // Più alto = scivola di più
+        const INERTIA = 0.95;
         const SMOOTHING = 0.1;
 
         // Init
-        document.addEventListener('DOMContentLoaded', () => {
+        document.addEventListener('DOMContentLoaded', async () => {
             initConnections();
-            loadUser();
+            if (checkAuth()) {
+                loadUser();
+                await loadCubeData(); // Carica i dati dal server
+            }
             animate();
         });
 
-        // Loop di Animazione (60fps)
+        /* ========== API & DATA HANDLING ========== */
+
+        function checkAuth() {
+            const token = localStorage.getItem("token");
+            if (!token) {
+                window.location.href = 'login.html';
+                return false;
+            }
+            return true;
+        }
+
+        async function loadCubeData() {
+            const username = localStorage.getItem("username");
+            const token = localStorage.getItem("token");
+            const language = localStorage.getItem("language") || 'it_IT';
+
+            loadingIndicator.style.display = 'block';
+
+            try {
+                // Payload simile a getportfolio
+                const payload = {
+                    username: username,
+                    token: token,
+                    language: language,
+                    filter: "", // Filtri opzionali se richiesti da getcube
+                    code: ""
+                };
+
+                const response = await fetch(`${API_URL}/getcube`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) throw new Error('Network response was not ok');
+
+                const data = await response.json();
+
+                if (data.status === 'ok') {
+                    // Si assume che 'data.groups' o 'data.cube' contenga l'array.
+                    // Adattare 'data.groups' in base alla reale risposta JSON di /getcube
+                    // Se la struttura è diversa, cambiare qui:
+                    const groups = data.groups || data.cube || data.menu || [];
+
+                    populateFaces(groups);
+                } else {
+                    console.error("Errore stato API:", data);
+                    handleLogout(); // Sessione probabilmente scaduta
+                }
+
+            } catch (error) {
+                console.error("Errore fetch getcube:", error);
+                // Fallback visuale in caso di errore
+                document.querySelector('#face-0 span').innerText = "Errore Connessione";
+                document.querySelector('#face-0 i').className = "fa fa-exclamation-triangle";
+            } finally {
+                loadingIndicator.style.display = 'none';
+            }
+        }
+
+        function populateFaces(groups) {
+            // Resetta tutte le facce prima
+            faceMap.forEach(id => {
+                const el = document.getElementById(id);
+                el.classList.add('disabled');
+                el.querySelector('span').innerText = "Vuoto";
+                el.querySelector('i').className = "fa fa-ban";
+                el.onclick = null;
+            });
+
+            // Popola con i dati ricevuti (max 6 gruppi)
+            groups.forEach((group, index) => {
+                if (index >= 6) return; // Il cubo ha solo 6 facce
+
+                const faceId = faceMap[index];
+                const el = document.getElementById(faceId);
+
+                if (el) {
+                    el.classList.remove('disabled');
+
+                    // Testo
+                    const label = group.description || group.label || group.name || "Gruppo " + (index + 1);
+                    el.querySelector('span').innerText = label;
+
+                    // Icona (usa quella del server o fallback)
+                    const iconClass = group.icon || defaultIcons[index] || 'fa-cube';
+                    el.querySelector('i').className = `fa ${iconClass}`;
+
+                    // Azione Click
+                    // Se il JSON ha un campo 'link', 'url' o 'action'
+                    const targetUrl = group.link || group.url || group.html || '#';
+
+                    el.onclick = () => {
+                        console.log("Navigating to:", targetUrl);
+                        nav(targetUrl);
+                    };
+                }
+            });
+        }
+
+        /* ========== LOGICA 3D & ANIMAZIONE ========== */
+
         function animate() {
-            // Se non trascino, applico inerzia alla target rotation
             if (!isDragging) {
                 targetRot.x -= velocity.y;
                 targetRot.y += velocity.x;
-
-                // Smorzamento velocità
                 velocity.x *= INERTIA;
                 velocity.y *= INERTIA;
-
-                // Stop se molto lento
                 if (Math.abs(velocity.x) < 0.01) velocity.x = 0;
                 if (Math.abs(velocity.y) < 0.01) velocity.y = 0;
             }
 
-            // Interpolazione fluida (LERP) verso il target
             currentRot.x += (targetRot.x - currentRot.x) * SMOOTHING;
             currentRot.y += (targetRot.y - currentRot.y) * SMOOTHING;
 
-            // Applica rotazione
-            // Ruotiamo l'intero wrapper
             tesseract.style.transform = `rotateX(${currentRot.x}deg) rotateY(${currentRot.y}deg)`;
 
-            // Rotazione inversa leggera del cubo interno per effetto 4D
-            // Questo crea la sensazione che il cubo interno "galleggi" diversamente
             const inner = document.querySelector('.inner-cube');
             inner.style.transform = `translateZ(-50px) rotateX(${currentRot.x * 0.2}deg) rotateY(${currentRot.y * 0.2}deg)`;
 
@@ -427,22 +553,20 @@
             isDragging = true;
             const t = e.touches[0];
             lastPos = { x: t.clientX, y: t.clientY };
-            velocity = { x: 0, y: 0 }; // Reset velocità al tocco
+            velocity = { x: 0, y: 0 };
         }, { passive: false });
 
         scene.addEventListener('touchmove', (e) => {
             if (!isDragging) return;
-            e.preventDefault(); // Blocca lo scroll della pagina
+            e.preventDefault();
             const t = e.touches[0];
 
             const dx = t.clientX - lastPos.x;
             const dy = t.clientY - lastPos.y;
 
-            // Aggiorno target direttamente mentre trascino
             targetRot.y += dx * DRAG_SPEED;
             targetRot.x -= dy * DRAG_SPEED;
 
-            // Calcolo velocità istantanea per il rilascio
             velocity.x = dx * DRAG_SPEED;
             velocity.y = dy * DRAG_SPEED;
 
@@ -453,31 +577,26 @@
             isDragging = false;
         });
 
-        /* ========== GENERATORE CONNESSIONI (Geometria) ========== */
+        /* ========== GENERATORE CONNESSIONI ========== */
         function initConnections() {
-            // Dimensioni in pixel basate su CSS
             const size = 280;
             const half = size / 2;
-            const innerSize = size * 0.5; // 50% scale
+            const innerSize = size * 0.5;
             const innerHalf = innerSize / 2;
 
-            // Vertici Cubo Esterno (coordinate relative al centro)
             const corners = [
-                [-1, -1, 1], [1, -1, 1], [1, 1, 1], [-1, 1, 1], // Front
-                [-1, -1, -1], [1, -1, -1], [1, 1, -1], [-1, 1, -1] // Back
+                [-1, -1, 1], [1, -1, 1], [1, 1, 1], [-1, 1, 1],
+                [-1, -1, -1], [1, -1, -1], [1, 1, -1], [-1, 1, -1]
             ];
 
-            // Crea linee che collegano vertice esterno -> vertice interno corrispondente
             corners.forEach(c => {
                 const outerX = c[0] * half;
                 const outerY = c[1] * half;
                 const outerZ = c[2] * half;
 
-                // Il cubo interno è traslato leggermente indietro nello stile, ma calcoliamo geometricamente
-                // Per semplificare visivamente, colleghiamo i vertici "logici"
                 const innerX = c[0] * innerHalf;
                 const innerY = c[1] * innerHalf;
-                const innerZ = c[2] * innerHalf - 50; // Offset Z del cubo interno
+                const innerZ = c[2] * innerHalf - 50;
 
                 createLine3D(outerX, outerY, outerZ, innerX, innerY, innerZ);
             });
@@ -486,41 +605,24 @@
         function createLine3D(x1, y1, z1, x2, y2, z2) {
             const el = document.createElement('div');
             el.className = 'connector';
-
-            // Matematica 3D per lunghezza e rotazione CSS
             const dx = x2 - x1;
             const dy = y2 - y1;
             const dz = z2 - z1;
             const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
-
-            // Calcolo rotazioni
-            // In CSS rotateY ruota attorno a Y, rotateZ attorno a Z
-            // Per allineare una div 2D nello spazio 3D serve un po' di trigonometria
-
-            // Troviamo il punto medio
             const mx = (x1 + x2) / 2;
             const my = (y1 + y2) / 2;
             const mz = (z1 + z2) / 2;
-
-            // Angoli di Eulero approssimati per CSS transform
-            // Nota: questo è un'approssimazione visiva per le linee diagonali del tesseratto
             const rotY = Math.atan2(dx, dz) * (180 / Math.PI);
-            const rotX = Math.atan2(dy, Math.sqrt(dx * dx + dz * dz)) * (180 / Math.PI) * -1; // Invertito per CSS
+            const rotX = Math.atan2(dy, Math.sqrt(dx * dx + dz * dz)) * (180 / Math.PI) * -1;
 
             el.style.width = `${dist}px`;
             el.style.transform = `translate3d(${mx - dist / 2}px, ${my}px, ${mz}px) rotateY(${rotY}deg) rotateZ(${rotX}deg)`;
-
-            // Hack CSS per ruotare la linea sull'asse corretto (div default è orizzontale)
-            // Stile raffinato nel createLine non è perfetto per tutti gli angoli 3D puri con HTML,
-            // Ma per il tesseratto simmetrico funziona bene se usiamo vertici statici.
-            // Dato che ruotiamo il genitore, le linee sono statiche rispetto ai cubi.
-
             connContainer.appendChild(el);
         }
 
-        /* ========== FUNZIONI UTENTE ========== */
+        /* ========== UTILITY ========== */
         function nav(url) {
-            // Effetto feedback visivo
+            if (!url || url === '#') return;
             document.body.style.opacity = 0;
             document.body.style.transition = "opacity 0.3s";
             setTimeout(() => {
@@ -538,7 +640,6 @@
             window.location.href = 'login.html';
         }
 
-        // Fix per il resize su mobile browser (barra indirizzi)
         window.addEventListener('resize', () => {
             document.body.style.height = window.innerHeight + 'px';
         });
