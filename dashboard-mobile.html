@@ -152,13 +152,16 @@
             backface-visibility: visible;
             transition: background 0.2s, box-shadow 0.2s;
             cursor: pointer;
+            text-align: center;
         }
 
         .face.disabled {
             filter: grayscale(100%);
-            opacity: 0.5;
+            opacity: 0.3;
             cursor: default;
             pointer-events: none;
+            border-color: #555;
+            box-shadow: none;
         }
 
         .face:active:not(.disabled) {
@@ -174,16 +177,25 @@
             transform: translateZ(20px);
         }
 
-        .face span {
-            font-size: 0.9rem;
+        .face .face-title {
+            font-size: 1rem;
             text-transform: uppercase;
             letter-spacing: 2px;
             font-weight: 700;
             color: #fff;
             text-shadow: 0 0 10px var(--tron-cyan);
             transform: translateZ(20px);
-            text-align: center;
-            padding: 0 10px;
+            margin-bottom: 5px;
+        }
+
+        .face .face-data {
+            font-size: 0.75rem;
+            color: var(--tron-blue);
+            transform: translateZ(20px);
+            max-width: 90%;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         /* Loading State */
@@ -329,7 +341,7 @@
         <button class="logout-btn" onclick="handleLogout()">ESCI</button>
     </div>
 
-    <div id="loadingIndicator" class="loading-text" style="display: none;">SYSTEM SYNC...</div>
+    <div id="loadingIndicator" class="loading-text" style="display: none;">LOADING CUBE...</div>
 
     <div class="scene" id="touchScene">
         <div class="tesseract-wrapper" id="tesseract">
@@ -337,27 +349,33 @@
             <div class="outer-cube">
                 <div class="face front" id="face-0">
                     <i class="fa fa-circle-notch fa-spin"></i>
-                    <span>Loading...</span>
+                    <span class="face-title">Loading...</span>
+                    <span class="face-data"></span>
                 </div>
                 <div class="face back" id="face-1">
-                    <i class="fa fa-lock"></i>
-                    <span>N/A</span>
+                    <i class="fa fa-cube"></i>
+                    <span class="face-title"></span>
+                    <span class="face-data"></span>
                 </div>
                 <div class="face right" id="face-2">
-                    <i class="fa fa-lock"></i>
-                    <span>N/A</span>
+                    <i class="fa fa-cube"></i>
+                    <span class="face-title"></span>
+                    <span class="face-data"></span>
                 </div>
                 <div class="face left" id="face-3">
-                    <i class="fa fa-lock"></i>
-                    <span>N/A</span>
+                    <i class="fa fa-cube"></i>
+                    <span class="face-title"></span>
+                    <span class="face-data"></span>
                 </div>
                 <div class="face top" id="face-4">
-                    <i class="fa fa-lock"></i>
-                    <span>N/A</span>
+                    <i class="fa fa-cube"></i>
+                    <span class="face-title"></span>
+                    <span class="face-data"></span>
                 </div>
                 <div class="face bottom" id="face-5">
-                    <i class="fa fa-lock"></i>
-                    <span>N/A</span>
+                    <i class="fa fa-cube"></i>
+                    <span class="face-title"></span>
+                    <span class="face-data"></span>
                 </div>
             </div>
 
@@ -390,18 +408,52 @@
         const usernameDisplay = document.getElementById('username');
         const loadingIndicator = document.getElementById('loadingIndicator');
 
-        // Mappatura delle 6 facce del cubo
+        // Mappa ID facce del DOM
         const faceMap = ['face-0', 'face-1', 'face-2', 'face-3', 'face-4', 'face-5'];
 
-        // Icone di default se non fornite dall'API (fallback per indice)
-        const defaultIcons = [
-            'fa-chart-pie',         // Front
-            'fa-rocket',            // Back
-            'fa-newspaper',         // Right
-            'fa-file-invoice-dollar', // Left
-            'fa-globe',             // Top
-            'fa-chart-line'         // Bottom
-        ];
+        // CONFIGURAZIONE MAPPING JSON -> UI
+        // Questa mappa associa le chiavi del JSON ("Portfolio", "New", etc.) 
+        // alle icone e ai file di destinazione corretti.
+        const cubeConfig = {
+            "Portfolio": {
+                icon: "fa-chart-pie",
+                url: "dashboard-mobile-portfolio.html",
+                label: "Portafoglio"
+            },
+            "New": { // Il JSON dice "New", presumo siano News
+                icon: "fa-newspaper",
+                url: "dashboard-mobile-news.html",
+                label: "News"
+            },
+            "Market": {
+                icon: "fa-globe",
+                url: "dashboard-mobile-market.html",
+                label: "Mercati"
+            },
+            "Trend": {
+                icon: "fa-chart-line",
+                url: "dashboard-mobile-trend.html",
+                label: "Trend"
+            },
+            "Go live": {
+                icon: "fa-rocket",
+                url: "dashboard-mobile-trading.html",
+                label: "Go Live"
+            },
+            // Fallback per chiavi sconosciute o extra (es. Account/Rapporti)
+            "Account": {
+                icon: "fa-file-invoice-dollar",
+                url: "dashboard-mobile-account.html",
+                label: "Rapporti"
+            }
+        };
+
+        // Fallback generico se arriva una chiave non in config
+        const genericConfig = {
+            icon: "fa-cube",
+            url: "#",
+            label: "Dati"
+        };
 
         // Stato Rotazione
         let currentRot = { x: -15, y: 35 };
@@ -419,7 +471,7 @@
             initConnections();
             if (checkAuth()) {
                 loadUser();
-                await loadCubeData(); // Carica i dati dal server
+                await loadCubeData();
             }
             animate();
         });
@@ -443,12 +495,11 @@
             loadingIndicator.style.display = 'block';
 
             try {
-                // Payload simile a getportfolio
                 const payload = {
                     username: username,
                     token: token,
                     language: language,
-                    filter: "", // Filtri opzionali se richiesti da getcube
+                    filter: "",
                     code: ""
                 };
 
@@ -462,69 +513,94 @@
 
                 const data = await response.json();
 
-                if (data.status === 'ok') {
-                    // Si assume che 'data.groups' o 'data.cube' contenga l'array.
-                    // Adattare 'data.groups' in base alla reale risposta JSON di /getcube
-                    // Se la struttura è diversa, cambiare qui:
-                    const groups = data.groups || data.cube || data.menu || [];
-
-                    populateFaces(groups);
-                } else {
-                    console.error("Errore stato API:", data);
-                    handleLogout(); // Sessione probabilmente scaduta
+                // Gestione della risposta
+                // Potrebbe essere { status: "ok", data: { ... } } oppure direttamente l'oggetto { ... }
+                // Cerchiamo di normalizzare
+                let cubeData = {};
+                if (data.status === 'ok' && data.data) {
+                    cubeData = data.data; // Struttura standard
+                } else if (data.Portfolio || data.New) {
+                    cubeData = data; // Struttura piatta come da esempio file json
+                } else if (data.groups) {
+                    // Fallback se struttura diversa
+                    cubeData = data.groups;
                 }
+
+                populateFacesFromObject(cubeData);
 
             } catch (error) {
                 console.error("Errore fetch getcube:", error);
-                // Fallback visuale in caso di errore
-                document.querySelector('#face-0 span').innerText = "Errore Connessione";
+                document.querySelector('#face-0 .face-title').innerText = "Errore";
                 document.querySelector('#face-0 i').className = "fa fa-exclamation-triangle";
             } finally {
                 loadingIndicator.style.display = 'none';
             }
         }
 
-        function populateFaces(groups) {
-            // Resetta tutte le facce prima
+        function populateFacesFromObject(dataObj) {
+            // Ottieni le chiavi dell'oggetto (es. ["Portfolio", "New", "Market", ...])
+            const keys = Object.keys(dataObj);
+
+            // Resetta tutte le facce
             faceMap.forEach(id => {
                 const el = document.getElementById(id);
                 el.classList.add('disabled');
-                el.querySelector('span').innerText = "Vuoto";
+                el.querySelector('.face-title').innerText = "Vuoto";
+                el.querySelector('.face-data').innerText = "";
                 el.querySelector('i').className = "fa fa-ban";
                 el.onclick = null;
             });
 
-            // Popola con i dati ricevuti (max 6 gruppi)
-            groups.forEach((group, index) => {
-                if (index >= 6) return; // Il cubo ha solo 6 facce
+            // Itera sulle chiavi e riempi le facce (max 6)
+            keys.forEach((key, index) => {
+                if (index >= 6) return;
 
                 const faceId = faceMap[index];
                 const el = document.getElementById(faceId);
+                const itemData = dataObj[key]; // Il contenuto (es. { "Controvalore": "..." })
+
+                // Recupera configurazione per questa chiave (Icona, Url, Label ITA)
+                const config = cubeConfig[key] || { ...genericConfig, label: key };
 
                 if (el) {
                     el.classList.remove('disabled');
 
-                    // Testo
-                    const label = group.description || group.label || group.name || "Gruppo " + (index + 1);
-                    el.querySelector('span').innerText = label;
+                    // Set Icona
+                    el.querySelector('i').className = `fa ${config.icon}`;
 
-                    // Icona (usa quella del server o fallback)
-                    const iconClass = group.icon || defaultIcons[index] || 'fa-cube';
-                    el.querySelector('i').className = `fa ${iconClass}`;
+                    // Set Titolo
+                    el.querySelector('.face-title').innerText = config.label;
+
+                    // Prova a estrarre un dato significativo da mostrare
+                    // Es: Se Portfolio ha "Controvalore", mostriamolo
+                    let dataText = "";
+                    if (itemData && typeof itemData === 'object') {
+                        if (itemData["Controvalore"]) {
+                            // Pulisce "265950.24:EUR" -> "€ 265,950.24" approssimativo
+                            const raw = itemData["Controvalore"].split(':')[0];
+                            const num = parseFloat(raw).toLocaleString('it-IT', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+                            dataText = `€ ${num}`;
+                        } else {
+                            // Se non c'è controvalore, prendi il primo valore disponibile se è semplice
+                            const firstKey = Object.keys(itemData)[0];
+                            const firstVal = itemData[firstKey];
+                            if (typeof firstVal === 'string' && firstVal.length < 15) {
+                                // Mostra solo se breve
+                                dataText = firstVal;
+                            }
+                        }
+                    }
+                    el.querySelector('.face-data').innerText = dataText;
 
                     // Azione Click
-                    // Se il JSON ha un campo 'link', 'url' o 'action'
-                    const targetUrl = group.link || group.url || group.html || '#';
-
                     el.onclick = () => {
-                        console.log("Navigating to:", targetUrl);
-                        nav(targetUrl);
+                        nav(config.url);
                     };
                 }
             });
         }
 
-        /* ========== LOGICA 3D & ANIMAZIONE ========== */
+        /* ========== LOGICA 3D (Invariata) ========== */
 
         function animate() {
             if (!isDragging) {
@@ -540,14 +616,13 @@
             currentRot.y += (targetRot.y - currentRot.y) * SMOOTHING;
 
             tesseract.style.transform = `rotateX(${currentRot.x}deg) rotateY(${currentRot.y}deg)`;
-
             const inner = document.querySelector('.inner-cube');
             inner.style.transform = `translateZ(-50px) rotateX(${currentRot.x * 0.2}deg) rotateY(${currentRot.y * 0.2}deg)`;
 
             requestAnimationFrame(animate);
         }
 
-        /* ========== GESTIONE TOUCH ========== */
+        /* ========== GESTIONE TOUCH (Invariata) ========== */
 
         scene.addEventListener('touchstart', (e) => {
             isDragging = true;
@@ -560,16 +635,12 @@
             if (!isDragging) return;
             e.preventDefault();
             const t = e.touches[0];
-
             const dx = t.clientX - lastPos.x;
             const dy = t.clientY - lastPos.y;
-
             targetRot.y += dx * DRAG_SPEED;
             targetRot.x -= dy * DRAG_SPEED;
-
             velocity.x = dx * DRAG_SPEED;
             velocity.y = dy * DRAG_SPEED;
-
             lastPos = { x: t.clientX, y: t.clientY };
         }, { passive: false });
 
@@ -577,7 +648,7 @@
             isDragging = false;
         });
 
-        /* ========== GENERATORE CONNESSIONI ========== */
+        /* ========== GENERATORE CONNESSIONI (Invariato) ========== */
         function initConnections() {
             const size = 280;
             const half = size / 2;
@@ -593,11 +664,9 @@
                 const outerX = c[0] * half;
                 const outerY = c[1] * half;
                 const outerZ = c[2] * half;
-
                 const innerX = c[0] * innerHalf;
                 const innerY = c[1] * innerHalf;
                 const innerZ = c[2] * innerHalf - 50;
-
                 createLine3D(outerX, outerY, outerZ, innerX, innerY, innerZ);
             });
         }
@@ -614,7 +683,6 @@
             const mz = (z1 + z2) / 2;
             const rotY = Math.atan2(dx, dz) * (180 / Math.PI);
             const rotX = Math.atan2(dy, Math.sqrt(dx * dx + dz * dz)) * (180 / Math.PI) * -1;
-
             el.style.width = `${dist}px`;
             el.style.transform = `translate3d(${mx - dist / 2}px, ${my}px, ${mz}px) rotateY(${rotY}deg) rotateZ(${rotX}deg)`;
             connContainer.appendChild(el);
