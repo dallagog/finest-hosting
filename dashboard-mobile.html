@@ -5,7 +5,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0" />
     <meta name="theme-color" content="#000000">
-    <title>Tesseract Menu Mobile</title>
+    <title>Dashboard Tesseratto</title>
 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
@@ -18,7 +18,7 @@
             --tron-blue: #0066ff;
             --tron-glass: rgba(0, 20, 30, 0.85);
             --tron-text: #ffffff;
-            /* RIDUZIONE DELLA DIMENSIONE DEL CUBO */
+            /* Dimensione del cubo ridotta a 200px */
             --cube-size: 200px;
         }
 
@@ -147,14 +147,12 @@
             border: 2px solid var(--tron-cyan);
             display: flex;
             flex-direction: column;
-            /* Modificato: Rimosso justify-content: center per far spazio ai dati */
             align-items: center;
             box-shadow: 0 0 15px var(--tron-cyan-dim), inset 0 0 20px var(--tron-cyan-dim);
             backface-visibility: visible;
             transition: background 0.2s, box-shadow 0.2s;
             cursor: pointer;
             text-align: center;
-            /* Aggiunto padding per il contenuto */
             padding: 10px;
             overflow: hidden;
         }
@@ -175,7 +173,6 @@
 
         .face i {
             font-size: 2.5rem;
-            /* Icona leggermente più piccola */
             color: var(--tron-cyan);
             margin-bottom: 5px;
             text-shadow: 0 0 15px var(--tron-cyan);
@@ -184,7 +181,6 @@
 
         .face .face-title {
             font-size: 0.9rem;
-            /* Titolo leggermente più piccolo */
             text-transform: uppercase;
             letter-spacing: 1px;
             font-weight: 700;
@@ -194,24 +190,20 @@
             margin-bottom: 5px;
         }
 
-        /* NUOVO CONTENITORE DATI */
+        /* Contenitore Dati Scrollabile */
         .face-data-container {
             width: 100%;
             flex-grow: 1;
-            /* Prende lo spazio rimanente */
             overflow-y: auto;
-            /* Rende scrollabile */
             padding-top: 5px;
             font-size: 0.65rem;
             text-align: left;
             transform: translateZ(20px);
             scrollbar-width: none;
-            /* Firefox */
         }
 
         .face-data-container::-webkit-scrollbar {
             display: none;
-            /* Chrome, Safari, Opera */
         }
 
         .data-item {
@@ -234,8 +226,6 @@
             font-weight: 700;
             margin-left: 5px;
         }
-
-        /* FINE NUOVO CONTENITORE DATI */
 
         /* Loading State */
         .loading-text {
@@ -276,70 +266,6 @@
 
         .bottom {
             transform: rotateX(-90deg) translateZ(calc(var(--cube-size)/2));
-        }
-
-        /* --- CUBO INTERNO (Hypercube Core) --- */
-        .inner-cube {
-            width: 50%;
-            height: 50%;
-            position: absolute;
-            top: 25%;
-            left: 25%;
-            transform-style: preserve-3d;
-            pointer-events: none;
-        }
-
-        .inner-face {
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            border: 1px solid rgba(0, 243, 255, 0.5);
-            background: rgba(0, 243, 255, 0.05);
-            box-shadow: 0 0 10px var(--tron-cyan-dim);
-        }
-
-        .inner-front {
-            transform: translateZ(calc(var(--cube-size)/4));
-        }
-
-        .inner-back {
-            transform: rotateY(180deg) translateZ(calc(var(--cube-size)/4));
-        }
-
-        .inner-right {
-            transform: rotateY(90deg) translateZ(calc(var(--cube-size)/4));
-        }
-
-        .inner-left {
-            transform: rotateY(-90deg) translateZ(calc(var(--cube-size)/4));
-        }
-
-        .inner-top {
-            transform: rotateX(90deg) translateZ(calc(var(--cube-size)/4));
-        }
-
-        .inner-bottom {
-            transform: rotateX(-90deg) translateZ(calc(var(--cube-size)/4));
-        }
-
-        /* --- CONNESSIONI (Edges 4D) --- */
-        .connections {
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            top: 0;
-            left: 0;
-            transform-style: preserve-3d;
-            pointer-events: none;
-        }
-
-        .connector {
-            position: absolute;
-            background: linear-gradient(90deg, transparent, var(--tron-cyan), transparent);
-            height: 1px;
-            opacity: 0.6;
-            transform-origin: left center;
-            box-shadow: 0 0 4px var(--tron-cyan);
         }
 
         /* --- FOOTER HINT --- */
@@ -418,22 +344,11 @@
                 </div>
             </div>
 
-            <div class="connections" id="connections"></div>
-
-            <div class="inner-cube">
-                <div class="inner-face inner-front"></div>
-                <div class="inner-face inner-back"></div>
-                <div class="inner-face inner-right"></div>
-                <div class="inner-face inner-left"></div>
-                <div class="inner-face inner-top"></div>
-                <div class="inner-face inner-bottom"></div>
-            </div>
-
         </div>
     </div>
 
     <div class="hint">
-        <i class="fa fa-fingerprint"></i> Ruota il Tesseratto
+        <i class="fa fa-fingerprint"></i> Ruota il Cubo
     </div>
 
     <script>
@@ -443,7 +358,6 @@
         // Elementi DOM
         const scene = document.getElementById('touchScene');
         const tesseract = document.getElementById('tesseract');
-        const connContainer = document.getElementById('connections');
         const usernameDisplay = document.getElementById('username');
         const loadingIndicator = document.getElementById('loadingIndicator');
 
@@ -451,15 +365,13 @@
         const faceMap = ['face-0', 'face-1', 'face-2', 'face-3', 'face-4', 'face-5'];
 
         // CONFIGURAZIONE MAPPING JSON -> UI
-        // Questa mappa associa le chiavi del JSON ("Portfolio", "New", etc.) 
-        // alle icone e ai file di destinazione corretti.
         const cubeConfig = {
             "Portfolio": {
                 icon: "fa-chart-pie",
                 url: "dashboard-mobile-portfolio.html",
                 label: "Portafoglio"
             },
-            "New": { // Il JSON dice "New", presumo siano News
+            "New": {
                 icon: "fa-newspaper",
                 url: "dashboard-mobile-news.html",
                 label: "News"
@@ -479,7 +391,6 @@
                 url: "dashboard-mobile-trading.html",
                 label: "Go Live"
             },
-            // Fallback per chiavi sconosciute o extra (es. Account/Rapporti)
             "Account": {
                 icon: "fa-file-invoice-dollar",
                 url: "dashboard-mobile-account.html",
@@ -487,7 +398,6 @@
             }
         };
 
-        // Fallback generico se arriva una chiave non in config
         const genericConfig = {
             icon: "fa-cube",
             url: "#",
@@ -501,15 +411,16 @@
         let lastPos = { x: 0, y: 0 };
         let velocity = { x: 0, y: 0 };
 
-        const DRAG_SPEED = 0.4;
-        const INERTIA = 0.95;
-        const SMOOTHING = 0.1;
+        /* Valori Modificati per Movimento più Fluido e Rotazione Continua */
+        const DRAG_SPEED = 0.35; // Leggermente più lento
+        const INERTIA = 0.98; // Maggiore inerzia: rotazione più lunga
+        const SMOOTHING = 0.08; // Minore smorzamento: transizione più fluida
+        /* Fine Modifiche */
+
 
         // Init
         document.addEventListener('DOMContentLoaded', async () => {
-            initConnections();
-            // Aggiustamento della dimensione del cubo per i calcoli delle connessioni
-            document.documentElement.style.setProperty('--cube-size', '200px');
+            // RIMOSSO: initConnections();
             if (checkAuth()) {
                 loadUser();
                 await loadCubeData();
@@ -517,7 +428,7 @@
             animate();
         });
 
-        /* ========== API & DATA HANDLING ========== */
+        /* ========== API & DATA HANDLING (Invariato) ========== */
 
         function checkAuth() {
             const token = localStorage.getItem("token");
@@ -554,7 +465,6 @@
 
                 const data = await response.json();
 
-                // Gestione della risposta
                 let cubeData = {};
                 if (data.status === 'ok' && data.data) {
                     cubeData = data.data;
@@ -576,10 +486,8 @@
         }
 
         function populateFacesFromObject(dataObj) {
-            // Ottieni le chiavi dell'oggetto (es. ["Portfolio", "New", "Market", ...])
             const keys = Object.keys(dataObj);
 
-            // Resetta tutte le facce
             faceMap.forEach(id => {
                 const el = document.getElementById(id);
                 el.classList.add('disabled');
@@ -589,27 +497,20 @@
                 el.onclick = null;
             });
 
-            // Itera sulle chiavi e riempi le facce (max 6)
             keys.forEach((key, index) => {
                 if (index >= 6) return;
 
                 const faceId = faceMap[index];
                 const el = document.getElementById(faceId);
-                const itemData = dataObj[key]; // Il contenuto (es. { "Controvalore": "..." })
-
-                // Recupera configurazione per questa chiave (Icona, Url, Label ITA)
+                const itemData = dataObj[key];
                 const config = cubeConfig[key] || { ...genericConfig, label: key };
 
                 if (el) {
                     el.classList.remove('disabled');
-
-                    // Set Icona
                     el.querySelector('i').className = `fa ${config.icon}`;
-
-                    // Set Titolo
                     el.querySelector('.face-title').innerText = config.label;
 
-                    // NUOVA LOGICA: Inserisci tutti i campi (Nome Campo: Valore) in un contenitore scrollabile
+                    // Logica: Inserisci tutti i campi
                     const dataContainer = el.querySelector('.face-data-container');
                     dataContainer.innerHTML = '';
 
@@ -623,28 +524,21 @@
 
                             let dataValue = itemData[dataKey];
 
-                            // Normalizzazione: Pulisce il formato "VALORE:UNITÀ" se presente
                             if (typeof dataValue === 'string' && dataValue.includes(':')) {
                                 dataValue = dataValue.split(':')[0];
                             }
 
-                            // Formattazione (es. numeri)
                             if (!isNaN(parseFloat(dataValue)) && isFinite(dataValue)) {
                                 const numVal = parseFloat(dataValue);
-                                // Aggiunge € e formattazione italiana se è un numero grande (es. > 100)
                                 if (Math.abs(numVal) > 1000) {
-                                    // Valore grande, formattazione valuta senza decimali per risparmiare spazio
                                     dataValue = `€ ${numVal.toLocaleString('it-IT', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
                                 } else if (Math.abs(numVal) > 1) {
-                                    // Valore medio, 2 decimali
                                     dataValue = numVal.toLocaleString('it-IT', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
                                 } else {
-                                    // Valore piccolo/percentuale, usa il valore originale
                                     dataValue = numVal.toLocaleString('it-IT');
                                 }
                             }
 
-                            // Limita il valore per evitare overflow
                             if (typeof dataValue === 'string' && dataValue.length > 20) {
                                 dataValue = dataValue.substring(0, 17) + '...';
                             }
@@ -656,7 +550,6 @@
                             count++;
                         });
 
-                        // Messaggio se ci sono troppi campi
                         if (allKeys.length > MAX_FIELDS) {
                             dataContainer.innerHTML += `<div class="data-item"><span class="data-item-label">... +${allKeys.length - MAX_FIELDS} voci</span></div>`;
                         }
@@ -670,24 +563,25 @@
             });
         }
 
-        /* ========== LOGICA 3D (Invariata) ========== */
+        /* ========== LOGICA 3D (Modificata) ========== */
 
         function animate() {
             if (!isDragging) {
                 targetRot.x -= velocity.y;
                 targetRot.y += velocity.x;
-                velocity.x *= INERTIA;
+                velocity.x *= INERTIA; // Mantiene l'inerzia alta
                 velocity.y *= INERTIA;
-                if (Math.abs(velocity.x) < 0.01) velocity.x = 0;
-                if (Math.abs(velocity.y) < 0.01) velocity.y = 0;
+
+                // Opzionale: azzera la velocità solo se è molto bassa
+                if (Math.abs(velocity.x) < 0.0005) velocity.x = 0;
+                if (Math.abs(velocity.y) < 0.0005) velocity.y = 0;
             }
 
             currentRot.x += (targetRot.x - currentRot.x) * SMOOTHING;
             currentRot.y += (targetRot.y - currentRot.y) * SMOOTHING;
 
+            // Applica la rotazione solo al cubo esterno
             tesseract.style.transform = `rotateX(${currentRot.x}deg) rotateY(${currentRot.y}deg)`;
-            const inner = document.querySelector('.inner-cube');
-            inner.style.transform = `translateZ(-50px) rotateX(${currentRot.x * 0.2}deg) rotateY(${currentRot.y * 0.2}deg)`;
 
             requestAnimationFrame(animate);
         }
@@ -718,48 +612,7 @@
             isDragging = false;
         });
 
-        /* ========== GENERATORE CONNESSIONI (Aggiornato con la nuova dimensione) ========== */
-        function initConnections() {
-            // Usa la dimensione ridotta di 200px
-            const size = 200;
-            const half = size / 2;
-            const innerSize = size * 0.5;
-            const innerHalf = innerSize / 2;
-
-            const corners = [
-                [-1, -1, 1], [1, -1, 1], [1, 1, 1], [-1, 1, 1],
-                [-1, -1, -1], [1, -1, -1], [1, 1, -1], [-1, 1, -1]
-            ];
-
-            corners.forEach(c => {
-                const outerX = c[0] * half;
-                const outerY = c[1] * half;
-                const outerZ = c[2] * half;
-                const innerX = c[0] * innerHalf;
-                const innerY = c[1] * innerHalf;
-                const innerZ = c[2] * innerHalf - (size / 5.6); // Mantiene la proporzione Z tra cubi
-                createLine3D(outerX, outerY, outerZ, innerX, innerY, innerZ);
-            });
-        }
-
-        function createLine3D(x1, y1, z1, x2, y2, z2) {
-            const el = document.createElement('div');
-            el.className = 'connector';
-            const dx = x2 - x1;
-            const dy = y2 - y1;
-            const dz = z2 - z1;
-            const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
-            const mx = (x1 + x2) / 2;
-            const my = (y1 + y2) / 2;
-            const mz = (z1 + z2) / 2;
-            const rotY = Math.atan2(dx, dz) * (180 / Math.PI);
-            const rotX = Math.atan2(dy, Math.sqrt(dx * dx + dz * dz)) * (180 / Math.PI) * -1;
-            el.style.width = `${dist}px`;
-            el.style.transform = `translate3d(${mx - dist / 2}px, ${my}px, ${mz}px) rotateY(${rotY}deg) rotateZ(${rotX}deg)`;
-            connContainer.appendChild(el);
-        }
-
-        /* ========== UTILITY ========== */
+        /* ========== UTILITY (Invariata) ========== */
         function nav(url) {
             if (!url || url === '#') return;
             document.body.style.opacity = 0;
