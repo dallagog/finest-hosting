@@ -14,7 +14,7 @@ function parsePortfolioItems(rawPortfolio) {
         if (details && typeof details === 'object') {
             Object.keys(details).forEach(key => {
                 let val = details[key];
-                if (typeof val === 'string' && /^-?\d+(\.\d+)?$/.test(val.trim())) {
+                if (key !== 'id_account' && typeof val === 'string' && /^-?\d+(\.\d+)?$/.test(val.trim())) {
                     flatItem[key] = parseFloat(val);
                 } else {
                     flatItem[key] = val;
