@@ -1576,545 +1576,531 @@
                         localStorage.setItem('classificationMap', JSON.stringify(classificationMap));
                     }
 
-                    // USE SHARED LOGIC
+                    // USE SHARED LOGIC - Keep id_account as string
                     const rawPortfolio = data.portfolio || {};
                     portfolioData = parsePortfolioItems(rawPortfolio);
 
-                    // Note: parsePortfolioItems already handles '%' calculation if cost and MP exist
-                    // But we might need to double check if we need to do it exactly as before for column detection?
-                    // The shared logic adds '%' to the item if valid.
-                    // Let's rely on the shared logic, but we still need to determine columns.
-
-                    if (portfolioData.length > 0) {
-                        if (portfolioColumns.length > 0) tableColumns = [...portfolioColumns, '%'];
-                        else {
-                            const allKeys = new Set();
-                            portfolioData.forEach(item => Object.keys(item).forEach(k => allKeys.add(k)));
-                            tableColumns = Array.from(allKeys).filter(k => k !== 'Ticker');
+                    // Ensure id_account remains as string
+                    portfolioData.forEach(item => {
+                        if (item.id_account !== undefined && item.id_account !== null) {
+                            item.id_account = String(item.id_account);
                         }
+                    });
+
+                    function populateGroupingSelect(classificationList) {
+                        const select = document.getElementById('grouping-select');
+                        const defaultLabel = getTranslation('int.noselection') || 'Nessun raggruppamento';
+
+                        // Use shared function with filtered list from manifest
+                        // classificationFilter is an array of strings loaded from manifest.json
+                        populateGroupingSelectSummary(
+                            select,
+                            classificationFilter || [],
+                            getTranslation,
+                            '',
+                            defaultLabel
+                        );
                     }
 
-                    populateGroupingSelect(classificationList);
-                    renderTable();
-                    document.getElementById('portfolio-section').style.display = 'block';
-                }
-            } catch (error) { console.error('Error loading portfolio:', error); }
-        }
-
-        function populateGroupingSelect(classificationList) {
-            const select = document.getElementById('grouping-select');
-            const defaultLabel = getTranslation('int.noselection') || 'Nessun raggruppamento';
-
-            // Use shared function with filtered list from manifest
-            // classificationFilter is an array of strings loaded from manifest.json
-            populateGroupingSelectSummary(
-                select,
-                classificationFilter || [],
-                getTranslation,
-                '',
-                defaultLabel
-            );
-        }
-
-        function updateTableGrouping() {
-            currentGroup = document.getElementById('grouping-select').value;
-            renderTable();
-        }
-
-        function renderTable() {
-            const thead = document.getElementById('portfolio-header-row');
-            const tbody = document.getElementById('portfolio-body');
-            thead.innerHTML = ''; tbody.innerHTML = '';
-            let displayData = [];
-            if (selectedAccounts.length > 0) displayData = portfolioData.filter(item => isAccountSelected(item.id_account));
-
-            tableColumns.forEach((col, index) => {
-                const th = document.createElement('th');
-                th.draggable = true;
-                th.addEventListener('dragstart', (e) => handleDragStart(e, index));
-                th.addEventListener('dragover', handleDragOver);
-                th.addEventListener('drop', (e) => handleDrop(e, index));
-                const sortIcon = currentSort.column === col ? (currentSort.direction === 'asc' ? ' ▲' : ' ▼') : '';
-                if (index > 0) th.style.textAlign = 'right';
-                th.innerHTML = `<span style="cursor: pointer;" onclick="sortPortfolio('${col}')">${getTranslation(col) || col}${sortIcon}</span>`;
-                thead.appendChild(th);
-            });
-
-            if (!showHistorical) {
-                displayData = displayData.filter(item => {
-                    const quantity = item.quantity;
-                    if (!quantity) return true;
-                    const quantityStr = String(quantity);
-                    const colonIndex = quantityStr.indexOf(':');
-                    const numericValue = colonIndex > 0 ? parseFloat(quantityStr.substring(0, colonIndex)) : parseFloat(quantityStr);
-                    return numericValue !== 0;
-                });
-            }
-
-            if (currentSort.column) {
-                displayData.sort((a, b) => {
-                    const valA = a[currentSort.column]; const valB = b[currentSort.column];
-                    if (valA < valB) return currentSort.direction === 'asc' ? -1 : 1;
-                    if (valA > valB) return currentSort.direction === 'asc' ? 1 : -1;
-                    return 0;
-                });
-            }
-
-            const calculateTotals = (items, columns) => {
-                const totals = {};
-                columns.forEach(col => {
-                    if (col === 'Ticker') { totals[col] = 'TOTAL'; return; }
-                    if (col === 'id_account' || col === '%') { totals[col] = ''; return; }
-                    const desc = getTranslation(col) || col;
-                    if (desc.includes('%')) { totals[col] = ''; return; }
-                    const isNumeric = items.some(item => { const val = item[col]; return typeof val === 'number' || (typeof val === 'string' && /^-?\d+(\.\d+)?$/.test(val)); });
-                    if (isNumeric) {
-                        const sum = items.reduce((acc, curr) => {
-                            let val = curr[col]; if (typeof val === 'string') val = parseFloat(val);
-                            return acc + (val || 0);
-                        }, 0);
-                        totals[col] = parseFloat(sum.toFixed(2));
-                    } else totals[col] = '';
-                });
-                return totals;
-            };
-
-            if (currentGroup) {
-                const groups = {};
-                displayData.forEach(item => {
-                    let groupVal = 'int.other';
-                    const instrumentId = item.id_instrument;
-                    if (instrumentId) {
-                        let classObj = classificationMap[instrumentId] || classificationMap[String(instrumentId)];
-                        if (classObj && classObj[currentGroup]) groupVal = classObj[currentGroup];
+                    function updateTableGrouping() {
+                        currentGroup = document.getElementById('grouping-select').value;
+                        renderTable();
                     }
-                    if (!groups[groupVal]) groups[groupVal] = [];
-                    groups[groupVal].push(item);
-                });
-                Object.keys(groups).sort().forEach(group => {
-                    const groupItems = groups[group];
-                    const trGroup = document.createElement('tr');
-                    trGroup.className = 'group-header';
-                    const tdGroup = document.createElement('td');
-                    tdGroup.colSpan = tableColumns.length;
-                    tdGroup.textContent = `${getTranslation(group) || group} (${groupItems.length})`;
-                    trGroup.appendChild(tdGroup);
-                    tbody.appendChild(trGroup);
-                    groupItems.forEach(item => renderRow(item, tbody));
-                    const groupTotal = calculateTotals(groupItems, tableColumns);
-                    renderRow(groupTotal, tbody, true);
-                });
-                const grandTotal = calculateTotals(displayData, tableColumns);
-                renderRow(grandTotal, tbody, true, true);
-            } else {
-                displayData.forEach(item => renderRow(item, tbody));
-                const grandTotal = calculateTotals(displayData, tableColumns);
-                renderRow(grandTotal, tbody, true, true);
-            }
-        }
 
-        function renderRow(item, tbody, isTotal = false, isGrandTotal = false) {
-            const tr = document.createElement('tr');
-            if (isTotal) {
-                tr.style.fontWeight = 'bold';
-                tr.style.background = isGrandTotal ? 'rgba(0, 243, 255, 0.15)' : 'rgba(0, 102, 255, 0.1)';
-                tr.style.borderTop = isGrandTotal ? '2px solid var(--neon-cyan)' : '1px solid var(--neon-blue)';
-            } else {
-                tr.addEventListener('click', async () => {
-                    await selectRow(tr, item);
-                    if (item.id_instrument && item.id_account) openPortfolioDetails(item.id_account, item.id_instrument);
-                });
-            }
-            tableColumns.forEach((col, index) => {
-                const td = document.createElement('td');
-                let val = item[col];
-                if (index === 0 && !isTotal) {
-                    const span = document.createElement('span');
-                    span.textContent = val !== undefined ? val : '';
-                    span.style.cursor = 'pointer'; span.style.color = 'var(--neon-cyan)';
-                    td.appendChild(span);
-                } else if (val !== undefined) {
-                    const colDescription = getTranslation(col) || col;
-                    const isPercentageCol = colDescription.includes('%');
-                    if (typeof val === 'number') {
-                        if (isPercentageCol && Math.abs(val) > 5000) td.textContent = '--';
-                        else td.textContent = val.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-                        td.style.textAlign = 'right';
-                    } else td.textContent = val;
-                } else td.textContent = '';
-                tr.appendChild(td);
-            });
-            tbody.appendChild(tr);
-        }
+                    function renderTable() {
+                        const thead = document.getElementById('portfolio-header-row');
+                        const tbody = document.getElementById('portfolio-body');
+                        thead.innerHTML = ''; tbody.innerHTML = '';
+                        let displayData = [];
+                        if (selectedAccounts.length > 0) displayData = portfolioData.filter(item => isAccountSelected(item.id_account));
 
-        function sortPortfolio(col) {
-            if (currentSort.column === col) currentSort.direction = currentSort.direction === 'asc' ? 'desc' : 'asc';
-            else { currentSort.column = col; currentSort.direction = 'asc'; }
-            renderTable();
-        }
+                        tableColumns.forEach((col, index) => {
+                            const th = document.createElement('th');
+                            th.draggable = true;
+                            th.addEventListener('dragstart', (e) => handleDragStart(e, index));
+                            th.addEventListener('dragover', handleDragOver);
+                            th.addEventListener('drop', (e) => handleDrop(e, index));
+                            const sortIcon = currentSort.column === col ? (currentSort.direction === 'asc' ? ' ▲' : ' ▼') : '';
+                            if (index > 0) th.style.textAlign = 'right';
+                            th.innerHTML = `<span style="cursor: pointer;" onclick="sortPortfolio('${col}')">${getTranslation(col) || col}${sortIcon}</span>`;
+                            thead.appendChild(th);
+                        });
 
-        let draggedColIndex = null;
-        function handleDragStart(e, index) { draggedColIndex = index; e.dataTransfer.effectAllowed = 'move'; }
-        function handleDragOver(e) { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }
-        function handleDrop(e, index) {
-            e.preventDefault();
-            if (draggedColIndex === index) return;
-            const col = tableColumns.splice(draggedColIndex, 1)[0];
-            tableColumns.splice(index, 0, col);
-            renderTable();
-        }
-
-        async function selectRow(tr, item) {
-            document.querySelectorAll('#portfolio-body tr').forEach(r => r.classList.remove('selected'));
-            tr.classList.add('selected');
-        }
-
-        async function openPortfolioDetails(idAccount, idInstrument) {
-            try {
-                const payload = {
-                    username: credentials.username || "",
-                    token: credentials.token || "",
-                    language: credentials.language || "",
-                    filter: "",
-                    code: `${idAccount}:${idInstrument}` || ""
-                };
-                const response = await fetch(`${API_URL}/getwallet`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-                if (!response.ok) throw new Error('HTTP ' + response.status);
-                const data = await response.json();
-                if (data.status === 'ok' && data.wallet) displayPortfolioDetails(data.wallet, idInstrument);
-                else alert('Portfolio details not available');
-            } catch (error) { console.error('Error loading details:', error); }
-        }
-
-        function displayPortfolioDetails(walletData, idInstrument) {
-            const overlay = document.createElement('div');
-            overlay.style.cssText = `position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.8); z-index: 10000; display: flex; justify-content: flex-start; align-items: center; padding: 20px; padding-left: 2%;`;
-            const modal = document.createElement('div');
-            modal.style.cssText = `background: var(--glass-bg); border: 1px solid var(--neon-cyan); border-radius: 12px; padding: 30px; max-width: 90%; max-height: 90%; overflow-y: auto; box-shadow: 0 0 30px rgba(0, 243, 255, 0.3);`;
-            const instrumentDesc = walletData[0]?.instrument?.instrument_description || idInstrument;
-            let html = `<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;"><h2 style="color: var(--neon-cyan); margin: 0;">${instrumentDesc} - Transaction History</h2><button id="close-modal" style="background: rgba(255, 0, 0, 0.2); border: 1px solid #ff0000; color: #ff0000; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-family: 'Orbitron', sans-serif;">Close</button></div><table style="width: 100%; border-collapse: collapse; color: var(--text-color);"><thead><tr style="background: rgba(0, 243, 255, 0.1); border-bottom: 2px solid var(--neon-cyan);"><th style="padding: 10px; text-align: left;">Date</th><th style="padding: 10px; text-align: left;">Event</th><th style="padding: 10px; text-align: right;">Quantity</th><th style="padding: 10px; text-align: right;">Price</th><th style="padding: 10px; text-align: right;">Amount</th><th style="padding: 10px; text-align: right;">Balance</th></tr></thead><tbody>`;
-            walletData.forEach((transaction, index) => {
-                const date = transaction.date_evaluation || '-';
-                const event = transaction.event?.event_description || transaction.id_event || '-';
-                const quantity = transaction.quantity || '0';
-                const price = transaction.price || '-';
-                const amount = transaction['amount:net'] || transaction.controvaloresupersecco || '-';
-                const balance = transaction.valutazioni?.saldo || '-';
-                html += `<tr style="border-bottom: 1px solid rgba(0, 243, 255, 0.2); ${index % 2 === 0 ? 'background: rgba(0, 243, 255, 0.05);' : ''}"><td style="padding: 10px;">${date}</td><td style="padding: 10px;">${event}</td><td style="padding: 10px; text-align: right;">${quantity}</td><td style="padding: 10px; text-align: right;">${price}</td><td style="padding: 10px; text-align: right;">${amount}</td><td style="padding: 10px; text-align: right;">${balance}</td></tr>`;
-            });
-            html += `</tbody></table>`;
-            modal.innerHTML = html;
-            overlay.appendChild(modal);
-            document.body.appendChild(overlay);
-            document.getElementById('close-modal').addEventListener('click', () => { document.body.removeChild(overlay); });
-            overlay.addEventListener('click', (e) => { if (e.target === overlay) document.body.removeChild(overlay); });
-        }
-
-        function openTradeDetails(symbol) {
-            window.open(`dashboard-trade.html?code=${encodeURIComponent(symbol)}`, '_blank');
-        }
-
-        function openTradeYieldDetails(symbol) {
-            window.open(`dashboard-tradeyield.html?code=${encodeURIComponent(symbol)}`, '_blank');
-        }
-
-        // ========== PROFITABILITY TABLE ==========
-        let profitabilityData = [];
-        let profitabilityTableColumns = [];
-        let currentProfitabilitySort = { column: null, direction: 'asc' };
-        let currentProfitabilityGroup = null;
-
-        async function loadProfitability() {
-            try {
-                const payload = {
-                    username: credentials.username || "",
-                    token: credentials.token || "",
-                    language: credentials.language || "",
-                    filter: "",
-                    code: ""
-                };
-                const response = await fetch(`${API_URL}/getportfolioyield`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-                if (!response.ok) throw new Error('HTTP ' + response.status);
-                const data = await response.json();
-                if (data.status === 'ok') {
-                    classificationMap = {};
-                    let classificationList = data.classification;
-                    if (typeof classificationList === 'string') {
-                        try { classificationList = JSON.parse(classificationList.replace(/'/g, '"')); }
-                        catch (e) { classificationList = []; }
-                    }
-                    if (Array.isArray(classificationList)) {
-                        classificationList.forEach(item => { if (item.id_instrument) classificationMap[item.id_instrument] = item; });
-                        localStorage.setItem('classificationMap', JSON.stringify(classificationMap));
-                    }
-                    profitabilityData = [];
-                    const rawYield = data.portfolioyield || {};
-                    const parseYieldItem = (symbol, details) => {
-                        const flatItem = { Ticker: symbol };
-                        if (details && typeof details === 'object') {
-                            Object.keys(details).forEach(key => {
-                                let val = details[key];
-                                if (typeof val === 'string' && /^-?\d+(\.\d+)?$/.test(val.trim())) flatItem[key] = parseFloat(val);
-                                else flatItem[key] = val;
+                        if (!showHistorical) {
+                            displayData = displayData.filter(item => {
+                                const quantity = item.quantity;
+                                if (!quantity) return true;
+                                const quantityStr = String(quantity);
+                                const colonIndex = quantityStr.indexOf(':');
+                                const numericValue = colonIndex > 0 ? parseFloat(quantityStr.substring(0, colonIndex)) : parseFloat(quantityStr);
+                                return numericValue !== 0;
                             });
                         }
-                        return flatItem;
-                    };
-                    if (Array.isArray(rawYield)) {
-                        rawYield.forEach(entry => { if (Array.isArray(entry) && entry.length === 2) profitabilityData.push(parseYieldItem(entry[0], entry[1])); });
-                    } else if (typeof rawYield === 'object') {
-                        Object.keys(rawYield).forEach(symbol => profitabilityData.push(parseYieldItem(symbol, rawYield[symbol])));
-                    }
-                    if (profitabilityData.length > 0) {
-                        profitabilityData.forEach(item => {
-                            const ristot = item['RISTOT']; const giacmed = item['GIACMED'];
-                            if (typeof ristot === 'number' && typeof giacmed === 'number' && giacmed !== 0) item['%'] = parseFloat(((ristot / giacmed) * 100).toFixed(1));
-                            else item['%'] = null;
-                        });
-                        if (profitabilityColumns.length > 0) profitabilityTableColumns = [...profitabilityColumns, '%'];
-                        else {
-                            const allKeys = new Set();
-                            profitabilityData.forEach(item => Object.keys(item).forEach(k => allKeys.add(k)));
-                            profitabilityTableColumns = Array.from(allKeys).filter(k => k !== 'Ticker');
+
+                        if (currentSort.column) {
+                            displayData.sort((a, b) => {
+                                const valA = a[currentSort.column]; const valB = b[currentSort.column];
+                                if (valA < valB) return currentSort.direction === 'asc' ? -1 : 1;
+                                if (valA > valB) return currentSort.direction === 'asc' ? 1 : -1;
+                                return 0;
+                            });
+                        }
+
+                        const calculateTotals = (items, columns) => {
+                            const totals = {};
+                            columns.forEach(col => {
+                                if (col === 'Ticker') { totals[col] = 'TOTAL'; return; }
+                                if (col === 'id_account' || col === '%') { totals[col] = ''; return; }
+                                const desc = getTranslation(col) || col;
+                                if (desc.includes('%')) { totals[col] = ''; return; }
+                                const isNumeric = items.some(item => { const val = item[col]; return typeof val === 'number' || (typeof val === 'string' && /^-?\d+(\.\d+)?$/.test(val)); });
+                                if (isNumeric) {
+                                    const sum = items.reduce((acc, curr) => {
+                                        let val = curr[col]; if (typeof val === 'string') val = parseFloat(val);
+                                        return acc + (val || 0);
+                                    }, 0);
+                                    totals[col] = parseFloat(sum.toFixed(2));
+                                } else totals[col] = '';
+                            });
+                            return totals;
+                        };
+
+                        if (currentGroup) {
+                            const groups = {};
+                            displayData.forEach(item => {
+                                let groupVal = 'int.other';
+                                const instrumentId = item.id_instrument;
+                                if (instrumentId) {
+                                    let classObj = classificationMap[instrumentId] || classificationMap[String(instrumentId)];
+                                    if (classObj && classObj[currentGroup]) groupVal = classObj[currentGroup];
+                                }
+                                if (!groups[groupVal]) groups[groupVal] = [];
+                                groups[groupVal].push(item);
+                            });
+                            Object.keys(groups).sort().forEach(group => {
+                                const groupItems = groups[group];
+                                const trGroup = document.createElement('tr');
+                                trGroup.className = 'group-header';
+                                const tdGroup = document.createElement('td');
+                                tdGroup.colSpan = tableColumns.length;
+                                tdGroup.textContent = `${getTranslation(group) || group} (${groupItems.length})`;
+                                trGroup.appendChild(tdGroup);
+                                tbody.appendChild(trGroup);
+                                groupItems.forEach(item => renderRow(item, tbody));
+                                const groupTotal = calculateTotals(groupItems, tableColumns);
+                                renderRow(groupTotal, tbody, true);
+                            });
+                            const grandTotal = calculateTotals(displayData, tableColumns);
+                            renderRow(grandTotal, tbody, true, true);
+                        } else {
+                            displayData.forEach(item => renderRow(item, tbody));
+                            const grandTotal = calculateTotals(displayData, tableColumns);
+                            renderRow(grandTotal, tbody, true, true);
                         }
                     }
-                    profitabilityData.sort((a, b) => {
-                        const getQty = (item) => {
-                            const key = Object.keys(item).find(k => k.toLowerCase() === 'quantity' || k.toLowerCase() === 'quantità' || k.toLowerCase() === 'qta');
-                            return key && item[key] ? Math.abs(parseFloat(item[key])) : 0;
-                        };
-                        return getQty(b) - getQty(a);
-                    });
-                    populateProfitabilityGroupingSelect(classificationList);
-                    renderProfitabilityTable();
-                    document.getElementById('profitability-section').style.display = 'block';
-                }
-            } catch (error) { console.error('Error loading profitability:', error); }
-        }
 
-        function populateProfitabilityGroupingSelect(classificationList) {
-            const select = document.getElementById('profitability-grouping-select');
-            select.innerHTML = `<option value="">${getTranslation('int.noselection') || 'Nessun raggruppamento'}</option>`;
-            let keys = [];
-            if (classificationFilter && classificationFilter.length > 0) keys = classificationFilter;
-            else if (Array.isArray(classificationList) && classificationList.length > 0) keys = Object.keys(classificationList[0]).filter(k => k !== 'id_instrument');
-            keys.forEach(key => {
-                const opt = document.createElement('option');
-                opt.value = key; opt.textContent = getTranslation(key) || key;
-                select.appendChild(opt);
-            });
-        }
-
-        function updateProfitabilityGrouping() {
-            currentProfitabilityGroup = document.getElementById('profitability-grouping-select').value;
-            renderProfitabilityTable();
-        }
-
-        function renderProfitabilityTable() {
-            const thead = document.getElementById('profitability-header-row');
-            const tbody = document.getElementById('profitability-body');
-            thead.innerHTML = ''; tbody.innerHTML = '';
-            let displayData = [];
-            if (selectedAccounts.length > 0) displayData = profitabilityData.filter(item => isAccountSelected(item.id_account));
-
-            profitabilityTableColumns.forEach((col, index) => {
-                const th = document.createElement('th');
-                th.draggable = true;
-                th.ondragstart = (e) => handleProfitabilityDragStart(e, index);
-                th.ondragover = (e) => handleProfitabilityDragOver(e);
-                th.ondrop = (e) => handleProfitabilityDrop(e, index);
-                th.onclick = () => sortProfitability(col);
-                const handle = document.createElement('span');
-                handle.className = 'drag-handle'; handle.textContent = '⋮'; th.appendChild(handle);
-                th.appendChild(document.createTextNode(getTranslation(col) || col));
-                if (currentProfitabilitySort.column === col) th.classList.add(currentProfitabilitySort.direction === 'asc' ? 'sort-asc' : 'sort-desc');
-                thead.appendChild(th);
-            });
-
-            if (currentProfitabilitySort.column) {
-                displayData.sort((a, b) => {
-                    const valA = a[currentProfitabilitySort.column]; const valB = b[currentProfitabilitySort.column];
-                    if (valA < valB) return currentProfitabilitySort.direction === 'asc' ? -1 : 1;
-                    if (valA > valB) return currentProfitabilitySort.direction === 'asc' ? 1 : -1;
-                    return 0;
-                });
-            }
-
-            const calculateTotals = (items, columns) => {
-                const totals = {};
-                columns.forEach(col => {
-                    if (col === 'Ticker') { totals[col] = 'TOTAL'; return; }
-                    if (col === 'id_account' || col === '%') { totals[col] = ''; return; }
-                    const lower = col.toLowerCase();
-                    if (lower.includes('per@') || lower.includes('%')) { totals[col] = ''; return; }
-                    const isNumeric = items.some(item => { const val = item[col]; return typeof val === 'number' || (typeof val === 'string' && /^-?\d+(\.\d+)?$/.test(val)); });
-                    if (isNumeric) {
-                        const sum = items.reduce((acc, curr) => {
-                            let val = curr[col]; if (typeof val === 'string') val = parseFloat(val);
-                            return acc + (val || 0);
-                        }, 0);
-                        totals[col] = parseFloat(sum.toFixed(2));
-                    } else totals[col] = '';
-                });
-                return totals;
-            };
-
-            if (currentProfitabilityGroup) {
-                const groups = {};
-                displayData.forEach(item => {
-                    let groupVal = 'int.other';
-                    const instrumentId = item.id_instrument;
-                    if (instrumentId) {
-                        let classObj = classificationMap[instrumentId] || classificationMap[String(instrumentId)];
-                        if (classObj && classObj[currentProfitabilityGroup]) groupVal = classObj[currentProfitabilityGroup];
+                    function renderRow(item, tbody, isTotal = false, isGrandTotal = false) {
+                        const tr = document.createElement('tr');
+                        if (isTotal) {
+                            tr.style.fontWeight = 'bold';
+                            tr.style.background = isGrandTotal ? 'rgba(0, 243, 255, 0.15)' : 'rgba(0, 102, 255, 0.1)';
+                            tr.style.borderTop = isGrandTotal ? '2px solid var(--neon-cyan)' : '1px solid var(--neon-blue)';
+                        } else {
+                            tr.addEventListener('click', async () => {
+                                await selectRow(tr, item);
+                                if (item.id_instrument && item.id_account) openPortfolioDetails(item.id_account, item.id_instrument);
+                            });
+                        }
+                        tableColumns.forEach((col, index) => {
+                            const td = document.createElement('td');
+                            let val = item[col];
+                            if (index === 0 && !isTotal) {
+                                const span = document.createElement('span');
+                                span.textContent = val !== undefined ? val : '';
+                                span.style.cursor = 'pointer'; span.style.color = 'var(--neon-cyan)';
+                                td.appendChild(span);
+                            } else if (val !== undefined) {
+                                const colDescription = getTranslation(col) || col;
+                                const isPercentageCol = colDescription.includes('%');
+                                if (typeof val === 'number') {
+                                    if (isPercentageCol && Math.abs(val) > 5000) td.textContent = '--';
+                                    else td.textContent = val.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                                    td.style.textAlign = 'right';
+                                } else td.textContent = val;
+                            } else td.textContent = '';
+                            tr.appendChild(td);
+                        });
+                        tbody.appendChild(tr);
                     }
-                    if (!groups[groupVal]) groups[groupVal] = [];
-                    groups[groupVal].push(item);
-                });
-                Object.keys(groups).sort().forEach(group => {
-                    const groupItems = groups[group];
-                    const trGroup = document.createElement('tr');
-                    trGroup.className = 'group-header';
-                    const tdGroup = document.createElement('td');
-                    tdGroup.colSpan = profitabilityTableColumns.length;
-                    tdGroup.textContent = `${getTranslation(group) || group} (${groupItems.length})`;
-                    trGroup.appendChild(tdGroup);
-                    tbody.appendChild(trGroup);
-                    groupItems.forEach(item => renderProfitabilityRow(item, tbody));
-                    const groupTotal = calculateTotals(groupItems, profitabilityTableColumns);
-                    renderProfitabilityRow(groupTotal, tbody, true);
-                });
-                const grandTotal = calculateTotals(displayData, profitabilityTableColumns);
-                renderProfitabilityRow(grandTotal, tbody, true, true);
-            } else {
-                displayData.forEach(item => renderProfitabilityRow(item, tbody));
-                const grandTotal = calculateTotals(displayData, profitabilityTableColumns);
-                renderProfitabilityRow(grandTotal, tbody, true, true);
-            }
-        }
 
-        function renderProfitabilityRow(item, tbody, isTotal = false, isGrandTotal = false) {
-            const tr = document.createElement('tr');
-            if (isTotal) {
-                tr.style.fontWeight = 'bold';
-                tr.style.background = isGrandTotal ? 'rgba(0, 243, 255, 0.15)' : 'rgba(0, 102, 255, 0.1)';
-                tr.style.borderTop = isGrandTotal ? '2px solid var(--neon-cyan)' : '1px solid var(--neon-blue)';
-            } else {
-                tr.onclick = () => {
-                    selectProfitabilityRow(tr, item);
-                    if (item.Ticker) openTradeYieldDetails(item.Ticker);
-                };
-            }
-            profitabilityTableColumns.forEach((col, index) => {
-                const td = document.createElement('td');
-                let val = item[col];
-                if (index === 0 && !isTotal) {
-                    const span = document.createElement('span');
-                    span.textContent = val !== undefined ? val : '';
-                    span.style.cursor = 'pointer'; span.style.color = 'var(--neon-cyan)';
-                    td.appendChild(span);
-                } else if (val !== undefined) {
-                    const colDescription = getTranslation(col) || col;
-                    const isPercentageCol = colDescription.includes('%');
-                    if (typeof val === 'number') {
-                        if (isPercentageCol && Math.abs(val) > 5000) td.textContent = '--';
-                        else td.textContent = val.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-                        td.style.textAlign = 'right';
-                        if (!col.toLowerCase().includes('%')) td.title = col;
-                    } else td.textContent = val;
-                } else td.textContent = '';
-                tr.appendChild(td);
-            });
-            tbody.appendChild(tr);
-        }
+                    function sortPortfolio(col) {
+                        if (currentSort.column === col) currentSort.direction = currentSort.direction === 'asc' ? 'desc' : 'asc';
+                        else { currentSort.column = col; currentSort.direction = 'asc'; }
+                        renderTable();
+                    }
 
-        function sortProfitability(col) {
-            if (currentProfitabilitySort.column === col) currentProfitabilitySort.direction = currentProfitabilitySort.direction === 'asc' ? 'desc' : 'asc';
-            else { currentProfitabilitySort.column = col; currentProfitabilitySort.direction = 'asc'; }
-            renderProfitabilityTable();
-        }
+                    let draggedColIndex = null;
+                    function handleDragStart(e, index) { draggedColIndex = index; e.dataTransfer.effectAllowed = 'move'; }
+                    function handleDragOver(e) { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }
+                    function handleDrop(e, index) {
+                        e.preventDefault();
+                        if (draggedColIndex === index) return;
+                        const col = tableColumns.splice(draggedColIndex, 1)[0];
+                        tableColumns.splice(index, 0, col);
+                        renderTable();
+                    }
 
-        let draggedProfitabilityColIndex = null;
-        function handleProfitabilityDragStart(e, index) { draggedProfitabilityColIndex = index; e.dataTransfer.effectAllowed = 'move'; }
-        function handleProfitabilityDragOver(e) { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }
-        function handleProfitabilityDrop(e, index) {
-            e.preventDefault();
-            if (draggedProfitabilityColIndex === index) return;
-            const col = profitabilityTableColumns.splice(draggedProfitabilityColIndex, 1)[0];
-            profitabilityTableColumns.splice(index, 0, col);
-            renderProfitabilityTable();
-        }
+                    async function selectRow(tr, item) {
+                        document.querySelectorAll('#portfolio-body tr').forEach(r => r.classList.remove('selected'));
+                        tr.classList.add('selected');
+                    }
 
-        async function selectProfitabilityRow(tr, item) {
-            document.querySelectorAll('#profitability-body tr').forEach(r => r.classList.remove('selected'));
-            tr.classList.add('selected');
-        }
+                    async function openPortfolioDetails(idAccount, idInstrument) {
+                        try {
+                            const payload = {
+                                username: credentials.username || "",
+                                token: credentials.token || "",
+                                language: credentials.language || "",
+                                filter: "",
+                                code: `${idAccount}:${idInstrument}` || ""
+                            };
+                            const response = await fetch(`${API_URL}/getwallet`, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify(payload)
+                            });
+                            if (!response.ok) throw new Error('HTTP ' + response.status);
+                            const data = await response.json();
+                            if (data.status === 'ok' && data.wallet) displayPortfolioDetails(data.wallet, idInstrument);
+                            else alert('Portfolio details not available');
+                        } catch (error) { console.error('Error loading details:', error); }
+                    }
 
-        // ========== LOGOUT ==========
-        async function logout() {
-            try {
-                const payload = {
-                    username: credentials.username || "",
-                    token: credentials.token || "",
-                    language: credentials.language || "",
-                    filter: credentials.filter || ""
-                };
-                const response = await fetch(`${API_URL}/logout`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-                const data = await response.json().catch(() => null);
-                if (data && data.status === 'ok') {
-                    showMessage(getTranslation('int.logout.success') || 'Logout successo', 'success');
-                    localStorage.clear();
-                    setTimeout(() => { window.location.href = 'login.html'; }, 1000);
-                } else showMessage('Logout error', 'error');
-            } catch (error) { console.error('logout error', error); }
-        }
+                    function displayPortfolioDetails(walletData, idInstrument) {
+                        const overlay = document.createElement('div');
+                        overlay.style.cssText = `position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.8); z-index: 10000; display: flex; justify-content: flex-start; align-items: center; padding: 20px; padding-left: 2%;`;
+                        const modal = document.createElement('div');
+                        modal.style.cssText = `background: var(--glass-bg); border: 1px solid var(--neon-cyan); border-radius: 12px; padding: 30px; max-width: 90%; max-height: 90%; overflow-y: auto; box-shadow: 0 0 30px rgba(0, 243, 255, 0.3);`;
+                        const instrumentDesc = walletData[0]?.instrument?.instrument_description || idInstrument;
+                        let html = `<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;"><h2 style="color: var(--neon-cyan); margin: 0;">${instrumentDesc} - Transaction History</h2><button id="close-modal" style="background: rgba(255, 0, 0, 0.2); border: 1px solid #ff0000; color: #ff0000; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-family: 'Orbitron', sans-serif;">Close</button></div><table style="width: 100%; border-collapse: collapse; color: var(--text-color);"><thead><tr style="background: rgba(0, 243, 255, 0.1); border-bottom: 2px solid var(--neon-cyan);"><th style="padding: 10px; text-align: left;">Date</th><th style="padding: 10px; text-align: left;">Event</th><th style="padding: 10px; text-align: right;">Quantity</th><th style="padding: 10px; text-align: right;">Price</th><th style="padding: 10px; text-align: right;">Amount</th><th style="padding: 10px; text-align: right;">Balance</th></tr></thead><tbody>`;
+                        walletData.forEach((transaction, index) => {
+                            const date = transaction.date_evaluation || '-';
+                            const event = transaction.event?.event_description || transaction.id_event || '-';
+                            const quantity = transaction.quantity || '0';
+                            const price = transaction.price || '-';
+                            const amount = transaction['amount:net'] || transaction.controvaloresupersecco || '-';
+                            const balance = transaction.valutazioni?.saldo || '-';
+                            html += `<tr style="border-bottom: 1px solid rgba(0, 243, 255, 0.2); ${index % 2 === 0 ? 'background: rgba(0, 243, 255, 0.05);' : ''}"><td style="padding: 10px;">${date}</td><td style="padding: 10px;">${event}</td><td style="padding: 10px; text-align: right;">${quantity}</td><td style="padding: 10px; text-align: right;">${price}</td><td style="padding: 10px; text-align: right;">${amount}</td><td style="padding: 10px; text-align: right;">${balance}</td></tr>`;
+                        });
+                        html += `</tbody></table>`;
+                        modal.innerHTML = html;
+                        overlay.appendChild(modal);
+                        document.body.appendChild(overlay);
+                        document.getElementById('close-modal').addEventListener('click', () => { document.body.removeChild(overlay); });
+                        overlay.addEventListener('click', (e) => { if (e.target === overlay) document.body.removeChild(overlay); });
+                    }
 
-        function openTradingDashboard() {
-            const params = new URLSearchParams({
-                username: credentials.username || "",
-                token: credentials.token || "",
-                language: credentials.language || ""
-            });
-            window.open(`dashboard-trading.html?${params.toString()}`, '_blank');
-        }
+                    function openTradeDetails(symbol) {
+                        window.open(`dashboard-trade.html?code=${encodeURIComponent(symbol)}`, '_blank');
+                    }
 
-        function redirectToLogin() {
-            localStorage.clear();
-            window.location.href = 'login.html';
-        }
+                    function openTradeYieldDetails(symbol) {
+                        window.open(`dashboard-tradeyield.html?code=${encodeURIComponent(symbol)}`, '_blank');
+                    }
 
-        // ========== INITIALIZATION ==========
-        window.addEventListener('load', async () => {
-            if (checkAuthentication()) {
-                await initializeLanguages();
-                await loadTranslations(credentials.language);
-                updatePageTranslations();
-                await updateUserInfo();
-                loadMenu();
-                await loadAccounts();
-                await loadFilter();
-                renderReportsList_patched();
-                loadPortfolio();
-                loadProfitability();
-            }
-        });
+                    // ========== PROFITABILITY TABLE ==========
+                    let profitabilityData = [];
+                    let profitabilityTableColumns = [];
+                    let currentProfitabilitySort = { column: null, direction: 'asc' };
+                    let currentProfitabilityGroup = null;
 
-        document.getElementById('apply-filters')?.addEventListener('click', (e) => {
-            e.preventDefault();
-            applyFiltersAndSave();
-        });
+                    async function loadProfitability() {
+                        try {
+                            const payload = {
+                                username: credentials.username || "",
+                                token: credentials.token || "",
+                                language: credentials.language || "",
+                                filter: "",
+                                code: ""
+                            };
+                            const response = await fetch(`${API_URL}/getportfolioyield`, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify(payload)
+                            });
+                            if (!response.ok) throw new Error('HTTP ' + response.status);
+                            const data = await response.json();
+                            if (data.status === 'ok') {
+                                classificationMap = {};
+                                let classificationList = data.classification;
+                                if (typeof classificationList === 'string') {
+                                    try { classificationList = JSON.parse(classificationList.replace(/'/g, '"')); }
+                                    catch (e) { classificationList = []; }
+                                }
+                                if (Array.isArray(classificationList)) {
+                                    classificationList.forEach(item => { if (item.id_instrument) classificationMap[item.id_instrument] = item; });
+                                    localStorage.setItem('classificationMap', JSON.stringify(classificationMap));
+                                }
+                                profitabilityData = [];
+                                const rawYield = data.portfolioyield || {};
+                                const parseYieldItem = (symbol, details) => {
+                                    const flatItem = { Ticker: symbol };
+                                    if (details && typeof details === 'object') {
+                                        Object.keys(details).forEach(key => {
+                                            let val = details[key];
+                                            if (typeof val === 'string' && /^-?\d+(\.\d+)?$/.test(val.trim())) flatItem[key] = parseFloat(val);
+                                            else flatItem[key] = val;
+                                        });
+                                    }
+                                    return flatItem;
+                                };
+                                if (Array.isArray(rawYield)) {
+                                    rawYield.forEach(entry => { if (Array.isArray(entry) && entry.length === 2) profitabilityData.push(parseYieldItem(entry[0], entry[1])); });
+                                } else if (typeof rawYield === 'object') {
+                                    Object.keys(rawYield).forEach(symbol => profitabilityData.push(parseYieldItem(symbol, rawYield[symbol])));
+                                }
+                                if (profitabilityData.length > 0) {
+                                    profitabilityData.forEach(item => {
+                                        const ristot = item['RISTOT']; const giacmed = item['GIACMED'];
+                                        if (typeof ristot === 'number' && typeof giacmed === 'number' && giacmed !== 0) item['%'] = parseFloat(((ristot / giacmed) * 100).toFixed(1));
+                                        else item['%'] = null;
+                                    });
+                                    if (profitabilityColumns.length > 0) profitabilityTableColumns = [...profitabilityColumns, '%'];
+                                    else {
+                                        const allKeys = new Set();
+                                        profitabilityData.forEach(item => Object.keys(item).forEach(k => allKeys.add(k)));
+                                        profitabilityTableColumns = Array.from(allKeys).filter(k => k !== 'Ticker');
+                                    }
+                                }
+                                profitabilityData.sort((a, b) => {
+                                    const getQty = (item) => {
+                                        const key = Object.keys(item).find(k => k.toLowerCase() === 'quantity' || k.toLowerCase() === 'quantità' || k.toLowerCase() === 'qta');
+                                        return key && item[key] ? Math.abs(parseFloat(item[key])) : 0;
+                                    };
+                                    return getQty(b) - getQty(a);
+                                });
+                                populateProfitabilityGroupingSelect(classificationList);
+                                renderProfitabilityTable();
+                                document.getElementById('profitability-section').style.display = 'block';
+                            }
+                        } catch (error) { console.error('Error loading profitability:', error); }
+                    }
+
+                    function populateProfitabilityGroupingSelect(classificationList) {
+                        const select = document.getElementById('profitability-grouping-select');
+                        select.innerHTML = `<option value="">${getTranslation('int.noselection') || 'Nessun raggruppamento'}</option>`;
+                        let keys = [];
+                        if (classificationFilter && classificationFilter.length > 0) keys = classificationFilter;
+                        else if (Array.isArray(classificationList) && classificationList.length > 0) keys = Object.keys(classificationList[0]).filter(k => k !== 'id_instrument');
+                        keys.forEach(key => {
+                            const opt = document.createElement('option');
+                            opt.value = key; opt.textContent = getTranslation(key) || key;
+                            select.appendChild(opt);
+                        });
+                    }
+
+                    function updateProfitabilityGrouping() {
+                        currentProfitabilityGroup = document.getElementById('profitability-grouping-select').value;
+                        renderProfitabilityTable();
+                    }
+
+                    function renderProfitabilityTable() {
+                        const thead = document.getElementById('profitability-header-row');
+                        const tbody = document.getElementById('profitability-body');
+                        thead.innerHTML = ''; tbody.innerHTML = '';
+                        let displayData = [];
+                        if (selectedAccounts.length > 0) displayData = profitabilityData.filter(item => isAccountSelected(item.id_account));
+
+                        profitabilityTableColumns.forEach((col, index) => {
+                            const th = document.createElement('th');
+                            th.draggable = true;
+                            th.ondragstart = (e) => handleProfitabilityDragStart(e, index);
+                            th.ondragover = (e) => handleProfitabilityDragOver(e);
+                            th.ondrop = (e) => handleProfitabilityDrop(e, index);
+                            th.onclick = () => sortProfitability(col);
+                            const handle = document.createElement('span');
+                            handle.className = 'drag-handle'; handle.textContent = '⋮'; th.appendChild(handle);
+                            th.appendChild(document.createTextNode(getTranslation(col) || col));
+                            if (currentProfitabilitySort.column === col) th.classList.add(currentProfitabilitySort.direction === 'asc' ? 'sort-asc' : 'sort-desc');
+                            thead.appendChild(th);
+                        });
+
+                        if (currentProfitabilitySort.column) {
+                            displayData.sort((a, b) => {
+                                const valA = a[currentProfitabilitySort.column]; const valB = b[currentProfitabilitySort.column];
+                                if (valA < valB) return currentProfitabilitySort.direction === 'asc' ? -1 : 1;
+                                if (valA > valB) return currentProfitabilitySort.direction === 'asc' ? 1 : -1;
+                                return 0;
+                            });
+                        }
+
+                        const calculateTotals = (items, columns) => {
+                            const totals = {};
+                            columns.forEach(col => {
+                                if (col === 'Ticker') { totals[col] = 'TOTAL'; return; }
+                                if (col === 'id_account' || col === '%') { totals[col] = ''; return; }
+                                const lower = col.toLowerCase();
+                                if (lower.includes('per@') || lower.includes('%')) { totals[col] = ''; return; }
+                                const isNumeric = items.some(item => { const val = item[col]; return typeof val === 'number' || (typeof val === 'string' && /^-?\d+(\.\d+)?$/.test(val)); });
+                                if (isNumeric) {
+                                    const sum = items.reduce((acc, curr) => {
+                                        let val = curr[col]; if (typeof val === 'string') val = parseFloat(val);
+                                        return acc + (val || 0);
+                                    }, 0);
+                                    totals[col] = parseFloat(sum.toFixed(2));
+                                } else totals[col] = '';
+                            });
+                            return totals;
+                        };
+
+                        if (currentProfitabilityGroup) {
+                            const groups = {};
+                            displayData.forEach(item => {
+                                let groupVal = 'int.other';
+                                const instrumentId = item.id_instrument;
+                                if (instrumentId) {
+                                    let classObj = classificationMap[instrumentId] || classificationMap[String(instrumentId)];
+                                    if (classObj && classObj[currentProfitabilityGroup]) groupVal = classObj[currentProfitabilityGroup];
+                                }
+                                if (!groups[groupVal]) groups[groupVal] = [];
+                                groups[groupVal].push(item);
+                            });
+                            Object.keys(groups).sort().forEach(group => {
+                                const groupItems = groups[group];
+                                const trGroup = document.createElement('tr');
+                                trGroup.className = 'group-header';
+                                const tdGroup = document.createElement('td');
+                                tdGroup.colSpan = profitabilityTableColumns.length;
+                                tdGroup.textContent = `${getTranslation(group) || group} (${groupItems.length})`;
+                                trGroup.appendChild(tdGroup);
+                                tbody.appendChild(trGroup);
+                                groupItems.forEach(item => renderProfitabilityRow(item, tbody));
+                                const groupTotal = calculateTotals(groupItems, profitabilityTableColumns);
+                                renderProfitabilityRow(groupTotal, tbody, true);
+                            });
+                            const grandTotal = calculateTotals(displayData, profitabilityTableColumns);
+                            renderProfitabilityRow(grandTotal, tbody, true, true);
+                        } else {
+                            displayData.forEach(item => renderProfitabilityRow(item, tbody));
+                            const grandTotal = calculateTotals(displayData, profitabilityTableColumns);
+                            renderProfitabilityRow(grandTotal, tbody, true, true);
+                        }
+                    }
+
+                    function renderProfitabilityRow(item, tbody, isTotal = false, isGrandTotal = false) {
+                        const tr = document.createElement('tr');
+                        if (isTotal) {
+                            tr.style.fontWeight = 'bold';
+                            tr.style.background = isGrandTotal ? 'rgba(0, 243, 255, 0.15)' : 'rgba(0, 102, 255, 0.1)';
+                            tr.style.borderTop = isGrandTotal ? '2px solid var(--neon-cyan)' : '1px solid var(--neon-blue)';
+                        } else {
+                            tr.onclick = () => {
+                                selectProfitabilityRow(tr, item);
+                                if (item.Ticker) openTradeYieldDetails(item.Ticker);
+                            };
+                        }
+                        profitabilityTableColumns.forEach((col, index) => {
+                            const td = document.createElement('td');
+                            let val = item[col];
+                            if (index === 0 && !isTotal) {
+                                const span = document.createElement('span');
+                                span.textContent = val !== undefined ? val : '';
+                                span.style.cursor = 'pointer'; span.style.color = 'var(--neon-cyan)';
+                                td.appendChild(span);
+                            } else if (val !== undefined) {
+                                const colDescription = getTranslation(col) || col;
+                                const isPercentageCol = colDescription.includes('%');
+                                if (typeof val === 'number') {
+                                    if (isPercentageCol && Math.abs(val) > 5000) td.textContent = '--';
+                                    else td.textContent = val.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                                    td.style.textAlign = 'right';
+                                    if (!col.toLowerCase().includes('%')) td.title = col;
+                                } else td.textContent = val;
+                            } else td.textContent = '';
+                            tr.appendChild(td);
+                        });
+                        tbody.appendChild(tr);
+                    }
+
+                    function sortProfitability(col) {
+                        if (currentProfitabilitySort.column === col) currentProfitabilitySort.direction = currentProfitabilitySort.direction === 'asc' ? 'desc' : 'asc';
+                        else { currentProfitabilitySort.column = col; currentProfitabilitySort.direction = 'asc'; }
+                        renderProfitabilityTable();
+                    }
+
+                    let draggedProfitabilityColIndex = null;
+                    function handleProfitabilityDragStart(e, index) { draggedProfitabilityColIndex = index; e.dataTransfer.effectAllowed = 'move'; }
+                    function handleProfitabilityDragOver(e) { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }
+                    function handleProfitabilityDrop(e, index) {
+                        e.preventDefault();
+                        if (draggedProfitabilityColIndex === index) return;
+                        const col = profitabilityTableColumns.splice(draggedProfitabilityColIndex, 1)[0];
+                        profitabilityTableColumns.splice(index, 0, col);
+                        renderProfitabilityTable();
+                    }
+
+                    async function selectProfitabilityRow(tr, item) {
+                        document.querySelectorAll('#profitability-body tr').forEach(r => r.classList.remove('selected'));
+                        tr.classList.add('selected');
+                    }
+
+                    // ========== LOGOUT ==========
+                    async function logout() {
+                        try {
+                            const payload = {
+                                username: credentials.username || "",
+                                token: credentials.token || "",
+                                language: credentials.language || "",
+                                filter: credentials.filter || ""
+                            };
+                            const response = await fetch(`${API_URL}/logout`, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify(payload)
+                            });
+                            const data = await response.json().catch(() => null);
+                            if (data && data.status === 'ok') {
+                                showMessage(getTranslation('int.logout.success') || 'Logout successo', 'success');
+                                localStorage.clear();
+                                setTimeout(() => { window.location.href = 'login.html'; }, 1000);
+                            } else showMessage('Logout error', 'error');
+                        } catch (error) { console.error('logout error', error); }
+                    }
+
+                    function openTradingDashboard() {
+                        const params = new URLSearchParams({
+                            username: credentials.username || "",
+                            token: credentials.token || "",
+                            language: credentials.language || ""
+                        });
+                        window.open(`dashboard-trading.html?${params.toString()}`, '_blank');
+                    }
+
+                    function redirectToLogin() {
+                        localStorage.clear();
+                        window.location.href = 'login.html';
+                    }
+
+                    // ========== INITIALIZATION ==========
+                    window.addEventListener('load', async () => {
+                        if (checkAuthentication()) {
+                            await initializeLanguages();
+                            await loadTranslations(credentials.language);
+                            updatePageTranslations();
+                            await updateUserInfo();
+                            loadMenu();
+                            await loadAccounts();
+                            await loadFilter();
+                            renderReportsList_patched();
+                            loadPortfolio();
+                            loadProfitability();
+                        }
+                    });
+
+                    document.getElementById('apply-filters')?.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        applyFiltersAndSave();
+                    });
 
     </script>
 </body>
