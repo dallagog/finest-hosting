@@ -554,6 +554,277 @@
                     ...urlParams.portfolio_data_obj
                 };
 
+                // Helper per i custom renderer
+                const customRenderer = {
+                    // Override the method to get translation for labels
+                    getTranslation: function (label) {
+                        return getTranslation(label);
+                    },
+
+                    generateFieldInput: function (field) {
+                        const { name, label, format, defaultValue, required } = field;
+                        const formatType = format.format || 'text';
+                        const isFixed = format.modify === "False" && defaultValue;
+
+                        // Special handling for id_instrument - extract only the code
+                        let value = defaultValue || '';
+                        if (name === 'id_instrument' && value) {
+                            value = FormatHelper.formatInstrumentCode(value);
+                        }
+
+                        let input = '';
+                        const fixedClass = isFixed ? ' fixed-field' : '';
+                        const fieldId = `field_${name}`;
+
+                        switch (formatType) {
+                            case 'FE_Decimal':
+                                input = `<input type="text" 
+                                               name="${name}" 
+                                               id="${fieldId}"
+                                               ${required ? 'required' : ''}
+                                               ${isFixed ? 'readonly' : ''}
+                                               value="${value}"
+                                               class="form-input${fixedClass}"
+                                               data-format="FE_Decimal"
+                                               placeholder="es: 123.45 EUR">`;
+                                break;
+
+                            case 'FE_Exchange':
+                                input = `<input type="text" 
+                                               name="${name}" 
+                                               id="${fieldId}"
+                                               ${required ? 'required' : ''}
+                                               ${isFixed ? 'readonly' : ''}
+                                               value="${value}"
+                                               class="form-input${fixedClass}"
+                                               data-format="FE_Exchange"
+                                               placeholder="es: 1.10 EUR/USD">`;
+                                break;
+
+                            case 'FE_Float':
+                                input = `<input type="text" 
+                                               name="${name}" 
+                                               id="${fieldId}"
+                                               ${required ? 'required' : ''}
+                                               ${isFixed ? 'readonly' : ''}
+                                               value="${value}"
+                                               class="form-input${fixedClass}"
+                                               data-format="FE_Float"
+                                               placeholder="es: 123.45">`;
+                                break;
+
+                            case 'FE_Date':
+                                input = `<input type="text" 
+                                               name="${name}" 
+                                               id="${fieldId}"
+                                               ${required ? 'required' : ''}
+                                               ${isFixed ? 'readonly' : ''}
+                                               value="${value}" 
+                                               class="form-input${fixedClass}"
+                                               data-format="FE_Date"
+                                               placeholder="es: 2024-12-19">`;
+                                break;
+
+                            case 'FE_DateTime':
+                                input = `<input type="text" 
+                                               name="${name}" 
+                                               id="${fieldId}"
+                                               ${required ? 'required' : ''}
+                                               ${isFixed ? 'readonly' : ''}
+                                               value="${value}" 
+                                               class="form-input${fixedClass}"
+                                               data-format="FE_DateTime"
+                                               placeholder="es: 2024-12-19 14:30:00+0100">`;
+                                break;
+
+                            case 'FE_Account':
+                            case 'FE_Instrument':
+                            case 'FE_Event':
+                                if (name === 'id_instrument') {
+                                    input = `<input type="text" 
+                                                   name="${name}" 
+                                                   id="${fieldId}"
+                                                   ${required ? 'required' : ''}
+                                                   ${isFixed ? 'readonly' : ''}
+                                                   value="${value}" 
+                                                   class="form-input${fixedClass}"
+                                                   data-format="${formatType}"
+                                                   placeholder="Codice strumento">`;
+                                } else if (name === 'type_event' || name.startsWith('type_event')) {
+                                    // For type_event, show translated description
+                                    const eventDesc = value ? getEventTranslation(value) : '';
+                                    const displayValue = eventDesc !== value ? `${value} - ${eventDesc}` : value;
+                                    input = `<input type="text" 
+                                                   name="${name}" 
+                                                   id="${fieldId}"
+                                                   ${required ? 'required' : ''}
+                                                   ${isFixed ? 'readonly' : ''}
+                                                   value="${displayValue}" 
+                                                   data-code="${value}"
+                                                   class="form-input${fixedClass}"
+                                                   data-format="${formatType}">`;
+                                } else {
+                                    input = `<input type="text" 
+                                                   name="${name}" 
+                                                   id="${fieldId}"
+                                                   ${required ? 'required' : ''}
+                                                   ${isFixed ? 'readonly' : ''}
+                                                   value="${value}" 
+                                                   class="form-input${fixedClass}"
+                                                   data-format="${formatType}"
+                                                   list="${name}-list">
+                                             <datalist id="${name}-list"></datalist>`;
+                                }
+                                break;
+
+                            default:
+                                if (formatType.startsWith('list:')) {
+                                    try {
+                                        const listValues = JSON.parse(formatType.replace('list:', ''));
+                                        const options = listValues.map(v =>
+                                            `<option value="${v}" ${v == value ? 'selected' : ''}>${v}</option>`
+                                        ).join('');
+
+                                        input = `<select name="${name}" 
+                                                         id="${fieldId}"
+                                                         ${required ? 'required' : ''}
+                                                         ${isFixed ? 'disabled' : ''}
+                                                         class="form-select${fixedClass}"
+                                                         data-format="list">
+                                                    <option value="">-- ${getTranslation('int.select.option') || 'Seleziona'} --</option>
+                                                    ${options}
+                                                </select>`;
+                                    } catch (e) {
+                                        input = `<input type="text" 
+                                                       name="${name}" 
+                                                       id="${fieldId}"
+                                                       ${required ? 'required' : ''}
+                                                       ${isFixed ? 'readonly' : ''}
+                                                       value="${value}" 
+                                                       class="form-input${fixedClass}">`;
+                                    }
+                                } else {
+                                    input = `<input type="text" 
+                                                   name="${name}" 
+                                                   id="${fieldId}"
+                                                   ${required ? 'required' : ''}
+                                                   ${isFixed ? 'readonly' : ''}
+                                                   value="${value}" 
+                                                   class="form-input${fixedClass}">`;
+                                }
+                        }
+
+                        return input;
+                    },
+
+                    attachFieldListeners: function (field, inputElement) {
+                        const { name, required, format } = field;
+                        const formatType = format.format || 'text';
+                        const isFixed = format.modify === "False" && field.defaultValue;
+
+                        if (isFixed) return;
+
+                        const input = inputElement.querySelector('input') || inputElement;
+
+                        if (formatType === 'FE_Decimal') {
+                            this.attachDecimalListeners(input, required);
+                        } else if (formatType === 'FE_Exchange') {
+                            this.attachExchangeListeners(input, required);
+                        } else {
+                            input.addEventListener('input', () => {
+                                const errorDiv = input.closest('.form-group')?.querySelector('.error-message');
+                                if (errorDiv) errorDiv.textContent = '';
+                            });
+                        }
+                    },
+
+                    attachDecimalListeners: function (input, required) {
+                        input.addEventListener('input', (e) => {
+                            let val = e.target.value.toUpperCase();
+                            if (val && !val.includes(' ')) {
+                                const userCurrency = 'EUR'; // Default to EUR if not available
+                                val = `${val} ${userCurrency}`;
+                                e.target.value = val;
+                            }
+                            const errorDiv = input.closest('.form-group')?.querySelector('.error-message');
+                            if (errorDiv) errorDiv.textContent = '';
+                        });
+
+                        input.addEventListener('blur', (e) => {
+                            let value = e.target.value.trim();
+                            if (value && !value.includes(' ')) {
+                                // ensure currency is present
+                                const userCurrency = 'EUR';
+                                e.target.value = `${value} ${userCurrency}`;
+                            }
+                        });
+                    },
+
+                    attachExchangeListeners: function (input, required) {
+                        input.addEventListener('input', (e) => {
+                            const errorDiv = input.closest('.form-group')?.querySelector('.error-message');
+                            if (errorDiv) errorDiv.textContent = '';
+                        });
+
+                        input.addEventListener('blur', (e) => {
+                            let val = e.target.value.toUpperCase();
+                            if (val && !val.includes(' ') && !val.includes('/')) {
+                                const userCurrency = 'EUR';
+                                if (val !== userCurrency) {
+                                    val = `1.00 ${userCurrency}/${val}`;
+                                    e.target.value = val;
+                                }
+                            }
+                        });
+                    }
+                };
+
+                // Custom validator
+                const customValidator = {
+                    validateField: function (field, inputElement) {
+                        // Use FormatHelper for validation
+                        const { name, required, format } = field;
+                        const formatType = format.format || 'text';
+                        const input = inputElement.querySelector('input') || inputElement;
+                        const value = input.value ? input.value.trim() : '';
+
+                        if (required && !value) {
+                            return { isValid: false, message: getTranslation('int.field.required') || 'Campo obbligatorio' };
+                        }
+                        if (!value) return { isValid: true };
+
+                        if (formatType === 'FE_Decimal' && !FormatHelper.validateDecimal(value)) {
+                            return { isValid: false, message: getTranslation('int.format.decimal.invalid') };
+                        }
+                        if (formatType === 'FE_Exchange' && !FormatHelper.validateExchange(value)) {
+                            return { isValid: false, message: getTranslation('int.format.exchange.invalid') };
+                        }
+                        if ((formatType === 'FE_Float' || formatType === 'Fe_Float') && !FormatHelper.validateFloat(value)) {
+                            return { isValid: false, message: getTranslation('int.format.float.invalid') };
+                        }
+                        if (formatType === 'FE_Date' && !FormatHelper.validateDate(value)) {
+                            return { isValid: false, message: getTranslation('int.format.date.invalid') };
+                        }
+                        if (formatType === 'FE_DateTime' && !FormatHelper.validateDateTime(value)) {
+                            return { isValid: false, message: getTranslation('int.format.datetime.invalid') };
+                        }
+
+                        return { isValid: true };
+                    },
+                    getFormData: function (form) {
+                        const data = {};
+                        const fields = form.querySelectorAll('[name]');
+                        fields.forEach(field => {
+                            if (field.dataset.code) {
+                                data[field.name] = field.dataset.code;
+                            } else {
+                                data[field.name] = field.value;
+                            }
+                        });
+                        return data;
+                    }
+                };
+
                 // Crea il DataEntryManager con le callback per le traduzioni
                 const manager = new DataEntryManager({
                     basePath: './dataentry/',
@@ -616,6 +887,91 @@
                         }
                     },
                 });
+
+                // Override generateForm to use custom renderer
+                manager.generateForm = function (containerId) {
+                    const fields = this.getFields();
+                    const container = document.getElementById(containerId);
+                    if (!container) return;
+
+                    let html = `<form id="dataentry-form" class="dataentry-form"><div class="form-grid">`;
+
+                    fields.forEach(field => {
+                        const labelKey = field.name;
+                        const labelText = getTranslation(labelKey) || field.name;
+                        const requiredMark = field.required ? '<span class="required-mark">*</span>' : '';
+
+                        html += `
+                            <div class="form-group ${field.required ? 'required' : ''}">
+                                <label for="field_${field.name}" class="form-label">${labelText}${requiredMark}</label>
+                                ${customRenderer.generateFieldInput(field)}
+                                <span class="error-message" id="error_${field.name}"></span>
+                            </div>
+                        `;
+                    });
+
+                    html += `</div>
+                        <div class="form-actions">
+                            <button type="button" id="reset-btn" class="btn btn-secondary">
+                                <i class="fa fa-undo"></i> ${getTranslation('int.reset') || 'Reset'}
+                            </button>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fa fa-save"></i> ${getTranslation('int.save') || 'Salva'}
+                            </button>
+                        </div>
+                    </form>`;
+
+                    container.innerHTML = html;
+                    this.attachCustomEventListeners(customRenderer, customValidator);
+                };
+
+                // Override attachCustomEventListeners
+                manager.attachCustomEventListeners = function (renderer, validator) {
+                    const form = document.getElementById('dataentry-form');
+                    if (!form) return;
+
+                    const fields = this.getFields();
+                    fields.forEach(field => {
+                        const input = document.getElementById(`field_${field.name}`);
+                        if (input) renderer.attachFieldListeners(field, input);
+                    });
+
+                    form.addEventListener('submit', (e) => {
+                        e.preventDefault();
+                        this.clearErrors();
+                        let isValid = true;
+                        fields.forEach(field => {
+                            const input = document.getElementById(`field_${field.name}`);
+                            if (input) {
+                                const res = validator.validateField(field, input);
+                                if (!res.isValid) {
+                                    this.showError(field.name, res.message);
+                                    isValid = false;
+                                }
+                            }
+                        });
+
+                        if (isValid && this.onSubmit) {
+                            this.onSubmit(validator.getFormData(form));
+                        }
+                    });
+
+                    // Reset button
+                    const resetBtn = document.getElementById('reset-btn');
+                    if (resetBtn) {
+                        resetBtn.addEventListener('click', () => {
+                            form.reset();
+                            this.clearErrors();
+                            // Reset to default values
+                            fields.forEach(field => {
+                                const input = document.getElementById(`field_${field.name}`);
+                                if (input && field.defaultValue) {
+                                    input.value = field.defaultValue;
+                                }
+                            });
+                        });
+                    }
+                };
 
                 // Inizializza il manager
                 await manager.init('form-container');
