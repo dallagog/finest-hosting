@@ -563,6 +563,15 @@
                 return true;
             },
 
+            // Validate FE_DateTime format (HH:MM:SS+ZZZZ, e.g. "14:30:00+0100")
+            validateDateTime(value) {
+                if (!value) return false;
+
+                // Regex: HH:MM:SS followed by +ZZZZ or -ZZZZ
+                const dateTimeRegex = /^([01]\d|2[0-3]):([0-5]\d):([0-5]\d)[+-]\d{4}$/;
+                return dateTimeRegex.test(value.trim());
+            },
+
             // Format instrument code (remove everything after first space or hyphen)
             formatInstrumentCode(value) {
                 if (!value) return '';
@@ -608,8 +617,7 @@
                                            value="${value}"
                                            class="form-input${fixedClass}"
                                            data-format="FE_Decimal"
-                                           placeholder="es: 123.45 EUR"
-                                           title="Formato: numero VALUTA (es: 123.45 EUR)">`;
+                                           placeholder="es: 123.45 EUR">`;
                             break;
 
                         case 'FE_Exchange':
@@ -621,8 +629,7 @@
                                            value="${value}"
                                            class="form-input${fixedClass}"
                                            data-format="FE_Exchange"
-                                           placeholder="es: 1.10:EUR/USD"
-                                           title="Formato: numero:VALUTA1/VALUTA2 (es: 1.10:EUR/USD)">`;
+                                           placeholder="es: 1.10 EUR/USD">`;
                             break;
 
                         case 'FE_Date':
@@ -637,14 +644,15 @@
                             break;
 
                         case 'FE_DateTime':
-                            input = `<input type="datetime-local" 
+                            input = `<input type="text" 
                                            name="${name}" 
                                            id="${fieldId}"
                                            ${required ? 'required' : ''}
                                            ${isFixed ? 'readonly' : ''}
                                            value="${value}" 
                                            class="form-input${fixedClass}"
-                                           data-format="FE_DateTime">`;
+                                           data-format="FE_DateTime"
+                                           placeholder="es: 14:30:00+0100">`;
                             break;
 
                         case 'FE_Account':
@@ -826,7 +834,17 @@
                         if (!FormatHelper.validateExchange(value)) {
                             return {
                                 isValid: false,
-                                message: getTranslation('int.format.exchange.invalid') || 'Formato non valido. Usa: numero:VALUTA1/VALUTA2 (es: 1.10:EUR/USD)'
+                                message: getTranslation('int.format.exchange.invalid') || 'Formato non valido. Usa: numero VALUTA1/VALUTA2 (es: 1.10 EUR/USD)'
+                            };
+                        }
+                    }
+
+                    // Validate FE_DateTime format
+                    if (formatType === 'FE_DateTime' && value) {
+                        if (!FormatHelper.validateDateTime(value)) {
+                            return {
+                                isValid: false,
+                                message: getTranslation('int.format.datetime.invalid') || 'Formato non valido. Usa: HH:MM:SS+ZZZZ (es: 14:30:00+0100)'
                             };
                         }
                     }
