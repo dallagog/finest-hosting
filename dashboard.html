@@ -1113,7 +1113,7 @@
                     Object.values(block).forEach(acc => {
                         if (acc && acc.id_account) {
                             accountsData.push({
-                                id_account: String(acc.id_account),
+                                id_account: String(acc.id_account).trim(),
                                 account_type: acc.account_type || '',
                                 account_sector: acc.account_sector || '',
                                 account_level: acc.account_level || ''
@@ -1251,8 +1251,8 @@
                 td1.style.cssText = 'padding: 8px; text-align: center;';
                 const checkbox = document.createElement('input');
                 checkbox.type = 'checkbox';
-                checkbox.id = `account-${item.id_account}`;
-                checkbox.checked = selectedAccounts.includes(item.id_account);
+                checkbox.id = "account-" + String(item.id_account);
+                checkbox.checked = selectedAccounts.includes(String(item.id_account));
                 checkbox.style.cursor = 'pointer';
                 checkbox.addEventListener('change', () => {
                     if (checkbox.checked) {
@@ -1349,12 +1349,16 @@
                 showMessage((getTranslation('int.error.loading.filters') || 'Errore nel caricamento dei filtri'), 'error');
             }
         }
-
         function syncSelectedAccountsFromFilter() {
             selectedAccounts = [];
             const accountsFilter = filterData?.Filter?.accounts;
             if (!Array.isArray(accountsFilter)) return;
-            accountsFilter.forEach(a => { if (a.selected) selectedAccounts.push(String(a.id_account)); });
+
+            accountsFilter.forEach(a => {
+                if (a.selected) {
+                    selectedAccounts.push(String(a.id_account).trim());
+                }
+            });
         }
 
         function populateFilterUI() {
