@@ -861,24 +861,6 @@
 
                 console.log('Translations loaded for:', language);
 
-                // Valori di default
-                const defaultValues = {
-                    price_divisor: '1',
-                    exchange: '1.00:EUR/USD',
-                    'cost:expense': '0.00:EUR',
-                    'fee:commission': '0.00:EUR',
-                    'tax:tobin': '0.00:EUR',
-                    'amount:gross': '0.00:EUR',
-                    'amount:net': '0.00:EUR'
-                };
-
-                // Aggiorna con parametri URL
-                if (urlParams.id_account) defaultValues.id_account = urlParams.id_account;
-                if (urlParams.type_event) defaultValues.type_event = urlParams.type_event;
-                if (urlParams.id_instrument) {
-                    defaultValues.id_instrument = FormatHelper.formatInstrumentCode(urlParams.id_instrument);
-                }
-
                 // Crea i custom renderer e validator
                 const customRenderer = createCustomFieldRenderer();
                 const customValidator = createCustomValidator();
@@ -887,7 +869,6 @@
                 const manager = new DataEntryManager({
                     basePath: './dataentry/',
                     folder: 'trade',
-                    defaultValues: defaultValues,
                     onSubmit: async (data) => { // Aggiungi 'async'
                         console.log('Dati inviati:', data);
 
