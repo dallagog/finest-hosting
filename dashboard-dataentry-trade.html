@@ -459,13 +459,32 @@
                 if (!response.ok) throw new Error('Translation file not found');
                 translations = await response.json();
                 await loadCurrencies(lang);
+                await loadEventTranslations(lang);
             } catch (error) {
                 console.error('Error loading translations:', error);
             }
         }
 
+        let eventTranslations = {};
+
+        async function loadEventTranslations(lang) {
+            try {
+                const response = await fetch(`event/${lang}.json`);
+                if (!response.ok) throw new Error('Event translation file not found');
+                eventTranslations = await response.json();
+            } catch (error) {
+                console.error('Error loading event translations:', error);
+                eventTranslations = {};
+            }
+        }
+
         function getTranslation(key) {
             return translations[key] || key;
+        }
+
+        function getEventTranslation(eventCode) {
+            const key = `eve.${eventCode}`;
+            return eventTranslations[key] || eventCode;
         }
 
         async function updateUserInfo() {
@@ -563,12 +582,12 @@
                 return true;
             },
 
-            // Validate FE_DateTime format (HH:MM:SS+ZZZZ, e.g. "14:30:00+0100")
+            // Validate FE_DateTime format (YYYY-MM-DD HH:MM:SS+ZZZZ, e.g. "2024-12-19 14:30:00+0100")
             validateDateTime(value) {
                 if (!value) return false;
 
-                // Regex: HH:MM:SS followed by +ZZZZ or -ZZZZ
-                const dateTimeRegex = /^([01]\d|2[0-3]):([0-5]\d):([0-5]\d)[+-]\d{4}$/;
+                // Regex: YYYY-MM-DD HH:MM:SS followed by +ZZZZ or -ZZZZ
+                const dateTimeRegex = /^\d{4}-\d{2}-\d{2} ([01]\d|2[0-3]):([0-5]\d):([0-5]\d)[+-]\d{4}$/;
                 return dateTimeRegex.test(value.trim());
             },
 
@@ -652,7 +671,7 @@
                                            value="${value}" 
                                            class="form-input${fixedClass}"
                                            data-format="FE_DateTime"
-                                           placeholder="es: 14:30:00+0100">`;
+                                           placeholder="es: 2024-12-19 14:30:00+0100">`;
                             break;
 
                         case 'FE_Account':
@@ -668,6 +687,19 @@
                                                class="form-input${fixedClass}"
                                                data-format="${formatType}"
                                                placeholder="Codice strumento">`;
+                            } else if (name === 'type_event' || name.startsWith('type_event')) {
+                                // For type_event, show translated description
+                                const eventDesc = value ? getEventTranslation(value) : '';
+                                const displayValue = eventDesc !== value ? `${value} - ${eventDesc}` : value;
+                                input = `<input type="text" 
+                                               name="${name}" 
+                                               id="${fieldId}"
+                                               ${required ? 'required' : ''}
+                                               ${isFixed ? 'readonly' : ''}
+                                               value="${displayValue}" 
+                                               data-code="${value}"
+                                               class="form-input${fixedClass}"
+                                               data-format="${formatType}">`;
                             } else {
                                 input = `<input type="text" 
                                                name="${name}" 
@@ -844,7 +876,7 @@
                         if (!FormatHelper.validateDateTime(value)) {
                             return {
                                 isValid: false,
-                                message: getTranslation('int.format.datetime.invalid') || 'Formato non valido. Usa: HH:MM:SS+ZZZZ (es: 14:30:00+0100)'
+                                message: getTranslation('int.format.datetime.invalid') || 'Formato non valido. Usa: YYYY-MM-DD HH:MM:SS+ZZZZ (es: 2024-12-19 14:30:00+0100)'
                             };
                         }
                     }
