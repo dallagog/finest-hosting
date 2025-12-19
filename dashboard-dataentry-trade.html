@@ -383,6 +383,7 @@
                 type_event: params.get('type_event') || '',
                 id_instrument: params.get('id_instrument') || '',
                 id_account: params.get('id_account') || '',
+                exchange: params.get('exchange') || '',
                 portfolio_data: params.get('portfolio_data') || '{}'
             };
 
@@ -586,7 +587,7 @@
                 generateFieldInput: function (field) {
                     const { name, label, format, defaultValue, required } = field;
                     const formatType = format.format || 'text';
-                    const isFixed = format.fixed === true && defaultValue;
+                    const isFixed = format.modify === "False" && defaultValue;
 
                     // Special handling for id_instrument - extract only the code
                     let value = defaultValue || '';
@@ -717,7 +718,7 @@
                 attachFieldListeners: function (field, inputElement) {
                     const { name, required, format } = field;
                     const formatType = format.format || 'text';
-                    const isFixed = format.fixed === true && field.defaultValue;
+                    const isFixed = format.modify === "False" && field.defaultValue;
 
                     if (isFixed) return;
 
@@ -865,11 +866,21 @@
                 const customRenderer = createCustomFieldRenderer();
                 const customValidator = createCustomValidator();
 
+                // Build defaultValues from URL params and portfolio_data
+                const defaultValues = {
+                    id_account: urlParams.id_account || '',
+                    id_instrument: urlParams.id_instrument || '',
+                    type_event: urlParams.type_event || '',
+                    exchange: urlParams.exchange || '',
+                    ...urlParams.portfolio_data_obj
+                };
+
                 // Crea il DataEntryManager
                 const manager = new DataEntryManager({
                     basePath: './dataentry/',
                     folder: 'trade',
-                    onSubmit: async (data) => { // Aggiungi 'async'
+                    defaultValues: defaultValues,
+                    onSubmit: async (data) => {
                         console.log('Dati inviati:', data);
 
                         const API_URL = "https://feweb-tunnel.fe-web.eu";
@@ -887,7 +898,7 @@
 
                         try {
                             console.log('=== PUTTRADE PAYLOAD ===');
-                            console.log('Payload:', JSON.stringify(trade, null, 2));
+                            console.log('Payload:', JSON.stringify(payload, null, 2));
                             console.log('====================');
 
                             const response = await fetch(`${API_URL}/puttrade`, {
@@ -896,7 +907,7 @@
                                     'Content-Type': 'application/json',
                                     'Authorization': `Bearer ${credentials.token}`
                                 },
-                                body: JSON.stringify(trade)
+                                body: JSON.stringify(payload)
                             });
 
                             if (!response.ok) {

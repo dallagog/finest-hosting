@@ -584,21 +584,27 @@
                 type_event: action === 'buy' ? 'FI-BB' : 'FI-BA'
             });
 
-            // Passa ticker/strumento
+            // Pass ticker/strumento
             if (item && item.Ticker) {
                 params.append('id_instrument', item.Ticker);
             }
 
-            // Passa l'account se disponibile
+            // Pass l'account se disponibile
             const accountKey = Object.keys(item).find(k =>
                 k.toLowerCase().includes('account') ||
                 k.toLowerCase().includes('conto')
             );
             if (accountKey && item[accountKey]) {
-                params.append('id_account', item[accountKey]);
+                params.append('id_account', String(item[accountKey]));
             }
 
-            // Passa tutti i campi disponibili come JSON per referenza
+            // Pass exchange if available
+            const exchangeKey = Object.keys(item).find(k => k.toLowerCase() === 'exchange');
+            if (exchangeKey && item[exchangeKey]) {
+                params.append('exchange', String(item[exchangeKey]));
+            }
+
+            // Pass tutti i campi disponibili come JSON per referenza
             params.append('portfolio_data', JSON.stringify(item));
 
             window.open(`dashboard-dataentry-trade.html?${params.toString()}`, '_blank');
