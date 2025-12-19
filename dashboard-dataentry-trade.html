@@ -513,17 +513,16 @@
 
         // Helper functions for FE_Decimal and FE_Exchange formats
         const FormatHelper = {
-            // Validate FE_Decimal format
+            // Validate FE_Decimal format (number space currency, e.g. "123.45 EUR")
             validateDecimal(value) {
                 if (!value) return false;
 
-                if (!value.includes(':')) return false;
+                // Split by last space to separate number from currency
+                const lastSpaceIndex = value.trim().lastIndexOf(' ');
+                if (lastSpaceIndex === -1) return false;
 
-                const parts = value.split(':');
-                if (parts.length !== 2) return false;
-
-                const number = parts[0];
-                const currency = parts[1];
+                const number = value.substring(0, lastSpaceIndex).trim();
+                const currency = value.substring(lastSpaceIndex + 1).trim();
 
                 // Validate number
                 const numRegex = /^-?\d+(\.\d{1,6})?$/;
@@ -609,8 +608,8 @@
                                            value="${value}"
                                            class="form-input${fixedClass}"
                                            data-format="FE_Decimal"
-                                           placeholder="es: 123.45:EUR"
-                                           title="Formato: numero:VALUTA (es: 123.45:EUR)">`;
+                                           placeholder="es: 123.45 EUR"
+                                           title="Formato: numero VALUTA (es: 123.45 EUR)">`;
                             break;
 
                         case 'FE_Exchange':
@@ -747,7 +746,7 @@
                                 e.target.classList.add('error');
                                 const errorDiv = input.closest('.form-group')?.querySelector('.error-message');
                                 if (errorDiv) {
-                                    errorDiv.textContent = getTranslation('int.format.decimal.invalid') || 'Formato non valido. Usa: numero:VALUTA (es: 123.45:EUR)';
+                                    errorDiv.textContent = getTranslation('int.format.decimal.invalid') || 'Formato non valido. Usa: numero VALUTA (es: 123.45 EUR)';
                                 }
                             } else {
                                 e.target.classList.remove('error');
@@ -817,7 +816,7 @@
                         if (!FormatHelper.validateDecimal(value)) {
                             return {
                                 isValid: false,
-                                message: getTranslation('int.format.decimal.invalid') || 'Formato non valido. Usa: numero:VALUTA (es: 123.45:EUR)'
+                                message: getTranslation('int.format.decimal.invalid') || 'Formato non valido. Usa: numero VALUTA (es: 123.45 EUR)'
                             };
                         }
                     }
@@ -958,7 +957,7 @@
                     `;
 
                     fields.forEach(field => {
-                        const labelKey = `int.dataentry.${field.name}`;
+                        const labelKey = field.name;
                         const labelText = getTranslation(labelKey) || field.name;
                         const requiredMark = field.required ? '<span class="required-mark">*</span>' : '';
 
