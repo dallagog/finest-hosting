@@ -402,7 +402,6 @@
             urlParams.username = urlParams.username || '';
             urlParams.token = urlParams.token || '';
             urlParams.language = urlParams.language || 'it_IT';
-            urlParams.folder = urlParams.folder || 'trade';
             urlParams.portfolio_data = urlParams.portfolio_data || '{}';
 
             credentials = {
@@ -1062,8 +1061,7 @@
                 };
 
                 // Risoluzione dinamica della cartella formati dal manifest in base al settore
-                let configFolder = urlParams.folder || 'trade';
-                if (urlParams.account_sector) {
+                if (!urlParams.folder && urlParams.account_sector) {
                     const sector = urlParams.account_sector.trim().toUpperCase();
                     const sectorEvents = eventManifest[sector] || [];
 
@@ -1079,15 +1077,18 @@
                     }
 
                     if (targetEvent && targetEvent.dashboard) {
-                        configFolder = targetEvent.dashboard;
-                        console.log(`Config folder resolved for sector ${sector}:`, configFolder);
+                        urlParams.folder = targetEvent.dashboard;
+                        console.log(`Folder resolved from manifest for sector ${sector}:`, urlParams.folder);
                     }
                 }
+
+                // Fallback definitivo a 'trade'
+                urlParams.folder = urlParams.folder || 'trade';
 
                 // Crea il DataEntryManager
                 const manager = new DataEntryManager({
                     basePath: './dataentry/',
-                    folder: configFolder,
+                    folder: urlParams.folder,
                     defaultValues: defaultValues,
                     getEventTranslation: (code) => {
                         return eventTranslations[`eve.${code}`] || code;
