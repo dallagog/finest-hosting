@@ -393,20 +393,17 @@
         // Recupera parametri URL
         function getURLParams() {
             const params = new URLSearchParams(window.location.search);
-            urlParams = {
-                username: params.get('username') || '',
-                token: params.get('token') || '',
-                language: params.get('language') || 'it_IT',
-                action: params.get('action') || '',
-                type_event: params.get('type_event') || '',
-                id_instrument: params.get('id_instrument') || '',
-                id_account: params.get('id_account') || '',
-                account_type: params.get('account_type') || '',
-                account_sector: params.get('account_sector') || '',
-                exchange: params.get('exchange') || '',
-                folder: params.get('folder') || 'trade',
-                portfolio_data: params.get('portfolio_data') || '{}'
-            };
+            urlParams = {};
+            for (const [key, value] of params.entries()) {
+                urlParams[key] = value;
+            }
+
+            // Set defaults for essential parameters
+            urlParams.username = urlParams.username || '';
+            urlParams.token = urlParams.token || '';
+            urlParams.language = urlParams.language || 'it_IT';
+            urlParams.folder = urlParams.folder || 'trade';
+            urlParams.portfolio_data = urlParams.portfolio_data || '{}';
 
             credentials = {
                 username: urlParams.username,
@@ -1061,11 +1058,7 @@
                 const customValidator = createCustomValidator();
 
                 const defaultValues = {
-                    id_account: urlParams.id_account || '',
-                    account_sector: urlParams.account_sector || '',
-                    id_instrument: urlParams.id_instrument || '',
-                    type_event: urlParams.type_event || '',
-                    exchange: urlParams.exchange || '',
+                    ...urlParams,
                     ...urlParams.portfolio_data_obj
                 };
 
