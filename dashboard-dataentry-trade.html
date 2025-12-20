@@ -369,8 +369,10 @@
         let urlParams = {};
         let credentials = { username: '', token: '', language: '', filter: '' };
         let translations = {};
+        let eventTranslations = {};
         let availableLanguages = [];
         let currencies = [];
+        let availableAccounts = [];
 
         // Recupera parametri URL
         function getURLParams() {
@@ -383,6 +385,7 @@
                 type_event: params.get('type_event') || '',
                 id_instrument: params.get('id_instrument') || '',
                 id_account: params.get('id_account') || '',
+                account_type: params.get('account_type') || '',
                 account_sector: params.get('account_sector') || '',
                 exchange: params.get('exchange') || '',
                 portfolio_data: params.get('portfolio_data') || '{}'
@@ -451,6 +454,57 @@
             } catch (error) {
                 console.error('Error loading currencies:', error);
                 currencies = [];
+            }
+        }
+
+        async function loadEventTranslations(lang) {
+            try {
+                const response = await fetch(`event/${lang}.json`);
+                if (!response.ok) throw new Error(`Event translation file not found event/${lang}.json`);
+                eventTranslations = await response.json();
+                console.log('Event translations loaded:', Object.keys(eventTranslations).length);
+            } catch (error) {
+                console.error("Error loading event translations:", error);
+                eventTranslations = {};
+            }
+        }
+
+        async function loadAccounts() {
+            try {
+                const API_URL = "https://feweb-tunnel.fe-web.eu";
+                const payload = {
+                    username: credentials.username,
+                    token: credentials.token,
+                    language: credentials.language,
+                    filter: "",
+                    code: ""
+                };
+
+                const response = await fetch(`${API_URL}/getfilter`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) throw new Error('HTTP ' + response.status);
+
+                const data = await response.json();
+                let accountList = [];
+
+                // Formato dati da dashboard.html
+                if (data && data.Account && Array.isArray(data.Account.list)) {
+                    accountList = data.Account.list;
+                } else if (data && data.filter && data.filter.Account && Array.isArray(data.filter.Account.list)) {
+                    accountList = data.filter.Account.list;
+                } else if (data.status === 'ok' && data.data && data.data.Account && Array.isArray(data.data.Account.list)) {
+                    accountList = data.data.Account.list;
+                }
+
+                availableAccounts = accountList;
+                console.log('Accounts loaded:', availableAccounts.length);
+            } catch (error) {
+                console.error('Error loading accounts:', error);
+                availableAccounts = [];
             }
         }
 
@@ -586,6 +640,37 @@
                             break;
 
                         case 'FE_Account':
+                            if (!value) {
+                                // Se non abbiamo un id_account, mostriamo una combobox filtrata per account_type
+                                const filterType = urlParams.account_type || '';
+                                const filtered = availableAccounts.filter(acc =>
+                                    !filterType || acc.account_type === filterType || acc.type === filterType
+                                );
+
+                                const options = filtered.map(acc =>
+                                    `<option value="${acc.id_account}">${acc.id_account} - ${acc.description || acc.id_account}</option>`
+                                ).join('');
+
+                                input = `<select name="${name}" 
+                                                 id="${fieldId}"
+                                                 ${required ? 'required' : ''}
+                                                 class="form-select${fixedClass}"
+                                                 data-format="FE_Account">
+                                            <option value="">-- ${getTranslation('int.select.option') || 'Seleziona'} --</option>
+                                            ${options}
+                                        </select>`;
+                            } else {
+                                input = `<input type="text" 
+                                               name="${name}" 
+                                               id="${fieldId}"
+                                               ${required ? 'required' : ''}
+                                               ${isFixed ? 'readonly' : ''}
+                                               value="${value}" 
+                                               class="form-input${fixedClass}"
+                                               data-format="${formatType}">`;
+                            }
+                            break;
+
                         case 'FE_Instrument':
                         case 'FE_Event':
                             if (name === 'id_instrument') {
@@ -598,6 +683,22 @@
                                                class="form-input${fixedClass}"
                                                data-format="${formatType}"
                                                placeholder="Codice strumento">`;
+                            } else if (name === 'type_event' || name.startsWith('type_event')) {
+                                // Show translated description if available
+                                const description = eventTranslations[`eve.${value}`] || '';
+                                const displayValue = description && description !== value ? `${value} - ${description}` : value;
+
+                                input = `<input type="text" 
+                                               name="${name}" 
+                                               id="${fieldId}"
+                                               ${required ? 'required' : ''}
+                                               ${isFixed ? 'readonly' : ''}
+                                               value="${displayValue}" 
+                                               data-code="${value}"
+                                               class="form-input${fixedClass}"
+                                               data-format="${formatType}"
+                                               list="${name}-list">
+                                         <datalist id="${name}-list"></datalist>`;
                             } else {
                                 input = `<input type="text" 
                                                name="${name}" 
@@ -777,7 +878,16 @@
                     const fields = formElement.querySelectorAll('[name]');
 
                     fields.forEach(field => {
-                        data[field.name] = field.value;
+                        // For fields with descriptions (like type_event), use data-code if it matches the current value
+                        // or extract the code part if it's in "CODE - DESCRIPTION" format
+                        let val = field.value.trim();
+                        if (field.dataset.code && val.startsWith(field.dataset.code)) {
+                            data[field.name] = field.dataset.code;
+                        } else if (val.includes(' - ')) {
+                            data[field.name] = val.split(' - ')[0].trim();
+                        } else {
+                            data[field.name] = val;
+                        }
                     });
 
                     return data;
@@ -794,6 +904,8 @@
                 const language = urlParams.language || 'it_IT';
                 await initializeLanguages();
                 await loadTranslations(language);
+                await loadEventTranslations(language);
+                await loadAccounts();
                 updatePageTranslations();
                 await updateUserInfo();
 
@@ -817,6 +929,9 @@
                     basePath: './dataentry/',
                     folder: 'trade',
                     defaultValues: defaultValues,
+                    getEventTranslation: (code) => {
+                        return eventTranslations[`eve.${code}`] || code;
+                    },
                     onSubmit: async (data) => {
                         console.log('Dati inviati:', data);
 
@@ -1023,6 +1138,23 @@
 
                 // Inizializza il manager
                 await manager.init('form-container');
+
+                // Populate type_event-list datalist
+                const eventList = document.getElementById('type_event-list');
+                if (eventList) {
+                    eventList.innerHTML = '';
+                    Object.keys(eventTranslations).forEach(key => {
+                        if (key.startsWith('eve.') && key !== 'eve.language.code') {
+                            const code = key.replace('eve.', '');
+                            const description = eventTranslations[key];
+                            const option = document.createElement('option');
+                            const displayValue = `${code} - ${description}`;
+                            option.value = displayValue;
+                            option.textContent = displayValue;
+                            eventList.appendChild(option);
+                        }
+                    });
+                }
 
             } catch (error) {
                 console.error('Errore durante l\'inizializzazione:', error);
