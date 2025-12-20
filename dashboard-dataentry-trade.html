@@ -200,6 +200,21 @@
             text-shadow: 0 0 2px rgba(255, 0, 0, 0.5);
         }
 
+        .liquidity-alert {
+            display: none;
+            background: rgba(0, 255, 0, 0.1);
+            border: 1px solid var(--success-color);
+            color: var(--success-color);
+            padding: 10px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+            text-align: center;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            box-shadow: 0 0 10px rgba(0, 255, 0, 0.2);
+        }
+
         .form-actions {
             display: flex;
             gap: 12px;
@@ -389,6 +404,7 @@
                 account_type: params.get('account_type') || '',
                 account_sector: params.get('account_sector') || '',
                 exchange: params.get('exchange') || '',
+                folder: params.get('folder') || 'trade',
                 portfolio_data: params.get('portfolio_data') || '{}'
             };
 
@@ -1067,10 +1083,27 @@
                 // Crea il DataEntryManager
                 const manager = new DataEntryManager({
                     basePath: './dataentry/',
-                    folder: 'trade',
+                    folder: urlParams.folder || 'trade',
                     defaultValues: defaultValues,
                     getEventTranslation: (code) => {
                         return eventTranslations[`eve.${code}`] || code;
+                    },
+                    onChange: (name, value) => {
+                        if (name === 'type_event' || name.startsWith('type_event')) {
+                            const eventCode = value.includes(' - ') ? value.split(' - ')[0].trim() : value.trim();
+                            const curSector = (urlParams.account_sector || "").trim().toUpperCase();
+                            const sectorEvents = eventManifest[curSector] || [];
+                            const eventData = sectorEvents.find(e => e.type_event === eventCode);
+
+                            const alertBox = document.getElementById('liquidity-alert');
+                            if (alertBox) {
+                                if (eventData && eventData.type_event_liquidity) {
+                                    alertBox.style.display = 'block';
+                                } else {
+                                    alertBox.style.display = 'none';
+                                }
+                            }
+                        }
                     },
                     onSubmit: async (data) => {
                         console.log('Dati inviati:', data);
@@ -1113,6 +1146,35 @@
 
                             successMsg.classList.add('show');
                             window.scrollTo({ top: 0, behavior: 'smooth' });
+
+                            // Gestione propagazione liquidità
+                            const eventCode = data.type_event;
+                            const curSector = (urlParams.account_sector || "").trim().toUpperCase();
+                            const sectorEvents = eventManifest[curSector] || [];
+                            const eventData = sectorEvents.find(e => e.type_event === eventCode);
+
+                            if (eventData && eventData.type_event_liquidity) {
+                                const nextSector = eventData.type_event_liquidity_sector || 'CC';
+                                const params = new URLSearchParams({
+                                    username: credentials.username,
+                                    token: credentials.token,
+                                    language: credentials.language,
+                                    id_account: data.id_account || '',
+                                    account_sector: nextSector,
+                                    folder: 'trade-liquidity',
+                                    type_event: eventData.type_event_liquidity,
+                                    id_instrument: data.id_instrument || '',
+                                    'amount:net': data['amount:net'] || '',
+                                    'cost:expense': data['cost:expense'] || '',
+                                    'fee:commission': data['fee:commission'] || '',
+                                    date_settlement: data.date_settlement || '',
+                                    date_trade: data.date_trade || ''
+                                });
+                                // Apri in una nuova finestra/tab dopo un piccolo delay
+                                setTimeout(() => {
+                                    window.open(`dashboard-dataentry-trade.html?${params.toString()}`, '_blank');
+                                }, 1500);
+                            }
 
                             setTimeout(() => {
                                 successMsg.classList.remove('show');
@@ -1165,6 +1227,9 @@
                     });
 
                     html += `
+                            </div>
+                            <div id="liquidity-alert" class="liquidity-alert">
+                                <i class="fa fa-info-circle"></i> Sarà generata della liquidità
                             </div>
                             <div class="form-actions">
                                 <button type="button" id="reset-btn" class="btn btn-secondary">
@@ -1265,6 +1330,12 @@
 
                 // Datalist population moved inside renderer for better reliability
                 console.log('Form initialization complete. Sector:', urlParams.account_sector);
+
+                // Initial check for liquidity alert if type_event is pre-filled
+                if (urlParams.type_event) {
+                    manager.onChange('type_event', urlParams.type_event);
+                }
+
 
             } catch (error) {
                 console.error('Errore durante l\'inizializzazione:', error);
