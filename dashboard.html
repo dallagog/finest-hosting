@@ -1176,6 +1176,7 @@
             let accountsList = Array.isArray(accountsData) ? accountsData.map(a => ({
                 id_account: a.id_account,
                 account_type: a.account_type,
+                account_sector: a.account_sector || (a.raw && a.raw.account_sector) || '',
                 description: a.description || (a.raw && (a.raw.description_account || a.raw.description)) || '',
                 selected: !!a.selected
             })) : [];
@@ -1186,6 +1187,7 @@
                     accountsList = fallback.map(a => ({
                         id_account: a.id_account || a.id || '',
                         account_type: a.account_type || '',
+                        account_sector: a.account_sector || a.sector || '',
                         description: a.description_account || a.description || '',
                         selected: !!a.selected
                     }));
@@ -1239,6 +1241,11 @@
             th3.textContent = getTranslation('int.account.description') || 'Descrizione';
             headerRow.appendChild(th3);
 
+            const th4 = document.createElement('th');
+            th4.style.cssText = 'padding: 8px; text-align: center; width: 120px;';
+            th4.textContent = getTranslation('int.operation') || 'Operazione';
+            headerRow.appendChild(th4);
+
             thead.appendChild(headerRow);
             table.appendChild(thead);
             const tbody = document.createElement('tbody');
@@ -1278,6 +1285,18 @@
                 td3.style.cssText = 'padding: 8px;';
                 td3.textContent = item.description || item.account_type || '';
                 tr.appendChild(td3);
+
+                const td4 = document.createElement('td');
+                td4.style.cssText = 'padding: 4px; text-align: center;';
+                const opBtn = document.createElement('button');
+                opBtn.style.cssText = 'padding: 4px 8px; margin: 0; font-size: 11px;';
+                opBtn.innerHTML = `<i class="fa fa-exchange-alt"></i> ${getTranslation('int.operation') || 'Operazione'}`;
+                opBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    openTradeDataEntry(item.id_account, item.account_sector);
+                });
+                td4.appendChild(opBtn);
+                tr.appendChild(td4);
 
                 tbody.appendChild(tr);
             });
@@ -1435,6 +1454,17 @@
                 filter: credentials.filter || ''
             });
             window.open(`dashboard-account.html?${params.toString()}`, '_blank');
+        }
+
+        function openTradeDataEntry(accountId, sector) {
+            const params = new URLSearchParams({
+                username: credentials.username || "",
+                token: credentials.token || "",
+                language: credentials.language || "",
+                id_account: accountId || "",
+                account_sector: sector || ""
+            });
+            window.open(`dashboard-dataentry-trade.html?${params.toString()}`, '_blank');
         }
 
         // ========== APPLY FILTERS ==========
