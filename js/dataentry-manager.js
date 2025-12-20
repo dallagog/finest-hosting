@@ -19,21 +19,31 @@ const FormatHelper = {
         return true;
     },
 
-    // Validate FE_Exchange format (number space currency pair, e.g. "1.10 EUR/USD")
+    // Validate FE_Exchange format (number space currency pair, e.g. "1.10 EUR/USD" or "1.10:EUR/USD")
     validateExchange(value) {
         if (!value) return false;
-        if (!value.includes(' ')) return false;
-        const firstParts = value.split(' ');
-        if (firstParts.length !== 2) return false;
-        const number = firstParts[0];
-        const currencies = firstParts[1];
+
+        // Support both space and colon as separator
+        let separator = ' ';
+        if (value.includes(':')) separator = ':';
+        else if (!value.includes(' ')) return false;
+
+        const parts = value.split(separator);
+        if (parts.length !== 2) return false;
+
+        const number = parts[0];
+        const currencies = parts[1];
+
         if (!currencies.includes('/')) return false;
         const currencyParts = currencies.split('/');
         if (currencyParts.length !== 2) return false;
+
         const numRegex = /^-?\d+(\.\d{1,6})?$/;
         if (!numRegex.test(number)) return false;
+
         const currencyRegex = /^[A-Z]{3}$/;
         if (!currencyRegex.test(currencyParts[0]) || !currencyRegex.test(currencyParts[1])) return false;
+
         return true;
     },
 
