@@ -559,6 +559,12 @@
             return `${dateStr} ${timeStr}${getTimezoneOffsetString()}`;
         }
 
+        function formatCurrentDate() {
+            const now = new Date();
+            const pad = (num) => String(num).padStart(2, '0');
+            return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+        }
+
         async function updateUserInfo() {
             const userLanguage = credentials.language || 'it_IT';
             const userCurrency = 'EUR';
@@ -654,19 +660,25 @@
                             break;
 
                         case 'FE_Date':
-                            // Standardizziamo su YYYY-MM-DD
+                            // Standardizziamo su YYYY-MM-DD (Input di testo invece che date per maggiore controllo)
                             let dateValue = value;
                             if (value && value.includes(' ')) {
                                 dateValue = value.split(' ')[0];
                             }
-                            input = `<input type="date" 
-                                           name="${name}" 
-                                           id="${fieldId}"
-                                           ${required ? 'required' : ''}
-                                           ${isFixed ? 'readonly' : ''}
-                                           value="${dateValue}" 
-                                           class="form-input${fixedClass}"
-                                           data-format="FE_Date">`;
+                            input = `<div class="input-group">
+                                        <input type="text" 
+                                               name="${name}" 
+                                               id="${fieldId}"
+                                               ${required ? 'required' : ''}
+                                               ${isFixed ? 'readonly' : ''}
+                                               value="${dateValue}" 
+                                               class="form-input${fixedClass}"
+                                               data-format="FE_Date"
+                                               placeholder="YYYY-MM-DD">
+                                        <button type="button" class="btn btn-secondary btn-sm" onclick="document.getElementById('${fieldId}').value = formatCurrentDate()">
+                                            <i class="fas fa-calendar-day"></i>
+                                        </button>
+                                     </div>`;
                             break;
 
                         case 'FE_DateTime':
