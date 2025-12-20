@@ -101,9 +101,9 @@ class DataEntryManager {
      */
     async loadConfiguration() {
         try {
-            const structurePath = `${this.basePath}${this.folder}/${this.folder}@data@structure.json`;
-            const mandatoryPath = `${this.basePath}${this.folder}/${this.folder}@data@mandatory.json`;
-            const formatPath = `${this.basePath}${this.folder}/${this.folder}@data@format.json`;
+            const structurePath = `${this.basePath}${this.folder}/trade@data@structure.json`;
+            const mandatoryPath = `${this.basePath}${this.folder}/trade@data@mandatory.json`;
+            const formatPath = `${this.basePath}${this.folder}/trade@data@format.json`;
 
             const [structureRes, mandatoryRes, formatRes] = await Promise.all([
                 fetch(structurePath),
@@ -199,7 +199,6 @@ class DataEntryManager {
                 break;
 
             case 'FE_Float':
-            case 'Fe_Float':
                 input = `<input type="text" 
                                name="${name}" 
                                id="${fieldId}"
@@ -427,7 +426,7 @@ class DataEntryManager {
         }
 
         // Validate FE_Float format
-        if (formatType === 'FE_Float' || formatType === 'Fe_Float') {
+        if (formatType === 'FE_Float') {
             if (!FormatHelper.validateFloat(value)) {
                 return {
                     isValid: false,
