@@ -370,6 +370,7 @@
         let credentials = { username: '', token: '', language: '', filter: '' };
         let translations = {};
         let eventTranslations = {};
+        let eventManifest = {};
         let availableLanguages = [];
         let currencies = [];
         let availableAccounts = [];
@@ -466,6 +467,18 @@
             } catch (error) {
                 console.error("Error loading event translations:", error);
                 eventTranslations = {};
+            }
+        }
+
+        async function loadEventManifest() {
+            try {
+                const response = await fetch('event/manifest.json');
+                if (!response.ok) throw new Error('Event manifest not found');
+                eventManifest = await response.json();
+                console.log('Event manifest loaded');
+            } catch (error) {
+                console.error('Error loading event manifest:', error);
+                eventManifest = {};
             }
         }
 
@@ -641,10 +654,10 @@
 
                         case 'FE_Account':
                             if (!value) {
-                                // Se non abbiamo un id_account, mostriamo una combobox filtrata per account_type
-                                const filterType = urlParams.account_type || '';
+                                // Se non abbiamo un id_account, mostriamo una combobox filtrata per account_sector
+                                const filterSector = urlParams.account_sector || '';
                                 const filtered = availableAccounts.filter(acc =>
-                                    !filterType || acc.account_type === filterType || acc.type === filterType
+                                    !filterSector || acc.account_sector === filterSector
                                 );
 
                                 const options = filtered.map(acc =>
@@ -905,6 +918,7 @@
                 await initializeLanguages();
                 await loadTranslations(language);
                 await loadEventTranslations(language);
+                await loadEventManifest();
                 await loadAccounts();
                 updatePageTranslations();
                 await updateUserInfo();
@@ -1143,17 +1157,37 @@
                 const eventList = document.getElementById('type_event-list');
                 if (eventList) {
                     eventList.innerHTML = '';
-                    Object.keys(eventTranslations).forEach(key => {
-                        if (key.startsWith('eve.') && key !== 'eve.language.code') {
-                            const code = key.replace('eve.', '');
-                            const description = eventTranslations[key];
+
+                    const sector = urlParams.account_sector || '';
+                    const allowedEvents = eventManifest[sector] || null;
+
+                    if (allowedEvents) {
+                        // Use manifest to filter events
+                        console.log(`Filtering events for sector: ${sector}`);
+                        allowedEvents.forEach(evt => {
+                            const code = evt.type_event;
+                            const description = eventTranslations[`eve.${code}`] || code;
                             const option = document.createElement('option');
                             const displayValue = `${code} - ${description}`;
                             option.value = displayValue;
                             option.textContent = displayValue;
                             eventList.appendChild(option);
-                        }
-                    });
+                        });
+                    } else {
+                        // Fallback: show all events from translations
+                        console.log('No manifest entry for sector, showing all events');
+                        Object.keys(eventTranslations).forEach(key => {
+                            if (key.startsWith('eve.') && key !== 'eve.language.code') {
+                                const code = key.replace('eve.', '');
+                                const description = eventTranslations[key];
+                                const option = document.createElement('option');
+                                const displayValue = `${code} - ${description}`;
+                                option.value = displayValue;
+                                option.textContent = displayValue;
+                                eventList.appendChild(option);
+                            }
+                        });
+                    }
                 }
 
             } catch (error) {
