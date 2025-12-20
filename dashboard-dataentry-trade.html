@@ -1061,10 +1061,33 @@
                     ...urlParams.portfolio_data_obj
                 };
 
+                // Risoluzione dinamica della cartella formati dal manifest in base al settore
+                let configFolder = urlParams.folder || 'trade';
+                if (urlParams.account_sector) {
+                    const sector = urlParams.account_sector.trim().toUpperCase();
+                    const sectorEvents = eventManifest[sector] || [];
+
+                    // Cerca prima se c'è un dashboard definito per l'evento specifico
+                    let targetEvent = null;
+                    if (urlParams.type_event) {
+                        targetEvent = sectorEvents.find(e => e.type_event === urlParams.type_event);
+                    }
+
+                    // Fallback al primo evento del settore se non trovato l'evento specifico
+                    if (!targetEvent && sectorEvents.length > 0) {
+                        targetEvent = sectorEvents[0];
+                    }
+
+                    if (targetEvent && targetEvent.dashboard) {
+                        configFolder = targetEvent.dashboard;
+                        console.log(`Config folder resolved for sector ${sector}:`, configFolder);
+                    }
+                }
+
                 // Crea il DataEntryManager
                 const manager = new DataEntryManager({
                     basePath: './dataentry/',
-                    folder: urlParams.folder || 'trade',
+                    folder: configFolder,
                     defaultValues: defaultValues,
                     getEventTranslation: (code) => {
                         return eventTranslations[`eve.${code}`] || code;
@@ -1150,7 +1173,6 @@
                                     language: credentials.language,
                                     id_account: data.id_account || '',
                                     account_sector: nextSector,
-                                    folder: 'trade-liquidity',
                                     type_event: eventData.type_event_liquidity,
                                     id_instrument: currency || data.id_instrument || '',
                                     'amount:net': data['amount:net'] || '',
