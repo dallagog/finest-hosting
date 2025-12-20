@@ -38,13 +38,6 @@
             min-height: 100vh;
         }
 
-        /* Stile specifico per i picker nativi per integrarli nel tema dark */
-        input[type="date"]::-webkit-calendar-picker-indicator,
-        input[type="datetime-local"]::-webkit-calendar-picker-indicator {
-            filter: invert(1) sepia(100%) saturate(10000%) hue-rotate(180deg);
-            cursor: pointer;
-        }
-
         .header-bar {
             display: flex;
             justify-content: space-between;
@@ -175,8 +168,7 @@
             font-family: 'Orbitron', sans-serif;
             color: var(--text-color);
             transition: all 0.3s;
-            height: 34px;
-            /* Aumentato leggermente per i picker */
+            height: 30px;
         }
 
         .form-input:focus,
@@ -366,8 +358,10 @@
         </div>
     </div>
 
+    <!-- Includi la libreria di traduzioni -->
     <script src="./js/translations.js"></script>
 
+    <!-- Includi la libreria DataEntryManager -->
     <script src="./js/dataentry-manager.js"></script>
 
     <script>
@@ -536,90 +530,83 @@
             document.getElementById('closeText').textContent = getTranslation('int.close') || 'Chiudi';
         }
 
-        // Helper functions for formats
+        // Helper functions for FE_Decimal and FE_Exchange formats
         const FormatHelper = {
+            // Validate FE_Decimal format (number space currency, e.g. "123.45 EUR")
             validateDecimal(value) {
                 if (!value) return false;
+
+                // Split by last space to separate number from currency
                 const lastSpaceIndex = value.trim().lastIndexOf(' ');
                 if (lastSpaceIndex === -1) return false;
+
                 const number = value.substring(0, lastSpaceIndex).trim();
                 const currency = value.substring(lastSpaceIndex + 1).trim();
+
+                // Validate number
                 const numRegex = /^-?\d+(\.\d{1,6})?$/;
                 if (!numRegex.test(number)) return false;
+
+                // Validate currency (3 uppercase letters)
                 const currencyRegex = /^[A-Z]{3}$/;
                 if (!currencyRegex.test(currency)) return false;
+
                 return true;
             },
 
+            // Validate FE_Exchange format
             validateExchange(value) {
                 if (!value) return false;
+
                 if (!value.includes(' ')) return false;
+
                 const firstParts = value.split(' ');
                 if (firstParts.length !== 2) return false;
+
                 const number = firstParts[0];
                 const currencies = firstParts[1];
+
                 if (!currencies.includes('/')) return false;
+
                 const currencyParts = currencies.split('/');
                 if (currencyParts.length !== 2) return false;
+
+                // Validate number
                 const numRegex = /^-?\d+(\.\d{1,6})?$/;
                 if (!numRegex.test(number)) return false;
+
+                // Validate currencies (3 uppercase letters each)
                 const currencyRegex = /^[A-Z]{3}$/;
                 if (!currencyRegex.test(currencyParts[0]) || !currencyRegex.test(currencyParts[1])) return false;
+
                 return true;
             },
 
+            // Validate FE_DateTime format (YYYY-MM-DD HH:MM:SS+ZZZZ, e.g. "2024-12-19 14:30:00+0100")
+            validateDateTime(value) {
+                if (!value) return false;
+
+                // Regex: YYYY-MM-DD HH:MM:SS followed by +ZZZZ or -ZZZZ
+                const dateTimeRegex = /^\d{4}-\d{2}-\d{2} ([01]\d|2[0-3]):([0-5]\d):([0-5]\d)[+-]\d{4}$/;
+                return dateTimeRegex.test(value.trim());
+            },
+
+            // Format instrument code (remove everything after first space or hyphen)
             formatInstrumentCode(value) {
                 if (!value) return '';
+
                 let code = value.split(' ')[0];
                 if (code.includes('-')) {
                     code = code.split('-')[0];
                 }
                 return code.trim();
-            },
-
-            // --- NUOVE FUNZIONI PER GESTIONE DATE PICKER ---
-
-            // Converte stringa API (es: "2024-12-19 14:30:00+0100") nel formato datetime-local input ("2024-12-19T14:30")
-            toInputDateTime(value) {
-                if (!value) return '';
-                // Prende i primi 16 caratteri e sostituisce spazio con T
-                // Esempio: "2024-12-19 14:30:00..." -> "2024-12-19T14:30"
-                try {
-                    return value.substring(0, 16).replace(' ', 'T');
-                } catch (e) {
-                    return '';
-                }
-            },
-
-            // Converte valore input ("2024-12-19T14:30") nel formato API ("2024-12-19 14:30:00+0100")
-            // Calcola automaticamente il Timezone offset del browser
-            toApiDateTime(value) {
-                if (!value) return '';
-                const date = new Date(value);
-
-                // Formatta YYYY-MM-DD HH:MM:SS
-                const pad = (num) => String(num).padStart(2, '0');
-                const yyyy = date.getFullYear();
-                const mm = pad(date.getMonth() + 1);
-                const dd = pad(date.getDate());
-                const hh = pad(date.getHours());
-                const mi = pad(date.getMinutes());
-                const ss = '00'; // I picker standard spesso non hanno i secondi, default a 00
-
-                // Calcolo Timezone (+/-HHMM)
-                const offset = -date.getTimezoneOffset();
-                const sign = offset >= 0 ? '+' : '-';
-                const absOffset = Math.abs(offset);
-                const tzHours = pad(Math.floor(absOffset / 60));
-                const tzMinutes = pad(absOffset % 60);
-
-                return `${yyyy}-${mm}-${dd} ${hh}:${mi}:${ss}${sign}${tzHours}${tzMinutes}`;
             }
         };
 
         // Custom field renderer for DataEntryManager
         function createCustomFieldRenderer() {
             return {
+                // Override the method to get translation for labels
                 getTranslation: function (label) {
                     return getTranslation(label);
                 },
@@ -641,36 +628,89 @@
 
                     switch (formatType) {
                         case 'FE_Decimal':
-                            input = `<input type="text" name="${name}" id="${fieldId}" ${required ? 'required' : ''} ${isFixed ? 'readonly' : ''} value="${value}" class="form-input${fixedClass}" data-format="FE_Decimal" placeholder="es: 123.45 EUR">`;
+                            input = `<input type="text" 
+                                           name="${name}" 
+                                           id="${fieldId}"
+                                           ${required ? 'required' : ''}
+                                           ${isFixed ? 'readonly' : ''}
+                                           value="${value}"
+                                           class="form-input${fixedClass}"
+                                           data-format="FE_Decimal"
+                                           placeholder="es: 123.45 EUR">`;
                             break;
 
                         case 'FE_Exchange':
-                            input = `<input type="text" name="${name}" id="${fieldId}" ${required ? 'required' : ''} ${isFixed ? 'readonly' : ''} value="${value}" class="form-input${fixedClass}" data-format="FE_Exchange" placeholder="es: 1.10 EUR/USD">`;
+                            input = `<input type="text" 
+                                           name="${name}" 
+                                           id="${fieldId}"
+                                           ${required ? 'required' : ''}
+                                           ${isFixed ? 'readonly' : ''}
+                                           value="${value}"
+                                           class="form-input${fixedClass}"
+                                           data-format="FE_Exchange"
+                                           placeholder="es: 1.10 EUR/USD">`;
                             break;
 
                         case 'FE_Date':
-                            // Picker Nativo Data: Richiede YYYY-MM-DD. Se value è già ok, lo usa direttamente.
-                            input = `<input type="date" name="${name}" id="${fieldId}" ${required ? 'required' : ''} ${isFixed ? 'readonly' : ''} value="${value}" class="form-input${fixedClass}" data-format="FE_Date">`;
+                            input = `<input type="date" 
+                                           name="${name}" 
+                                           id="${fieldId}"
+                                           ${required ? 'required' : ''}
+                                           ${isFixed ? 'readonly' : ''}
+                                           value="${value}" 
+                                           class="form-input${fixedClass}"
+                                           data-format="FE_Date">`;
                             break;
 
                         case 'FE_DateTime':
-                            // Picker Nativo DateTime: Richiede YYYY-MM-DDTHH:mm
-                            // Usiamo FormatHelper per preparare il valore visualizzato
-                            const displayValue = FormatHelper.toInputDateTime(value);
-                            input = `<input type="datetime-local" name="${name}" id="${fieldId}" ${required ? 'required' : ''} ${isFixed ? 'readonly' : ''} value="${displayValue}" class="form-input${fixedClass}" data-format="FE_DateTime">`;
+                            input = `<input type="text" 
+                                           name="${name}" 
+                                           id="${fieldId}"
+                                           ${required ? 'required' : ''}
+                                           ${isFixed ? 'readonly' : ''}
+                                           value="${value}" 
+                                           class="form-input${fixedClass}"
+                                           data-format="FE_DateTime"
+                                           placeholder="es: 2024-12-19 14:30:00+0100">`;
                             break;
 
                         case 'FE_Account':
                         case 'FE_Instrument':
                         case 'FE_Event':
                             if (name === 'id_instrument') {
-                                input = `<input type="text" name="${name}" id="${fieldId}" ${required ? 'required' : ''} ${isFixed ? 'readonly' : ''} value="${value}" class="form-input${fixedClass}" data-format="${formatType}" placeholder="Codice strumento">`;
+                                input = `<input type="text" 
+                                               name="${name}" 
+                                               id="${fieldId}"
+                                               ${required ? 'required' : ''}
+                                               ${isFixed ? 'readonly' : ''}
+                                               value="${value}" 
+                                               class="form-input${fixedClass}"
+                                               data-format="${formatType}"
+                                               placeholder="Codice strumento">`;
                             } else if (name === 'type_event' || name.startsWith('type_event')) {
+                                // For type_event, show translated description
                                 const eventDesc = value ? getEventTranslation(value) : '';
                                 const displayValue = eventDesc !== value ? `${value} - ${eventDesc}` : value;
-                                input = `<input type="text" name="${name}" id="${fieldId}" ${required ? 'required' : ''} ${isFixed ? 'readonly' : ''} value="${displayValue}" data-code="${value}" class="form-input${fixedClass}" data-format="${formatType}">`;
+                                input = `<input type="text" 
+                                               name="${name}" 
+                                               id="${fieldId}"
+                                               ${required ? 'required' : ''}
+                                               ${isFixed ? 'readonly' : ''}
+                                               value="${displayValue}" 
+                                               data-code="${value}"
+                                               class="form-input${fixedClass}"
+                                               data-format="${formatType}">`;
                             } else {
-                                input = `<input type="text" name="${name}" id="${fieldId}" ${required ? 'required' : ''} ${isFixed ? 'readonly' : ''} value="${value}" class="form-input${fixedClass}" data-format="${formatType}" list="${name}-list"><datalist id="${name}-list"></datalist>`;
+                                input = `<input type="text" 
+                                               name="${name}" 
+                                               id="${fieldId}"
+                                               ${required ? 'required' : ''}
+                                               ${isFixed ? 'readonly' : ''}
+                                               value="${value}" 
+                                               class="form-input${fixedClass}"
+                                               data-format="${formatType}"
+                                               list="${name}-list">
+                                         <datalist id="${name}-list"></datalist>`;
                             }
                             break;
 
@@ -678,13 +718,36 @@
                             if (formatType.startsWith('list:')) {
                                 try {
                                     const listValues = JSON.parse(formatType.replace('list:', ''));
-                                    const options = listValues.map(v => `<option value="${v}" ${v == value ? 'selected' : ''}>${v}</option>`).join('');
-                                    input = `<select name="${name}" id="${fieldId}" ${required ? 'required' : ''} ${isFixed ? 'disabled' : ''} class="form-select${fixedClass}" data-format="list"><option value="">-- ${getTranslation('int.select.option') || 'Seleziona'} --</option>${options}</select>`;
+                                    const options = listValues.map(v =>
+                                        `<option value="${v}" ${v == value ? 'selected' : ''}>${v}</option>`
+                                    ).join('');
+
+                                    input = `<select name="${name}" 
+                                                     id="${fieldId}"
+                                                     ${required ? 'required' : ''}
+                                                     ${isFixed ? 'disabled' : ''}
+                                                     class="form-select${fixedClass}"
+                                                     data-format="list">
+                                                <option value="">-- ${getTranslation('int.select.option') || 'Seleziona'} --</option>
+                                                ${options}
+                                            </select>`;
                                 } catch (e) {
-                                    input = `<input type="text" name="${name}" id="${fieldId}" ${required ? 'required' : ''} ${isFixed ? 'readonly' : ''} value="${value}" class="form-input${fixedClass}">`;
+                                    input = `<input type="text" 
+                                                   name="${name}" 
+                                                   id="${fieldId}"
+                                                   ${required ? 'required' : ''}
+                                                   ${isFixed ? 'readonly' : ''}
+                                                   value="${value}" 
+                                                   class="form-input${fixedClass}">`;
                                 }
                             } else {
-                                input = `<input type="text" name="${name}" id="${fieldId}" ${required ? 'required' : ''} ${isFixed ? 'readonly' : ''} value="${value}" class="form-input${fixedClass}">`;
+                                input = `<input type="text" 
+                                               name="${name}" 
+                                               id="${fieldId}"
+                                               ${required ? 'required' : ''}
+                                               ${isFixed ? 'readonly' : ''}
+                                               value="${value}" 
+                                               class="form-input${fixedClass}">`;
                             }
                     }
 
@@ -710,18 +773,30 @@
                 attachDecimalListeners: function (input, required) {
                     input.addEventListener('blur', (e) => {
                         let value = e.target.value.trim();
+
                         if (!value && required) {
-                            this.setError(input, getTranslation('int.field.required') || 'Campo obbligatorio');
+                            e.target.classList.add('error');
+                            const errorDiv = input.closest('.form-group')?.querySelector('.error-message');
+                            if (errorDiv) errorDiv.textContent = getTranslation('int.field.required') || 'Campo obbligatorio';
                             return;
                         }
+
                         if (value) {
                             if (!FormatHelper.validateDecimal(value)) {
-                                this.setError(input, getTranslation('int.format.decimal.invalid') || 'Formato non valido. Usa: numero VALUTA (es: 123.45 EUR)');
+                                e.target.classList.add('error');
+                                const errorDiv = input.closest('.form-group')?.querySelector('.error-message');
+                                if (errorDiv) {
+                                    errorDiv.textContent = getTranslation('int.format.decimal.invalid') || 'Formato non valido. Usa: numero VALUTA (es: 123.45 EUR)';
+                                }
                             } else {
-                                this.clearError(input);
+                                e.target.classList.remove('error');
+                                const errorDiv = input.closest('.form-group')?.querySelector('.error-message');
+                                if (errorDiv) errorDiv.textContent = '';
                             }
                         } else {
-                            this.clearError(input);
+                            e.target.classList.remove('error');
+                            const errorDiv = input.closest('.form-group')?.querySelector('.error-message');
+                            if (errorDiv) errorDiv.textContent = '';
                         }
                     });
                 },
@@ -729,32 +804,32 @@
                 attachExchangeListeners: function (input, required) {
                     input.addEventListener('blur', (e) => {
                         let value = e.target.value.trim();
+
                         if (!value && required) {
-                            this.setError(input, getTranslation('int.field.required') || 'Campo obbligatorio');
+                            e.target.classList.add('error');
+                            const errorDiv = input.closest('.form-group')?.querySelector('.error-message');
+                            if (errorDiv) errorDiv.textContent = getTranslation('int.field.required') || 'Campo obbligatorio';
                             return;
                         }
+
                         if (value) {
                             if (!FormatHelper.validateExchange(value)) {
-                                this.setError(input, getTranslation('int.format.exchange.invalid') || 'Formato non valido. Usa: numero:VALUTA1/VALUTA2 (es: 1.10:EUR/USD)');
+                                e.target.classList.add('error');
+                                const errorDiv = input.closest('.form-group')?.querySelector('.error-message');
+                                if (errorDiv) {
+                                    errorDiv.textContent = getTranslation('int.format.exchange.invalid') || 'Formato non valido. Usa: numero:VALUTA1/VALUTA2 (es: 1.10:EUR/USD)';
+                                }
                             } else {
-                                this.clearError(input);
+                                e.target.classList.remove('error');
+                                const errorDiv = input.closest('.form-group')?.querySelector('.error-message');
+                                if (errorDiv) errorDiv.textContent = '';
                             }
                         } else {
-                            this.clearError(input);
+                            e.target.classList.remove('error');
+                            const errorDiv = input.closest('.form-group')?.querySelector('.error-message');
+                            if (errorDiv) errorDiv.textContent = '';
                         }
                     });
-                },
-
-                setError(input, msg) {
-                    input.classList.add('error');
-                    const errorDiv = input.closest('.form-group')?.querySelector('.error-message');
-                    if (errorDiv) errorDiv.textContent = msg;
-                },
-
-                clearError(input) {
-                    input.classList.remove('error');
-                    const errorDiv = input.closest('.form-group')?.querySelector('.error-message');
-                    if (errorDiv) errorDiv.textContent = '';
                 }
             };
         }
@@ -770,19 +845,41 @@
 
                     // Check required fields
                     if (required && !value) {
-                        return { isValid: false, message: getTranslation('int.field.required') || 'Campo obbligatorio' };
+                        return {
+                            isValid: false,
+                            message: getTranslation('int.field.required') || 'Campo obbligatorio'
+                        };
                     }
 
-                    if (formatType === 'FE_Decimal' && value && !FormatHelper.validateDecimal(value)) {
-                        return { isValid: false, message: getTranslation('int.format.decimal.invalid') || 'Formato non valido. Usa: numero VALUTA (es: 123.45 EUR)' };
+                    // Validate FE_Decimal format
+                    if (formatType === 'FE_Decimal' && value) {
+                        if (!FormatHelper.validateDecimal(value)) {
+                            return {
+                                isValid: false,
+                                message: getTranslation('int.format.decimal.invalid') || 'Formato non valido. Usa: numero VALUTA (es: 123.45 EUR)'
+                            };
+                        }
                     }
 
-                    if (formatType === 'FE_Exchange' && value && !FormatHelper.validateExchange(value)) {
-                        return { isValid: false, message: getTranslation('int.format.exchange.invalid') || 'Formato non valido. Usa: numero VALUTA1/VALUTA2 (es: 1.10 EUR/USD)' };
+                    // Validate FE_Exchange format
+                    if (formatType === 'FE_Exchange' && value) {
+                        if (!FormatHelper.validateExchange(value)) {
+                            return {
+                                isValid: false,
+                                message: getTranslation('int.format.exchange.invalid') || 'Formato non valido. Usa: numero VALUTA1/VALUTA2 (es: 1.10 EUR/USD)'
+                            };
+                        }
                     }
 
-                    // Nota: il validatore per DateTime ora è implicito nel browser (il picker non fa selezionare date invalide),
-                    // ma il formato API viene generato solo al submit.
+                    // Validate FE_DateTime format
+                    if (formatType === 'FE_DateTime' && value) {
+                        if (!FormatHelper.validateDateTime(value)) {
+                            return {
+                                isValid: false,
+                                message: getTranslation('int.format.datetime.invalid') || 'Formato non valido. Usa: YYYY-MM-DD HH:MM:SS+ZZZZ (es: 2024-12-19 14:30:00+0100)'
+                            };
+                        }
+                    }
 
                     return { isValid: true };
                 },
@@ -792,17 +889,7 @@
                     const fields = formElement.querySelectorAll('[name]');
 
                     fields.forEach(field => {
-                        let val = field.value;
-                        const format = field.getAttribute('data-format');
-
-                        // TRASFORMAZIONE FINALE PRIMA DELL'INVIO
-                        if (format === 'FE_DateTime') {
-                            // Se è un datetime-local, convertilo nel formato API atteso con TimeZone
-                            val = FormatHelper.toApiDateTime(val);
-                        }
-                        // Nota: FE_Date (input type="date") restituisce già YYYY-MM-DD, non serve modifica.
-
-                        data[field.name] = val;
+                        data[field.name] = field.value;
                     });
 
                     return data;
@@ -939,9 +1026,11 @@
                             </div>
                             <div class="form-actions">
                                 <button type="button" id="reset-btn" class="btn btn-secondary">
-                                    <i class="fa fa-undo"></i> ${getTranslation('int.reset') || 'Reset'}</button>
+                                    <i class="fa fa-undo"></i> ${getTranslation('int.reset') || 'Reset'}
+                                </button>
                                 <button type="submit" class="btn btn-primary">
-                                    <i class="fa fa-save"></i> ${getTranslation('int.save') || 'Salva'}</button>
+                                    <i class="fa fa-save"></i> ${getTranslation('int.save') || 'Salva'}
+                                </button>
                             </div>
                         </form>
                     `;
@@ -988,12 +1077,7 @@
                             fields.forEach(field => {
                                 const input = document.getElementById(`field_${field.name}`);
                                 if (input && field.defaultValue) {
-                                    // Gestione reset valori date speciali
-                                    if (field.format.format === 'FE_DateTime' && field.defaultValue) {
-                                        input.value = FormatHelper.toInputDateTime(field.defaultValue);
-                                    } else {
-                                        input.value = field.defaultValue;
-                                    }
+                                    input.value = field.defaultValue;
                                 }
                             });
                         });
