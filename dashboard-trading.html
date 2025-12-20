@@ -210,6 +210,73 @@
         #portfolio-table-container {
             overflow-x: auto;
         }
+
+        /* Modal Styles */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            backdrop-filter: blur(5px);
+        }
+
+        .modal-content {
+            background: var(--glass-bg);
+            border: 2px solid var(--neon-cyan);
+            border-radius: 8px;
+            padding: 30px;
+            max-width: 500px;
+            width: 90%;
+            box-shadow: 0 0 30px rgba(0, 243, 255, 0.3);
+            text-align: center;
+        }
+
+        .modal-header {
+            margin-bottom: 25px;
+        }
+
+        .modal-header h2 {
+            color: var(--neon-cyan);
+            text-shadow: 0 0 10px var(--neon-cyan);
+            font-size: 1.5em;
+            text-transform: uppercase;
+        }
+
+        .sector-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .sector-item {
+            padding: 12px;
+            background: rgba(0, 102, 255, 0.1);
+            border: 1px solid var(--neon-blue);
+            color: var(--text-color);
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 500;
+        }
+
+        .sector-item:hover {
+            background: var(--neon-blue);
+            color: #fff;
+            box-shadow: 0 0 15px var(--neon-blue);
+            transform: translateX(5px);
+        }
+
+        .modal-footer {
+            margin-top: 20px;
+            text-align: center;
+        }
     </style>
 </head>
 
@@ -264,6 +331,25 @@
                 </table>
             </div>
         </div>
+
+        <!-- Sector Selector Modal -->
+        <div id="sector-modal" class="modal-overlay">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 id="sectorModalTitle">Seleziona Settore</h2>
+                </div>
+                <div id="sector-list" class="sector-list">
+                    <!-- Sectors will be injected here -->
+                    <div style="color: var(--neon-blue);">Caricamento settori...</div>
+                </div>
+                <div class="modal-footer">
+                    <button class="close-btn" onclick="closeSectorModal()">
+                        <i class="fa fa-times"></i> <span id="cancelBtnText">Annulla</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
     </div>
 
     <script>
@@ -654,8 +740,56 @@
             renderTable();
         }
 
-        function openTradeOperations() {
-            showMessage('Funzione Operazioni non ancora implementata', 'info');
+        async function openTradeOperations() {
+            try {
+                const response = await fetch('lang/domine.json');
+                if (!response.ok) throw new Error('Cannot load domine.json');
+                const domine = await response.json();
+
+                const sectors = domine.account_sector || [];
+                const sectorListContainer = document.getElementById('sector-list');
+                const modalTitle = document.getElementById('sectorModalTitle');
+                const cancelBtnText = document.getElementById('cancelBtnText');
+
+                modalTitle.textContent = getTranslation('int.account.account_sector') || 'Seleziona Settore';
+                cancelBtnText.textContent = getTranslation('int.cancel') || 'Annulla';
+
+                sectorListContainer.innerHTML = '';
+
+                sectors.forEach(sectorKey => {
+                    const sectorLabel = getTranslation(sectorKey);
+                    // Extracting the value from the key (e.g., "dom.account_sector:FI" -> "FI")
+                    const sectorValue = sectorKey.split(':').pop();
+
+                    const div = document.createElement('div');
+                    div.className = 'sector-item';
+                    div.textContent = sectorLabel || sectorKey;
+                    div.onclick = () => selectSector(sectorValue);
+                    sectorListContainer.appendChild(div);
+                });
+
+                document.getElementById('sector-modal').style.display = 'flex';
+            } catch (error) {
+                console.error('Error opening trade operations:', error);
+                showMessage('Errore nel caricamento del selettore settori', 'error');
+            }
+        }
+
+        function closeSectorModal() {
+            document.getElementById('sector-modal').style.display = 'none';
+        }
+
+        function selectSector(sectorValue) {
+            closeSectorModal();
+
+            const params = new URLSearchParams({
+                username: credentials.username,
+                token: credentials.token,
+                language: credentials.language,
+                account_sector: sectorValue
+            });
+
+            window.open(`dashboard-dataentry-trade.html?${params.toString()}`, '_blank');
         }
 
         // ========== INITIALIZATION ==========
