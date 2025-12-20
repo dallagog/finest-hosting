@@ -502,9 +502,13 @@
                 if (!response.ok) throw new Error('HTTP ' + response.status);
 
                 const data = await response.json();
+                console.log('GetAccounts Response:', data);
                 let accountList = [];
 
-                const blocks = Array.isArray(data.accounts) ? data.accounts : [];
+                // Gestione robusta: accounts può essere un array o un oggetto
+                let rawAccounts = data.accounts || [];
+                const blocks = Array.isArray(rawAccounts) ? rawAccounts : Object.values(rawAccounts);
+
                 blocks.forEach(block => {
                     if (block && typeof block === 'object') {
                         Object.values(block).forEach(acc => {
@@ -512,7 +516,7 @@
                                 accountList.push({
                                     id_account: String(acc.id_account).trim(),
                                     description: acc.description_account || acc.description || acc.id_account,
-                                    account_sector: acc.account_sector || '',
+                                    account_sector: String(acc.account_sector || '').trim(),
                                     account_level: acc.account_level || ''
                                 });
                             }
@@ -522,6 +526,9 @@
 
                 availableAccounts = accountList;
                 console.log('Accounts loaded:', availableAccounts.length);
+                if (availableAccounts.length > 0) {
+                    console.log('Sample account:', availableAccounts[0]);
+                }
             } catch (error) {
                 console.error('Error loading accounts:', error);
                 availableAccounts = [];
@@ -700,12 +707,19 @@
                             break;
 
                         case 'FE_Account':
-                            if (!value) {
+                            const val = (field.value !== undefined ? field.value : field.defaultValue) || '';
+                            if (!val) {
                                 // Se non abbiamo un id_account, mostriamo una combobox filtrata per account_sector
-                                const filterSector = urlParams.account_sector || '';
-                                const filtered = availableAccounts.filter(acc =>
-                                    !filterSector || acc.account_sector === filterSector
-                                );
+                                const filterSector = (urlParams.account_sector || '').trim().toUpperCase();
+                                console.log('Filtering accounts for sector:', filterSector);
+
+                                const filtered = availableAccounts.filter(acc => {
+                                    if (!filterSector) return true;
+                                    const accSector = (acc.account_sector || '').trim().toUpperCase();
+                                    return accSector === filterSector;
+                                });
+
+                                console.log('Filtered accounts found:', filtered.length);
 
                                 const options = filtered.map(acc =>
                                     `<option value="${acc.id_account}">${acc.id_account} - ${acc.description || acc.id_account}</option>`
@@ -725,9 +739,9 @@
                                                id="${fieldId}"
                                                ${required ? 'required' : ''}
                                                ${isFixed ? 'readonly' : ''}
-                                               value="${value}" 
+                                               value="${val}" 
                                                class="form-input${fixedClass}"
-                                               data-format="${formatType}">`;
+                                               data-format="FE_Account">`;
                             }
                             break;
 
@@ -745,8 +759,19 @@
                                                placeholder="Codice strumento">`;
                             } else if (name === 'type_event' || name.startsWith('type_event')) {
                                 // Show translated description if available
-                                const description = eventTranslations[`eve.${value}`] || '';
-                                const displayValue = description && description !== value ? `${value} - ${description}` : value;
+                                const eventCode = value;
+                                let labelKey = `eve.${eventCode}`;
+
+                                // Try to find correct label key in manifest for current sector
+                                const curSector = (urlParams.account_sector || '').trim().toUpperCase();
+                                const sectorEvents = eventManifest[curSector] || [];
+                                const manifestEvent = sectorEvents.find(e => e.type_event === eventCode);
+                                if (manifestEvent && manifestEvent.type_event_label) {
+                                    labelKey = manifestEvent.type_event_label;
+                                }
+
+                                const description = eventTranslations[labelKey] || '';
+                                const displayValue = description && description !== eventCode ? `${eventCode} - ${description}` : eventCode;
 
                                 input = `<input type="text" 
                                                name="${name}" 
@@ -754,12 +779,13 @@
                                                ${required ? 'required' : ''}
                                                ${isFixed ? 'readonly' : ''}
                                                value="${displayValue}" 
-                                               data-code="${value}"
+                                               data-code="${eventCode}"
                                                class="form-input${fixedClass}"
                                                data-format="${formatType}"
                                                list="${name}-list">
                                          <datalist id="${name}-list"></datalist>`;
-                            } else {
+                            }
+                            else {
                                 input = `<input type="text" 
                                                name="${name}" 
                                                id="${fieldId}"
@@ -1233,7 +1259,9 @@
                         console.log(`Filtering events for sector: ${sector}`);
                         allowedEvents.forEach(evt => {
                             const code = evt.type_event;
-                            const description = eventTranslations[`eve.${code}`] || code;
+                            const labelKey = evt.type_event_label || `eve.${code}`;
+                            const description = eventTranslations[labelKey] || code;
+
                             const option = document.createElement('option');
                             const displayValue = `${code} - ${description}`;
                             option.value = displayValue;
@@ -1241,19 +1269,9 @@
                             eventList.appendChild(option);
                         });
                     } else {
-                        // Fallback: show all events from translations
-                        console.log('No manifest entry for sector, showing all events');
-                        Object.keys(eventTranslations).forEach(key => {
-                            if (key.startsWith('eve.') && key !== 'eve.language.code') {
-                                const code = key.replace('eve.', '');
-                                const description = eventTranslations[key];
-                                const option = document.createElement('option');
-                                const displayValue = `${code} - ${description}`;
-                                option.value = displayValue;
-                                option.textContent = displayValue;
-                                eventList.appendChild(option);
-                            }
-                        });
+                        // Se non c'è il manifest per il settore, non mostriamo nulla come richiesto
+                        // "Se il campo non ha un default vanno elencate solo gli elementi con lo stesso sector"
+                        console.log('No manifest entry for sector, limiting event list');
                     }
                 }
 
