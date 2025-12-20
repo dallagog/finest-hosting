@@ -493,7 +493,7 @@
                     code: ""
                 };
 
-                const response = await fetch(`${API_URL}/getfilter`, {
+                const response = await fetch(`${API_URL}/getaccounts`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
@@ -504,14 +504,21 @@
                 const data = await response.json();
                 let accountList = [];
 
-                // Formato dati da dashboard.html
-                if (data && data.Account && Array.isArray(data.Account.list)) {
-                    accountList = data.Account.list;
-                } else if (data && data.filter && data.filter.Account && Array.isArray(data.filter.Account.list)) {
-                    accountList = data.filter.Account.list;
-                } else if (data.status === 'ok' && data.data && data.data.Account && Array.isArray(data.data.Account.list)) {
-                    accountList = data.data.Account.list;
-                }
+                const blocks = Array.isArray(data.accounts) ? data.accounts : [];
+                blocks.forEach(block => {
+                    if (block && typeof block === 'object') {
+                        Object.values(block).forEach(acc => {
+                            if (acc && acc.id_account) {
+                                accountList.push({
+                                    id_account: String(acc.id_account).trim(),
+                                    description: acc.description_account || acc.description || acc.id_account,
+                                    account_sector: acc.account_sector || '',
+                                    account_level: acc.account_level || ''
+                                });
+                            }
+                        });
+                    }
+                });
 
                 availableAccounts = accountList;
                 console.log('Accounts loaded:', availableAccounts.length);
@@ -534,6 +541,22 @@
 
         function getTranslation(key) {
             return translations[key] || key;
+        }
+
+        // Utility per formattazione data/ora
+        function getTimezoneOffsetString() {
+            const tzo = -new Date().getTimezoneOffset();
+            const dif = tzo >= 0 ? '+' : '-';
+            const pad = (num) => String(Math.abs(num)).padStart(2, '0');
+            return dif + pad(Math.floor(tzo / 60)) + pad(tzo % 60);
+        }
+
+        function formatCurrentDateTime() {
+            const now = new Date();
+            const pad = (num) => String(num).padStart(2, '0');
+            const dateStr = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+            const timeStr = `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+            return `${dateStr} ${timeStr}${getTimezoneOffsetString()}`;
         }
 
         async function updateUserInfo() {
@@ -631,25 +654,37 @@
                             break;
 
                         case 'FE_Date':
+                            // Standardizziamo su YYYY-MM-DD
+                            let dateValue = value;
+                            if (value && value.includes(' ')) {
+                                dateValue = value.split(' ')[0];
+                            }
                             input = `<input type="date" 
                                            name="${name}" 
                                            id="${fieldId}"
                                            ${required ? 'required' : ''}
                                            ${isFixed ? 'readonly' : ''}
-                                           value="${value}" 
+                                           value="${dateValue}" 
                                            class="form-input${fixedClass}"
                                            data-format="FE_Date">`;
                             break;
 
                         case 'FE_DateTime':
-                            input = `<input type="datetime-local" 
-                                           name="${name}" 
-                                           id="${fieldId}"
-                                           ${required ? 'required' : ''}
-                                           ${isFixed ? 'readonly' : ''}
-                                           value="${value}" 
-                                           class="form-input${fixedClass}"
-                                           data-format="FE_DateTime">`;
+                            // Formato richiesto: YYYY-MM-DD HH:MI:SS+ZZZZ
+                            input = `<div class="input-group">
+                                        <input type="text" 
+                                               name="${name}" 
+                                               id="${fieldId}"
+                                               ${required ? 'required' : ''}
+                                               ${isFixed ? 'readonly' : ''}
+                                               value="${value}" 
+                                               class="form-input${fixedClass}"
+                                               data-format="FE_DateTime"
+                                               placeholder="YYYY-MM-DD HH:MM:SS+ZZZZ">
+                                        <button type="button" class="btn btn-secondary btn-sm" onclick="document.getElementById('${fieldId}').value = formatCurrentDateTime()">
+                                            <i class="fas fa-clock"></i>
+                                        </button>
+                                     </div>`;
                             break;
 
                         case 'FE_Account':
@@ -869,6 +904,26 @@
                             return {
                                 isValid: false,
                                 message: getTranslation('int.format.decimal.invalid') || 'Formato non valido. Usa: numero VALUTA (es: 123.45 EUR)'
+                            };
+                        }
+                    }
+
+                    // Validate FE_DateTime format
+                    if (formatType === 'FE_DateTime' && value) {
+                        if (!FormatHelper.validateDateTime(value)) {
+                            return {
+                                isValid: false,
+                                message: getTranslation('int.format.datetime.invalid') || 'Formato non valido. Usa: YYYY-MM-DD HH:MM:SS+ZZZZ'
+                            };
+                        }
+                    }
+
+                    // Validate FE_Date format
+                    if (formatType === 'FE_Date' && value) {
+                        if (!FormatHelper.validateDate(value)) {
+                            return {
+                                isValid: false,
+                                message: getTranslation('int.format.date.invalid') || 'Formato non valido. Usa: YYYY-MM-DD'
                             };
                         }
                     }
