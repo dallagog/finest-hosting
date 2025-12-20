@@ -758,12 +758,16 @@
                                                data-format="${formatType}"
                                                placeholder="Codice strumento">`;
                             } else if (name === 'type_event' || name.startsWith('type_event')) {
-                                // Show translated description if available
-                                const eventCode = value;
                                 const curSector = (urlParams.account_sector || "").trim().toUpperCase();
                                 const sectorEvents = eventManifest[curSector] || [];
 
                                 // Resolving the label for the current value
+                                let eventCode = value;
+                                // If value is in "CODE - DESC" format, extract code
+                                if (value.includes(' - ')) {
+                                    eventCode = value.split(' - ')[0].trim();
+                                }
+
                                 let labelKey = `eve.${eventCode}`;
                                 const manifestEvent = sectorEvents.find(e => e.type_event === eventCode);
                                 if (manifestEvent && manifestEvent.type_event_label) {
@@ -772,29 +776,14 @@
                                 const description = eventTranslations[labelKey] || "";
                                 const displayValue = description && description !== eventCode ? `${eventCode} - ${description}` : eventCode;
 
-                                // Generate options for datalist
-                                let optionsHtml = "";
-                                if (sectorEvents.length > 0) {
-                                    optionsHtml = sectorEvents.map(evt => {
-                                        const code = evt.type_event;
-                                        const lKey = evt.type_event_label || `eve.${code}`;
-                                        const desc = eventTranslations[lKey] || code;
-                                        const disp = `${code} - ${desc}`;
-                                        return `<option value="${disp}">${disp}</option>`;
-                                    }).join("");
-                                } else {
-                                    // Fallback prefix filtering if no manifest entries
-                                    Object.keys(eventTranslations).forEach(key => {
-                                        if (key.startsWith("eve.") && key !== "eve.language.code") {
-                                            const code = key.replace("eve.", "");
-                                            if (!curSector || code.startsWith(curSector + "-")) {
-                                                const desc = eventTranslations[key];
-                                                const disp = `${code} - ${desc}`;
-                                                optionsHtml += `<option value="${disp}">${disp}</option>`;
-                                            }
-                                        }
-                                    });
-                                }
+                                // Generate options for datalist - STRICTLY from manifest sector
+                                let optionsHtml = sectorEvents.map(evt => {
+                                    const code = evt.type_event;
+                                    const lKey = evt.type_event_label || `eve.${code}`;
+                                    const desc = eventTranslations[lKey] || code;
+                                    const disp = `${code} - ${desc}`;
+                                    return `<option value="${disp}">${disp}</option>`;
+                                }).join("");
 
                                 input = `<input type="text" 
                                                name="${name}" 
@@ -805,7 +794,8 @@
                                                data-code="${eventCode}"
                                                class="form-input${fixedClass}"
                                                data-format="${formatType}"
-                                               list="${name}-list">
+                                               list="${name}-list"
+                                               oninput="const val = this.value; if(val.includes(' - ')) { this.dataset.code = val.split(' - ')[0].trim(); } else { this.dataset.code = val; }">
                                          <datalist id="${name}-list">${optionsHtml}</datalist>`;
                             }
                             else {
@@ -1094,6 +1084,34 @@
                         return eventTranslations[`eve.${code}`] || code;
                     },
                     onChange: (name, value) => {
+                        if (name === 'id_account') {
+                            // Update sector when account changes
+                            const acc = availableAccounts.find(a => a.id_account === value);
+                            if (acc && acc.account_sector) {
+                                urlParams.account_sector = acc.account_sector;
+                                console.log('Account sector updated on change:', urlParams.account_sector);
+
+                                // Refresh Event datalist if sector changes
+                                const eventInput = document.querySelector('[data-format="FE_Event"]');
+                                if (eventInput) {
+                                    const listId = eventInput.getAttribute('list');
+                                    const datalist = document.getElementById(listId);
+                                    if (datalist) {
+                                        const sector = urlParams.account_sector.trim().toUpperCase();
+                                        const sectorEvents = eventManifest[sector] || [];
+                                        datalist.innerHTML = sectorEvents.map(evt => {
+                                            const code = evt.type_event;
+                                            const lKey = evt.type_event_label || `eve.${code}`;
+                                            const desc = eventTranslations[lKey] || code;
+                                            const disp = `${code} - ${desc}`;
+                                            return `<option value="${disp}">${disp}</option>`;
+                                        }).join("");
+                                        console.log(`Refreshed event list for sector: ${sector}`);
+                                    }
+                                }
+                            }
+                        }
+
                         if (name === 'type_event' || name.startsWith('type_event')) {
                             const eventCode = value.includes(' - ') ? value.split(' - ')[0].trim() : value.trim();
                             const curSector = (urlParams.account_sector || "").trim().toUpperCase();
