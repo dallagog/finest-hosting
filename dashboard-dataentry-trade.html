@@ -722,7 +722,7 @@
                                 console.log('Filtered accounts found:', filtered.length);
 
                                 const options = filtered.map(acc =>
-                                    `<option value="${acc.id_account}">${acc.id_account} - ${acc.description || acc.id_account}</option>`
+                                    `<option value="${acc.id_account}">${acc.id_account}</option>`
                                 ).join('');
 
                                 input = `<select name="${name}" 
@@ -760,30 +760,53 @@
                             } else if (name === 'type_event' || name.startsWith('type_event')) {
                                 // Show translated description if available
                                 const eventCode = value;
-                                let labelKey = `eve.${eventCode}`;
-
-                                // Try to find correct label key in manifest for current sector
-                                const curSector = (urlParams.account_sector || '').trim().toUpperCase();
+                                const curSector = (urlParams.account_sector || "").trim().toUpperCase();
                                 const sectorEvents = eventManifest[curSector] || [];
+
+                                // Resolving the label for the current value
+                                let labelKey = `eve.${eventCode}`;
                                 const manifestEvent = sectorEvents.find(e => e.type_event === eventCode);
                                 if (manifestEvent && manifestEvent.type_event_label) {
                                     labelKey = manifestEvent.type_event_label;
                                 }
-
-                                const description = eventTranslations[labelKey] || '';
+                                const description = eventTranslations[labelKey] || "";
                                 const displayValue = description && description !== eventCode ? `${eventCode} - ${description}` : eventCode;
+
+                                // Generate options for datalist
+                                let optionsHtml = "";
+                                if (sectorEvents.length > 0) {
+                                    optionsHtml = sectorEvents.map(evt => {
+                                        const code = evt.type_event;
+                                        const lKey = evt.type_event_label || `eve.${code}`;
+                                        const desc = eventTranslations[lKey] || code;
+                                        const disp = `${code} - ${desc}`;
+                                        return `<option value="${disp}">${disp}</option>`;
+                                    }).join("");
+                                } else {
+                                    // Fallback prefix filtering if no manifest entries
+                                    Object.keys(eventTranslations).forEach(key => {
+                                        if (key.startsWith("eve.") && key !== "eve.language.code") {
+                                            const code = key.replace("eve.", "");
+                                            if (!curSector || code.startsWith(curSector + "-")) {
+                                                const desc = eventTranslations[key];
+                                                const disp = `${code} - ${desc}`;
+                                                optionsHtml += `<option value="${disp}">${disp}</option>`;
+                                            }
+                                        }
+                                    });
+                                }
 
                                 input = `<input type="text" 
                                                name="${name}" 
                                                id="${fieldId}"
-                                               ${required ? 'required' : ''}
-                                               ${isFixed ? 'readonly' : ''}
+                                               ${required ? "required" : ""}
+                                               ${isFixed ? "readonly" : ""}
                                                value="${displayValue}" 
                                                data-code="${eventCode}"
                                                class="form-input${fixedClass}"
                                                data-format="${formatType}"
                                                list="${name}-list">
-                                         <datalist id="${name}-list"></datalist>`;
+                                         <datalist id="${name}-list">${optionsHtml}</datalist>`;
                             }
                             else {
                                 input = `<input type="text" 
@@ -1013,6 +1036,16 @@
                 await loadEventTranslations(language);
                 await loadEventManifest();
                 await loadAccounts();
+
+                // Se manca account_sector ma abbiamo id_account, cerchiamo il settore nei conti caricati
+                if (!urlParams.account_sector && urlParams.id_account) {
+                    const acc = availableAccounts.find(a => a.id_account === urlParams.id_account);
+                    if (acc && acc.account_sector) {
+                        urlParams.account_sector = acc.account_sector;
+                        console.log('Account sector resolved from id_account:', urlParams.account_sector);
+                    }
+                }
+
                 updatePageTranslations();
                 await updateUserInfo();
 
@@ -1228,52 +1261,11 @@
                     return isValid;
                 };
 
-                // Keep original showError and clearErrors methods
-                manager.showError = function (fieldName, message) {
-                    const errorEl = document.getElementById(`error_${fieldName}`);
-                    const inputEl = document.getElementById(`field_${fieldName}`);
-
-                    if (errorEl) errorEl.textContent = message;
-                    if (inputEl) inputEl.classList.add('error');
-                };
-
-                manager.clearErrors = function () {
-                    document.querySelectorAll('.error-message').forEach(el => el.textContent = '');
-                    document.querySelectorAll('.form-input').forEach(el => el.classList.remove('error'));
-                    document.querySelectorAll('.form-select').forEach(el => el.classList.remove('error'));
-                };
-
                 // Inizializza il manager
                 await manager.init('form-container');
 
-                // Populate type_event-list datalist
-                const eventList = document.getElementById('type_event-list');
-                if (eventList) {
-                    eventList.innerHTML = '';
-
-                    const sector = urlParams.account_sector || '';
-                    const allowedEvents = eventManifest[sector] || null;
-
-                    if (allowedEvents) {
-                        // Use manifest to filter events
-                        console.log(`Filtering events for sector: ${sector}`);
-                        allowedEvents.forEach(evt => {
-                            const code = evt.type_event;
-                            const labelKey = evt.type_event_label || `eve.${code}`;
-                            const description = eventTranslations[labelKey] || code;
-
-                            const option = document.createElement('option');
-                            const displayValue = `${code} - ${description}`;
-                            option.value = displayValue;
-                            option.textContent = displayValue;
-                            eventList.appendChild(option);
-                        });
-                    } else {
-                        // Se non c'è il manifest per il settore, non mostriamo nulla come richiesto
-                        // "Se il campo non ha un default vanno elencate solo gli elementi con lo stesso sector"
-                        console.log('No manifest entry for sector, limiting event list');
-                    }
-                }
+                // Datalist population moved inside renderer for better reliability
+                console.log('Form initialization complete. Sector:', urlParams.account_sector);
 
             } catch (error) {
                 console.error('Errore durante l\'inizializzazione:', error);
