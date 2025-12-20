@@ -350,7 +350,8 @@
             </div>
         </div>
         <h1 style="flex: 1; text-align: center; margin: 0;"><i class="fa fa-chart-line"></i> <span id="pageTitle">Trade
-                Data Entry</span></h1>
+                Data Entry</span> <span id="sectorTitle"
+                style="font-size: 0.6em; opacity: 0.8; margin-left: 10px; color: var(--neon-cyan);"></span></h1>
         <div style="flex: 1; display: flex; justify-content: flex-end;">
             <button class="close-btn" onclick="window.close()">
                 <i class="fa fa-times"></i> <span id="closeText">Chiudi</span>
@@ -625,6 +626,19 @@
             document.getElementById('loadingText').textContent = getTranslation('int.loading.data') || 'Inizializzazione sistema...';
             document.getElementById('successText').textContent = getTranslation('int.success.save') || 'Dati salvati con successo!';
             document.getElementById('closeText').textContent = getTranslation('int.close') || 'Chiudi';
+
+            // Aggiungi traduzione account_sector accanto al titolo
+            const sector = urlParams.account_sector;
+            if (sector) {
+                const sectorTranslation = getTranslation(`dom.account_sector:${sector}`);
+                if (sectorTranslation && sectorTranslation !== `dom.account_sector:${sector}`) {
+                    document.getElementById('sectorTitle').textContent = `[ ${sectorTranslation} ]`;
+                } else {
+                    document.getElementById('sectorTitle').textContent = '';
+                }
+            } else {
+                document.getElementById('sectorTitle').textContent = '';
+            }
         }
 
 
