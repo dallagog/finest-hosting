@@ -724,41 +724,30 @@
 
                         case 'FE_Account':
                             const val = (field.value !== undefined ? field.value : field.defaultValue) || '';
-                            if (!val) {
-                                // Se non abbiamo un id_account, mostriamo una combobox filtrata per account_sector
-                                const filterSector = (urlParams.account_sector || '').trim().toUpperCase();
-                                console.log('Filtering accounts for sector:', filterSector);
+                            const filterSector = (urlParams.account_sector || '').trim().toUpperCase();
+                            console.log('Filtering FE_Account for sector:', filterSector);
 
-                                const filtered = availableAccounts.filter(acc => {
-                                    if (!filterSector) return true;
-                                    const accSector = (acc.account_sector || '').trim().toUpperCase();
-                                    return accSector === filterSector;
-                                });
+                            const filtered = availableAccounts.filter(acc => {
+                                if (!filterSector) return true;
+                                const accSector = (acc.account_sector || '').trim().toUpperCase();
+                                return accSector === filterSector;
+                            });
 
-                                console.log('Filtered accounts found:', filtered.length);
+                            console.log('Filtered accounts for FE_Account:', filtered.length);
 
-                                const options = filtered.map(acc =>
-                                    `<option value="${acc.id_account}">${acc.id_account}</option>`
-                                ).join('');
+                            const options = filtered.map(acc =>
+                                `<option value="${acc.id_account}" ${acc.id_account === val ? 'selected' : ''}>${acc.id_account}</option>`
+                            ).join('');
 
-                                input = `<select name="${name}" 
-                                                 id="${fieldId}"
-                                                 ${required ? 'required' : ''}
-                                                 class="form-select${fixedClass}"
-                                                 data-format="FE_Account">
-                                            <option value="">-- ${getTranslation('int.select.option') || 'Seleziona'} --</option>
-                                            ${options}
-                                        </select>`;
-                            } else {
-                                input = `<input type="text" 
-                                               name="${name}" 
-                                               id="${fieldId}"
-                                               ${required ? 'required' : ''}
-                                               ${isFixed ? 'readonly' : ''}
-                                               value="${val}" 
-                                               class="form-input${fixedClass}"
-                                               data-format="FE_Account">`;
-                            }
+                            input = `<select name="${name}" 
+                                             id="${fieldId}"
+                                             ${required ? 'required' : ''}
+                                             ${isFixed ? 'disabled' : ''}
+                                             class="form-select${fixedClass}"
+                                             data-format="FE_Account">
+                                        <option value="">-- ${getTranslation('int.select.option') || 'Seleziona'} --</option>
+                                        ${options}
+                                    </select>`;
                             break;
 
                         case 'FE_Instrument':
@@ -1155,6 +1144,14 @@
 
                             if (eventData && eventData.type_event_liquidity) {
                                 const nextSector = eventData.type_event_liquidity_sector || 'CC';
+
+                                // Estrai la valuta da amount:net (es: "100.00 EUR" -> "EUR")
+                                const amountNet = data['amount:net'] || '';
+                                let currency = '';
+                                if (amountNet.trim().includes(' ')) {
+                                    currency = amountNet.trim().split(' ').pop();
+                                }
+
                                 const params = new URLSearchParams({
                                     username: credentials.username,
                                     token: credentials.token,
@@ -1163,7 +1160,7 @@
                                     account_sector: nextSector,
                                     folder: 'trade-liquidity',
                                     type_event: eventData.type_event_liquidity,
-                                    id_instrument: data.id_instrument || '',
+                                    id_instrument: currency || data.id_instrument || '',
                                     'amount:net': data['amount:net'] || '',
                                     'cost:expense': data['cost:expense'] || '',
                                     'fee:commission': data['fee:commission'] || '',
@@ -1229,7 +1226,7 @@
                     html += `
                             </div>
                             <div id="liquidity-alert" class="liquidity-alert">
-                                <i class="fa fa-info-circle"></i> Sarà generata della liquidità
+                                <i class="fa fa-info-circle"></i> ${getTranslation('int.liquidity.alert') || 'Sarà movimentata la liquidità'}
                             </div>
                             <div class="form-actions">
                                 <button type="button" id="reset-btn" class="btn btn-secondary">
