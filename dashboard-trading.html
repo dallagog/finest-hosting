@@ -326,7 +326,7 @@
             document.getElementById('portfolioTitle').textContent = getTranslation('int.portfolio');
             document.getElementById('closeText').textContent = getTranslation('int.close');
             document.getElementById('historicalText').textContent = getTranslation('int.historical');
-            document.getElementById('operationsText').textContent = getTranslation('int.operazioni');
+            document.getElementById('operationsText').textContent = getTranslation('int.operation');
         }
 
         async function loadLanguageManifest() {
@@ -589,6 +589,11 @@
                 params.append('id_instrument', item.Ticker);
             }
 
+            // Pass l'account se disponibile
+            const accountKey = Object.keys(item).find(k =>
+                k.toLowerCase().includes('account') ||
+                k.toLowerCase().includes('conto')
+            );
             if (accountKey && item[accountKey]) {
                 params.append('id_account', String(item[accountKey]));
             }
