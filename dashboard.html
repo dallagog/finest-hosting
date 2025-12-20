@@ -1088,6 +1088,8 @@
 
         // ========== FILTER & ACCOUNTS ==========
         let accountsData = [];
+        let accountsSortCol = 'description';
+        let accountsSortDir = 'asc';
 
         async function loadAccounts() {
             const payload = {
@@ -1217,7 +1219,27 @@
             }
 
             selectedAccounts = accountsList.filter(a => a.selected).map(a => a.id_account);
-            accountsList.sort((a, b) => String(a.description || '').localeCompare(String(b.description || '')));
+
+            // Apply sorting
+            accountsList.sort((a, b) => {
+                let valA, valB;
+                if (accountsSortCol === 'id_account') {
+                    valA = String(a.id_account || '').toLowerCase();
+                    valB = String(b.id_account || '').toLowerCase();
+                } else if (accountsSortCol === 'account_sector') {
+                    const sectorKeyA = 'dom.account_sector:' + (a.account_sector || '');
+                    const sectorKeyB = 'dom.account_sector:' + (b.account_sector || '');
+                    valA = (getTranslation(sectorKeyA) || a.account_sector || '').toLowerCase();
+                    valB = (getTranslation(sectorKeyB) || b.account_sector || '').toLowerCase();
+                } else {
+                    valA = String(a.description || '').toLowerCase();
+                    valB = String(b.description || '').toLowerCase();
+                }
+
+                if (valA < valB) return accountsSortDir === 'asc' ? -1 : 1;
+                if (valA > valB) return accountsSortDir === 'asc' ? 1 : -1;
+                return 0;
+            });
 
             const table = document.createElement('table');
             table.style.cssText = 'width: 100%; border-collapse: collapse; color: var(--text-color);';
@@ -1232,13 +1254,23 @@
             headerRow.appendChild(th1);
 
             const th2 = document.createElement('th');
-            th2.style.cssText = 'padding: 8px; text-align: left;';
-            th2.textContent = getTranslation('int.account.code') || 'Codice';
+            th2.style.cssText = 'padding: 8px; text-align: left; cursor: pointer; user-select: none;';
+            th2.innerHTML = `${getTranslation('int.account.code') || 'Codice'} ${accountsSortCol === 'id_account' ? (accountsSortDir === 'asc' ? '↑' : '↓') : ''}`;
+            th2.onclick = () => {
+                if (accountsSortCol === 'id_account') accountsSortDir = accountsSortDir === 'asc' ? 'desc' : 'asc';
+                else { accountsSortCol = 'id_account'; accountsSortDir = 'asc'; }
+                renderReportsList_patched();
+            };
             headerRow.appendChild(th2);
 
             const th3 = document.createElement('th');
-            th3.style.cssText = 'padding: 8px; text-align: left;';
-            th3.textContent = getTranslation('int.account.description') || 'Descrizione';
+            th3.style.cssText = 'padding: 8px; text-align: left; cursor: pointer; user-select: none;';
+            th3.innerHTML = `${getTranslation('int.account.account_sector') || 'Settore'} ${accountsSortCol === 'account_sector' ? (accountsSortDir === 'asc' ? '↑' : '↓') : ''}`;
+            th3.onclick = () => {
+                if (accountsSortCol === 'account_sector') accountsSortDir = accountsSortDir === 'asc' ? 'desc' : 'asc';
+                else { accountsSortCol = 'account_sector'; accountsSortDir = 'asc'; }
+                renderReportsList_patched();
+            };
             headerRow.appendChild(th3);
 
             const th4 = document.createElement('th');
@@ -1283,7 +1315,8 @@
 
                 const td3 = document.createElement('td');
                 td3.style.cssText = 'padding: 8px;';
-                td3.textContent = item.description || item.account_type || '';
+                const sectorKey = 'dom.account_sector:' + (item.account_sector || '');
+                td3.textContent = getTranslation(sectorKey) || item.account_sector || item.description || '';
                 tr.appendChild(td3);
 
                 const td4 = document.createElement('td');
