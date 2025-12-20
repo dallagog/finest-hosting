@@ -253,23 +253,23 @@
             <form id="registryForm">
 
                 <div class="form-group">
-                    <label for="description_registry" id="descriptionLabel">Descrizione:</label>
-                    <input type="text" id="description_registry" required>
+                    <label for="description" id="descriptionLabel">Descrizione:</label>
+                    <input type="text" id="description" required>
                 </div>
 
                 <div class="form-group">
-                    <label for="name_registry" id="nameLabel">Nome:</label>
-                    <input type="text" id="name_registry" required>
+                    <label for="name" id="nameLabel">Nome:</label>
+                    <input type="text" id="name" required>
                 </div>
 
                 <div class="form-group">
-                    <label for="surname_registry" id="surnameLabel">Cognome:</label>
-                    <input type="text" id="surname_registry" required>
+                    <label for="surname" id="surnameLabel">Cognome:</label>
+                    <input type="text" id="surname" required>
                 </div>
 
                 <div class="form-group">
-                    <label for="type_registry" id="typeLabel">Tipo:</label>
-                    <select id="type_registry" required>
+                    <label for="type" id="typeLabel">Tipo:</label>
+                    <select id="type" required>
                         <option value="">-- seleziona --</option>
                     </select>
                 </div>
@@ -443,7 +443,7 @@
         }
 
         function populateTypeDropdown() {
-            const typeSelect = document.getElementById('type_registry');
+            const typeSelect = document.getElementById('type');
 
             // Rimuovi tutte le opzioni tranne la prima
             while (typeSelect.options.length > 1) {
@@ -454,9 +454,9 @@
             let domainGroup = null;
 
             if (manifestData['dashboard-registry'] && Array.isArray(manifestData['dashboard-registry'])) {
-                // Cerca un campo che contiene "type_registry" e "@"
+                // Cerca un campo che contiene "type" e "@"
                 const typeField = manifestData['dashboard-registry'].find(field =>
-                    typeof field === 'string' && field.includes('type_registry') && field.includes('@')
+                    typeof field === 'string' && field.includes('type') && field.includes('@')
                 );
 
                 if (typeField) {
@@ -468,7 +468,7 @@
 
             // Se non troviamo nel manifest, usa il fallback
             if (!domainGroup) {
-                domainGroup = 'type_registry';
+                domainGroup = 'type';
                 console.log('Using fallback domain group:', domainGroup);
             }
 
@@ -480,7 +480,7 @@
                 console.log('Found domain data:', domainData[domainGroup]);
                 domainData[domainGroup].forEach(item => {
                     const option = document.createElement('option');
-                    // Estrai il valore dopo i due punti (es: "dom.type_registry:person" -> "person")
+                    // Estrai il valore dopo i due punti (es: "dom.type:person" -> "person")
                     const value = item.split(':')[1] || item;
                     option.value = value;
                     // Usa la chiave completa per la traduzione
@@ -533,16 +533,16 @@
 
         function applyDefaults(defaults) {
             if (defaults.description) {
-                document.getElementById('description_registry').value = defaults.description;
+                document.getElementById('description').value = defaults.description;
             }
             if (defaults.name) {
-                document.getElementById('name_registry').value = defaults.name;
+                document.getElementById('name').value = defaults.name;
             }
             if (defaults.surname) {
-                document.getElementById('surname_registry').value = defaults.surname;
+                document.getElementById('surname').value = defaults.surname;
             }
             if (defaults.type) {
-                document.getElementById('type_registry').value = defaults.type;
+                document.getElementById('type').value = defaults.type;
             }
         }
 
@@ -580,7 +580,7 @@
             document.getElementById('resetText').textContent = getTranslation('int.reset') || 'Annulla';
 
             // Update select options
-            const typeSelect = document.getElementById('type_registry');
+            const typeSelect = document.getElementById('type');
             typeSelect.options[0].textContent = getTranslation('int.select.option') || '-- seleziona --';
 
             // Aggiorna le traduzioni delle opzioni dinamiche
@@ -612,10 +612,10 @@
             e.preventDefault();
 
             const registryData = {
-                description_registry: document.getElementById('description_registry').value,
-                name_registry: document.getElementById('name_registry').value,
-                surname_registry: document.getElementById('surname_registry').value,
-                type_registry: document.getElementById('type_registry').value
+                description: document.getElementById('description').value,
+                name: document.getElementById('name').value,
+                surname: document.getElementById('surname').value,
+                type: document.getElementById('type').value
             };
 
             console.log('=== REGISTRY DATA DEBUG ===');
