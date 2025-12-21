@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="it">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trend Graph - Tron Style</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <script src="js/dashboard-shared.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&display=swap');
+
+        :root {
+            --bg-color: #050505;
+            --neon-cyan: #00f3ff;
+            --neon-red: #ff0055;
+            --neon-blue: #0066ff;
+            --glass-bg: rgba(0, 20, 40, 0.85);
+            --text-color: #e0f7fa;
+            --button-bg: rgba(0, 243, 255, 0.1);
+            --button-border: var(--neon-cyan);
+            --button-hover: var(--neon-blue);
+        }
+
+        html,
+        body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+
+        body {
+            font-family: 'Orbitron', sans-serif;
+            background-color: var(--bg-color);
+            background-image:
+                linear-gradient(rgba(0, 243, 255, 0.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 243, 255, 0.05) 1px, transparent 1px);
+            background-size: 50px 50px;
+            padding: 15px;
+            color: var(--text-color);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header-bar {
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
+            align-items: center;
+            padding: 15px 20px;
+            background: var(--glass-bg);
+            border: 1px solid var(--neon-cyan);
+            box-shadow: 0 0 15px rgba(0, 243, 255, 0.3);
+            border-radius: 8px;
+            margin-bottom: 15px;
+            flex-shrink: 0;
+        }
+
+        .header-left {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 5px;
+        }
+
+        .username-display {
+            font-size: 0.9rem;
+            color: var(--neon-cyan);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 5px;
+        }
+
+        .language-display {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9rem;
+            color: var(--text-color);
+        }
+
+        .language-display .flag-icon {
+            width: 20px;
+            height: 15px;
+            background-color: var(--neon-blue);
+            color: #fff;
+            text-align: center;
+            line-height: 15px;
+            font-size: 8px;
+            border: 1px solid var(--neon-cyan);
+            box-shadow: 0 0 5px rgba(0, 243, 255, 0.5);
+        }
+
+        .header-center {
+            text-align: center;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 1.5rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: var(--neon-cyan);
+            text-shadow: 0 0 10px var(--neon-cyan);
+        }
+
+        .header-right {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            justify-content: flex-end;
+        }
+
+        label {
+            color: var(--neon-cyan);
+            font-size: 0.8rem;
+        }
+
+        select {
+            padding: 8px 15px;
+            background: var(--button-bg);
+            border: 1px solid var(--neon-cyan);
+            color: var(--neon-cyan);
+            font-family: 'Orbitron', sans-serif;
+            border-radius: 4px;
+            cursor: pointer;
+            min-width: 150px;
+        }
+
+        select:focus {
+            outline: none;
+            box-shadow: 0 0 10px var(--neon-cyan);
+        }
+
+        select option {
+            background-color: #001122;
+            color: var(--neon-cyan);
+        }
+
+        .close-button {
+            padding: 8px 15px;
+            background: rgba(255, 0, 85, 0.1);
+            border: 1px solid var(--neon-red);
+            color: var(--neon-red);
+            font-family: 'Orbitron', sans-serif;
+            border-radius: 4px;
+            cursor: pointer;
+            text-transform: uppercase;
+            font-size: 0.9rem;
+            transition: background 0.3s, color 0.3s, border-color 0.3s;
+        }
+
+        .close-button:hover {
+            background: rgba(255, 0, 85, 0.2);
+            box-shadow: 0 0 10px rgba(255, 0, 85, 0.5);
+        }
+
+        .chart-wrapper {
+            flex: 1;
+            position: relative;
+            background: var(--glass-bg);
+            border: 1px solid var(--neon-cyan);
+            border-radius: 8px;
+            box-shadow: 0 0 20px rgba(0, 243, 255, 0.1);
+            padding: 15px;
+            min-height: 0;
+            overflow: hidden;
+        }
+
+        #chartContainerInner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+        }
+
+        #chartCanvas {
+            width: 100% !important;
+            height: 100% !important;
+        }
+
+        #loading {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 3px solid var(--neon-cyan);
+            border-top: 3px solid transparent;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        #loadingText {
+            color: var(--neon-cyan);
+            font-size: 1.2rem;
+            letter-spacing: 1px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="loading">
+        <div class="spinner"></div>
+        <div id="loadingText">Analyzing Trend Data...</div>
+    </div>
+
+    <div class="header-bar">
+        <div class="header-left">
+            <div id="username-display" class="username-display"></div>
+            <div id="language-indicator" class="language-display"></div>
+        </div>
+
+        <div class="header-center">
+            <h1 id="page-title">Trend Analysis</h1>
+        </div>
+
+        <div class="header-right">
+            <label for="metric-select" id="metric-label">Value:</label>
+            <select id="metric-select" onchange="renderChart()">
+            </select>
+            <button class="close-button" onclick="closeWindow()" id="close-btn">Close</button>
+        </div>
+    </div>
+
+    <div class="chart-wrapper">
+        <div id="chartContainerInner">
+            <canvas id="chartCanvas"></canvas>
+        </div>
+    </div>
+
+    <script>
+        // --- TRANSLATION SYSTEM (Dynamic) ---
+        let translations = {};
+
+        async function loadTranslations(langCode) {
+            try {
+                let response = await fetch(`lang/${langCode}.json`);
+                if (!response.ok) {
+                    const simple = langCode.split('_')[0];
+                    if (simple && simple !== langCode) {
+                        response = await fetch(`lang/${simple}.json`);
+                    }
+                }
+                if (response.ok) {
+                    translations = await response.json();
+                } else {
+                    console.warn("Translation file not found:", langCode);
+                }
+            } catch (error) {
+                console.error("Error loading translations:", error);
+            }
+        }
+
+        function getTranslation(key) {
+            return translations[key] || key;
+        }
+
+        const languageMap = {
+            'it_IT': { name: 'Italiano', initials: 'IT' },
+            'en_US': { name: 'English', initials: 'EN' },
+        };
+
+        function getFlagIcon(lang) {
+            const langInfo = languageMap[lang] || languageMap['it_IT'] || { name: lang, initials: lang.substring(0, 2).toUpperCase() };
+            return `<div class="flag-icon" title="${langInfo.name}">${langInfo.initials}</div>`;
+        }
+
+        function closeWindow() {
+            window.close();
+        }
+
+        const API_URL = "https://feweb-tunnel.fe-web.eu";
+        let chartInstance = null;
+        let trendDataRaw = [];
+        let aggregatedData = [];
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const username = urlParams.get('username') || 'UTENTE_NON_AUTORIZZATO';
+        const token = urlParams.get('token');
+        const language = urlParams.get('language') || 'it_IT';
+        const initialMetric = urlParams.get('metric') || '';
+
+        async function init() {
+            document.getElementById('username-display').textContent = 'USER: ' + username;
+
+            if (!username || !token) {
+                document.getElementById('loadingText').textContent = "Access Denied";
+                return;
+            }
+
+            // Load translations first
+            await loadTranslations(language);
+            updateHeaderTranslations();
+
+            // Load Trend Data
+            await loadTrend();
+        }
+
+        function updateHeaderTranslations() {
+            document.getElementById('page-title').textContent = getTranslation('int.trend_analysis') || "Trend Analysis";
+            document.getElementById('metric-label').textContent = (getTranslation('int.value') || "Value") + ":";
+            document.getElementById('close-btn').textContent = getTranslation('int.close') || "Close";
+
+            const langIndicator = document.getElementById('language-indicator');
+            const langName = getTranslation('lang.' + language);
+            langIndicator.innerHTML = `${getFlagIcon(language)} <span>${langName}</span>`;
+        }
+
+        async function loadTrend() {
+            try {
+                const payload = {
+                    username: username,
+                    token: token,
+                    language: language,
+                    filter: "",
+                    code: ""
+                };
+
+                const response = await fetch(`${API_URL}/gettrend`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const data = await response.json();
+
+                if (data.status === 'ok') {
+                    // Gestione del formato dati (potrebbe essere stringa JSON o oggetto)
+                    let rawTrend = data.trend;
+                    if (typeof rawTrend === 'string') {
+                        try {
+                            rawTrend = JSON.parse(rawTrend.replace(/'/g, '"'));
+                        } catch (e) {
+                            console.error("Error parsing trend string", e);
+                            rawTrend = [];
+                        }
+                    }
+
+                    if (!Array.isArray(rawTrend)) {
+                        rawTrend = [];
+                    }
+
+                    trendDataRaw = rawTrend;
+
+                    populateMetricSelect();
+                    renderChart();
+                    document.getElementById('loading').style.display = 'none';
+
+                } else {
+                    document.getElementById('loadingText').textContent = "Error loading data";
+                    alert("Error loading trend data");
+                }
+            } catch (error) {
+                console.error(error);
+                document.getElementById('loadingText').textContent = "Connection Error";
+            }
+        }
+
+        function populateMetricSelect() {
+            const select = document.getElementById('metric-select');
+            select.innerHTML = '';
+
+            if (trendDataRaw.length === 0) return;
+
+            // Identifica le chiavi possibili (numeriche o con formato "val:cur")
+            const firstItem = trendDataRaw[0];
+            const availableMetrics = [];
+
+            // Controlla specificamente up_negoziazione come da JSON esempio
+            if ('up_negoziazione' in firstItem) {
+                availableMetrics.push('up_negoziazione');
+            }
+
+            // Cerca altre chiavi numeriche
+            Object.keys(firstItem).forEach(key => {
+                if (key !== 'up_negoziazione' && key !== 'date_start' && key !== 'date_end' && !key.includes('id_')) {
+                    const val = firstItem[key];
+                    if (typeof val === 'number') {
+                        availableMetrics.push(key);
+                    }
+                }
+            });
+
+            // Etichette leggibili
+            const labelMap = {
+                'up_negoziazione': 'Negoziazione (P&L)',
+                'nav': 'N.A.V.',
+                'performance': 'Performance %'
+            };
+
+            availableMetrics.forEach(key => {
+                const option = document.createElement('option');
+                option.value = key;
+                const translationKey = 'lbl.' + key;
+                const label = getTranslation(translationKey) !== translationKey
+                    ? getTranslation(translationKey)
+                    : (labelMap[key] || key.charAt(0).toUpperCase() + key.slice(1));
+
+                option.textContent = label;
+                select.appendChild(option);
+            });
+
+            if (initialMetric && availableMetrics.includes(initialMetric)) {
+                select.value = initialMetric;
+            }
+        }
+
+        // Funzione per parsare i valori (es. "14.47:EUR" -> 14.47)
+        function parseValue(value) {
+            if (typeof value === 'number') return value;
+            if (typeof value === 'string' && value.includes(':')) {
+                return parseFloat(value.split(':')[0]);
+            }
+            return parseFloat(value) || 0;
+        }
+
+        function renderChart() {
+            const ctx = document.getElementById('chartCanvas').getContext('2d');
+            if (chartInstance) chartInstance.destroy();
+
+            const selectedMetric = document.getElementById('metric-select').value;
+            if (!selectedMetric) return;
+
+            // 1. Raggruppamento per data (somma valori stesso giorno)
+            const dateMap = {};
+
+            trendDataRaw.forEach(item => {
+                const date = item.date_start;
+                if (!date) return;
+
+                // Parsing Data (YYYY-MM-DD standard)
+                const val = parseValue(item[selectedMetric]);
+
+                if (!dateMap[date]) {
+                    dateMap[date] = 0;
+                }
+                dateMap[date] += val;
+            });
+
+            // 2. Ordinamento cronologico
+            const sortedDates = Object.keys(dateMap).sort((a, b) => new Date(a) - new Date(b));
+
+            // 3. Preparazione Array per Chart.js
+            const labels = sortedDates.map(date => {
+                const d = new Date(date);
+                return new Intl.DateTimeFormat(language.replace('_', '-'), {
+                    day: '2-digit',
+                    month: 'short',
+                    year: '2-digit'
+                }).format(d);
+            });
+
+            const dataValues = sortedDates.map(date => dateMap[date]);
+
+            // Creazione Gradiente Tron
+            const gradient = ctx.createLinearGradient(0, 0, 0, 400);
+            gradient.addColorStop(0, 'rgba(0, 243, 255, 0.4)');
+            gradient.addColorStop(1, 'rgba(0, 243, 255, 0.05)');
+
+            chartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: document.getElementById('metric-select').options[document.getElementById('metric-select').selectedIndex].text,
+                        data: dataValues,
+                        borderColor: '#00f3ff',
+                        backgroundColor: gradient,
+                        borderWidth: 2,
+                        pointBackgroundColor: '#00f3ff',
+                        pointBorderColor: '#fff',
+                        pointHoverBackgroundColor: '#fff',
+                        pointHoverBorderColor: '#00f3ff',
+                        fill: true,
+                        tension: 0.4 // Curva morbida
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: {
+                        mode: 'index',
+                        intersect: false,
+                    },
+                    scales: {
+                        x: {
+                            ticks: {
+                                color: '#e0f7fa',
+                                font: { family: 'Orbitron', size: 10 },
+                                maxRotation: 45,
+                                minRotation: 45
+                            },
+                            grid: {
+                                color: 'rgba(0, 243, 255, 0.1)'
+                            }
+                        },
+                        y: {
+                            ticks: {
+                                color: '#e0f7fa',
+                                font: { family: 'Orbitron', size: 10 },
+                                callback: function (value) {
+                                    return new Intl.NumberFormat('it-IT', {
+                                        style: "currency",
+                                        currency: "EUR",
+                                        notation: "compact"
+                                    }).format(value);
+                                }
+                            },
+                            grid: {
+                                color: (context) => context.tick.value === 0 ? 'rgba(255, 0, 85, 0.5)' : 'rgba(0, 243, 255, 0.1)',
+                                lineWidth: (context) => context.tick.value === 0 ? 1 : 1
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(0, 5, 16, 0.9)',
+                            titleColor: '#00f3ff',
+                            bodyColor: '#fff',
+                            borderColor: '#00f3ff',
+                            borderWidth: 1,
+                            titleFont: { family: 'Orbitron' },
+                            bodyFont: { family: 'Orbitron' },
+                            callbacks: {
+                                label: function (context) {
+                                    let label = context.dataset.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    if (context.parsed.y !== null) {
+                                        label += new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(context.parsed.y);
+                                    }
+                                    return label;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        window.onload = init;
+    </script>
+</body>
+
+</html>

@@ -652,6 +652,9 @@
 
                     <div style="display: flex; gap: 15px; margin-top: 15px;">
                         <button id="apply-filters" style="flex: 1;">Applica Filtri</button>
+                        <button onclick="openTrendGraph()" style="flex: 1;">
+                            <i class="fa fa-line-chart"></i> <span id="trendText">Andamentale</span>
+                        </button>
                         <button onclick="loadPDF()" style="flex: 1;">
                             <i class="fa fa-file-pdf-o"></i> <span id="generatePdfText">Genera PDF</span>
                         </button>
@@ -893,7 +896,8 @@
                 'menuLoading': 'int.loading.menu',
                 'reportsLoading': 'int.loading.reports',
                 'pdfViewerTitle': 'int.pdf.viewer.title',
-                'generatePdfText': 'int.pdf.report'
+                'generatePdfText': 'int.pdf.report',
+                'trendText': 'int.trend'
             };
 
             Object.keys(translations_map).forEach(elementId => {
@@ -929,6 +933,9 @@
 
             const generatePdfText = getTranslation('int.pdf.report');
             if (generatePdfText !== 'int.pdf.report') document.getElementById('generatePdfText').textContent = generatePdfText;
+
+            const trendText = getTranslation('int.trend');
+            if (trendText !== 'int.trend') document.getElementById('trendText').textContent = trendText;
 
             const applyFiltersText = getTranslation('int.apply.filters');
             if (applyFiltersText !== 'int.apply.filters') document.getElementById('apply-filters').textContent = applyFiltersText;
@@ -1614,6 +1621,35 @@
             } catch (error) {
                 console.error('downloadPDF error', error);
             }
+        }
+
+        function openTrendGraph() {
+            const u = credentials.username || localStorage.getItem('username');
+            const t = credentials.token || localStorage.getItem('token');
+            const l = credentials.language || localStorage.getItem('language') || 'it_IT';
+
+            // Get currency from text content or localStorage as fallback
+            let c = localStorage.getItem('currency') || 'EUR';
+            const currencyDisplay = document.getElementById('currencyDisplay');
+            if (currencyDisplay && currencyDisplay.textContent && currencyDisplay.textContent !== '-') {
+                // Try to extract currency code (e.g. from "🇮🇹 EUR")
+                const parts = currencyDisplay.textContent.split(' ');
+                c = parts.length > 1 ? parts[1] : parts[0];
+            }
+
+            if (!u || !t) {
+                showMessage("Sessione non valida per aprire il grafico.", 'error');
+                return;
+            }
+
+            const params = new URLSearchParams({
+                username: u,
+                token: t,
+                language: l,
+                currency: c
+            });
+
+            window.open(`dashboard-graph-trend.html?${params.toString()}`, '_blank');
         }
 
         // ========== PORTFOLIO TABLE ==========
