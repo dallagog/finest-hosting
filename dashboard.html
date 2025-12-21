@@ -1464,12 +1464,20 @@
 
         function selectAllReports() {
             selectedAccounts = accountsData.map(a => String(a.id_account));
+            accountsData.forEach(a => a.selected = true);
+            if (filterData && filterData.Account && Array.isArray(filterData.Account.list)) {
+                filterData.Account.list.forEach(item => item.selected = true);
+            }
             renderReportsList_patched();
             filterAndRenderTables();
         }
 
         function deselectAllReports() {
             selectedAccounts = [];
+            accountsData.forEach(a => a.selected = false);
+            if (filterData && filterData.Account && Array.isArray(filterData.Account.list)) {
+                filterData.Account.list.forEach(item => item.selected = false);
+            }
             renderReportsList_patched();
             filterAndRenderTables();
         }

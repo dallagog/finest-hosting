@@ -775,42 +775,61 @@
                                 const curSector = (urlParams.account_sector || "").trim().toUpperCase();
                                 const sectorEvents = eventManifest[curSector] || [];
 
-                                // Resolving the label for the current value
-                                let eventCode = value;
-                                // If value is in "CODE - DESC" format, extract code
-                                if (value.includes(' - ')) {
-                                    eventCode = value.split(' - ')[0].trim();
+                                // If no default value, create a SELECT combobox
+                                if (!value) {
+                                    let optionsHtml = sectorEvents.map(evt => {
+                                        const code = evt.type_event;
+                                        const lKey = evt.type_event_label || `eve.${code}`;
+                                        const desc = eventTranslations[lKey] || code;
+                                        const disp = `${code} - ${desc}`;
+                                        return `<option value="${code}">${disp}</option>`;
+                                    }).join("");
+
+                                    input = `<select name="${name}" 
+                                                     id="${fieldId}"
+                                                     ${required ? 'required' : ''}
+                                                     ${isFixed ? 'disabled' : ''}
+                                                     class="form-select${fixedClass}"
+                                                     data-format="${formatType}">
+                                                <option value="">-- ${getTranslation('int.select.option') || 'Seleziona'} --</option>
+                                                ${optionsHtml}
+                                            </select>`;
+                                } else {
+                                    // With default value, keep DATALIST for now (or readonly if fixed)
+                                    let eventCode = value;
+                                    if (value.includes(' - ')) {
+                                        eventCode = value.split(' - ')[0].trim();
+                                    }
+
+                                    let labelKey = `eve.${eventCode}`;
+                                    const manifestEvent = sectorEvents.find(e => e.type_event === eventCode);
+                                    if (manifestEvent && manifestEvent.type_event_label) {
+                                        labelKey = manifestEvent.type_event_label;
+                                    }
+                                    const description = eventTranslations[labelKey] || "";
+                                    const displayValue = description && description !== eventCode ? `${eventCode} - ${description}` : eventCode;
+
+                                    let optionsHtml = sectorEvents.map(evt => {
+                                        const code = evt.type_event;
+                                        const lKey = evt.type_event_label || `eve.${code}`;
+                                        const desc = eventTranslations[lKey] || code;
+                                        const disp = `${code} - ${desc}`;
+                                        return `<option value="${disp}">${disp}</option>`;
+                                    }).join("");
+
+                                    input = `<input type="text" 
+                                                   name="${name}" 
+                                                   id="${fieldId}"
+                                                   ${required ? "required" : ""}
+                                                   ${isFixed ? "readonly" : ""}
+                                                   value="${displayValue}" 
+                                                   data-code="${eventCode}"
+                                                   class="form-input${fixedClass}"
+                                                   data-format="${formatType}"
+                                                   list="${name}-list"
+                                                   oninput="const val = this.value; if(val.includes(' - ')) { this.dataset.code = val.split(' - ')[0].trim(); } else { this.dataset.code = val; }">
+                                             <datalist id="${name}-list">${optionsHtml}</datalist>`;
                                 }
-
-                                let labelKey = `eve.${eventCode}`;
-                                const manifestEvent = sectorEvents.find(e => e.type_event === eventCode);
-                                if (manifestEvent && manifestEvent.type_event_label) {
-                                    labelKey = manifestEvent.type_event_label;
-                                }
-                                const description = eventTranslations[labelKey] || "";
-                                const displayValue = description && description !== eventCode ? `${eventCode} - ${description}` : eventCode;
-
-                                // Generate options for datalist - STRICTLY from manifest sector
-                                let optionsHtml = sectorEvents.map(evt => {
-                                    const code = evt.type_event;
-                                    const lKey = evt.type_event_label || `eve.${code}`;
-                                    const desc = eventTranslations[lKey] || code;
-                                    const disp = `${code} - ${desc}`;
-                                    return `<option value="${disp}">${disp}</option>`;
-                                }).join("");
-
-                                input = `<input type="text" 
-                                               name="${name}" 
-                                               id="${fieldId}"
-                                               ${required ? "required" : ""}
-                                               ${isFixed ? "readonly" : ""}
-                                               value="${displayValue}" 
-                                               data-code="${eventCode}"
-                                               class="form-input${fixedClass}"
-                                               data-format="${formatType}"
-                                               list="${name}-list"
-                                               oninput="const val = this.value; if(val.includes(' - ')) { this.dataset.code = val.split(' - ')[0].trim(); } else { this.dataset.code = val; }">
-                                         <datalist id="${name}-list">${optionsHtml}</datalist>`;
                             }
                             else {
                                 input = `<input type="text" 
@@ -1105,23 +1124,39 @@
                                 urlParams.account_sector = acc.account_sector;
                                 console.log('Account sector updated on change:', urlParams.account_sector);
 
-                                // Refresh Event datalist if sector changes
+                                // Refresh Event datalist or select if sector changes
                                 const eventInput = document.querySelector('[data-format="FE_Event"]');
                                 if (eventInput) {
-                                    const listId = eventInput.getAttribute('list');
-                                    const datalist = document.getElementById(listId);
-                                    if (datalist) {
-                                        const sector = urlParams.account_sector.trim().toUpperCase();
-                                        const sectorEvents = eventManifest[sector] || [];
-                                        datalist.innerHTML = sectorEvents.map(evt => {
+                                    const sector = urlParams.account_sector.trim().toUpperCase();
+                                    const sectorEvents = eventManifest[sector] || [];
+
+                                    if (eventInput.tagName.toLowerCase() === 'select') {
+                                        // Update SELECT options
+                                        const currentVal = eventInput.value;
+                                        let html = `<option value="">-- ${getTranslation('int.select.option') || 'Seleziona'} --</option>`;
+                                        html += sectorEvents.map(evt => {
                                             const code = evt.type_event;
                                             const lKey = evt.type_event_label || `eve.${code}`;
                                             const desc = eventTranslations[lKey] || code;
                                             const disp = `${code} - ${desc}`;
-                                            return `<option value="${disp}">${disp}</option>`;
+                                            return `<option value="${code}" ${code === currentVal ? 'selected' : ''}>${disp}</option>`;
                                         }).join("");
-                                        console.log(`Refreshed event list for sector: ${sector}`);
+                                        eventInput.innerHTML = html;
+                                    } else {
+                                        // Update DATALIST options
+                                        const listId = eventInput.getAttribute('list');
+                                        const datalist = document.getElementById(listId);
+                                        if (datalist) {
+                                            datalist.innerHTML = sectorEvents.map(evt => {
+                                                const code = evt.type_event;
+                                                const lKey = evt.type_event_label || `eve.${code}`;
+                                                const desc = eventTranslations[lKey] || code;
+                                                const disp = `${code} - ${desc}`;
+                                                return `<option value="${disp}">${disp}</option>`;
+                                            }).join("");
+                                        }
                                     }
+                                    console.log(`Refreshed event options for sector: ${sector}`);
                                 }
                             }
                         }
