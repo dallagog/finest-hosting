@@ -76,6 +76,26 @@ const FormatHelper = {
             code = code.split('-')[0];
         }
         return code.trim();
+    },
+
+    // Transform "value currency" or "value currency/currency" to "value:currency"
+    transformToColonFormat(value) {
+        if (!value) return '';
+        const trimmed = value.trim();
+        // If it already has a colon, do nothing
+        if (trimmed.includes(':')) return trimmed;
+
+        const lastSpaceIndex = trimmed.lastIndexOf(' ');
+        if (lastSpaceIndex === -1) return trimmed;
+
+        const part1 = trimmed.substring(0, lastSpaceIndex).trim();
+        const part2 = trimmed.substring(lastSpaceIndex + 1).trim();
+
+        // Check if part1 is a number and part2 is either a currency or currency pair
+        const numRegex = /^-?\d+(\.\d{1,6})?$/;
+        if (!numRegex.test(part1)) return trimmed;
+
+        return `${part1}:${part2}`;
     }
 };
 

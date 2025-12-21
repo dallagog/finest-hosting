@@ -913,6 +913,12 @@
                         }
 
                         if (value) {
+                            // Automatically transform "value currency" to "value:currency"
+                            if (FormatHelper.validateDecimal(value)) {
+                                value = FormatHelper.transformToColonFormat(value);
+                                e.target.value = value;
+                            }
+
                             if (!FormatHelper.validateDecimal(value)) {
                                 e.target.classList.add('error');
                                 const errorDiv = input.closest('.form-group')?.querySelector('.error-message');
@@ -944,6 +950,12 @@
                         }
 
                         if (value) {
+                            // Automatically transform "value currency/currency" to "value:currency/currency"
+                            if (FormatHelper.validateExchange(value)) {
+                                value = FormatHelper.transformToColonFormat(value);
+                                e.target.value = value;
+                            }
+
                             if (!FormatHelper.validateExchange(value)) {
                                 e.target.classList.add('error');
                                 const errorDiv = input.closest('.form-group')?.querySelector('.error-message');
