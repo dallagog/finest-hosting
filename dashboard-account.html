@@ -306,7 +306,6 @@
         let translations = {};
         let registries = {};
         let manifest = null;
-        let domine = null;
         let availableLanguages = [];
         let currencies = [];
         const API_URL = "https://feweb-tunnel.fe-web.eu";
@@ -430,17 +429,12 @@
 
         async function loadConfigurations() {
             try {
-                const [manifestResponse, domineResponse] = await Promise.all([
-                    fetch('lang/manifest.json'),
-                    fetch('lang/domine.json')
-                ]);
-
+                // Carica solo il manifest, domine.json non è più necessario per i dropdown dinamici
+                const manifestResponse = await fetch('lang/manifest.json');
                 manifest = await manifestResponse.json();
-                domine = await domineResponse.json();
 
                 console.log('=== CONFIGURATIONS LOADED ===');
                 console.log('Manifest:', manifest);
-                console.log('Domine:', domine);
                 console.log('====================');
 
                 return true;
@@ -451,10 +445,9 @@
             }
         }
 
-        // ========== FORM GENERATION (UPDATED) ==========
+        // ========== FORM GENERATION ==========
         function generateForm() {
             const form = document.getElementById('accountForm');
-            // Check manifest existence
             if (!manifest || !manifest['dashboard-account']) return;
 
             const fields = manifest['dashboard-account'];
@@ -463,10 +456,9 @@
                 const formGroup = document.createElement('div');
                 formGroup.className = 'form-group';
 
-                // Split fieldName from domainKey based on '@'
                 const parts = fieldDef.split('@');
                 const fieldName = parts[0];
-                const domainKey = parts.length > 1 ? parts[1] : null;
+                const domainSuffix = parts.length > 1 ? parts[1] : null;
 
                 const label = document.createElement('label');
                 label.setAttribute('for', fieldName);
@@ -474,34 +466,23 @@
                 label.textContent = getTranslation(`int.account.${fieldName}`) || fieldName + ':';
                 formGroup.appendChild(label);
 
-                // Case 1: Field has a domain defined after '@' -> Create Dropdown
-                if (domainKey && domine && domine[domainKey]) {
+                // Caso 1: Campo con suffisso @ (Dropdown dinamico da language.json)
+                if (domainSuffix) {
                     const select = document.createElement('select');
                     select.id = fieldName;
                     select.name = fieldName;
                     select.required = true;
+                    // Salviamo il suffisso per popolarlo dopo aver caricato le traduzioni
+                    select.setAttribute('data-domain', domainSuffix);
 
                     const emptyOption = document.createElement('option');
                     emptyOption.value = '';
                     emptyOption.textContent = getTranslation('int.select.option') || '-- seleziona --';
                     select.appendChild(emptyOption);
 
-                    const domainValues = domine[domainKey];
-                    domainValues.forEach(domainValue => {
-                        const option = document.createElement('option');
-                        // Format expected: "translation.key:VALUE" or just "VALUE"
-                        const valueParts = domainValue.split(':');
-                        const value = valueParts.length > 1 ? valueParts[1] : valueParts[0];
-
-                        option.value = value;
-                        // Use the whole string or left part as translation key
-                        option.textContent = getTranslation(domainValue) || domainValue;
-                        select.appendChild(option);
-                    });
-
                     formGroup.appendChild(select);
 
-                    // Case 2: Special field 'id_registry' (if not covered by @)
+                    // Caso 2: Campo speciale id_registry
                 } else if (fieldName === 'id_registry') {
                     const select = document.createElement('select');
                     select.id = fieldName;
@@ -515,7 +496,7 @@
 
                     formGroup.appendChild(select);
 
-                    // Case 3: Date fields
+                    // Caso 3: Campi data
                 } else if (fieldName.includes('date_')) {
                     const input = document.createElement('input');
                     input.type = 'date';
@@ -523,7 +504,7 @@
                     input.name = fieldName;
                     formGroup.appendChild(input);
 
-                    // Case 4: Standard text inputs
+                    // Caso 4: Campi testo standard
                 } else {
                     const input = document.createElement('input');
                     input.type = 'text';
@@ -594,7 +575,7 @@
             }
         }
 
-        // ========== POPULATE REGISTRIES (UPDATED) ==========
+        // ========== POPULATE REGISTRIES ==========
         function populateRegistriesDropdown() {
             const select = document.getElementById('id_registry');
             if (!select) return;
@@ -608,16 +589,16 @@
                 const option = document.createElement('option');
                 option.value = id;
 
-                // Extract name and surname safely
+                // Estrai Nome e Cognome in sicurezza
                 const name = registry.name || '';
                 const surname = registry.surname || '';
                 const typeText = registry.type_registry || '';
                 const descText = registry.description_registry || '';
 
-                // Build full name
+                // Costruisci nome completo
                 const fullName = `${name} ${surname}`.trim();
 
-                // Format: ID - Name Surname - Type - Description
+                // Format: ID - Nome Cognome - Tipo - Descrizione
                 let label = `${id}`;
                 if (fullName) label += ` - ${fullName}`;
                 if (typeText) label += ` - ${typeText}`;
@@ -681,60 +662,80 @@
         }
 
         function getTranslation(key) {
+            // Se la chiave è annidata in translations (es. per liste), non gestiamo l'accesso profondo qui
+            // Ma per etichette semplici funziona
             return translations[key] || key;
         }
 
-        // ========== UPDATE TRANSLATIONS (UPDATED) ==========
+        // ========== UPDATE TRANSLATIONS (AGGIORNATO) ==========
         function updatePageTranslations() {
-            // Update static labels
+            // Aggiornamento etichette statiche
             document.getElementById('pageTitle').textContent = getTranslation('int.newaccount') || 'Crea Nuovo Rapporto';
             document.getElementById('userLabel').textContent = getTranslation('int.user.label') || 'Utente:';
             document.getElementById('registryBtnText').textContent = getTranslation('int.newregistry') || 'Crea Anagrafica';
             document.getElementById('closeText').textContent = getTranslation('int.close') || 'Chiudi';
             document.getElementById('loadingText').textContent = getTranslation('int.loading.data') || 'Caricamento dati...';
 
-            // Update form field labels and select options
+            // Aggiornamento etichette campi form e popolamento dropdown
             if (manifest && manifest['dashboard-account']) {
                 const fields = manifest['dashboard-account'];
                 fields.forEach(fieldDef => {
                     const parts = fieldDef.split('@');
                     const fieldName = parts[0];
-                    const domainKey = parts.length > 1 ? parts[1] : null;
 
-                    // Update field label
+                    // Aggiorna label del campo
                     const labelElement = document.getElementById(`${fieldName}Label`);
                     if (labelElement) {
                         labelElement.textContent = getTranslation(`int.account.${fieldName}`) || fieldName + ':';
                     }
 
-                    // Update select options if it's a domain-based field or id_registry
+                    // Gestione Select
                     const selectElement = document.getElementById(fieldName);
                     if (selectElement && selectElement.tagName === 'SELECT') {
-                        Array.from(selectElement.options).forEach(option => {
-                            if (option.value === '') {
-                                if (fieldName === 'id_registry') {
-                                    option.textContent = getTranslation('int.select.registry') || '-- seleziona anagrafica --';
-                                } else {
-                                    option.textContent = getTranslation('int.select.option') || '-- seleziona --';
+                        // Se è un campo speciale id_registry, aggiorna solo il placeholder
+                        if (fieldName === 'id_registry') {
+                            if (selectElement.options.length > 0) {
+                                selectElement.options[0].textContent = getTranslation('int.select.registry') || '-- seleziona anagrafica --';
+                            }
+                        }
+                        // Se ha data-domain, popola le opzioni dal file di lingua
+                        else if (selectElement.hasAttribute('data-domain')) {
+                            const domainSuffix = selectElement.getAttribute('data-domain');
+                            const domainOptions = translations[domainSuffix]; // Prende l'oggetto { "VAL": "TESTO" }
+
+                            // Aggiorna placeholder
+                            if (selectElement.options.length > 0) {
+                                selectElement.options[0].textContent = getTranslation('int.select.option') || '-- seleziona --';
+                            }
+
+                            // Se esistono opzioni per questo suffisso nel file lingua
+                            if (domainOptions && typeof domainOptions === 'object') {
+                                // Salva valore selezionato per ripristinarlo
+                                const currentValue = selectElement.value;
+
+                                // Rimuovi tutte le opzioni tranne la prima
+                                while (selectElement.options.length > 1) {
+                                    selectElement.remove(1);
                                 }
-                            } else if (domainKey && domine && domine[domainKey]) {
-                                // Find the original key in the domain array to re-translate
-                                const domainValue = domine[domainKey].find(v => {
-                                    const parts = v.split(':');
-                                    const val = parts.length > 1 ? parts[1] : parts[0];
-                                    return val === option.value;
+
+                                // Popola con chiave (valore) e valore (testo)
+                                Object.keys(domainOptions).forEach(optValue => {
+                                    const optText = domainOptions[optValue];
+                                    const option = document.createElement('option');
+                                    option.value = optValue; // "valore"
+                                    option.textContent = optText; // "traduzione"
+                                    selectElement.appendChild(option);
                                 });
 
-                                if (domainValue) {
-                                    option.textContent = getTranslation(domainValue) || domainValue;
-                                }
+                                // Ripristina valore se possibile
+                                selectElement.value = currentValue;
                             }
-                        });
+                        }
                     }
                 });
             }
 
-            // Update button texts
+            // Aggiorna testi bottoni
             const saveText = document.getElementById('saveText');
             const resetText = document.getElementById('resetText');
             if (saveText) saveText.textContent = getTranslation('int.save') || 'Salva';
@@ -827,8 +828,8 @@
             await initializeLanguages();
             const configLoaded = await loadConfigurations();
             if (configLoaded) {
-                generateForm();
-                await loadTranslations(credentials.language);
+                generateForm(); // Genera struttura vuota (con data-domain)
+                await loadTranslations(credentials.language); // Carica traduzioni e popola le opzioni
                 await updateUserInfo();
                 await loadAccountDefaults();
             }
