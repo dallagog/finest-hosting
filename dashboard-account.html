@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Crea Rapporto 3.1</title>
+    <title>Crea Rapporto 1.0</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&display=swap');
@@ -451,14 +451,19 @@
             }
         }
 
+        // ========== FORM GENERATION (UPDATED) ==========
         function generateForm() {
             const form = document.getElementById('accountForm');
+            // Check manifest existence
+            if (!manifest || !manifest['dashboard-account']) return;
+
             const fields = manifest['dashboard-account'];
 
             fields.forEach(fieldDef => {
                 const formGroup = document.createElement('div');
                 formGroup.className = 'form-group';
 
+                // Split fieldName from domainKey based on '@'
                 const parts = fieldDef.split('@');
                 const fieldName = parts[0];
                 const domainKey = parts.length > 1 ? parts[1] : null;
@@ -469,7 +474,8 @@
                 label.textContent = getTranslation(`int.account.${fieldName}`) || fieldName + ':';
                 formGroup.appendChild(label);
 
-                if (domainKey && domine[domainKey]) {
+                // Case 1: Field has a domain defined after '@' -> Create Dropdown
+                if (domainKey && domine && domine[domainKey]) {
                     const select = document.createElement('select');
                     select.id = fieldName;
                     select.name = fieldName;
@@ -483,13 +489,19 @@
                     const domainValues = domine[domainKey];
                     domainValues.forEach(domainValue => {
                         const option = document.createElement('option');
-                        const value = domainValue.split(':')[1];
+                        // Format expected: "translation.key:VALUE" or just "VALUE"
+                        const valueParts = domainValue.split(':');
+                        const value = valueParts.length > 1 ? valueParts[1] : valueParts[0];
+
                         option.value = value;
+                        // Use the whole string or left part as translation key
                         option.textContent = getTranslation(domainValue) || domainValue;
                         select.appendChild(option);
                     });
 
                     formGroup.appendChild(select);
+
+                    // Case 2: Special field 'id_registry' (if not covered by @)
                 } else if (fieldName === 'id_registry') {
                     const select = document.createElement('select');
                     select.id = fieldName;
@@ -502,12 +514,16 @@
                     select.appendChild(emptyOption);
 
                     formGroup.appendChild(select);
+
+                    // Case 3: Date fields
                 } else if (fieldName.includes('date_')) {
                     const input = document.createElement('input');
                     input.type = 'date';
                     input.id = fieldName;
                     input.name = fieldName;
                     formGroup.appendChild(input);
+
+                    // Case 4: Standard text inputs
                 } else {
                     const input = document.createElement('input');
                     input.type = 'text';
@@ -578,6 +594,7 @@
             }
         }
 
+        // ========== POPULATE REGISTRIES (UPDATED) ==========
         function populateRegistriesDropdown() {
             const select = document.getElementById('id_registry');
             if (!select) return;
@@ -590,9 +607,23 @@
                 const registry = registries[id];
                 const option = document.createElement('option');
                 option.value = id;
+
+                // Extract name and surname safely
+                const name = registry.name || '';
+                const surname = registry.surname || '';
                 const typeText = registry.type_registry || '';
                 const descText = registry.description_registry || '';
-                option.textContent = `${id} - ${typeText} - ${descText}`;
+
+                // Build full name
+                const fullName = `${name} ${surname}`.trim();
+
+                // Format: ID - Name Surname - Type - Description
+                let label = `${id}`;
+                if (fullName) label += ` - ${fullName}`;
+                if (typeText) label += ` - ${typeText}`;
+                if (descText) label += ` - ${descText}`;
+
+                option.textContent = label;
                 select.appendChild(option);
             });
         }
@@ -653,6 +684,7 @@
             return translations[key] || key;
         }
 
+        // ========== UPDATE TRANSLATIONS (UPDATED) ==========
         function updatePageTranslations() {
             // Update static labels
             document.getElementById('pageTitle').textContent = getTranslation('int.newaccount') || 'Crea Nuovo Rapporto';
@@ -661,16 +693,21 @@
             document.getElementById('closeText').textContent = getTranslation('int.close') || 'Chiudi';
             document.getElementById('loadingText').textContent = getTranslation('int.loading.data') || 'Caricamento dati...';
 
-            // Update form field labels
+            // Update form field labels and select options
             if (manifest && manifest['dashboard-account']) {
                 const fields = manifest['dashboard-account'];
                 fields.forEach(fieldDef => {
-                    const fieldName = fieldDef.split('@')[0];
+                    const parts = fieldDef.split('@');
+                    const fieldName = parts[0];
+                    const domainKey = parts.length > 1 ? parts[1] : null;
+
+                    // Update field label
                     const labelElement = document.getElementById(`${fieldName}Label`);
                     if (labelElement) {
                         labelElement.textContent = getTranslation(`int.account.${fieldName}`) || fieldName + ':';
                     }
 
+                    // Update select options if it's a domain-based field or id_registry
                     const selectElement = document.getElementById(fieldName);
                     if (selectElement && selectElement.tagName === 'SELECT') {
                         Array.from(selectElement.options).forEach(option => {
@@ -680,13 +717,16 @@
                                 } else {
                                     option.textContent = getTranslation('int.select.option') || '-- seleziona --';
                                 }
-                            } else {
-                                const domainKey = fieldDef.split('@')[1];
-                                if (domainKey && domine && domine[domainKey]) {
-                                    const domainValue = domine[domainKey].find(v => v.endsWith(`:${option.value}`));
-                                    if (domainValue) {
-                                        option.textContent = getTranslation(domainValue) || domainValue;
-                                    }
+                            } else if (domainKey && domine && domine[domainKey]) {
+                                // Find the original key in the domain array to re-translate
+                                const domainValue = domine[domainKey].find(v => {
+                                    const parts = v.split(':');
+                                    const val = parts.length > 1 ? parts[1] : parts[0];
+                                    return val === option.value;
+                                });
+
+                                if (domainValue) {
+                                    option.textContent = getTranslation(domainValue) || domainValue;
                                 }
                             }
                         });
