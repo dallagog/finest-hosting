@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Trend Graph - Tron Style</title>
+    <title>Trend Graph 1.0</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <script src="js/dashboard-shared.js"></script>
@@ -16,6 +16,7 @@
             --neon-cyan: #00f3ff;
             --neon-red: #ff0055;
             --neon-blue: #0066ff;
+            --neon-purple: #aa00ff;
             --glass-bg: rgba(0, 20, 40, 0.85);
             --text-color: #e0f7fa;
             --button-bg: rgba(0, 243, 255, 0.1);
@@ -110,11 +111,19 @@
             gap: 15px;
             align-items: center;
             justify-content: flex-end;
+            flex-wrap: wrap;
+        }
+
+        .control-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
 
         label {
             color: var(--neon-cyan);
             font-size: 0.8rem;
+            white-space: nowrap;
         }
 
         select {
@@ -239,9 +248,20 @@
         </div>
 
         <div class="header-right">
-            <label for="metric-select" id="metric-label">Value:</label>
-            <select id="metric-select" onchange="renderChart()">
-            </select>
+            <div class="control-group">
+                <label for="metric-select" id="metric-label">Value:</label>
+                <select id="metric-select" onchange="renderChart()"></select>
+            </div>
+            <div class="control-group">
+                <label for="period-select" id="period-label">Period:</label>
+                <select id="period-select" onchange="renderChart()">
+                    <option value="daily">Daily</option>
+                    <option value="monthly">Monthly</option>
+                    <option value="quarterly">Quarterly</option>
+                    <option value="semesterly">Semesterly</option>
+                    <option value="yearly">Yearly</option>
+                </select>
+            </div>
             <button class="close-button" onclick="closeWindow()" id="close-btn">Close</button>
         </div>
     </div>
@@ -296,7 +316,6 @@
         const API_URL = "https://feweb-tunnel.fe-web.eu";
         let chartInstance = null;
         let trendDataRaw = [];
-        let aggregatedData = [];
 
         const urlParams = new URLSearchParams(window.location.search);
         const username = urlParams.get('username') || 'UTENTE_NON_AUTORIZZATO';
@@ -323,11 +342,20 @@
         function updateHeaderTranslations() {
             document.getElementById('page-title').textContent = getTranslation('int.trend_analysis') || "Trend Analysis";
             document.getElementById('metric-label').textContent = (getTranslation('int.value') || "Value") + ":";
+            document.getElementById('period-label').textContent = (getTranslation('int.period') || "Period") + ":";
             document.getElementById('close-btn').textContent = getTranslation('int.close') || "Close";
 
             const langIndicator = document.getElementById('language-indicator');
             const langName = getTranslation('lang.' + language);
             langIndicator.innerHTML = `${getFlagIcon(language)} <span>${langName}</span>`;
+
+            // Traduci opzioni periodo
+            const periodSelect = document.getElementById('period-select');
+            periodSelect.options[0].text = getTranslation('int.daily') || 'Daily';
+            periodSelect.options[1].text = getTranslation('int.monthly') || 'Monthly';
+            periodSelect.options[2].text = getTranslation('int.quarterly') || 'Quarterly';
+            periodSelect.options[3].text = getTranslation('int.semesterly') || 'Semesterly';
+            periodSelect.options[4].text = getTranslation('int.yearly') || 'Yearly';
         }
 
         async function loadTrend() {
@@ -349,7 +377,6 @@
                 const data = await response.json();
 
                 if (data.status === 'ok') {
-                    // Gestione del formato dati (potrebbe essere stringa JSON o oggetto)
                     let rawTrend = data.trend;
                     if (typeof rawTrend === 'string') {
                         try {
@@ -386,56 +413,126 @@
 
             if (trendDataRaw.length === 0) return;
 
-            // Identifica le chiavi possibili (numeriche o con formato "val:cur")
-            const firstItem = trendDataRaw[0];
-            const availableMetrics = [];
+            const availableMetrics = new Set();
 
-            // Controlla specificamente up_negoziazione come da JSON esempio
-            if ('up_negoziazione' in firstItem) {
-                availableMetrics.push('up_negoziazione');
-            }
-
-            // Cerca altre chiavi numeriche
-            Object.keys(firstItem).forEach(key => {
-                if (key !== 'up_negoziazione' && key !== 'date_start' && key !== 'date_end' && !key.includes('id_')) {
-                    const val = firstItem[key];
-                    if (typeof val === 'number') {
-                        availableMetrics.push(key);
+            // Scansiona tutti i record per trovare tutti i campi con valori numerici
+            trendDataRaw.forEach(item => {
+                Object.keys(item).forEach(key => {
+                    // Escludi campi non rilevanti
+                    if (key === 'date_start' || key === 'date_end' ||
+                        key.includes('id_') || key === 'account_level' || key === 'yield_level') {
+                        return;
                     }
-                }
+
+                    const val = item[key];
+                    // Verifica se è un numero o una stringa con formato "val:cur" o "val%:cur"
+                    if (typeof val === 'number') {
+                        availableMetrics.add(key);
+                    } else if (typeof val === 'string') {
+                        // Formato: "14.47:EUR" o "5.12%:EUR"
+                        if (val.includes(':') || val.includes('%')) {
+                            availableMetrics.add(key);
+                        }
+                    }
+                });
             });
 
-            // Etichette leggibili
-            const labelMap = {
-                'up_negoziazione': 'Negoziazione (P&L)',
-                'nav': 'N.A.V.',
-                'performance': 'Performance %'
-            };
+            // Converti Set in Array e ordina
+            const metricsArray = Array.from(availableMetrics).sort();
 
-            availableMetrics.forEach(key => {
+            metricsArray.forEach(key => {
                 const option = document.createElement('option');
                 option.value = key;
+
+                // Prova prima con traduzione
                 const translationKey = 'lbl.' + key;
-                const label = getTranslation(translationKey) !== translationKey
-                    ? getTranslation(translationKey)
-                    : (labelMap[key] || key.charAt(0).toUpperCase() + key.slice(1));
+                let label = getTranslation(translationKey);
+
+                // Se non trovata, usa il nome del campo formattato
+                if (label === translationKey) {
+                    label = key.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+                }
 
                 option.textContent = label;
                 select.appendChild(option);
             });
 
-            if (initialMetric && availableMetrics.includes(initialMetric)) {
+            if (initialMetric && metricsArray.includes(initialMetric)) {
                 select.value = initialMetric;
             }
         }
 
-        // Funzione per parsare i valori (es. "14.47:EUR" -> 14.47)
+        // Funzione per parsare i valori (es. "14.47:EUR" -> 14.47, "5.12%:EUR" -> 5.12)
         function parseValue(value) {
             if (typeof value === 'number') return value;
-            if (typeof value === 'string' && value.includes(':')) {
-                return parseFloat(value.split(':')[0]);
+            if (typeof value === 'string') {
+                // Rimuovi % e divisa, mantieni solo il numero
+                const cleanValue = value.replace(/%|:EUR|:USD|:GBP|:CHF/g, '').trim();
+                return parseFloat(cleanValue) || 0;
             }
-            return parseFloat(value) || 0;
+            return 0;
+        }
+
+        // Verifica se un campo è una percentuale
+        function isPercentageField(fieldName) {
+            // Controlla se nel dataset ci sono valori con %
+            for (let item of trendDataRaw) {
+                if (item[fieldName] && typeof item[fieldName] === 'string' && item[fieldName].includes('%')) {
+                    return true;
+                }
+            }
+            return fieldName.toLowerCase().includes('irr') ||
+                fieldName.toLowerCase().includes('performance') ||
+                fieldName.toLowerCase().includes('percent');
+        }
+
+        // Funzione per aggregare dati per periodo
+        function aggregateByPeriod(data, metric, period) {
+            const aggregated = {};
+
+            data.forEach(item => {
+                if (!item.date_start || !item[metric]) return;
+
+                const date = new Date(item.date_start);
+                let key;
+
+                switch (period) {
+                    case 'monthly':
+                        key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+                        break;
+                    case 'quarterly':
+                        const quarter = Math.floor(date.getMonth() / 3) + 1;
+                        key = `${date.getFullYear()}-Q${quarter}`;
+                        break;
+                    case 'semesterly':
+                        const semester = date.getMonth() < 6 ? 'S1' : 'S2';
+                        key = `${date.getFullYear()}-${semester}`;
+                        break;
+                    case 'yearly':
+                        key = `${date.getFullYear()}`;
+                        break;
+                    default: // daily
+                        key = item.date_start;
+                }
+
+                const val = parseValue(item[metric]);
+
+                if (!aggregated[key]) {
+                    aggregated[key] = { sum: 0, count: 0, date: date };
+                }
+                aggregated[key].sum += val;
+                aggregated[key].count++;
+            });
+
+            // Ordina per data
+            const sorted = Object.keys(aggregated).sort((a, b) => {
+                return aggregated[a].date - aggregated[b].date;
+            });
+
+            return sorted.map(key => ({
+                label: key,
+                value: aggregated[key].sum
+            }));
         }
 
         function renderChart() {
@@ -443,43 +540,48 @@
             if (chartInstance) chartInstance.destroy();
 
             const selectedMetric = document.getElementById('metric-select').value;
+            const selectedPeriod = document.getElementById('period-select').value;
+
             if (!selectedMetric) return;
 
-            // 1. Raggruppamento per data (somma valori stesso giorno)
-            const dateMap = {};
+            const isPercentage = isPercentageField(selectedMetric);
+            const aggregatedData = aggregateByPeriod(trendDataRaw, selectedMetric, selectedPeriod);
 
-            trendDataRaw.forEach(item => {
-                const date = item.date_start;
-                if (!date) return;
-
-                // Parsing Data (YYYY-MM-DD standard)
-                const val = parseValue(item[selectedMetric]);
-
-                if (!dateMap[date]) {
-                    dateMap[date] = 0;
-                }
-                dateMap[date] += val;
-            });
-
-            // 2. Ordinamento cronologico
-            const sortedDates = Object.keys(dateMap).sort((a, b) => new Date(a) - new Date(b));
-
-            // 3. Preparazione Array per Chart.js
-            const labels = sortedDates.map(date => {
-                const d = new Date(date);
-                return new Intl.DateTimeFormat(language.replace('_', '-'), {
-                    day: '2-digit',
-                    month: 'short',
-                    year: '2-digit'
-                }).format(d);
-            });
-
-            const dataValues = sortedDates.map(date => dateMap[date]);
+            const labels = aggregatedData.map(item => item.label);
+            const dataValues = aggregatedData.map(item => item.value);
 
             // Creazione Gradiente Tron
             const gradient = ctx.createLinearGradient(0, 0, 0, 400);
-            gradient.addColorStop(0, 'rgba(0, 243, 255, 0.4)');
-            gradient.addColorStop(1, 'rgba(0, 243, 255, 0.05)');
+            if (isPercentage) {
+                gradient.addColorStop(0, 'rgba(170, 0, 255, 0.4)');
+                gradient.addColorStop(1, 'rgba(170, 0, 255, 0.05)');
+            } else {
+                gradient.addColorStop(0, 'rgba(0, 243, 255, 0.4)');
+                gradient.addColorStop(1, 'rgba(0, 243, 255, 0.05)');
+            }
+
+            const yAxisConfig = {
+                position: isPercentage ? 'left' : 'right',
+                ticks: {
+                    color: '#e0f7fa',
+                    font: { family: 'Orbitron', size: 10 },
+                    callback: function (value) {
+                        if (isPercentage) {
+                            return value.toFixed(2) + '%';
+                        } else {
+                            return new Intl.NumberFormat('it-IT', {
+                                style: "currency",
+                                currency: "EUR",
+                                notation: "compact"
+                            }).format(value);
+                        }
+                    }
+                },
+                grid: {
+                    color: (context) => context.tick.value === 0 ? 'rgba(255, 0, 85, 0.5)' : 'rgba(0, 243, 255, 0.1)',
+                    lineWidth: 1
+                }
+            };
 
             chartInstance = new Chart(ctx, {
                 type: 'line',
@@ -488,15 +590,15 @@
                     datasets: [{
                         label: document.getElementById('metric-select').options[document.getElementById('metric-select').selectedIndex].text,
                         data: dataValues,
-                        borderColor: '#00f3ff',
+                        borderColor: isPercentage ? '#aa00ff' : '#00f3ff',
                         backgroundColor: gradient,
                         borderWidth: 2,
-                        pointBackgroundColor: '#00f3ff',
+                        pointBackgroundColor: isPercentage ? '#aa00ff' : '#00f3ff',
                         pointBorderColor: '#fff',
                         pointHoverBackgroundColor: '#fff',
-                        pointHoverBorderColor: '#00f3ff',
+                        pointHoverBorderColor: isPercentage ? '#aa00ff' : '#00f3ff',
                         fill: true,
-                        tension: 0.4 // Curva morbida
+                        tension: 0.4
                     }]
                 },
                 options: {
@@ -518,23 +620,7 @@
                                 color: 'rgba(0, 243, 255, 0.1)'
                             }
                         },
-                        y: {
-                            ticks: {
-                                color: '#e0f7fa',
-                                font: { family: 'Orbitron', size: 10 },
-                                callback: function (value) {
-                                    return new Intl.NumberFormat('it-IT', {
-                                        style: "currency",
-                                        currency: "EUR",
-                                        notation: "compact"
-                                    }).format(value);
-                                }
-                            },
-                            grid: {
-                                color: (context) => context.tick.value === 0 ? 'rgba(255, 0, 85, 0.5)' : 'rgba(0, 243, 255, 0.1)',
-                                lineWidth: (context) => context.tick.value === 0 ? 1 : 1
-                            }
-                        }
+                        y: yAxisConfig
                     },
                     plugins: {
                         legend: {
@@ -542,9 +628,9 @@
                         },
                         tooltip: {
                             backgroundColor: 'rgba(0, 5, 16, 0.9)',
-                            titleColor: '#00f3ff',
+                            titleColor: isPercentage ? '#aa00ff' : '#00f3ff',
                             bodyColor: '#fff',
-                            borderColor: '#00f3ff',
+                            borderColor: isPercentage ? '#aa00ff' : '#00f3ff',
                             borderWidth: 1,
                             titleFont: { family: 'Orbitron' },
                             bodyFont: { family: 'Orbitron' },
@@ -555,7 +641,14 @@
                                         label += ': ';
                                     }
                                     if (context.parsed.y !== null) {
-                                        label += new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(context.parsed.y);
+                                        if (isPercentage) {
+                                            label += context.parsed.y.toFixed(2) + '%';
+                                        } else {
+                                            label += new Intl.NumberFormat('it-IT', {
+                                                style: 'currency',
+                                                currency: 'EUR'
+                                            }).format(context.parsed.y);
+                                        }
                                     }
                                     return label;
                                 }
