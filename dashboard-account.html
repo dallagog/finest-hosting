@@ -332,7 +332,6 @@
                 return false;
             }
 
-            // Store in localStorage
             localStorage.setItem('username', credentials.username);
             localStorage.setItem('token', credentials.token);
             localStorage.setItem('language', credentials.language);
@@ -397,10 +396,8 @@
             const userLanguage = credentials.language || localStorage.getItem('language');
             const userCurrency = localStorage.getItem('currency') || 'EUR';
 
-            // Update username
             document.getElementById('usernameDisplay').textContent = credentials.username || '-';
 
-            // Update language
             if (userLanguage) {
                 if (availableLanguages.length === 0) await initializeLanguages();
                 const langData = availableLanguages.find(l => l.code === userLanguage);
@@ -414,7 +411,6 @@
                 }
             }
 
-            // Update currency
             if (userCurrency) {
                 if (currencies.length === 0) await loadCurrencies(userLanguage || 'it_IT');
                 const currData = currencies.find(c => c.currency === userCurrency);
@@ -429,14 +425,9 @@
 
         async function loadConfigurations() {
             try {
-                // Carica solo il manifest, domine.json non è più necessario per i dropdown dinamici
                 const manifestResponse = await fetch('lang/manifest.json');
                 manifest = await manifestResponse.json();
-
-                console.log('=== CONFIGURATIONS LOADED ===');
-                console.log('Manifest:', manifest);
-                console.log('====================');
-
+                console.log('Console: Manifest caricato correttamente.', manifest);
                 return true;
             } catch (error) {
                 console.error('Error loading configurations:', error);
@@ -445,17 +436,18 @@
             }
         }
 
-        // ========== FORM GENERATION ==========
+        // ========== FORM GENERATION (CORRETTA) ==========
         function generateForm() {
-            console.group("DEBUG: Generazione Form da Manifest");
+            console.group("DEBUG: Generazione Campi Form");
             const form = document.getElementById('accountForm');
             if (!manifest || !manifest['dashboard-account']) {
-                console.warn("Manifest mancante o sezione dashboard-account non trovata");
+                console.error("Manifest mancante o sezione dashboard-account non trovata");
+                console.groupEnd();
                 return;
             }
 
             const fields = manifest['dashboard-account'];
-            console.log("Campi da generare:", fields);
+            form.innerHTML = '';
 
             fields.forEach(fieldDef => {
                 const formGroup = document.createElement('div');
@@ -466,80 +458,47 @@
                 const domainSuffix = parts.length > 1 ? parts[1] : null;
 
                 const label = document.createElement('label');
-                label.setAttribute('for', fieldName);
-                label.id = `${fieldName}Label`;
-                label.textContent = getTranslation(`int.account.${fieldName}`) || fieldName + ':';
+                label.id = `label_${fieldName}`;
+                label.textContent = fieldName;
                 formGroup.appendChild(label);
 
-                // Caso 1: Campo con suffisso @ (Dropdown dinamico da language.json)
                 if (domainSuffix) {
-                    console.log(`Generazione SELECT dinamica per campo: ${fieldName}, dominio: ${domainSuffix}`);
+                    console.log(`Campo dinamico: ${fieldName} -> Prefisso dominio: ${domainSuffix}`);
                     const select = document.createElement('select');
                     select.id = fieldName;
                     select.name = fieldName;
-                    select.required = true;
-                    // Salviamo il suffisso per popolarlo dopo aver caricato le traduzioni
                     select.setAttribute('data-domain', domainSuffix);
 
-                    const emptyOption = document.createElement('option');
-                    emptyOption.value = '';
-                    emptyOption.textContent = getTranslation('int.select.option') || '-- seleziona --';
-                    select.appendChild(emptyOption);
-
+                    const placeholder = document.createElement('option');
+                    placeholder.value = "";
+                    placeholder.textContent = "--";
+                    select.appendChild(placeholder);
                     formGroup.appendChild(select);
-
-                    // Caso 2: Campo speciale id_registry
                 } else if (fieldName === 'id_registry') {
-                    console.log("Generazione SELECT speciale per id_registry");
                     const select = document.createElement('select');
                     select.id = fieldName;
                     select.name = fieldName;
-                    select.required = true;
-
-                    const emptyOption = document.createElement('option');
-                    emptyOption.value = '';
-                    emptyOption.textContent = getTranslation('int.select.registry') || '-- seleziona anagrafica --';
-                    select.appendChild(emptyOption);
-
+                    const placeholder = document.createElement('option');
+                    placeholder.value = "";
+                    placeholder.textContent = "--";
+                    select.appendChild(placeholder);
                     formGroup.appendChild(select);
-
-                    // Caso 3: Campi data
-                } else if (fieldName.includes('date_')) {
-                    const input = document.createElement('input');
-                    input.type = 'date';
-                    input.id = fieldName;
-                    input.name = fieldName;
-                    formGroup.appendChild(input);
-
-                    // Caso 4: Campi testo standard
                 } else {
                     const input = document.createElement('input');
-                    input.type = 'text';
+                    input.type = fieldName.includes('date_') ? 'date' : 'text';
                     input.id = fieldName;
                     input.name = fieldName;
-                    if (fieldName === 'id_account') {
-                        input.required = true;
-                    }
                     formGroup.appendChild(input);
                 }
-
                 form.appendChild(formGroup);
             });
 
             const buttonGroup = document.createElement('div');
             buttonGroup.className = 'button-group';
-
-            const saveButton = document.createElement('button');
-            saveButton.type = 'submit';
-            saveButton.innerHTML = '<i class="fa fa-save"></i> <span id="saveText">Salva</span>';
-            buttonGroup.appendChild(saveButton);
-
-            const resetButton = document.createElement('button');
-            resetButton.type = 'button';
-            resetButton.onclick = resetForm;
-            resetButton.innerHTML = '<i class="fa fa-undo"></i> <span id="resetText">Annulla</span>';
-            buttonGroup.appendChild(resetButton);
-
+            buttonGroup.innerHTML = `
+                <button type="submit" id="saveBtn"><i class="fa fa-save"></i> <span id="saveText">Salva</span></button>
+                <button type="button" onclick="location.reload()"><i class="fa fa-undo"></i> <span id="resetText">Reset</span></button>
+            `;
             form.appendChild(buttonGroup);
             console.groupEnd();
         }
@@ -547,105 +506,55 @@
         async function loadRegistries() {
             console.group("DEBUG: Chiamata API /getregistries");
             try {
-                const payload = {
-                    username: credentials.username,
-                    token: credentials.token,
-                    language: credentials.language,
-                    registry: ""
-                };
-                console.log("Payload inviato:", payload);
-
                 const response = await fetch(`${API_URL}/getregistries`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
+                    body: JSON.stringify({
+                        username: credentials.username,
+                        token: credentials.token,
+                        language: credentials.language,
+                        registry: ""
+                    })
                 });
-
-                if (!response.ok) {
-                    throw new Error('Failed to fetch registries');
-                }
-
                 const data = await response.json();
-                console.log("Risposta ricevuta:", data);
+                console.log("Dati anagrafiche ricevuti:", data);
 
-                if (data.registries && Object.keys(data.registries).length > 0) {
+                if (data.registries) {
                     registries = data.registries;
-                    console.log(`Caricate ${Object.keys(registries).length} anagrafiche`);
                     populateRegistriesDropdown();
                     enableForm();
                     document.getElementById('createRegistryBtn').classList.remove('highlight');
                 } else {
-                    console.warn("Nessuna anagrafica trovata");
                     document.getElementById('createRegistryBtn').classList.add('highlight');
-                    disableForm();
-                    showMessage(getTranslation('int.error.loading.registry') || 'Nessuna anagrafica trovata. Crea una nuova anagrafica per procedere.', 'error');
                 }
             } catch (error) {
                 console.error('Error loading registries:', error);
-                document.getElementById('createRegistryBtn').classList.add('highlight');
-                disableForm();
-                showMessage(getTranslation('int.error.loading.registry') || 'Errore nel caricamento delle anagrafiche. Crea una nuova anagrafica per procedere.', 'error');
             }
             console.groupEnd();
         }
 
-        // ========== POPULATE REGISTRIES ==========
         function populateRegistriesDropdown() {
             const select = document.getElementById('id_registry');
             if (!select) return;
-
-            while (select.options.length > 1) {
-                select.remove(1);
-            }
+            while (select.options.length > 1) select.remove(1);
 
             Object.keys(registries).forEach(id => {
-                const registry = registries[id];
-                const option = document.createElement('option');
-                option.value = id;
-
-                // Estrai Nome e Cognome in sicurezza
-                const name = registry.name || '';
-                const surname = registry.surname || '';
-                const typeText = registry.type_registry || '';
-                const descText = registry.description_registry || '';
-
-                // Costruisci nome completo
-                const fullName = `${name} ${surname}`.trim();
-
-                // Format: ID - Nome Cognome - Tipo - Descrizione
-                let label = `${id}`;
-                if (fullName) label += ` - ${fullName}`;
-                if (typeText) label += ` - ${typeText}`;
-                if (descText) label += ` - ${descText}`;
-
-                option.textContent = label;
-                select.appendChild(option);
+                const r = registries[id];
+                const opt = document.createElement('option');
+                opt.value = id;
+                opt.textContent = `${id} - ${r.name || ''} ${r.surname || ''}`.trim();
+                select.appendChild(opt);
             });
         }
 
         function disableForm() {
             const form = document.getElementById('accountForm');
             form.classList.add('form-disabled');
-            const inputs = form.querySelectorAll('input, select, button[type="submit"]');
-            inputs.forEach(input => input.disabled = true);
         }
 
         function enableForm() {
             const form = document.getElementById('accountForm');
             form.classList.remove('form-disabled');
-            const inputs = form.querySelectorAll('input, select, button[type="submit"]');
-            inputs.forEach(input => input.disabled = false);
-        }
-
-        async function loadAccountDefaults() {
-            try {
-                showLoading(true);
-                await loadRegistries();
-                showLoading(false);
-            } catch (error) {
-                console.error('Error loading defaults:', error);
-                showLoading(false);
-            }
         }
 
         function showLoading(show) {
@@ -654,23 +563,15 @@
         }
 
         function openRegistryForm() {
-            const params = new URLSearchParams({
-                username: credentials.username,
-                token: credentials.token,
-                language: credentials.language,
-                filter: credentials.filter || ''
-            });
-            window.open(`dashboard-registry.html?${params.toString()}`, '_blank');
+            window.open(`dashboard-registry.html?username=${credentials.username}&token=${credentials.token}&language=${credentials.language}`, '_blank');
         }
 
         async function loadTranslations(lang) {
-            console.group(`DEBUG: Caricamento traduzioni [${lang}]`);
+            console.group(`DEBUG: Caricamento File Traduzione [${lang}]`);
             try {
                 const response = await fetch(`lang/${lang}.json`);
-                if (!response.ok) throw new Error('Translation file not found');
                 translations = await response.json();
-                console.log("File traduzioni caricato con successo");
-                await loadCurrencies(lang);
+                console.log("Contenuto JSON lingua caricato.");
                 updatePageTranslations();
             } catch (error) {
                 console.error('Error loading translations:', error);
@@ -679,89 +580,56 @@
         }
 
         function getTranslation(key) {
-            // Se la chiave è annidata in translations (es. per liste), non gestiamo l'accesso profondo qui
-            // Ma per etichette semplici funziona
             return translations[key] || key;
         }
 
-        // ========== UPDATE TRANSLATIONS (AGGIORNATO) ==========
+        // ========== UPDATE TRANSLATIONS E POPOLAMENTO SELECT @ (CORRETTA) ==========
         function updatePageTranslations() {
-            console.group("DEBUG: Aggiornamento traduzioni e popolamento SELECT dinamiche (@)");
-            // Aggiornamento etichette statiche
-            document.getElementById('pageTitle').textContent = getTranslation('int.newaccount') || 'Crea Nuovo Rapporto';
-            document.getElementById('userLabel').textContent = getTranslation('int.user.label') || 'Utente:';
-            document.getElementById('registryBtnText').textContent = getTranslation('int.newregistry') || 'Crea Anagrafica';
-            document.getElementById('closeText').textContent = getTranslation('int.close') || 'Chiudi';
-            document.getElementById('loadingText').textContent = getTranslation('int.loading.data') || 'Caricamento dati...';
+            console.group("DEBUG: Applicazione Traduzioni e Popolamento Liste Dinamiche");
 
-            // Aggiornamento etichette campi form e popolamento dropdown
+            // 1. UI Statica
+            document.getElementById('pageTitle').textContent = getTranslation('int.newaccount');
+            document.getElementById('saveText').textContent = getTranslation('int.save');
+            document.getElementById('resetText').textContent = getTranslation('int.reset');
+            document.getElementById('registryBtnText').textContent = getTranslation('int.newregistry');
+            document.getElementById('closeText').textContent = getTranslation('int.close');
+
+            // 2. Label Campi e Popolamento Select Dinamiche
             if (manifest && manifest['dashboard-account']) {
-                const fields = manifest['dashboard-account'];
-                fields.forEach(fieldDef => {
-                    const parts = fieldDef.split('@');
-                    const fieldName = parts[0];
+                manifest['dashboard-account'].forEach(fieldDef => {
+                    const [fieldName, domainPrefix] = fieldDef.split('@');
 
-                    // Aggiorna label del campo
-                    const labelElement = document.getElementById(`${fieldName}Label`);
-                    if (labelElement) {
-                        labelElement.textContent = getTranslation(`int.account.${fieldName}`) || fieldName + ':';
+                    // Traduzione Label
+                    const label = document.getElementById(`label_${fieldName}`);
+                    if (label) {
+                        label.textContent = getTranslation(`int.account.${fieldName}`);
                     }
 
-                    // Gestione Select
-                    const selectElement = document.getElementById(fieldName);
-                    if (selectElement && selectElement.tagName === 'SELECT') {
-                        // Se è un campo speciale id_registry, aggiorna solo il placeholder
-                        if (fieldName === 'id_registry') {
-                            if (selectElement.options.length > 0) {
-                                selectElement.options[0].textContent = getTranslation('int.select.registry') || '-- seleziona anagrafica --';
+                    // Se è una select con dominio @
+                    const select = document.getElementById(fieldName);
+                    if (select && domainPrefix) {
+                        console.log(`Popolamento select #${fieldName} con dominio "${domainPrefix}"`);
+
+                        // Svuota e imposta placeholder
+                        while (select.options.length > 1) select.remove(1);
+                        select.options[0].textContent = getTranslation('int.select.option');
+
+                        // Cerchiamo le chiavi nel JSON piatto che iniziano con "prefisso:"
+                        Object.keys(translations).forEach(key => {
+                            if (key.startsWith(`${domainPrefix}:`)) {
+                                const val = key.split(':')[1]; // Prende la parte dopo i due punti
+                                const text = translations[key]; // Prende la traduzione
+                                const opt = document.createElement('option');
+                                opt.value = val;
+                                opt.textContent = text;
+                                select.appendChild(opt);
                             }
-                        }
-                        // Se ha data-domain, popola le opzioni dal file di lingua
-                        else if (selectElement.hasAttribute('data-domain')) {
-                            const domainSuffix = selectElement.getAttribute('data-domain');
-                            console.log(`Popolamento lista per: ${fieldName} usando suffisso traduzione: ${domainSuffix}`);
-                            const domainOptions = translations[domainSuffix]; // Prende l'oggetto { "VALORE": "TRADUZIONE" }
-
-                            // Aggiorna placeholder
-                            if (selectElement.options.length > 0) {
-                                selectElement.options[0].textContent = getTranslation('int.select.option') || '-- seleziona --';
-                            }
-
-                            // Se esistono opzioni per questo suffisso nel file lingua
-                            if (domainOptions && typeof domainOptions === 'object') {
-                                console.log(`Opzioni trovate per ${domainSuffix}:`, domainOptions);
-                                // Salva valore selezionato per ripristinarlo
-                                const currentValue = selectElement.value;
-
-                                // Rimuovi tutte le opzioni tranne la prima
-                                while (selectElement.options.length > 1) {
-                                    selectElement.remove(1);
-                                }
-
-                                // Popola con chiave (valore) e valore (testo)
-                                Object.keys(domainOptions).forEach(optValue => {
-                                    const optText = domainOptions[optValue];
-                                    const option = document.createElement('option');
-                                    option.value = optValue; // "valore"
-                                    option.textContent = optText; // "traduzione"
-                                    selectElement.appendChild(option);
-                                });
-
-                                // Ripristina valore se possibile
-                                selectElement.value = currentValue;
-                            } else {
-                                console.warn(`Nessuna opzione trovata nel file di lingua per il suffisso: ${domainSuffix}`);
-                            }
-                        }
+                        });
+                    } else if (select && fieldName === 'id_registry') {
+                        select.options[0].textContent = getTranslation('int.select.registry');
                     }
                 });
             }
-
-            // Aggiorna testi bottoni
-            const saveText = document.getElementById('saveText');
-            const resetText = document.getElementById('resetText');
-            if (saveText) saveText.textContent = getTranslation('int.save') || 'Salva';
-            if (resetText) resetText.textContent = getTranslation('int.reset') || 'Annulla';
             console.groupEnd();
         }
 
@@ -769,93 +637,57 @@
             const msgDiv = document.getElementById('message');
             msgDiv.textContent = text;
             msgDiv.className = 'message ' + type;
+            msgDiv.style.display = 'block';
         }
 
-        function resetForm() {
-            document.getElementById('accountForm').reset();
-            document.getElementById('message').className = 'message';
-        }
-
+        // ========== SUBMIT FORM ==========
         document.getElementById('accountForm').addEventListener('submit', async function (e) {
             e.preventDefault();
-
             const formData = {};
-            const fields = manifest['dashboard-account'];
+            const inputs = this.querySelectorAll('input, select');
+            inputs.forEach(i => { if (i.id) formData[i.id] = i.value; });
 
-            fields.forEach(fieldDef => {
-                const fieldName = fieldDef.split('@')[0];
-                const element = document.getElementById(fieldName);
-                if (element) {
-                    formData[fieldName] = element.value;
-                }
-            });
-
-            if (formData.account_level_portfolio && formData.account_level_yield) {
-                formData.account_level = `${formData.account_level_portfolio},${formData.account_level_yield}`;
-            }
+            console.log("Console: Invio dati account:", formData);
 
             try {
                 showLoading(true);
-
-                const payload = {
-                    username: credentials.username,
-                    token: credentials.token,
-                    language: credentials.language,
-                    account: JSON.stringify(formData)
-                };
-
-                console.log('=== PUTACCOUNT PAYLOAD ===');
-                console.log('Payload:', JSON.stringify(payload, null, 2));
-                console.log('====================');
-
                 const response = await fetch(`${API_URL}/putaccount`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
+                    body: JSON.stringify({
+                        username: credentials.username,
+                        token: credentials.token,
+                        language: credentials.language,
+                        account: JSON.stringify(formData)
+                    })
                 });
-
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-
                 const data = await response.json();
-
-                console.log('=== PUTACCOUNT RESPONSE ===');
-                console.log('Response:', JSON.stringify(data, null, 2));
-                console.log('====================');
-
                 showLoading(false);
 
-                if (data.success || data.status === 'success' || response.ok) {
-                    showMessage(getTranslation('int.success.save') || 'Account salvato con successo!', 'success');
-                    setTimeout(() => {
-                        window.close();
-                    }, 2000);
+                if (data.status === 'success') {
+                    showMessage(getTranslation('int.success.save'), 'success');
+                    setTimeout(() => window.close(), 2000);
                 } else {
-                    const errorMsg = data.message || data.error || getTranslation('int.error.save') || 'Errore durante il salvataggio dell\'account';
-                    showMessage(errorMsg, 'error');
+                    showMessage(data.message || 'Error', 'error');
                 }
-
             } catch (error) {
-                console.error('Error saving account:', error);
+                console.error('Error saving:', error);
                 showLoading(false);
-                showMessage(getTranslation('int.error.save') || 'Errore durante il salvataggio: ' + error.message, 'error');
             }
         });
 
+        // ========== APP START ==========
         window.addEventListener('load', async () => {
-            console.log("Inizializzazione applicazione...");
-            if (!checkAuthentication()) {
-                return;
-            }
+            console.log("Console: Avvio applicazione...");
+            if (!checkAuthentication()) return;
 
             await initializeLanguages();
             const configLoaded = await loadConfigurations();
             if (configLoaded) {
-                generateForm(); // Genera struttura vuota (con data-domain)
-                await loadTranslations(credentials.language); // Carica traduzioni e popola le opzioni
+                generateForm();
+                await loadTranslations(credentials.language);
                 await updateUserInfo();
-                await loadAccountDefaults();
+                await loadRegistries();
             }
         });
     </script>
