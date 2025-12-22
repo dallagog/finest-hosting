@@ -447,10 +447,15 @@
 
         // ========== FORM GENERATION ==========
         function generateForm() {
+            console.group("DEBUG: Generazione Form da Manifest");
             const form = document.getElementById('accountForm');
-            if (!manifest || !manifest['dashboard-account']) return;
+            if (!manifest || !manifest['dashboard-account']) {
+                console.warn("Manifest mancante o sezione dashboard-account non trovata");
+                return;
+            }
 
             const fields = manifest['dashboard-account'];
+            console.log("Campi da generare:", fields);
 
             fields.forEach(fieldDef => {
                 const formGroup = document.createElement('div');
@@ -468,6 +473,7 @@
 
                 // Caso 1: Campo con suffisso @ (Dropdown dinamico da language.json)
                 if (domainSuffix) {
+                    console.log(`Generazione SELECT dinamica per campo: ${fieldName}, dominio: ${domainSuffix}`);
                     const select = document.createElement('select');
                     select.id = fieldName;
                     select.name = fieldName;
@@ -484,6 +490,7 @@
 
                     // Caso 2: Campo speciale id_registry
                 } else if (fieldName === 'id_registry') {
+                    console.log("Generazione SELECT speciale per id_registry");
                     const select = document.createElement('select');
                     select.id = fieldName;
                     select.name = fieldName;
@@ -534,9 +541,11 @@
             buttonGroup.appendChild(resetButton);
 
             form.appendChild(buttonGroup);
+            console.groupEnd();
         }
 
         async function loadRegistries() {
+            console.group("DEBUG: Chiamata API /getregistries");
             try {
                 const payload = {
                     username: credentials.username,
@@ -544,6 +553,7 @@
                     language: credentials.language,
                     registry: ""
                 };
+                console.log("Payload inviato:", payload);
 
                 const response = await fetch(`${API_URL}/getregistries`, {
                     method: 'POST',
@@ -556,13 +566,16 @@
                 }
 
                 const data = await response.json();
+                console.log("Risposta ricevuta:", data);
 
                 if (data.registries && Object.keys(data.registries).length > 0) {
                     registries = data.registries;
+                    console.log(`Caricate ${Object.keys(registries).length} anagrafiche`);
                     populateRegistriesDropdown();
                     enableForm();
                     document.getElementById('createRegistryBtn').classList.remove('highlight');
                 } else {
+                    console.warn("Nessuna anagrafica trovata");
                     document.getElementById('createRegistryBtn').classList.add('highlight');
                     disableForm();
                     showMessage(getTranslation('int.error.loading.registry') || 'Nessuna anagrafica trovata. Crea una nuova anagrafica per procedere.', 'error');
@@ -573,6 +586,7 @@
                 disableForm();
                 showMessage(getTranslation('int.error.loading.registry') || 'Errore nel caricamento delle anagrafiche. Crea una nuova anagrafica per procedere.', 'error');
             }
+            console.groupEnd();
         }
 
         // ========== POPULATE REGISTRIES ==========
@@ -650,15 +664,18 @@
         }
 
         async function loadTranslations(lang) {
+            console.group(`DEBUG: Caricamento traduzioni [${lang}]`);
             try {
                 const response = await fetch(`lang/${lang}.json`);
                 if (!response.ok) throw new Error('Translation file not found');
                 translations = await response.json();
+                console.log("File traduzioni caricato con successo");
                 await loadCurrencies(lang);
                 updatePageTranslations();
             } catch (error) {
                 console.error('Error loading translations:', error);
             }
+            console.groupEnd();
         }
 
         function getTranslation(key) {
@@ -669,6 +686,7 @@
 
         // ========== UPDATE TRANSLATIONS (AGGIORNATO) ==========
         function updatePageTranslations() {
+            console.group("DEBUG: Aggiornamento traduzioni e popolamento SELECT dinamiche (@)");
             // Aggiornamento etichette statiche
             document.getElementById('pageTitle').textContent = getTranslation('int.newaccount') || 'Crea Nuovo Rapporto';
             document.getElementById('userLabel').textContent = getTranslation('int.user.label') || 'Utente:';
@@ -701,7 +719,8 @@
                         // Se ha data-domain, popola le opzioni dal file di lingua
                         else if (selectElement.hasAttribute('data-domain')) {
                             const domainSuffix = selectElement.getAttribute('data-domain');
-                            const domainOptions = translations[domainSuffix]; // Prende l'oggetto { "VAL": "TESTO" }
+                            console.log(`Popolamento lista per: ${fieldName} usando suffisso traduzione: ${domainSuffix}`);
+                            const domainOptions = translations[domainSuffix]; // Prende l'oggetto { "VALORE": "TRADUZIONE" }
 
                             // Aggiorna placeholder
                             if (selectElement.options.length > 0) {
@@ -710,6 +729,7 @@
 
                             // Se esistono opzioni per questo suffisso nel file lingua
                             if (domainOptions && typeof domainOptions === 'object') {
+                                console.log(`Opzioni trovate per ${domainSuffix}:`, domainOptions);
                                 // Salva valore selezionato per ripristinarlo
                                 const currentValue = selectElement.value;
 
@@ -729,6 +749,8 @@
 
                                 // Ripristina valore se possibile
                                 selectElement.value = currentValue;
+                            } else {
+                                console.warn(`Nessuna opzione trovata nel file di lingua per il suffisso: ${domainSuffix}`);
                             }
                         }
                     }
@@ -740,6 +762,7 @@
             const resetText = document.getElementById('resetText');
             if (saveText) saveText.textContent = getTranslation('int.save') || 'Salva';
             if (resetText) resetText.textContent = getTranslation('int.reset') || 'Annulla';
+            console.groupEnd();
         }
 
         function showMessage(text, type) {
@@ -821,6 +844,7 @@
         });
 
         window.addEventListener('load', async () => {
+            console.log("Inizializzazione applicazione...");
             if (!checkAuthentication()) {
                 return;
             }
