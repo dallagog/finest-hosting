@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Trend Graph - Tron Style</title>
+    <title>Trend Graph 1.0</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <script src="js/dashboard-shared.js"></script>
@@ -149,23 +149,6 @@
             color: var(--neon-cyan);
         }
 
-        select[multiple] {
-            min-height: 100px;
-            padding: 5px;
-        }
-
-        select[multiple] option {
-            padding: 5px;
-            margin: 2px 0;
-            border-radius: 3px;
-        }
-
-        select[multiple] option:checked {
-            background: linear-gradient(90deg, var(--neon-cyan) 0%, var(--neon-blue) 100%);
-            color: #000;
-            font-weight: bold;
-        }
-
         .close-button {
             padding: 8px 15px;
             background: rgba(255, 0, 85, 0.1);
@@ -253,6 +236,142 @@
             font-style: italic;
             margin-top: 3px;
         }
+
+        /* Nuovi stili per il selettore metriche con checkbox */
+        .metrics-selector-container {
+            position: relative;
+            display: inline-block;
+        }
+
+        .metrics-dropdown-btn {
+            padding: 8px 15px;
+            background: var(--button-bg);
+            border: 1px solid var(--neon-cyan);
+            color: var(--neon-cyan);
+            font-family: 'Orbitron', sans-serif;
+            border-radius: 4px;
+            cursor: pointer;
+            min-width: 180px;
+            text-align: left;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .metrics-dropdown-btn:hover {
+            box-shadow: 0 0 10px var(--neon-cyan);
+        }
+
+        .metrics-dropdown-content {
+            display: none;
+            position: absolute;
+            background: var(--glass-bg);
+            border: 1px solid var(--neon-cyan);
+            border-radius: 4px;
+            padding: 10px;
+            z-index: 100;
+            width: 250px;
+            max-height: 300px;
+            overflow-y: auto;
+            box-shadow: 0 0 20px rgba(0, 243, 255, 0.3);
+        }
+
+        .metrics-dropdown-content.show {
+            display: block;
+        }
+
+        .metric-checkbox-item {
+            display: flex;
+            align-items: center;
+            padding: 5px 0;
+            border-bottom: 1px solid rgba(0, 243, 255, 0.1);
+        }
+
+        .metric-checkbox-item:last-child {
+            border-bottom: none;
+        }
+
+        .metric-checkbox-item input[type="checkbox"] {
+            margin-right: 10px;
+            accent-color: var(--neon-cyan);
+            cursor: pointer;
+        }
+
+        .metric-checkbox-item label {
+            cursor: pointer;
+            color: var(--text-color);
+            font-size: 0.8rem;
+            flex-grow: 1;
+        }
+
+        .metric-checkbox-item:hover label {
+            color: var(--neon-cyan);
+        }
+
+        .metric-checkbox-actions {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid rgba(0, 243, 255, 0.2);
+        }
+
+        .metric-action-btn {
+            padding: 5px 10px;
+            background: rgba(0, 102, 255, 0.1);
+            border: 1px solid var(--neon-blue);
+            color: var(--neon-blue);
+            font-family: 'Orbitron', sans-serif;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 0.7rem;
+            transition: all 0.3s;
+        }
+
+        .metric-action-btn:hover {
+            background: rgba(0, 102, 255, 0.2);
+            box-shadow: 0 0 8px rgba(0, 102, 255, 0.5);
+        }
+
+        .metric-action-btn.clear {
+            background: rgba(255, 0, 85, 0.1);
+            border: 1px solid var(--neon-red);
+            color: var(--neon-red);
+        }
+
+        .metric-action-btn.clear:hover {
+            background: rgba(255, 0, 85, 0.2);
+            box-shadow: 0 0 8px rgba(255, 0, 85, 0.5);
+        }
+
+        /* Stili per il selettore tipo grafico */
+        .chart-type-selector {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .chart-type-btn {
+            padding: 8px 15px;
+            background: var(--button-bg);
+            border: 1px solid var(--neon-cyan);
+            color: var(--neon-cyan);
+            font-family: 'Orbitron', sans-serif;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: all 0.3s;
+        }
+
+        .chart-type-btn.active {
+            background: rgba(0, 243, 255, 0.2);
+            box-shadow: 0 0 10px var(--neon-cyan);
+            font-weight: bold;
+        }
+
+        .chart-type-btn:hover:not(.active) {
+            background: rgba(0, 243, 255, 0.15);
+        }
     </style>
 </head>
 
@@ -275,13 +394,6 @@
 
         <div class="header-right">
             <div class="control-group">
-                <label for="metric-select" id="metric-label">Value:</label>
-                <div>
-                    <select id="metric-select" multiple onchange="renderChart()"></select>
-                    <div class="info-text" id="metric-info">Hold Ctrl/Cmd for multiple</div>
-                </div>
-            </div>
-            <div class="control-group">
                 <label for="period-select" id="period-label">Period:</label>
                 <select id="period-select" onchange="renderChart()">
                     <option value="daily">Daily</option>
@@ -291,6 +403,36 @@
                     <option value="yearly">Yearly</option>
                 </select>
             </div>
+
+            <div class="control-group">
+                <label id="chart-type-label">Chart Type:</label>
+                <div class="chart-type-selector">
+                    <button class="chart-type-btn active" onclick="changeChartType('line')" id="line-chart-btn">
+                        <i class="fas fa-chart-line"></i> Line
+                    </button>
+                    <button class="chart-type-btn" onclick="changeChartType('bar')" id="bar-chart-btn">
+                        <i class="fas fa-chart-bar"></i> Bar
+                    </button>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <label id="metric-label">Metrics:</label>
+                <div class="metrics-selector-container">
+                    <button class="metrics-dropdown-btn" onclick="toggleMetricsDropdown()" id="metrics-dropdown-btn">
+                        <span>Select Metrics</span>
+                        <i class="fas fa-chevron-down"></i>
+                    </button>
+                    <div class="metrics-dropdown-content" id="metrics-dropdown-content">
+                        <div id="metrics-checkbox-list"></div>
+                        <div class="metric-checkbox-actions">
+                            <button class="metric-action-btn" onclick="selectAllMetrics()">Select All</button>
+                            <button class="metric-action-btn clear" onclick="clearAllMetrics()">Clear All</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <button class="close-button" onclick="closeWindow()" id="close-btn">Close</button>
         </div>
     </div>
@@ -342,9 +484,12 @@
             window.close();
         }
 
+        // Variabili globali
         const API_URL = "https://feweb-tunnel.fe-web.eu";
         let chartInstance = null;
         let trendDataRaw = [];
+        let chartType = 'line'; // 'line' o 'bar'
+        let availableMetrics = [];
 
         const urlParams = new URLSearchParams(window.location.search);
         const username = urlParams.get('username') || 'UTENTE_NON_AUTORIZZATO';
@@ -378,14 +523,23 @@
 
             // Load Trend Data
             await loadTrend();
+
+            // Chiudi dropdown se si clicca fuori
+            document.addEventListener('click', function (event) {
+                const dropdown = document.getElementById('metrics-dropdown-content');
+                const btn = document.getElementById('metrics-dropdown-btn');
+                if (!dropdown.contains(event.target) && !btn.contains(event.target)) {
+                    dropdown.classList.remove('show');
+                }
+            });
         }
 
         function updateHeaderTranslations() {
             document.getElementById('page-title').textContent = getTranslation('int.trend_analysis') || "Trend Analysis";
-            document.getElementById('metric-label').textContent = (getTranslation('int.groupby') || "Value") + ":";
+            document.getElementById('metric-label').textContent = (getTranslation('int.metrics') || "Metrics") + ":";
             document.getElementById('period-label').textContent = (getTranslation('int.period') || "Period") + ":";
+            document.getElementById('chart-type-label').textContent = (getTranslation('int.chart_type') || "Chart Type") + ":";
             document.getElementById('close-btn').textContent = getTranslation('int.close') || "Close";
-            document.getElementById('metric-info').textContent = getTranslation('int.hold_ctrl') || "Hold Ctrl/Cmd for multiple";
 
             const langIndicator = document.getElementById('language-indicator');
             const langName = getTranslation('lang.' + language);
@@ -398,6 +552,19 @@
             periodSelect.options[2].text = getTranslation('int.quarterly') || 'Quarterly';
             periodSelect.options[3].text = getTranslation('int.semesterly') || 'Semesterly';
             periodSelect.options[4].text = getTranslation('int.yearly') || 'Yearly';
+
+            // Traduci bottoni tipo grafico
+            document.getElementById('line-chart-btn').innerHTML = `<i class="fas fa-chart-line"></i> ${getTranslation('int.line_chart') || 'Line'}`;
+            document.getElementById('bar-chart-btn').innerHTML = `<i class="fas fa-chart-bar"></i> ${getTranslation('int.bar_chart') || 'Bar'}`;
+
+            // Aggiorna testo dropdown metriche
+            const selectedCount = getSelectedMetrics().length;
+            const metricsBtn = document.getElementById('metrics-dropdown-btn');
+            if (selectedCount === 0) {
+                metricsBtn.querySelector('span').textContent = getTranslation('int.select_metrics') || 'Select Metrics';
+            } else {
+                metricsBtn.querySelector('span').textContent = `${selectedCount} ${getTranslation('int.selected') || 'selected'}`;
+            }
         }
 
         async function loadTrend() {
@@ -435,7 +602,13 @@
 
                     trendDataRaw = rawTrend;
 
-                    populateMetricSelect();
+                    // Ordina i dati per data in modo ascendente
+                    trendDataRaw.sort((a, b) => {
+                        if (!a.date_start || !b.date_start) return 0;
+                        return new Date(a.date_start) - new Date(b.date_start);
+                    });
+
+                    populateMetricsCheckbox();
                     renderChart();
                     document.getElementById('loading').style.display = 'none';
 
@@ -449,13 +622,13 @@
             }
         }
 
-        function populateMetricSelect() {
-            const select = document.getElementById('metric-select');
-            select.innerHTML = '';
+        function populateMetricsCheckbox() {
+            const container = document.getElementById('metrics-checkbox-list');
+            container.innerHTML = '';
 
             if (trendDataRaw.length === 0) return;
 
-            const availableMetrics = new Set();
+            const metricsSet = new Set();
 
             // Scansiona tutti i record per trovare tutti i campi con valori numerici
             trendDataRaw.forEach(item => {
@@ -469,22 +642,21 @@
                     const val = item[key];
                     // Verifica se è un numero o una stringa con formato "val:cur" o "val%:cur"
                     if (typeof val === 'number') {
-                        availableMetrics.add(key);
+                        metricsSet.add(key);
                     } else if (typeof val === 'string') {
                         // Formato: "14.47:EUR" o "5.12%:EUR"
                         if (val.includes(':') || val.includes('%')) {
-                            availableMetrics.add(key);
+                            metricsSet.add(key);
                         }
                     }
                 });
             });
 
             // Converti Set in Array e ordina
-            const metricsArray = Array.from(availableMetrics).sort();
+            availableMetrics = Array.from(metricsSet).sort();
 
-            metricsArray.forEach(key => {
-                const option = document.createElement('option');
-                option.value = key;
+            availableMetrics.forEach(key => {
+                const metricId = `metric-${key}`;
 
                 // Prova prima con traduzione
                 const translationKey = 'lbl.' + key;
@@ -495,13 +667,67 @@
                     label = key.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
                 }
 
-                option.textContent = label;
-                select.appendChild(option);
+                const div = document.createElement('div');
+                div.className = 'metric-checkbox-item';
+                div.innerHTML = `
+                    <input type="checkbox" id="${metricId}" value="${key}" 
+                           ${initialMetric === key ? 'checked' : ''} 
+                           onchange="updateSelectedMetrics()">
+                    <label for="${metricId}">${label}</label>
+                `;
+                container.appendChild(div);
             });
 
-            if (initialMetric && metricsArray.includes(initialMetric)) {
-                select.value = initialMetric;
+            // Aggiorna il testo del bottone
+            updateMetricsButtonText();
+        }
+
+        function toggleMetricsDropdown() {
+            const dropdown = document.getElementById('metrics-dropdown-content');
+            dropdown.classList.toggle('show');
+        }
+
+        function getSelectedMetrics() {
+            const checkboxes = document.querySelectorAll('#metrics-checkbox-list input[type="checkbox"]:checked');
+            return Array.from(checkboxes).map(cb => cb.value);
+        }
+
+        function updateSelectedMetrics() {
+            updateMetricsButtonText();
+            renderChart();
+        }
+
+        function updateMetricsButtonText() {
+            const selectedCount = getSelectedMetrics().length;
+            const metricsBtn = document.getElementById('metrics-dropdown-btn');
+
+            if (selectedCount === 0) {
+                metricsBtn.querySelector('span').textContent = getTranslation('int.select_metrics') || 'Select Metrics';
+            } else {
+                metricsBtn.querySelector('span').textContent = `${selectedCount} ${getTranslation('int.selected') || 'selected'}`;
             }
+        }
+
+        function selectAllMetrics() {
+            const checkboxes = document.querySelectorAll('#metrics-checkbox-list input[type="checkbox"]');
+            checkboxes.forEach(cb => cb.checked = true);
+            updateSelectedMetrics();
+        }
+
+        function clearAllMetrics() {
+            const checkboxes = document.querySelectorAll('#metrics-checkbox-list input[type="checkbox"]');
+            checkboxes.forEach(cb => cb.checked = false);
+            updateSelectedMetrics();
+        }
+
+        function changeChartType(type) {
+            chartType = type;
+
+            // Aggiorna lo stato attivo dei bottoni
+            document.getElementById('line-chart-btn').classList.toggle('active', type === 'line');
+            document.getElementById('bar-chart-btn').classList.toggle('active', type === 'bar');
+
+            renderChart();
         }
 
         // Funzione per parsare i valori (es. "14.47:EUR" -> 14.47, "5.12%:EUR" -> 5.12)
@@ -578,7 +804,7 @@
                 aggregated[key].instruments[instrument] += val;
             });
 
-            // Ordina per data
+            // Ordina per data in modo ascendente (dalla più vecchia alla più recente)
             const sorted = Object.keys(aggregated).sort((a, b) => {
                 return aggregated[a].date - aggregated[b].date;
             });
@@ -586,7 +812,8 @@
             return sorted.map(key => ({
                 label: key,
                 value: aggregated[key].sum,
-                instruments: aggregated[key].instruments
+                instruments: aggregated[key].instruments,
+                date: aggregated[key].date
             }));
         }
 
@@ -594,21 +821,49 @@
             const ctx = document.getElementById('chartCanvas').getContext('2d');
             if (chartInstance) chartInstance.destroy();
 
-            const select = document.getElementById('metric-select');
-            const selectedMetrics = Array.from(select.selectedOptions).map(opt => opt.value);
+            const selectedMetrics = getSelectedMetrics();
             const selectedPeriod = document.getElementById('period-select').value;
 
-            if (selectedMetrics.length === 0) return;
+            if (selectedMetrics.length === 0) {
+                // Mostra un grafico vuoto o messaggio
+                chartInstance = new Chart(ctx, {
+                    type: chartType,
+                    data: {
+                        labels: [],
+                        datasets: []
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: { enabled: false }
+                        }
+                    }
+                });
+                return;
+            }
 
             // Prepara i datasets
             const datasets = [];
-            const allLabels = new Set();
+            const allLabelsSet = new Set();
+            const allDataPoints = [];
 
             selectedMetrics.forEach((metric, index) => {
                 const isPercentage = isPercentageField(metric);
                 const aggregatedData = aggregateByPeriod(trendDataRaw, metric, selectedPeriod);
 
-                aggregatedData.forEach(item => allLabels.add(item.label));
+                // Aggiungi le etichette e i punti dati
+                aggregatedData.forEach(item => {
+                    allLabelsSet.add(item.label);
+                    allDataPoints.push({
+                        label: item.label,
+                        date: item.date,
+                        metric: metric,
+                        value: item.value,
+                        instruments: item.instruments
+                    });
+                });
 
                 const colorIndex = index % datasetColors.length;
                 const color = datasetColors[colorIndex];
@@ -617,27 +872,37 @@
                 gradient.addColorStop(0, color.bg);
                 gradient.addColorStop(1, color.bg.replace('0.4', '0.05'));
 
-                const metricLabel = select.options[Array.from(select.options).findIndex(opt => opt.value === metric)].text;
+                // Trova l'etichetta della metrica
+                const metricLabel = Array.from(document.querySelectorAll('#metrics-checkbox-list label'))
+                    .find(label => label.htmlFor === `metric-${metric}`)?.textContent || metric;
 
                 datasets.push({
                     label: metricLabel,
                     data: aggregatedData.map(item => item.value),
                     borderColor: color.border,
-                    backgroundColor: gradient,
-                    borderWidth: 2,
+                    backgroundColor: chartType === 'bar' ? color.bg : gradient,
+                    borderWidth: chartType === 'bar' ? 1 : 2,
                     pointBackgroundColor: color.border,
                     pointBorderColor: '#fff',
                     pointHoverBackgroundColor: '#fff',
                     pointHoverBorderColor: color.border,
-                    fill: true,
-                    tension: 0.4,
+                    fill: chartType === 'line',
+                    tension: chartType === 'line' ? 0.4 : 0,
                     yAxisID: isPercentage ? 'y-percent' : 'y-value',
                     metricKey: metric,
                     aggregatedData: aggregatedData // Mantieni i dati dettagliati per il tooltip
                 });
             });
 
-            const labels = Array.from(allLabels).sort();
+            // Ordina le etichette in base alla data
+            const allLabels = Array.from(allLabelsSet);
+            allLabels.sort((a, b) => {
+                // Trova la data associata a ciascuna etichetta
+                const dateA = allDataPoints.find(d => d.label === a)?.date;
+                const dateB = allDataPoints.find(d => d.label === b)?.date;
+                if (!dateA || !dateB) return 0;
+                return dateA - dateB;
+            });
 
             // Configura assi Y
             const scales = {
@@ -692,15 +957,15 @@
                     grid: {
                         color: (context) => context.tick.value === 0 ? 'rgba(255, 0, 85, 0.5)' : 'rgba(0, 243, 255, 0.1)',
                         lineWidth: 1,
-                        drawOnChartArea: !hasPercentages // Disegna la griglia solo se non ci sono percentuali
+                        drawOnChartArea: !hasPercentages
                     }
                 };
             }
 
             chartInstance = new Chart(ctx, {
-                type: 'line',
+                type: chartType,
                 data: {
-                    labels: labels,
+                    labels: allLabels,
                     datasets: datasets
                 },
                 options: {
