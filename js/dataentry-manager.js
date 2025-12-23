@@ -8,7 +8,7 @@ const FormatHelper = {
     // Validate FE_Decimal format (number space currency, e.g. "123.45 EUR")
     validateDecimal(value) {
         if (!value) return false;
-        const lastSpaceIndex = value.trim().lastIndexOf(':');
+        const lastSpaceIndex = value.trim().lastIndexOf(' ');
         if (lastSpaceIndex === -1) return false;
         const number = value.substring(0, lastSpaceIndex).trim();
         const currency = value.substring(lastSpaceIndex + 1).trim();
@@ -26,7 +26,7 @@ const FormatHelper = {
         // Support both space and colon as separator
         let separator = ' ';
         if (value.includes(':')) separator = ':';
-        else if (!value.includes(':')) return false;
+        else if (!value.includes(' ')) return false;
 
         const parts = value.split(separator);
         if (parts.length !== 2) return false;
