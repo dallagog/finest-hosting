@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Dashboard 0 alfa</title>
+    <title>Dashboard 1.0 alfa</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <script src="js/dashboard-shared.js"></script>
@@ -1636,32 +1636,35 @@
                 }
 
                 // DEBUG: Log del filtro che viene inviato
-                console.log('applyFiltersAndSave - Filtro da inviare:', filterData);
-                console.log('Dimensione dati:', JSON.stringify(filterData).length, 'byte');
+                console.log('applyFiltersAndSave - Filtro aggiornato:', filterData);
 
                 showMessage(getTranslation('int.sending.filters') || 'Invio filtri al server...', 'loading');
 
-                // Crea payload più compatto
+                // MODIFICA CHIAVE: Converti filterData in stringa JSON
+                const filterDataString = JSON.stringify(filterData);
+                console.log('Filter come stringa JSON:', filterDataString);
+
+                // Crea payload con filter come stringa
                 const payload = {
                     username: credentials.username || "",
                     token: credentials.token || "",
                     language: credentials.language || "",
-                    filter: filterData,
+                    filter: filterDataString, // <-- INVIA COME STRINGA
                     code: ""
                 };
 
                 console.log('Invio a:', `${API_URL}/putfilter`);
-                console.log('Payload semplificato:', {
+                console.log('Payload finale:', {
                     username: payload.username,
                     token: '***' + (payload.token ? payload.token.slice(-4) : '***'),
                     language: payload.language,
-                    filter_presente: !!payload.filter,
-                    filter_size: JSON.stringify(payload.filter).length
+                    filter_length: payload.filter ? payload.filter.length : 0,
+                    filter_truncated: payload.filter ? payload.filter.substring(0, 100) + '...' : 'null'
                 });
 
                 // Usa AbortController per timeout
                 const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 secondi timeout
+                const timeoutId = setTimeout(() => controller.abort(), 15000);
 
                 try {
                     const response = await fetch(`${API_URL}/putfilter`, {
@@ -1671,25 +1674,23 @@
                             'Accept': 'application/json'
                         },
                         body: JSON.stringify(payload),
-                        signal: controller.signal,
-                        mode: 'cors',
-                        credentials: 'same-origin'
+                        signal: controller.signal
                     });
 
                     clearTimeout(timeoutId);
 
                     console.log('Risposta status:', response.status, response.statusText);
-                    console.log('Risposta headers:', Object.fromEntries(response.headers.entries()));
 
                     if (!response.ok) {
                         let errorMsg = `HTTP ${response.status}`;
                         try {
                             const errorText = await response.text();
                             if (errorText) {
-                                errorMsg += ': ' + errorText.substring(0, 200);
+                                console.log('Testo errore:', errorText);
+                                errorMsg += ': ' + errorText;
                             }
                         } catch (e) {
-                            // Ignora errori di parsing del testo di errore
+                            console.error('Errore parsing risposta:', e);
                         }
                         throw new Error(errorMsg);
                     }
@@ -1701,10 +1702,19 @@
                         showMessage(getTranslation('int.filters.updated') || 'Filtri aggiornati con successo', 'success');
 
                         // Salva localmente per backup
-                        localStorage.setItem('lastFilter', JSON.stringify(filterData));
+                        localStorage.setItem('lastFilter', filterDataString);
 
-                        // Ricarica il filtro dal server per sincronizzazione
-                        setTimeout(() => loadFilter(), 500);
+                        // Aggiorna filterData con la risposta del server se presente
+                        if (responseData.filter) {
+                            try {
+                                filterData = typeof responseData.filter === 'string'
+                                    ? JSON.parse(responseData.filter)
+                                    : responseData.filter;
+                            } catch (e) {
+                                console.error('Errore parsing filter dalla risposta:', e);
+                            }
+                        }
+
                     } else {
                         throw new Error(responseData.message || 'Errore dal server');
                     }
@@ -1742,25 +1752,16 @@
                 } else if (error.message.includes('401') || error.message.includes('403')) {
                     errorMessage += ': Sessione scaduta';
                     setTimeout(redirectToLogin, 2000);
+                } else if (error.message.includes('422')) {
+                    errorMessage += ': Formato dati non valido';
                 } else {
                     errorMessage += ': ' + error.message;
                 }
 
                 showMessage(errorMessage, 'error');
-
-                // Prova a riaprire automaticamente la sezione filtri
-                const filterSection = document.getElementById('filter-section');
-                if (filterSection) {
-                    const content = filterSection.querySelector('.collapsible-content');
-                    if (content && !content.classList.contains('active')) {
-                        content.classList.add('active');
-                        content.style.display = 'block';
-                        const toggleBtn = filterSection.querySelector('.toggle-btn');
-                        if (toggleBtn) toggleBtn.textContent = '-';
-                    }
-                }
             }
         }
+
         // ========== PDF ==========
         async function loadPDF() {
             try {
