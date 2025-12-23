@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Dashboard 1.0 alfa</title>
+    <title>Dashboard 1.1</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <script src="js/dashboard-shared.js"></script>
@@ -1597,6 +1597,11 @@
                 }
                 filterData.Filter.currency = currencyValue;
 
+                // Mantieni role se esiste
+                if (!filterData.Filter.role) {
+                    filterData.Filter.role = filterData.Filter.role || 'admin';
+                }
+
                 // Aggiorna le selezioni di portafoglio
                 const portfolioValue = portfolioSelect.value;
                 if (Array.isArray(filterData.Filter.portfolio)) {
@@ -1604,7 +1609,10 @@
                         p.selected = (p.value === portfolioValue);
                     });
                 } else {
-                    filterData.Filter.portfolio = [];
+                    filterData.Filter.portfolio = [
+                        { "value": "PMP", "selected": portfolioValue === "PMP" },
+                        { "value": "MKT", "selected": portfolioValue === "MKT" }
+                    ];
                 }
 
                 // Aggiorna le selezioni di redditività
@@ -1614,19 +1622,42 @@
                         y.selected = (y.value === profitabilityValue);
                     });
                 } else {
-                    filterData.Filter.yield = [];
+                    filterData.Filter.yield = [
+                        { "value": "EMVL", "selected": profitabilityValue === "EMVL" },
+                        { "value": "EMVN", "selected": profitabilityValue === "EMVN" }
+                    ];
                 }
 
-                // Aggiorna la lista degli account con lo stato selezionato
+                // MODIFICA CHIAVE: Crea una versione pulita della lista account SENZA type_account e description_account
                 if (!filterData.Account) filterData.Account = {};
-                if (!Array.isArray(filterData.Account.list)) filterData.Account.list = [];
 
-                // Sincronizza la selezione degli account
-                filterData.Account.list.forEach(account => {
-                    if (account && account.id_account) {
-                        account.selected = isAccountSelected(account.id_account);
+                // Pulisci la lista degli account - mantieni solo id_account e selected
+                const cleanedAccountList = [];
+
+                // Prima usa gli account da accountsData che hanno lo stato selezionato aggiornato
+                accountsData.forEach(acc => {
+                    if (acc && acc.id_account) {
+                        cleanedAccountList.push({
+                            id_account: acc.id_account,
+                            selected: acc.selected || false
+                        });
                     }
                 });
+
+                // Se non ci sono account in accountsData, usa quelli dal filterData originale
+                if (cleanedAccountList.length === 0 && Array.isArray(filterData.Account.list)) {
+                    filterData.Account.list.forEach(account => {
+                        if (account && account.id_account) {
+                            cleanedAccountList.push({
+                                id_account: account.id_account,
+                                selected: isAccountSelected(account.id_account)
+                            });
+                        }
+                    });
+                }
+
+                // Assegna la lista pulita
+                filterData.Account.list = cleanedAccountList;
 
                 // Mantieni il campo Name
                 if (!filterData.Name) {
@@ -1636,31 +1667,52 @@
                 }
 
                 // DEBUG: Log del filtro che viene inviato
-                console.log('applyFiltersAndSave - Filtro aggiornato:', filterData);
+                console.log('applyFiltersAndSave - Filtro aggiornato (pulito):', filterData);
 
                 showMessage(getTranslation('int.sending.filters') || 'Invio filtri al server...', 'loading');
 
-                // MODIFICA CHIAVE: Converti filterData in stringa JSON
+                // Converti filterData in stringa JSON
                 const filterDataString = JSON.stringify(filterData);
-                console.log('Filter come stringa JSON:', filterDataString);
+                console.log('Filter come stringa JSON (primi 200 caratteri):', filterDataString.substring(0, 200));
+
+                // Verifica che la struttura sia corretta
+                const expectedStructure = {
+                    Filter: {
+                        date_start: 'string',
+                        date_end: 'string',
+                        language: 'string',
+                        currency: 'string',
+                        portfolio: 'array',
+                        yield: 'array',
+                        role: 'string',
+                        username: 'string'
+                    },
+                    Account: {
+                        list: 'array con solo id_account e selected'
+                    },
+                    Name: {
+                        filter: 'string'
+                    }
+                };
+
+                console.log('Struttura verificata:', {
+                    hasFilter: !!filterData.Filter,
+                    hasAccount: !!filterData.Account,
+                    accountListLength: filterData.Account.list ? filterData.Account.list.length : 0,
+                    accountItemKeys: filterData.Account.list && filterData.Account.list.length > 0 ?
+                        Object.keys(filterData.Account.list[0]) : 'no items'
+                });
 
                 // Crea payload con filter come stringa
                 const payload = {
                     username: credentials.username || "",
                     token: credentials.token || "",
                     language: credentials.language || "",
-                    filter: filterDataString, // <-- INVIA COME STRINGA
+                    filter: filterDataString, // Stringa JSON
                     code: ""
                 };
 
                 console.log('Invio a:', `${API_URL}/putfilter`);
-                console.log('Payload finale:', {
-                    username: payload.username,
-                    token: '***' + (payload.token ? payload.token.slice(-4) : '***'),
-                    language: payload.language,
-                    filter_length: payload.filter ? payload.filter.length : 0,
-                    filter_truncated: payload.filter ? payload.filter.substring(0, 100) + '...' : 'null'
-                });
 
                 // Usa AbortController per timeout
                 const controller = new AbortController();
@@ -1686,7 +1738,7 @@
                         try {
                             const errorText = await response.text();
                             if (errorText) {
-                                console.log('Testo errore:', errorText);
+                                console.log('Testo errore completo:', errorText);
                                 errorMsg += ': ' + errorText;
                             }
                         } catch (e) {
@@ -1704,16 +1756,8 @@
                         // Salva localmente per backup
                         localStorage.setItem('lastFilter', filterDataString);
 
-                        // Aggiorna filterData con la risposta del server se presente
-                        if (responseData.filter) {
-                            try {
-                                filterData = typeof responseData.filter === 'string'
-                                    ? JSON.parse(responseData.filter)
-                                    : responseData.filter;
-                            } catch (e) {
-                                console.error('Errore parsing filter dalla risposta:', e);
-                            }
-                        }
+                        // Ricarica il filtro dal server per sincronizzazione
+                        setTimeout(() => loadFilter(), 1000);
 
                     } else {
                         throw new Error(responseData.message || 'Errore dal server');
@@ -1754,6 +1798,7 @@
                     setTimeout(redirectToLogin, 2000);
                 } else if (error.message.includes('422')) {
                     errorMessage += ': Formato dati non valido';
+                    console.error('Probabile struttura errata del filtro. Verifica che sia uguale a filter.json di esempio');
                 } else {
                     errorMessage += ': ' + error.message;
                 }
@@ -1761,7 +1806,6 @@
                 showMessage(errorMessage, 'error');
             }
         }
-
         // ========== PDF ==========
         async function loadPDF() {
             try {
