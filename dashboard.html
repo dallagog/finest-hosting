@@ -1568,7 +1568,10 @@
         // ========== APPLY FILTERS ==========
         async function applyFiltersAndSave() {
             try {
-                if (!filterData) return;
+                if (!filterData) {
+                    showMessage(getTranslation('int.error.no.filter.data') || 'Dati filtro non disponibili', 'error');
+                    return;
+                }
 
                 const dateStart = document.getElementById('date-start').value;
                 const dateEnd = document.getElementById('date-end').value;
@@ -1580,24 +1583,19 @@
 
                 filterData.Filter.date_start = dateStart || filterData.Filter.date_start || '';
                 filterData.Filter.date_end = dateEnd || filterData.Filter.date_end || '';
+
+                // Usa l'username dalle credenziali
                 filterData.Filter.username = credentials.username || '';
+                filterData.Filter.language = credentials.language || localStorage.getItem('language') || 'it_IT';
 
-                // Salva la lingua se non presente
-                if (!filterData.Filter.language) {
-                    filterData.Filter.language = credentials.language || localStorage.getItem('language') || 'it_IT';
+                // Ottieni la valuta
+                let currencyValue = localStorage.getItem('currency') || 'EUR';
+                const currencyDisplay = document.getElementById('currencyDisplay');
+                if (currencyDisplay && currencyDisplay.textContent && currencyDisplay.textContent !== '-') {
+                    const parts = currencyDisplay.textContent.split(' ');
+                    currencyValue = parts.length > 1 ? parts[1] : parts[0];
                 }
-
-                // Salva la valuta se non presente
-                if (!filterData.Filter.currency) {
-                    const currencyDisplay = document.getElementById('currencyDisplay');
-                    let currencyValue = localStorage.getItem('currency') || 'EUR';
-
-                    if (currencyDisplay && currencyDisplay.textContent && currencyDisplay.textContent !== '-') {
-                        const parts = currencyDisplay.textContent.split(' ');
-                        currencyValue = parts.length > 1 ? parts[1] : parts[0];
-                    }
-                    filterData.Filter.currency = currencyValue;
-                }
+                filterData.Filter.currency = currencyValue;
 
                 // Aggiorna le selezioni di portafoglio
                 const portfolioValue = portfolioSelect.value;
@@ -1606,13 +1604,7 @@
                         p.selected = (p.value === portfolioValue);
                     });
                 } else {
-                    // Se non esiste, crea la struttura
-                    filterData.Filter.portfolio = [
-                        {
-                            "value": "PMP",
-                            "selected": portfolioValue === "---"
-                        }
-                    ];
+                    filterData.Filter.portfolio = [];
                 }
 
                 // Aggiorna le selezioni di redditività
@@ -1622,13 +1614,7 @@
                         y.selected = (y.value === profitabilityValue);
                     });
                 } else {
-                    // Se non esiste, crea la struttura
-                    filterData.Filter.yield = [
-                        {
-                            "value": "---",
-                            "selected": profitabilityValue === "---"
-                        }
-                    ];
+                    filterData.Filter.yield = [];
                 }
 
                 // Aggiorna la lista degli account con lo stato selezionato
@@ -1638,66 +1624,143 @@
                 // Sincronizza la selezione degli account
                 filterData.Account.list.forEach(account => {
                     if (account && account.id_account) {
-                        account.selected = selectedAccounts.includes(String(account.id_account).trim());
+                        account.selected = isAccountSelected(account.id_account);
                     }
                 });
 
-                // Assicurati che tutti gli account in accountsData siano presenti
-                accountsData.forEach(acc => {
-                    const existingAccount = filterData.Account.list.find(
-                        a => String(a.id_account).trim() === String(acc.id_account).trim()
-                    );
-
-                    if (!existingAccount) {
-                        // Aggiungi l'account mancante
-                        filterData.Account.list.push({
-                            id_account: acc.id_account,
-                            //TODO:elenco campi filtro
-                            //type_account: acc.account_type || '',
-                            //description_account: acc.description || '',
-                            selected: acc.selected || false
-                        });
-                    }
-                });
-
-                // Aggiorna il campo Name se non esiste
+                // Mantieni il campo Name
                 if (!filterData.Name) {
                     filterData.Name = {
                         filter: "Default"
                     };
                 }
 
+                // DEBUG: Log del filtro che viene inviato
+                console.log('applyFiltersAndSave - Filtro da inviare:', filterData);
+                console.log('Dimensione dati:', JSON.stringify(filterData).length, 'byte');
+
                 showMessage(getTranslation('int.sending.filters') || 'Invio filtri al server...', 'loading');
 
+                // Crea payload più compatto
                 const payload = {
                     username: credentials.username || "",
                     token: credentials.token || "",
                     language: credentials.language || "",
-                    filter: filterData || "",
+                    filter: filterData,
                     code: ""
                 };
 
-                console.log('applyFiltersAndSave - filterData aggiornato:');
-                console.log(JSON.stringify(filterData, null, 2));
-
-                const response = await fetch(`${API_URL}/putfilter`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
+                console.log('Invio a:', `${API_URL}/putfilter`);
+                console.log('Payload semplificato:', {
+                    username: payload.username,
+                    token: '***' + (payload.token ? payload.token.slice(-4) : '***'),
+                    language: payload.language,
+                    filter_presente: !!payload.filter,
+                    filter_size: JSON.stringify(payload.filter).length
                 });
 
-                console.log('applyFiltersAndSave')
-                console.log(JSON.stringify(payload, null, 2));
+                // Usa AbortController per timeout
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 secondi timeout
 
-                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                try {
+                    const response = await fetch(`${API_URL}/putfilter`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json'
+                        },
+                        body: JSON.stringify(payload),
+                        signal: controller.signal,
+                        mode: 'cors',
+                        credentials: 'same-origin'
+                    });
 
-                showMessage(getTranslation('int.filters.updated') || 'Filtri aggiornati', 'success');
-                await loadFilter(); // Ricarica per sincronizzazione
+                    clearTimeout(timeoutId);
+
+                    console.log('Risposta status:', response.status, response.statusText);
+                    console.log('Risposta headers:', Object.fromEntries(response.headers.entries()));
+
+                    if (!response.ok) {
+                        let errorMsg = `HTTP ${response.status}`;
+                        try {
+                            const errorText = await response.text();
+                            if (errorText) {
+                                errorMsg += ': ' + errorText.substring(0, 200);
+                            }
+                        } catch (e) {
+                            // Ignora errori di parsing del testo di errore
+                        }
+                        throw new Error(errorMsg);
+                    }
+
+                    const responseData = await response.json();
+                    console.log('Risposta JSON:', responseData);
+
+                    if (responseData.status === 'ok') {
+                        showMessage(getTranslation('int.filters.updated') || 'Filtri aggiornati con successo', 'success');
+
+                        // Salva localmente per backup
+                        localStorage.setItem('lastFilter', JSON.stringify(filterData));
+
+                        // Ricarica il filtro dal server per sincronizzazione
+                        setTimeout(() => loadFilter(), 500);
+                    } else {
+                        throw new Error(responseData.message || 'Errore dal server');
+                    }
+
+                } catch (fetchError) {
+                    clearTimeout(timeoutId);
+
+                    if (fetchError.name === 'AbortError') {
+                        throw new Error('Timeout: Il server non ha risposto entro 15 secondi');
+                    } else if (fetchError.name === 'TypeError' && fetchError.message.includes('fetch')) {
+                        throw new Error('Errore di connessione: Impossibile raggiungere il server');
+                    } else {
+                        throw fetchError;
+                    }
+                }
+
             } catch (error) {
-                showMessage((getTranslation('int.error.sending.filters') || 'Errore') + ': ' + error.message, 'error');
+                console.error('Errore completo in applyFiltersAndSave:', error);
+
+                // Prova a salvare localmente come fallback
+                try {
+                    localStorage.setItem('pendingFilterUpdate', JSON.stringify(filterData));
+                    localStorage.setItem('pendingFilterTimestamp', Date.now().toString());
+                    console.log('Filtro salvato localmente come fallback');
+                } catch (storageError) {
+                    console.error('Impossibile salvare localmente:', storageError);
+                }
+
+                let errorMessage = getTranslation('int.error.sending.filters') || 'Errore nell\'invio dei filtri';
+
+                if (error.message.includes('Timeout')) {
+                    errorMessage += ': Timeout del server';
+                } else if (error.message.includes('connessione')) {
+                    errorMessage += ': Errore di connessione di rete';
+                } else if (error.message.includes('401') || error.message.includes('403')) {
+                    errorMessage += ': Sessione scaduta';
+                    setTimeout(redirectToLogin, 2000);
+                } else {
+                    errorMessage += ': ' + error.message;
+                }
+
+                showMessage(errorMessage, 'error');
+
+                // Prova a riaprire automaticamente la sezione filtri
+                const filterSection = document.getElementById('filter-section');
+                if (filterSection) {
+                    const content = filterSection.querySelector('.collapsible-content');
+                    if (content && !content.classList.contains('active')) {
+                        content.classList.add('active');
+                        content.style.display = 'block';
+                        const toggleBtn = filterSection.querySelector('.toggle-btn');
+                        if (toggleBtn) toggleBtn.textContent = '-';
+                    }
+                }
             }
         }
-
         // ========== PDF ==========
         async function loadPDF() {
             try {
