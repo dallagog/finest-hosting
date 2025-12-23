@@ -903,74 +903,41 @@
 
                 attachDecimalListeners: function (input, required) {
                     input.addEventListener('blur', (e) => {
-                        let value = e.target.value.trim();
+                        let val = e.target.value.trim();
+                        if (!val) return;
 
-                        if (!value && required) {
-                            e.target.classList.add('error');
-                            const errorDiv = input.closest('.form-group')?.querySelector('.error-message');
-                            if (errorDiv) errorDiv.textContent = getTranslation('int.field.required') || 'Campo obbligatorio';
-                            return;
-                        }
+                        if (FormatHelper.validateDecimal(val)) {
+                            // TRASFORMAZIONE: Se valido, trasforma "100 EUR" in "100:EUR"
+                            const normalized = FormatHelper.normalizeInput(val);
+                            e.target.value = normalized;
 
-                        if (value) {
-                            // Automatically transform "value currency" to "value:currency"
-                            if (FormatHelper.validateDecimal(value)) {
-                                value = FormatHelper.transformToColonFormat(value);
-                                e.target.value = value;
-                            }
-
-                            if (!FormatHelper.validateDecimal(value)) {
-                                e.target.classList.add('error');
-                                const errorDiv = input.closest('.form-group')?.querySelector('.error-message');
-                                if (errorDiv) {
-                                    errorDiv.textContent = getTranslation('int.format.decimal.invalid') || 'Formato non valido. Usa: numero VALUTA (es: 123.45 EUR)';
-                                }
-                            } else {
-                                e.target.classList.remove('error');
-                                const errorDiv = input.closest('.form-group')?.querySelector('.error-message');
-                                if (errorDiv) errorDiv.textContent = '';
-                            }
-                        } else {
                             e.target.classList.remove('error');
                             const errorDiv = input.closest('.form-group')?.querySelector('.error-message');
                             if (errorDiv) errorDiv.textContent = '';
+                        } else {
+                            e.target.classList.add('error');
+                            const errorDiv = input.closest('.form-group')?.querySelector('.error-message');
+                            if (errorDiv) errorDiv.textContent = 'Formato richiesto: 100.00:EUR o 100.00 EUR';
                         }
                     });
                 },
-
                 attachExchangeListeners: function (input, required) {
                     input.addEventListener('blur', (e) => {
-                        let value = e.target.value.trim();
+                        let val = e.target.value.trim();
+                        if (!val) return;
 
-                        if (!value && required) {
-                            e.target.classList.add('error');
-                            const errorDiv = input.closest('.form-group')?.querySelector('.error-message');
-                            if (errorDiv) errorDiv.textContent = getTranslation('int.field.required') || 'Campo obbligatorio';
-                            return;
-                        }
+                        if (FormatHelper.validateExchange(val)) {
+                            // TRASFORMAZIONE: Se valido, trasforma "1.23 EUR/USD" in "1.23:EUR/USD"
+                            const normalized = FormatHelper.normalizeInput(val);
+                            e.target.value = normalized;
 
-                        if (value) {
-                            // Automatically transform "value currency/currency" to "value:currency/currency"
-                            if (FormatHelper.validateExchange(value)) {
-                                value = FormatHelper.transformToColonFormat(value);
-                                e.target.value = value;
-                            }
-
-                            if (!FormatHelper.validateExchange(value)) {
-                                e.target.classList.add('error');
-                                const errorDiv = input.closest('.form-group')?.querySelector('.error-message');
-                                if (errorDiv) {
-                                    errorDiv.textContent = getTranslation('int.format.exchange.invalid') || 'Formato non valido. Usa: numero:VALUTA1/VALUTA2 (es: 1.10:EUR/USD)';
-                                }
-                            } else {
-                                e.target.classList.remove('error');
-                                const errorDiv = input.closest('.form-group')?.querySelector('.error-message');
-                                if (errorDiv) errorDiv.textContent = '';
-                            }
-                        } else {
                             e.target.classList.remove('error');
                             const errorDiv = input.closest('.form-group')?.querySelector('.error-message');
                             if (errorDiv) errorDiv.textContent = '';
+                        } else {
+                            e.target.classList.add('error');
+                            const errorDiv = input.closest('.form-group')?.querySelector('.error-message');
+                            if (errorDiv) errorDiv.textContent = 'Formato richiesto: 1.23:EUR/USD o 1.23 EUR/USD';
                         }
                     });
                 }

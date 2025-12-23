@@ -4,47 +4,29 @@
  */
 
 // Format validation helper
+// Format validation helper aggiornato
 const FormatHelper = {
-    // Validate FE_Decimal format (number space currency, e.g. "123.45 EUR")
+    // Valida sia "100.00 EUR" che "100.00:EUR"
     validateDecimal(value) {
         if (!value) return false;
-        const lastSpaceIndex = value.trim().lastIndexOf(':');
-        if (lastSpaceIndex === -1) return false;
-        const number = value.substring(0, lastSpaceIndex).trim();
-        const currency = value.substring(lastSpaceIndex + 1).trim();
-        const numRegex = /^-?\d+(\.\d{1,6})?$/;
-        if (!numRegex.test(number)) return false;
-        const currencyRegex = /^[A-Z]{3}$/;
-        if (!currencyRegex.test(currency)) return false;
-        return true;
+        // Accetta: numero, seguito da spazio O due punti, seguito da 3 lettere maiuscole
+        const decimalRegex = /^-?\d+(\.\d{1,6})?[\s:][A-Z]{3}$/;
+        return decimalRegex.test(value.trim());
     },
 
-    // Validate FE_Exchange format (number space currency pair, e.g. "1.10 EUR/USD" or "1.10:EUR/USD")
+    // Valida sia "1.23 EUR/USD" che "1.23:EUR/USD"
     validateExchange(value) {
         if (!value) return false;
+        // Accetta: numero, seguito da spazio O due punti, seguito da 3 lettere/3 lettere
+        const exchangeRegex = /^-?\d+(\.\d{1,6})?[\s:][A-Z]{3}\/[A-Z]{3}$/;
+        return exchangeRegex.test(value.trim());
+    },
 
-        // Support both space and colon as separator
-        let separator = ' ';
-        if (value.includes(':')) separator = ':';
-        else if (!value.includes(':')) return false;
-
-        const parts = value.split(separator);
-        if (parts.length !== 2) return false;
-
-        const number = parts[0];
-        const currencies = parts[1];
-
-        if (!currencies.includes('/')) return false;
-        const currencyParts = currencies.split('/');
-        if (currencyParts.length !== 2) return false;
-
-        const numRegex = /^-?\d+(\.\d{1,6})?$/;
-        if (!numRegex.test(number)) return false;
-
-        const currencyRegex = /^[A-Z]{3}$/;
-        if (!currencyRegex.test(currencyParts[0]) || !currencyRegex.test(currencyParts[1])) return false;
-
-        return true;
+    // Funzione di utilità per normalizzare l'input col formato standard "valore:divisa"
+    normalizeInput(value) {
+        if (!value) return "";
+        // Sostituisce il primo spazio trovato con i due punti
+        return value.trim().replace(/\s+/, ':');
     },
 
     // Validate FE_Float format (positive decimal number, e.g. "123.45")
