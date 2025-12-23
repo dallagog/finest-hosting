@@ -8,7 +8,7 @@ const FormatHelper = {
     // Validate FE_Decimal format (number space currency, e.g. "123.45 EUR")
     validateDecimal(value) {
         if (!value) return false;
-        const lastSpaceIndex = value.trim().lastIndexOf(' ');
+        const lastSpaceIndex = value.trim().lastIndexOf(' ') || value.trim().lastIndexOf(':');
         if (lastSpaceIndex === -1) return false;
         const number = value.substring(0, lastSpaceIndex).trim();
         const currency = value.substring(lastSpaceIndex + 1).trim();
