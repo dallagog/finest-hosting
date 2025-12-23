@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Dashboard 1.1</title>
+    <title>Dashboard 1.2 alfa</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <script src="js/dashboard-shared.js"></script>
@@ -1602,39 +1602,39 @@
                     filterData.Filter.role = filterData.Filter.role || 'admin';
                 }
 
-                // Aggiorna le selezioni di portafoglio
+                // MODIFICA CHIAVE 1: Portfolio - mantieni solo selected: true
                 const portfolioValue = portfolioSelect.value;
-                if (Array.isArray(filterData.Filter.portfolio)) {
-                    filterData.Filter.portfolio.forEach(p => {
-                        p.selected = (p.value === portfolioValue);
-                    });
-                } else {
-                    filterData.Filter.portfolio = [
-                        { "value": "PMP", "selected": portfolioValue === "PMP" },
-                        { "value": "MKT", "selected": portfolioValue === "MKT" }
-                    ];
-                }
+                const portfolioArray = [];
 
-                // Aggiorna le selezioni di redditività
+                if (portfolioValue) {
+                    // Aggiungi solo l'elemento selezionato
+                    portfolioArray.push({
+                        "value": portfolioValue,
+                        "selected": true
+                    });
+                }
+                filterData.Filter.portfolio = portfolioArray;
+
+                // MODIFICA CHIAVE 2: Yield - mantieni solo selected: true
                 const profitabilityValue = profitabilitySelect.value;
-                if (Array.isArray(filterData.Filter.yield)) {
-                    filterData.Filter.yield.forEach(y => {
-                        y.selected = (y.value === profitabilityValue);
-                    });
-                } else {
-                    filterData.Filter.yield = [
-                        { "value": "EMVL", "selected": profitabilityValue === "EMVL" },
-                        { "value": "EMVN", "selected": profitabilityValue === "EMVN" }
-                    ];
-                }
+                const yieldArray = [];
 
-                // MODIFICA CHIAVE: Crea una versione pulita della lista account SENZA type_account e description_account
+                if (profitabilityValue) {
+                    // Aggiungi solo l'elemento selezionato
+                    yieldArray.push({
+                        "value": profitabilityValue,
+                        "selected": true
+                    });
+                }
+                filterData.Filter.yield = yieldArray;
+
+                // MODIFICA CHIAVE 3: Crea una versione pulita della lista account SENZA type_account e description_account
                 if (!filterData.Account) filterData.Account = {};
 
                 // Pulisci la lista degli account - mantieni solo id_account e selected
                 const cleanedAccountList = [];
 
-                // Prima usa gli account da accountsData che hanno lo stato selezionato aggiornato
+                // Usa gli account da accountsData che hanno lo stato selezionato aggiornato
                 accountsData.forEach(acc => {
                     if (acc && acc.id_account) {
                         cleanedAccountList.push({
@@ -1667,41 +1667,35 @@
                 }
 
                 // DEBUG: Log del filtro che viene inviato
-                console.log('applyFiltersAndSave - Filtro aggiornato (pulito):', filterData);
+                console.log('applyFiltersAndSave - Filtro aggiornato:', {
+                    Filter: filterData.Filter,
+                    Account: {
+                        list: filterData.Account.list,
+                        count: filterData.Account.list.length
+                    },
+                    Name: filterData.Name
+                });
+
+                // Verifica che la struttura sia corretta
+                console.log('Verifica struttura filtro:');
+                console.log('- Portfolio items:', filterData.Filter.portfolio ? filterData.Filter.portfolio.length : 0);
+                if (filterData.Filter.portfolio && filterData.Filter.portfolio.length > 0) {
+                    console.log('- Primo portfolio item:', filterData.Filter.portfolio[0]);
+                }
+                console.log('- Yield items:', filterData.Filter.yield ? filterData.Filter.yield.length : 0);
+                if (filterData.Filter.yield && filterData.Filter.yield.length > 0) {
+                    console.log('- Primo yield item:', filterData.Filter.yield[0]);
+                }
+                console.log('- Account list items:', filterData.Account.list ? filterData.Account.list.length : 0);
+                if (filterData.Account.list && filterData.Account.list.length > 0) {
+                    console.log('- Primo account item:', filterData.Account.list[0]);
+                }
 
                 showMessage(getTranslation('int.sending.filters') || 'Invio filtri al server...', 'loading');
 
                 // Converti filterData in stringa JSON
                 const filterDataString = JSON.stringify(filterData);
-                console.log('Filter come stringa JSON (primi 200 caratteri):', filterDataString.substring(0, 200));
-
-                // Verifica che la struttura sia corretta
-                const expectedStructure = {
-                    Filter: {
-                        date_start: 'string',
-                        date_end: 'string',
-                        language: 'string',
-                        currency: 'string',
-                        portfolio: 'array',
-                        yield: 'array',
-                        role: 'string',
-                        username: 'string'
-                    },
-                    Account: {
-                        list: 'array con solo id_account e selected'
-                    },
-                    Name: {
-                        filter: 'string'
-                    }
-                };
-
-                console.log('Struttura verificata:', {
-                    hasFilter: !!filterData.Filter,
-                    hasAccount: !!filterData.Account,
-                    accountListLength: filterData.Account.list ? filterData.Account.list.length : 0,
-                    accountItemKeys: filterData.Account.list && filterData.Account.list.length > 0 ?
-                        Object.keys(filterData.Account.list[0]) : 'no items'
-                });
+                console.log('Filter JSON completo:', filterDataString);
 
                 // Crea payload con filter come stringa
                 const payload = {
@@ -1740,6 +1734,16 @@
                             if (errorText) {
                                 console.log('Testo errore completo:', errorText);
                                 errorMsg += ': ' + errorText;
+
+                                // Mostra messaggio più dettagliato per errori 422
+                                if (response.status === 422) {
+                                    try {
+                                        const errorJson = JSON.parse(errorText);
+                                        if (errorJson.detail) {
+                                            console.error('Dettaglio errore 422:', errorJson.detail);
+                                        }
+                                    } catch (e) { }
+                                }
                             }
                         } catch (e) {
                             console.error('Errore parsing risposta:', e);
@@ -1798,7 +1802,10 @@
                     setTimeout(redirectToLogin, 2000);
                 } else if (error.message.includes('422')) {
                     errorMessage += ': Formato dati non valido';
-                    console.error('Probabile struttura errata del filtro. Verifica che sia uguale a filter.json di esempio');
+                    console.error('Probabile struttura errata del filtro. Verifica:');
+                    console.error('1. Portfolio deve essere array con solo selected: true');
+                    console.error('2. Yield deve essere array con solo selected: true');
+                    console.error('3. Account.list deve avere solo id_account e selected');
                 } else {
                     errorMessage += ': ' + error.message;
                 }
@@ -1806,6 +1813,7 @@
                 showMessage(errorMessage, 'error');
             }
         }
+
         // ========== PDF ==========
         async function loadPDF() {
             try {
