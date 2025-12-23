@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Dashboard 2.0 alfa</title>
+    <title>Dashboard 2.1 alfa</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <script src="js/dashboard-shared.js"></script>
@@ -1428,27 +1428,74 @@
             if (f.date_start) document.getElementById('date-start').value = f.date_start;
             if (f.date_end) document.getElementById('date-end').value = f.date_end;
 
+            // Popola il dropdown del portafoglio con i suffissi dom.account_level_portfolio:
             const portfolioSelect = document.getElementById('portfolio');
             portfolioSelect.innerHTML = `<option value="">${getTranslation('int.select.option') || '-- seleziona --'}</option>`;
-            if (Array.isArray(f.portfolio)) {
-                f.portfolio.forEach(p => {
-                    const opt = document.createElement('option');
-                    opt.value = p.value; opt.textContent = p.value; opt.selected = p.selected;
-                    portfolioSelect.appendChild(opt);
-                });
-            }
 
+            // Cerca tutte le chiavi di traduzione che iniziano con dom.account_level_portfolio:
+            const portfolioOptions = [];
+            Object.keys(translations).forEach(key => {
+                if (key.startsWith('dom.account_level_portfolio:')) {
+                    const suffix = key.split(':')[1];
+                    const description = translations[key];
+                    portfolioOptions.push({ value: suffix, description: description });
+                }
+            });
+
+            // Ordina le opzioni per il suffisso
+            portfolioOptions.sort((a, b) => a.value.localeCompare(b.value));
+
+            // Aggiungi le opzioni al dropdown
+            portfolioOptions.forEach(option => {
+                const opt = document.createElement('option');
+                opt.value = option.value;
+                opt.textContent = option.description;
+
+                // Controlla se questa opzione è già selezionata come default
+                if (Array.isArray(f.portfolio)) {
+                    const found = f.portfolio.find(p => p.value === option.value);
+                    if (found && found.selected) {
+                        opt.selected = true;
+                    }
+                }
+
+                portfolioSelect.appendChild(opt);
+            });
+
+            // Popola il dropdown della redditività con i suffissi dom.account_level_yield:
             const profitabilitySelect = document.getElementById('profitability');
             profitabilitySelect.innerHTML = `<option value="">${getTranslation('int.select.option') || '-- seleziona --'}</option>`;
-            if (Array.isArray(f.yield)) {
-                f.yield.forEach(y => {
-                    const opt = document.createElement('option');
-                    opt.value = y.value; opt.textContent = y.value; opt.selected = y.selected;
-                    profitabilitySelect.appendChild(opt);
-                });
-            }
-        }
 
+            // Cerca tutte le chiavi di traduzione che iniziano con dom.account_level_yield:
+            const yieldOptions = [];
+            Object.keys(translations).forEach(key => {
+                if (key.startsWith('dom.account_level_yield:')) {
+                    const suffix = key.split(':')[1];
+                    const description = translations[key];
+                    yieldOptions.push({ value: suffix, description: description });
+                }
+            });
+
+            // Ordina le opzioni per il suffisso
+            yieldOptions.sort((a, b) => a.value.localeCompare(b.value));
+
+            // Aggiungi le opzioni al dropdown
+            yieldOptions.forEach(option => {
+                const opt = document.createElement('option');
+                opt.value = option.value;
+                opt.textContent = option.description;
+
+                // Controlla se questa opzione è già selezionata come default
+                if (Array.isArray(f.yield)) {
+                    const found = f.yield.find(y => y.value === option.value);
+                    if (found && found.selected) {
+                        opt.selected = true;
+                    }
+                }
+
+                profitabilitySelect.appendChild(opt);
+            });
+        }
         function updateSelectAllCheckbox() {
             const selectAllCheckbox = document.getElementById('select-all-accounts');
             if (!selectAllCheckbox || !filterData?.Account?.list) return;
