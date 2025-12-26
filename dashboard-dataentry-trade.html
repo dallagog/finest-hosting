@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Trade Data Entry 1.0 alfa</title>
+    <title>Trade Data Entry 0.1</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&display=swap');
@@ -906,74 +906,64 @@
                         let value = e.target.value.trim();
 
                         if (!value && required) {
-                            e.target.classList.add('error');
-                            const errorDiv = input.closest('.form-group')?.querySelector('.error-message');
-                            if (errorDiv) errorDiv.textContent = getTranslation('int.field.required') || 'Campo obbligatorio';
+                            this.showFieldError(input, getTranslation('int.field.required'));
                             return;
                         }
 
-                        if (value) {
-                            // Automatically transform "value currency" to "value:currency"
-                            if (FormatHelper.validateDecimal(value)) {
-                                value = FormatHelper.transformToColonFormat(value);
-                                e.target.value = value;
-                            }
+                        if (!value) {
+                            this.clearFieldError(input);
+                            return;
+                        }
 
-                            if (!FormatHelper.validateDecimal(value)) {
-                                e.target.classList.add('error');
-                                const errorDiv = input.closest('.form-group')?.querySelector('.error-message');
-                                if (errorDiv) {
-                                    errorDiv.textContent = getTranslation('int.format.decimal.invalid') || 'Formato non valido. Usa: numero VALUTA (es: 123.45 EUR)';
-                                }
-                            } else {
-                                e.target.classList.remove('error');
-                                const errorDiv = input.closest('.form-group')?.querySelector('.error-message');
-                                if (errorDiv) errorDiv.textContent = '';
-                            }
+                        // 🔹 NORMALIZZAZIONE
+                        const normalized = FormatHelper.normalizeDecimal(value);
+                        e.target.value = normalized;
+
+                        // 🔹 VALIDAZIONE SOLO SU valore:divisa
+                        if (!FormatHelper.validateDecimal(normalized)) {
+                            this.showFieldError(
+                                input,
+                                getTranslation('int.format.decimal.invalid') ||
+                                'Formato non valido. Usa: valore:DIVISA (es: 123.45:EUR)'
+                            );
                         } else {
-                            e.target.classList.remove('error');
-                            const errorDiv = input.closest('.form-group')?.querySelector('.error-message');
-                            if (errorDiv) errorDiv.textContent = '';
+                            this.clearFieldError(input);
                         }
                     });
                 },
+
 
                 attachExchangeListeners: function (input, required) {
                     input.addEventListener('blur', (e) => {
                         let value = e.target.value.trim();
 
                         if (!value && required) {
-                            e.target.classList.add('error');
-                            const errorDiv = input.closest('.form-group')?.querySelector('.error-message');
-                            if (errorDiv) errorDiv.textContent = getTranslation('int.field.required') || 'Campo obbligatorio';
+                            this.showFieldError(input, getTranslation('int.field.required'));
                             return;
                         }
 
-                        if (value) {
-                            // Automatically transform "value currency/currency" to "value:currency/currency"
-                            if (FormatHelper.validateExchange(value)) {
-                                value = FormatHelper.transformToColonFormat(value);
-                                e.target.value = value;
-                            }
+                        if (!value) {
+                            this.clearFieldError(input);
+                            return;
+                        }
 
-                            if (!FormatHelper.validateExchange(value)) {
-                                e.target.classList.add('error');
-                                const errorDiv = input.closest('.form-group')?.querySelector('.error-message');
-                                if (errorDiv) {
-                                    errorDiv.textContent = getTranslation('int.format.exchange.invalid') || 'Formato non valido. Usa: numero:VALUTA1/VALUTA2 (es: 1.10:EUR/USD)';
-                                }
-                            } else {
-                                e.target.classList.remove('error');
-                                const errorDiv = input.closest('.form-group')?.querySelector('.error-message');
-                                if (errorDiv) errorDiv.textContent = '';
-                            }
+                        // 🔹 NORMALIZZAZIONE
+                        const normalized = FormatHelper.normalizeExchange(value);
+                        e.target.value = normalized;
+
+                        // 🔹 VALIDAZIONE SOLO SU valore:divisa/divisa
+                        if (!FormatHelper.validateExchange(normalized)) {
+                            this.showFieldError(
+                                input,
+                                getTranslation('int.format.exchange.invalid') ||
+                                'Formato non valido. Usa: valore:DIVISA/DIVISA (es: 1.10:EUR/USD)'
+                            );
                         } else {
-                            e.target.classList.remove('error');
-                            const errorDiv = input.closest('.form-group')?.querySelector('.error-message');
-                            if (errorDiv) errorDiv.textContent = '';
+                            this.clearFieldError(input);
                         }
                     });
-                }
+                },
+
             };
         }
 

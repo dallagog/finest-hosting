@@ -5,49 +5,50 @@
 
 // Format validation helper
 const FormatHelper = {
-    // Validate FE_Decimal format (number space currency, e.g. "123.45 EUR")
+    normalizeDecimal(value) {
+        // accetta: "123.45 EUR" oppure "123.45:EUR"
+        const v = value.trim();
+
+        // già corretto
+        if (/^\d+(\.\d+)?\:[A-Z]{3}$/.test(v)) {
+            return v;
+        }
+
+        // "valore divisa"
+        const m = v.match(/^(\d+(?:\.\d+)?)\s+([A-Z]{3})$/);
+        if (m) {
+            return `${m[1]}:${m[2]}`;
+        }
+
+        return v; // non normalizzabile
+    },
+
+    normalizeExchange(value) {
+        // accetta: "1.10 EUR/USD" oppure "1.10:EUR/USD"
+        const v = value.trim();
+
+        // già corretto
+        if (/^\d+(\.\d+)?\:[A-Z]{3}\/[A-Z]{3}$/.test(v)) {
+            return v;
+        }
+
+        // "valore divisa/divisa"
+        const m = v.match(/^(\d+(?:\.\d+)?)\s+([A-Z]{3}\/[A-Z]{3})$/);
+        if (m) {
+            return `${m[1]}:${m[2]}`;
+        }
+
+        return v;
+    },
+
     validateDecimal(value) {
-        if (!value) return false;
-        const lastSpaceIndex = value.trim().lastIndexOf(' ') || value.trim().lastIndexOf(':');
-        if (lastSpaceIndex === -1) return false;
-        const number = value.substring(0, lastSpaceIndex).trim();
-        const currency = value.substring(lastSpaceIndex + 1).trim();
-        const numRegex = /^-?\d+(\.\d{1,6})?$/;
-        if (!numRegex.test(number)) return false;
-        const currencyRegex = /^[A-Z]{3}$/;
-        if (!currencyRegex.test(currency)) return false;
-        return true;
+        return /^\d+(\.\d+)?\:[A-Z]{3}$/.test(value);
     },
 
-    // Validate FE_Exchange format (number space currency pair, e.g. "1.10 EUR/USD" or "1.10:EUR/USD")
     validateExchange(value) {
-        if (!value) return false;
-
-        // Support both space and colon as separator
-        let separator = ' ';
-        if (value.includes(':')) separator = ':';
-        else if (!value.includes(' ')) return false;
-
-        const parts = value.split(separator);
-        if (parts.length !== 2) return false;
-
-        const number = parts[0];
-        const currencies = parts[1];
-
-        if (!currencies.includes('/')) return false;
-        const currencyParts = currencies.split('/');
-        if (currencyParts.length !== 2) return false;
-
-        const numRegex = /^-?\d+(\.\d{1,6})?$/;
-        if (!numRegex.test(number)) return false;
-
-        const currencyRegex = /^[A-Z]{3}$/;
-        if (!currencyRegex.test(currencyParts[0]) || !currencyRegex.test(currencyParts[1])) return false;
-
-        return true;
+        return /^\d+(\.\d+)?\:[A-Z]{3}\/[A-Z]{3}$/.test(value);
     },
 
-    // Validate FE_Float format (positive decimal number, e.g. "123.45")
     validateFloat(value) {
         if (!value) return false;
         const floatRegex = /^\d+(\.\d+)?$/;
