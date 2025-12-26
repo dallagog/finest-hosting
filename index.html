@@ -350,8 +350,9 @@
         }
 
         const showStatus = manifest['show.status'] || manifest.show; // fallback
+        const showVersion = manifest['show.version'];
 
-        if (showStatus === "True") {
+        if (showStatus === "True" || showVersion === "True") {
           return manifest;
         }
       } catch (error) {
@@ -366,13 +367,29 @@
       const offlineImg = offlineContainer.querySelector('img');
       const infoContainer = document.getElementById('maintenance-info');
 
-      // Update image
-      if (manifest.status) {
-        offlineImg.src = "status/images/" + manifest.status + ".svg";
-      } else if (manifest.image) {
-        // Fallback to explicit image path if status is missing
-        offlineImg.src = "status/" + manifest.image;
+      // Update image only if show.status is True
+      const showStatus = manifest['show.status'] || manifest.show;
+
+      if (showStatus === "True") {
+        if (manifest.status) {
+          offlineImg.src = "status/images/" + manifest.status + ".svg";
+        } else if (manifest.image) {
+          // Fallback to explicit image path if status is missing
+          offlineImg.src = "status/" + manifest.image;
+        }
+        offlineImg.style.display = 'block';
+        // Ensure container blocks interaction and has background if status is showing
+        offlineContainer.style.pointerEvents = 'auto';
+        offlineContainer.style.background = 'rgba(0, 0, 0, 0.5)'; // Add dimming if needed
+      } else {
+        // Hide image if just showing version info
+        offlineImg.style.display = 'none';
+        // Make container click-through if only showing info, or ensure it doesn't block critical UI
+        // If we want version info to be visible but not block the whole screen:
+        offlineContainer.style.pointerEvents = 'none';
+        offlineContainer.style.background = 'transparent';
       }
+
       offlineContainer.style.display = 'flex';
 
       // Login button logic is already handled in checkMaintenanceStatus
