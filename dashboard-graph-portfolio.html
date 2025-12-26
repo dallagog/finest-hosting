@@ -333,7 +333,7 @@
     <div class="header-bar">
         <div class="header-left">
             <div class="user-info-row">
-                <strong class="user-label">USER:</strong>
+                <strong class="user-label" id="user-label-text">USER:</strong>
                 <span id="username-display" class="username-display"></span>
             </div>
             <div class="user-info-row">
@@ -345,7 +345,7 @@
         </div>
 
         <div class="header-center">
-            <h1>Grafico Portfolio</h1>
+            <h1 id="portfolio-title">Grafico Portfolio</h1>
         </div>
         <div class="header-right">
             <select id="grouping-select" onchange="renderChart()"></select>
@@ -384,34 +384,50 @@
         const currency = urlParams.get('currency') || 'EUR';
         const initialGrouping = urlParams.get('grouping') || "";
 
-        // PLACEHOLDER PER getTranslation: Deve esistere in js/dashboard-shared.js
-        if (typeof getTranslation === 'undefined') {
-            window.getTranslation = (k) => {
-                // Funzione fittizia per garantire l'esecuzione in assenza della libreria
-                const fakeTranslations = {
-                    'int.user.label.asset_class': 'Classe di Attivo',
-                    'int.user.label.sector': 'Settore',
-                    'int.user.label.country': 'Paese',
-                    'int.user.label.Nessun_raggruppamento': 'Nessun raggruppamento',
-                    // Aggiungi qui le tue traduzioni di test
-                    'int.user.label.Asset1': 'Azioni Blue Chip',
-                    'int.user.label.Asset2': 'Obbligazioni Governativa'
-                };
-                return fakeTranslations[k] || k.replace('int.user.label.', 'KEY:');
-            };
+        /* ================= TRANSLATION LOGIC ================= */
+        async function loadTranslations(lang) {
+            try {
+                const response = await fetch(`lang/${lang}.json`);
+                if (!response.ok) throw new Error(`Translation file not found lang/${lang}.json`);
+                translations = await response.json();
+            } catch (error) {
+                console.error('❌ Error loading translations:', error);
+                translations = {};
+            }
+        }
+
+        function getTranslation(key) {
+            return translations[key] || key;
+        }
+
+        function updatePageTranslations() {
+            // Header
+            const titleEl = document.getElementById('portfolio-title');
+            if (titleEl) titleEl.textContent = getTranslation('int.portfolio');
+
+            // Close button
+            const closeBtn = document.getElementById('close-btn');
+            if (closeBtn) closeBtn.textContent = getTranslation('int.close');
+
+            // User Label
+            const userLabel = document.getElementById('user-label-text');
+            if (userLabel) userLabel.textContent = getTranslation('int.user.label');
         }
 
         /* ================= INIT ================= */
         window.onload = async () => {
             document.getElementById('username-display').textContent = username;
 
+            // Load resources first
             await Promise.all([
                 initializeLanguages(),
+                loadTranslations(language),
                 loadCurrencies(language)
             ]);
 
             updateUserInfoUI();
-            await loadPortfolio();
+            updatePageTranslations(); // Translate static elements
+            await loadPortfolio(); // Load data and populate combobox (uses getTranslation)
 
             document.getElementById("loading").style.display = "none";
         };
@@ -492,7 +508,7 @@
 
                         // Modifica Chiave 1: Usa getTranslation per tradurre la chiave del raggruppamento
                         if (i.label) {
-                            i.label = getTranslation(`int.user.label.${i.label}`);
+                            i.label = getTranslation(i.label);
                         }
                     });
                 }
@@ -504,7 +520,7 @@
                     getTranslation, // Passa la funzione di traduzione
                     initialGrouping,
                     // Modifica Chiave 2: Traduci l'etichetta di default
-                    getTranslation("int.user.label.Nessun_raggruppamento")
+                    getTranslation("int.noselection")
                 );
 
                 portfolioData = parsePortfolioItems(data.portfolio || {});
@@ -529,7 +545,7 @@
 
             // 3. ASSICURA LA TRADUZIONE DELLE LABEL DEL GRAFICO
             grouped.forEach(item => {
-                if (item.label && item.label.startsWith('int.user.label.')) {
+                if (item.label) {
                     item.label = getTranslation(item.label);
                 }
             });

@@ -67,32 +67,25 @@
             gap: 5px;
         }
 
-        .username-display {
-            font-size: 0.9rem;
-            color: var(--neon-cyan);
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-bottom: 5px;
-        }
-
-        .language-display {
+        .user-info-row {
             display: flex;
             align-items: center;
             gap: 8px;
-            font-size: 0.9rem;
-            color: var(--text-color);
+            font-size: 14px;
         }
 
-        .language-display .flag-icon {
-            width: 20px;
-            height: 15px;
-            background-color: var(--neon-blue);
-            color: #fff;
-            text-align: center;
-            line-height: 15px;
-            font-size: 8px;
-            border: 1px solid var(--neon-cyan);
-            box-shadow: 0 0 5px rgba(0, 243, 255, 0.5);
+        .user-label {
+            color: var(--neon-cyan);
+            font-weight: bold;
+        }
+
+        .username-display {
+            color: var(--text-color);
+            text-transform: uppercase;
+        }
+
+        .flag-icon {
+            font-size: 18px;
         }
 
         .header-center {
@@ -384,8 +377,16 @@
 
     <div class="header-bar">
         <div class="header-left">
-            <div id="username-display" class="username-display"></div>
-            <div id="language-indicator" class="language-display"></div>
+            <div class="user-info-row">
+                <strong class="user-label" id="user-label-text"></strong>
+                <span id="username-display" class="username-display"></span>
+            </div>
+            <div class="user-info-row">
+                <span class="flag-icon" id="languageFlag"></span>
+                <span id="languageDisplay"></span>
+                <span style="margin: 0 5px; color: var(--neon-blue);">|</span>
+                <span id="currencyDisplay"></span>
+            </div>
         </div>
 
         <div class="header-center">
@@ -445,7 +446,54 @@
 
     <script>
         // --- TRANSLATION SYSTEM (Dynamic) ---
+        // --- TRANSLATION SYSTEM (Dynamic) ---
         let translations = {};
+        let availableLanguages = [];
+        let currencies = [];
+
+        async function loadLanguageManifest() {
+            try {
+                const response = await fetch('lang/manifest.json');
+                if (!response.ok) return [];
+                const manifest = await response.json();
+                return manifest.languages || [];
+            } catch (e) {
+                console.error(e);
+                return [];
+            }
+        }
+
+        async function initializeLanguages() {
+            const codes = await loadLanguageManifest();
+            availableLanguages = [];
+            for (const code of codes) {
+                try {
+                    const res = await fetch(`lang/${code}.json`);
+                    if (res.ok) {
+                        const json = await res.json();
+                        availableLanguages.push({
+                            code: code,
+                            name: json['int.language.description'] || code,
+                            flag: json['img.language.flag'] || '🏳️'
+                        });
+                    }
+                } catch (e) { console.error(e); }
+            }
+        }
+
+        async function loadCurrencies(lang) {
+            try {
+                const response = await fetch(`currencies/${lang}.json`);
+                if (!response.ok) {
+                    if (lang !== 'it_IT') return loadCurrencies('it_IT');
+                    return;
+                }
+                currencies = await response.json();
+            } catch (error) {
+                console.error('❌ Error loading currencies:', error);
+                currencies = [];
+            }
+        }
 
         async function loadTranslations(langCode) {
             try {
@@ -470,14 +518,32 @@
             return translations[key] || key;
         }
 
-        const languageMap = {
-            'it_IT': { name: 'Italiano', initials: 'IT' },
-            'en_US': { name: 'English', initials: 'EN' },
-        };
+        function updateUserInfoUI() {
+            // Language
+            if (availableLanguages.length > 0) {
+                const langData = availableLanguages.find(l => l.code === language);
+                if (langData) {
+                    document.getElementById('languageFlag').textContent = langData.flag;
+                    const langDesc = getTranslation('int.language.description');
+                    document.getElementById('languageDisplay').textContent = langDesc !== 'int.language.description' ? langDesc : language;
+                }
+            }
 
-        function getFlagIcon(lang) {
-            const langInfo = languageMap[lang] || languageMap['it_IT'] || { name: lang, initials: lang.substring(0, 2).toUpperCase() };
-            return `<div class="flag-icon" title="${langInfo.name}">${langInfo.initials}</div>`;
+            // Currency
+            const urlCurrency = urlParams.get('currency');
+            let userCurrency = urlCurrency || localStorage.getItem('currency');
+
+            // If we have currencies loaded, try to find flag
+            if (userCurrency && currencies.length > 0) {
+                const currData = currencies.find(c => c.currency === userCurrency);
+                if (currData && currData['img.currency.flag']) {
+                    document.getElementById('currencyDisplay').textContent = `${currData['img.currency.flag']} ${userCurrency}`;
+                } else {
+                    document.getElementById('currencyDisplay').textContent = userCurrency;
+                }
+            } else {
+                document.getElementById('currencyDisplay').textContent = userCurrency || 'EUR';
+            }
         }
 
         function closeWindow() {
@@ -510,7 +576,7 @@
         ];
 
         async function init() {
-            document.getElementById('username-display').textContent = 'USER: ' + username;
+            document.getElementById('username-display').textContent = username;
 
             if (!username || !token) {
                 document.getElementById('loadingText').textContent = "Access Denied";
@@ -518,7 +584,13 @@
             }
 
             // Load translations first
-            await loadTranslations(language);
+            await Promise.all([
+                initializeLanguages(),
+                loadTranslations(language),
+                loadCurrencies(language)
+            ]);
+
+            updateUserInfoUI();
             updateHeaderTranslations();
 
             // Load Trend Data
@@ -541,9 +613,9 @@
             document.getElementById('chart-type-label').textContent = (getTranslation('int.chart_type') || "Chart Type") + ":";
             document.getElementById('close-btn').textContent = getTranslation('int.close') || "Close";
 
-            const langIndicator = document.getElementById('language-indicator');
-            const langName = getTranslation('lang.' + language);
-            langIndicator.innerHTML = `${getFlagIcon(language)} <span>${langName}</span>`;
+            // User Label
+            const userLabel = document.getElementById('user-label-text');
+            if (userLabel) userLabel.textContent = getTranslation('int.user.label');
 
             // Traduci opzioni periodo
             const periodSelect = document.getElementById('period-select');
@@ -561,7 +633,7 @@
             const selectedCount = getSelectedMetrics().length;
             const metricsBtn = document.getElementById('metrics-dropdown-btn');
             if (selectedCount === 0) {
-                metricsBtn.querySelector('span').textContent = getTranslation('int.select_metrics') || 'Select Metrics';
+                metricsBtn.querySelector('span').textContent = getTranslation('int.select.metrics') || 'Select Metrics';
             } else {
                 metricsBtn.querySelector('span').textContent = `${selectedCount} ${getTranslation('int.selected') || 'selected'}`;
             }
@@ -669,9 +741,22 @@
 
                 const div = document.createElement('div');
                 div.className = 'metric-checkbox-item';
+
+                // Default logic: if no initialMetric is set, default to "up_negoziazione" or "u/p"
+                let isChecked = false;
+                if (initialMetric) {
+                    isChecked = (initialMetric === key);
+                } else {
+                    // Check if key matches "up_negoziazione" or contains "u/p" (case insensitive)
+                    const lowerKey = key.toLowerCase();
+                    if (lowerKey === 'up_negoziazione') {
+                        isChecked = true;
+                    }
+                }
+
                 div.innerHTML = `
                     <input type="checkbox" id="${metricId}" value="${key}" 
-                           ${initialMetric === key ? 'checked' : ''} 
+                           ${isChecked ? 'checked' : ''} 
                            onchange="updateSelectedMetrics()">
                     <label for="${metricId}">${label}</label>
                 `;
