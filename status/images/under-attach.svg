@@ -1,0 +1,94 @@
+<svg width="1200" height="600" viewBox="0 0 1200 600" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- Google Font -->
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&amp;display=swap');
+      
+      .tron-text {
+        font-family: 'Orbitron', sans-serif;
+        font-size: 85px;
+        font-weight: 900;
+        fill: rgba(0, 0, 0, 0.3); /* Slight fill for readability */
+        stroke: #ff3333;
+        stroke-width: 3px;
+        letter-spacing: 8px;
+        text-anchor: middle;
+        filter: url(#neon-glow);
+      }
+      
+      .tron-frame {
+        fill: none;
+        stroke: #ff3333;
+        stroke-width: 2px;
+        filter: url(#neon-glow-soft);
+      }
+
+      .scanline {
+        fill: url(#scan-pattern);
+      }
+    </style>
+
+    <!-- Scanline Pattern -->
+    <pattern id="scan-pattern" x="0" y="0" width="10" height="4" patternUnits="userSpaceOnUse">
+      <rect x="0" y="0" width="10" height="2" fill="#ff3333" opacity="0.3"/>
+    </pattern>
+
+    <!-- Intense Neon Glow Filter -->
+    <filter id="neon-glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="3" result="blur1"/>
+      <feGaussianBlur in="SourceAlpha" stdDeviation="7" result="blur2"/>
+      <feGaussianBlur in="SourceAlpha" stdDeviation="20" result="blur3"/>
+      <feFlood flood-color="#ff0000" result="color"/>
+      <feComposite in="color" in2="blur1" operator="in" result="glow1"/>
+      <feComposite in="color" in2="blur2" operator="in" result="glow2"/>
+      <feComposite in="color" in2="blur3" operator="in" result="glow3"/>
+      <feMerge>
+        <feMergeNode in="glow3"/>
+        <feMergeNode in="glow2"/>
+        <feMergeNode in="glow1"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+
+    <!-- Soft Glow for Frame -->
+    <filter id="neon-glow-soft" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="2" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Group centered -->
+  <g transform="translate(600, 300)">
+    
+    <!-- Outer Octagonal Frame -->
+    <path class="tron-frame" d="
+      M -500 -120 
+      L -550 -70 
+      L -550 70 
+      L -500 120 
+      L 500 120 
+      L 550 70 
+      L 550 -70 
+      L 500 -120 
+      Z
+    " opacity="0.8" />
+    
+    <!-- Inner Decoration Lines -->
+    <path class="tron-frame" d="M -480 -100 L 480 -100" opacity="0.5" stroke-dasharray="10 5"/>
+    <path class="tron-frame" d="M -480 100 L 480 100" opacity="0.5" stroke-dasharray="10 5"/>
+
+    <!-- Text Layer with Scanlines -->
+    <text x="0" y="0" dy="0.35em" class="tron-text">SERVER UNDER ATTACH</text>
+    
+    <!-- Overlay Pattern on Text for "Digital" look -->
+    <text x="0" y="0" dy="0.35em" class="tron-text" fill="url(#scan-pattern)" stroke="none" opacity="0.5">SERVER UNDER ATTACH</text>
+
+    <!-- Small Decor Elements -->
+    <rect x="-20" y="140" width="40" height="6" fill="#ff3333" filter="url(#neon-glow-soft)" />
+    <circle cx="-550" cy="0" r="6" fill="#ff3333" filter="url(#neon-glow-soft)" />
+    <circle cx="550" cy="0" r="6" fill="#ff3333" filter="url(#neon-glow-soft)" />
+  </g>
+</svg>

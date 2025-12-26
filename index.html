@@ -123,6 +123,46 @@
         transform: scale(0.98);
       }
     }
+
+    .maintenance-info {
+      position: absolute;
+      bottom: 50px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      background: rgba(0, 0, 0, 0.85);
+      border: 1px solid var(--neon-cyan);
+      padding: 20px 40px;
+      border-radius: 8px;
+      box-shadow: 0 0 15px rgba(0, 243, 255, 0.2);
+      font-family: 'Orbitron', sans-serif;
+      text-align: left;
+      z-index: 10001;
+      min-width: 300px;
+    }
+
+    .maintenance-info p {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin: 0;
+      gap: 20px;
+      font-size: 1.1rem;
+      color: var(--text-color);
+    }
+
+    .maintenance-info .label {
+      font-weight: bold;
+      color: var(--neon-blue);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .maintenance-info .value {
+      font-weight: 500;
+      color: var(--neon-cyan);
+      text-align: right;
+    }
   </style>
 </head>
 
@@ -147,7 +187,8 @@
 
   <!-- Offline overlay -->
   <div class="offline-container" id="offline-container">
-    <img src="images/off-line.svg" alt="Server Offline">
+    <img src="status/images/off-line.svg" alt="Server Offline">
+    <div id="maintenance-info" class="maintenance-info" style="display: none;"></div>
   </div>
 
   <script>
@@ -254,6 +295,11 @@
       await loadTranslations(langCode);
       updateLanguageCombo();
       updatePageTranslations();
+
+      // Re-render maintenance info if present
+      if (window.maintenanceManifest) {
+        renderMaintenanceInfo(window.maintenanceManifest);
+      }
     }
 
     // Language combo event listener
@@ -279,6 +325,64 @@
       //} catch (err) {
       //  console.warn('Window close failed:', err);
       //}
+    }
+
+    // Check maintenance status
+    async function checkMaintenanceStatus() {
+      try {
+        const response = await fetch('status/manifest.json', { cache: "no-cache" });
+        if (!response.ok) return null;
+
+        const manifest = await response.json();
+        const showStatus = manifest['show.status'] || manifest.show; // fallback
+
+        if (showStatus === "True") {
+          return manifest;
+        }
+      } catch (error) {
+        console.error("Error checking maintenance status:", error);
+      }
+      return null;
+    }
+
+    // Render maintenance overlay
+    function renderMaintenanceInfo(manifest) {
+      const offlineContainer = document.getElementById('offline-container');
+      const offlineImg = offlineContainer.querySelector('img');
+      const infoContainer = document.getElementById('maintenance-info');
+
+      // Update image
+      offlineImg.src = "status/" + manifest.image;
+      offlineContainer.style.display = 'flex';
+
+      // Disable login button
+      const signinBtn = document.getElementById('signin-btn');
+      if (signinBtn) {
+        signinBtn.style.pointerEvents = 'none';
+        signinBtn.style.opacity = '0.5';
+        signinBtn.onclick = null;
+      }
+
+      // Display version info if enabled
+      if (manifest['show.version'] === "True") {
+        infoContainer.style.display = 'flex';
+        infoContainer.innerHTML = `
+          <p>
+            <span class="label">${getTranslation('int.date.version')}</span>
+            <span class="value">${manifest['int.version']}</span>
+          </p>
+          <p>
+            <span class="label">${getTranslation('int.date.start')}</span>
+            <span class="value">${manifest['int.date.start']}</span>
+          </p>
+          <p>
+            <span class="label">${getTranslation('int.date.end')}</span>
+            <span class="value">${manifest['int.date.end']}</span>
+          </p>
+        `;
+      } else {
+        infoContainer.style.display = 'none';
+      }
     }
 
     // Health check
@@ -308,11 +412,21 @@
       const savedLang = localStorage.getItem('selectedLanguage');
       if (savedLang) language = savedLang;
 
-      await checkHealth();
+      // Always load translations and languages first to caption the maintenance screen if needed
       await initializeLanguages();
       await loadTranslations(language);
       updateLanguageCombo();
       updatePageTranslations();
+
+      const maintenanceManifest = await checkMaintenanceStatus();
+
+      if (maintenanceManifest) {
+        window.maintenanceManifest = maintenanceManifest; // Store for re-rendering on lang change
+        renderMaintenanceInfo(maintenanceManifest);
+      } else {
+        // Only check health if not in maintenance mode
+        await checkHealth();
+      }
     }
 
     init();
