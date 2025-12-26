@@ -364,9 +364,18 @@
       }
 
       // Display version info if enabled
+      let infoHTML = '';
+
+      if (manifest['int.status.message'] === "True") {
+        infoHTML += `
+          <p style="justify-content: center; margin-bottom: 15px;">
+            <span class="value" style="color: var(--neon-cyan); font-size: 1.2rem; text-align: center;">${getTranslation('int.status.message')}</span>
+          </p>
+        `;
+      }
+
       if (manifest['show.version'] === "True") {
-        infoContainer.style.display = 'flex';
-        infoContainer.innerHTML = `
+        infoHTML += `
           <p>
             <span class="label">${getTranslation('int.date.version')}</span>
             <span class="value">${manifest['int.version']}</span>
@@ -380,6 +389,11 @@
             <span class="value">${manifest['int.date.end']}</span>
           </p>
         `;
+      }
+
+      if (infoHTML) {
+        infoContainer.style.display = 'flex';
+        infoContainer.innerHTML = infoHTML;
       } else {
         infoContainer.style.display = 'none';
       }
