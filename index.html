@@ -334,6 +334,21 @@
         if (!response.ok) return null;
 
         const manifest = await response.json();
+
+        // Handle login button based on status.stop
+        const signinBtn = document.getElementById('signin-btn');
+        if (signinBtn) {
+          if (manifest['status.stop'] === "True") {
+            signinBtn.style.pointerEvents = 'none';
+            signinBtn.style.opacity = '0.5';
+            signinBtn.onclick = null;
+          } else {
+            signinBtn.style.pointerEvents = 'auto';
+            signinBtn.style.opacity = '1';
+            signinBtn.onclick = goToLogin;
+          }
+        }
+
         const showStatus = manifest['show.status'] || manifest.show; // fallback
 
         if (showStatus === "True") {
@@ -352,16 +367,12 @@
       const infoContainer = document.getElementById('maintenance-info');
 
       // Update image
-      offlineImg.src = "status/" + manifest.image;
+      if (manifest.image) {
+        offlineImg.src = "status/" + manifest.image;
+      }
       offlineContainer.style.display = 'flex';
 
-      // Disable login button
-      const signinBtn = document.getElementById('signin-btn');
-      if (signinBtn) {
-        signinBtn.style.pointerEvents = 'none';
-        signinBtn.style.opacity = '0.5';
-        signinBtn.onclick = null;
-      }
+      // Login button logic is already handled in checkMaintenanceStatus
 
       // Display version info if enabled
       let infoHTML = '';
