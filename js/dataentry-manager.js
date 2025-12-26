@@ -1,6 +1,6 @@
 /**
  * DataEntry Library - Gestione dinamica form per data entry
- * @version 2.0.0
+ * @version 1.0.0
  */
 
 // Format validation helper
@@ -427,22 +427,28 @@ class DataEntryManager {
         if (!value) return { isValid: true };
 
         // Validate FE_Decimal format
-        if (formatType === 'FE_Decimal') {
-            if (!FormatHelper.validateDecimal(value)) {
-                return {
-                    isValid: false,
-                    message: this.getTranslation('int.format.decimal.invalid') || 'Formato non valido. Usa: numero VALUTA (es: 123.45 EUR)'
-                };
+        if (formatType === 'FE_Decimal' && value) {
+
+            // 🔹 NORMALIZZA SEMPRE
+            const normalized = FormatHelper.normalizeDecimal(value);
+            input.value = normalized;
+
+            // 🔹 VALIDA SOLO DOPO NORMALIZZAZIONE
+            if (!FormatHelper.validateDecimal(normalized)) {
+                error = true;
             }
         }
 
         // Validate FE_Exchange format
-        if (formatType === 'FE_Exchange') {
-            if (!FormatHelper.validateExchange(value)) {
-                return {
-                    isValid: false,
-                    message: this.getTranslation('int.format.exchange.invalid') || 'Formato non valido. Usa: numero VALUTA1/VALUTA2 (es: 1.10 EUR/USD)'
-                };
+        if (formatType === 'FE_Exchange' && value) {
+
+            // 🔹 NORMALIZZA SEMPRE
+            const normalized = FormatHelper.normalizeExchange(value);
+            input.value = normalized;
+
+            // 🔹 VALIDA SOLO DOPO NORMALIZZAZIONE
+            if (!FormatHelper.validateExchange(normalized)) {
+                error = true;
             }
         }
 
