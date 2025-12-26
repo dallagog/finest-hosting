@@ -370,6 +370,8 @@
         const token = urlParams.get('token');
         const language = urlParams.get('language') || 'it_IT';
         const initialGrouping = urlParams.get('grouping') || '';
+        const accountsParam = urlParams.get('accounts');
+        const selectedAccounts = accountsParam ? accountsParam.split(',') : [];
 
         async function init() {
             document.getElementById('username-display').textContent = username;
@@ -448,8 +450,14 @@
                     }
 
                     const rawYield = data.portfolioyield || {};
-                    // Use shared parsing logic
-                    profitabilityData = parsePortfolioItems(rawYield);
+                    let parsedData = parsePortfolioItems(rawYield, classificationFilter);
+
+                    // Filter by selected accounts
+                    if (selectedAccounts.length > 0) {
+                        parsedData = parsedData.filter(item => selectedAccounts.includes(item.id_account));
+                    }
+
+                    profitabilityData = parsedData;
 
                     document.getElementById('loading').style.display = 'none';
                 } else {

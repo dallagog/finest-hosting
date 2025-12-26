@@ -562,6 +562,8 @@
         const token = urlParams.get('token');
         const language = urlParams.get('language') || 'it_IT';
         const initialMetric = urlParams.get('metric') || '';
+        const accountsParam = urlParams.get('accounts');
+        const selectedAccounts = accountsParam ? accountsParam.split(',') : [];
 
         // Colori per i diversi dataset
         const datasetColors = [
@@ -670,6 +672,11 @@
 
                     if (!Array.isArray(rawTrend)) {
                         rawTrend = [];
+                    }
+
+                    // Filter by selected accounts
+                    if (selectedAccounts.length > 0) {
+                        rawTrend = rawTrend.filter(item => selectedAccounts.includes(item.id_account));
                     }
 
                     trendDataRaw = rawTrend;
@@ -1004,6 +1011,7 @@
                     pointHoverBorderColor: color.border,
                     fill: chartType === 'line',
                     tension: chartType === 'line' ? 0.4 : 0,
+                    spanGaps: true, // Connect lines over missing data points
                     yAxisID: isPercentage ? 'y-percent' : 'y-value',
                     metricKey: metric,
                     aggregatedData: alignedAggregatedDetails // Synchronized details

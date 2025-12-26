@@ -415,7 +415,10 @@
         }
 
         /* ================= INIT ================= */
-        window.onload = async () => {
+        const accountsParam = urlParams.get('accounts');
+        const selectedAccounts = accountsParam ? accountsParam.split(',') : [];
+
+        async function init() {
             document.getElementById('username-display').textContent = username;
 
             // Load resources first
@@ -426,11 +429,15 @@
             ]);
 
             updateUserInfoUI();
-            updatePageTranslations(); // Translate static elements
-            await loadPortfolio(); // Load data and populate combobox (uses getTranslation)
+            updatePageTranslations();
+
+            await loadManifest();
+            loadPortfolio(); // Load data and populate combobox (uses getTranslation)
 
             document.getElementById("loading").style.display = "none";
-        };
+        }
+
+        window.onload = init;
 
         /* ================= LANGUAGE & CURRENCY LOGIC (Unchanged) ================= */
         async function loadLanguageManifest() {
@@ -522,8 +529,12 @@
                     // Modifica Chiave 2: Traduci l'etichetta di default
                     getTranslation("int.noselection")
                 );
-
-                portfolioData = parsePortfolioItems(data.portfolio || {});
+                // Filter if accounts are specified
+                let rawData = parsePortfolioItems(data.portfolio, classificationFilter);
+                if (selectedAccounts.length > 0) {
+                    rawData = rawData.filter(item => selectedAccounts.includes(item.id_account));
+                }
+                portfolioData = rawData;
                 renderChart();
             } catch (e) {
                 console.error(e);
