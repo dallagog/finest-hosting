@@ -607,7 +607,7 @@
         }
 
         function updateHeaderTranslations() {
-            document.getElementById('page-title').textContent = getTranslation('int.trend_analysis') || "Trend Analysis";
+            document.getElementById('page-title').textContent = getTranslation('int.trend.analysis') || "Trend Analysis";
             document.getElementById('metric-label').textContent = (getTranslation('int.metrics') || "Metrics") + ":";
             document.getElementById('period-label').textContent = (getTranslation('int.period') || "Period") + ":";
             document.getElementById('chart-type-label').textContent = (getTranslation('int.chart_type') || "Chart Type") + ":";
@@ -787,7 +787,7 @@
             const metricsBtn = document.getElementById('metrics-dropdown-btn');
 
             if (selectedCount === 0) {
-                metricsBtn.querySelector('span').textContent = getTranslation('int.select_metrics') || 'Select Metrics';
+                metricsBtn.querySelector('span').textContent = getTranslation('int.select.metrics') || 'Select Metrics';
             } else {
                 metricsBtn.querySelector('span').textContent = `${selectedCount} ${getTranslation('int.selected') || 'selected'}`;
             }
@@ -932,22 +932,53 @@
             // Prepara i datasets
             const datasets = [];
             const allLabelsSet = new Set();
-            const allDataPoints = [];
+            const metricDataMap = new Map(); // Store aggregated data for each metric
 
-            selectedMetrics.forEach((metric, index) => {
-                const isPercentage = isPercentageField(metric);
+            // First pass: Aggregate data and collect all unique labels
+            selectedMetrics.forEach((metric) => {
                 const aggregatedData = aggregateByPeriod(trendDataRaw, metric, selectedPeriod);
+                metricDataMap.set(metric, aggregatedData);
 
-                // Aggiungi le etichette e i punti dati
                 aggregatedData.forEach(item => {
                     allLabelsSet.add(item.label);
-                    allDataPoints.push({
-                        label: item.label,
-                        date: item.date,
-                        metric: metric,
-                        value: item.value,
-                        instruments: item.instruments
-                    });
+                });
+            });
+
+            // Creates sorted array of all unique labels (X-axis)
+            const allLabels = Array.from(allLabelsSet).sort((a, b) => {
+                // We need to pick a representative date for sorting
+                // Try to find the date object from any metric that has this label
+                let dateA = null;
+                let dateB = null;
+
+                for (let [m, data] of metricDataMap) {
+                    const itemA = data.find(i => i.label === a);
+                    if (itemA) { dateA = itemA.date; break; }
+                }
+                for (let [m, data] of metricDataMap) {
+                    const itemB = data.find(i => i.label === b);
+                    if (itemB) { dateB = itemB.date; break; }
+                }
+
+                if (!dateA || !dateB) return 0;
+                return dateA - dateB;
+            });
+
+            // Second pass: Build datasets synchronized with allLabels
+            selectedMetrics.forEach((metric, index) => {
+                const isPercentage = isPercentageField(metric);
+                const aggregatedData = metricDataMap.get(metric);
+
+                // Map global labels to values for this metric
+                const alignedData = allLabels.map(label => {
+                    const item = aggregatedData.find(d => d.label === label);
+                    return item ? item.value : null; // Use null for missing data points
+                });
+
+                // Also map detailed data for tooltips
+                const alignedAggregatedDetails = allLabels.map(label => {
+                    const item = aggregatedData.find(d => d.label === label);
+                    return item ? item : null;
                 });
 
                 const colorIndex = index % datasetColors.length;
@@ -957,13 +988,13 @@
                 gradient.addColorStop(0, color.bg);
                 gradient.addColorStop(1, color.bg.replace('0.4', '0.05'));
 
-                // Trova l'etichetta della metrica
+                // Find metric label
                 const metricLabel = Array.from(document.querySelectorAll('#metrics-checkbox-list label'))
                     .find(label => label.htmlFor === `metric-${metric}`)?.textContent || metric;
 
                 datasets.push({
                     label: metricLabel,
-                    data: aggregatedData.map(item => item.value),
+                    data: alignedData,
                     borderColor: color.border,
                     backgroundColor: chartType === 'bar' ? color.bg : gradient,
                     borderWidth: chartType === 'bar' ? 1 : 2,
@@ -975,19 +1006,10 @@
                     tension: chartType === 'line' ? 0.4 : 0,
                     yAxisID: isPercentage ? 'y-percent' : 'y-value',
                     metricKey: metric,
-                    aggregatedData: aggregatedData // Mantieni i dati dettagliati per il tooltip
+                    aggregatedData: alignedAggregatedDetails // Synchronized details
                 });
             });
 
-            // Ordina le etichette in base alla data
-            const allLabels = Array.from(allLabelsSet);
-            allLabels.sort((a, b) => {
-                // Trova la data associata a ciascuna etichetta
-                const dateA = allDataPoints.find(d => d.label === a)?.date;
-                const dateB = allDataPoints.find(d => d.label === b)?.date;
-                if (!dateA || !dateB) return 0;
-                return dateA - dateB;
-            });
 
             // Configura assi Y
             const scales = {
