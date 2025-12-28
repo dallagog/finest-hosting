@@ -494,10 +494,10 @@
                 const response = await fetch(`lang/${langCode}.json`);
                 if (!response.ok) return null;
                 const data = await response.json();
-                if (data['int.language.code'] && data['int.language.description'] && data['img.language.flag']) {
+                if (data['ins.language.code'] && data['ins.language.description'] && data['img.language.flag']) {
                     return {
-                        code: data['int.language.code'],
-                        description: data['int.language.description'],
+                        code: data['ins.language.code'],
+                        description: data['ins.language.description'],
                         flag: data['img.language.flag']
                     };
                 }
@@ -588,7 +588,7 @@
         }
 
         function getTranslation(key) {
-            return translations[key] || instrumentTranslations[key] || key;
+            return instrumentTranslations[key] || translations[key] || key;
         }
 
         function getInstrumentTypeTranslation(instrumentType) {
@@ -630,9 +630,9 @@
                 const langData = availableLanguages.find(l => l.code === userLanguage);
                 if (langData) {
                     document.getElementById('languageFlag').textContent = langData.flag;
-                    const langDescription = getTranslation('int.language.description');
+                    const langDescription = getTranslation('ins.language.description');
                     document.getElementById('languageDisplay').textContent =
-                        langDescription !== 'int.language.description' ? langDescription : userLanguage;
+                        langDescription !== 'ins.language.description' ? langDescription : userLanguage;
                 } else {
                     document.getElementById('languageDisplay').textContent = userLanguage;
                 }
@@ -651,13 +651,13 @@
         }
 
         function updatePageTranslations() {
-            document.getElementById('userLabel').textContent = getTranslation('int.user.label') || 'Utente:';
-            document.getElementById('pageTitle').textContent = getTranslation('int.instrument.dataentry') || 'Instrument Data Entry';
+            document.getElementById('userLabel').textContent = getTranslation('ins.user.label') || 'Utente:';
+            document.getElementById('pageTitle').textContent = getTranslation('ins.instrument.dataentry') || 'Instrument Data Entry';
             document.getElementById('pageSubtitle').textContent = ''; // Rimossa scritta Seleziona strumento
-            document.getElementById('loadingText').textContent = getTranslation('int.loading.data') || 'Inizializzazione sistema...';
-            document.getElementById('successText').textContent = getTranslation('int.success.save') || 'Dati salvati con successo!';
-            document.getElementById('closeText').textContent = getTranslation('int.close') || 'Chiudi';
-            document.getElementById('selectorLabel').textContent = getTranslation('int.select.instrument.type') || 'Seleziona tipo strumento:';
+            document.getElementById('loadingText').textContent = getTranslation('ins.loading.data') || 'Inizializzazione sistema...';
+            document.getElementById('successText').textContent = getTranslation('ins.success.save') || 'Dati salvati con successo!';
+            document.getElementById('closeText').textContent = getTranslation('ins.close') || 'Chiudi';
+            document.getElementById('selectorLabel').textContent = getTranslation('ins.select.instrument.type') || 'Seleziona tipo strumento:';
 
             const sector = urlParams.account_sector;
             if (sector) {
@@ -742,7 +742,7 @@
             formContainer.innerHTML = `
                 <div class="loading">
                     <div class="spinner"></div>
-                    <p>${getTranslation('int.loading.data') || 'Caricamento dati...'}</p>
+                    <p>${getTranslation('ins.loading.data') || 'Caricamento dati...'}</p>
                 </div>
             `;
 
@@ -786,7 +786,7 @@
 
                         if (!credentials.username) {
                             console.error('ERRORE: Username mancante nel payload!');
-                            alert(getTranslation('int.error.missing_username') || 'Username mancante. Per favore effettua nuovamente il login.');
+                            alert(getTranslation('ins.error.missing_username') || 'Username mancante. Per favore effettua nuovamente il login.');
                             return;
                         }
 
@@ -828,7 +828,7 @@
 
                         } catch (error) {
                             console.error('Errore durante il salvataggio:', error);
-                            alert(getTranslation('int.error.save.failed') || `Errore nel salvataggio: ${error.message}`);
+                            alert(getTranslation('ins.error.save.failed') || `Errore nel salvataggio: ${error.message}`);
                         } finally {
                             formContainerSubmit.style.opacity = 1;
                         }
@@ -874,10 +874,10 @@
                             </div>
                             <div class="form-actions">
                                 <button type="button" id="reset-btn" class="btn btn-secondary">
-                                    <i class="fa fa-undo"></i> ${getTranslation('int.reset') || 'Reset'}
+                                    <i class="fa fa-undo"></i> ${getTranslation('ins.reset') || 'Reset'}
                                 </button>
                                 <button type="submit" class="btn btn-primary">
-                                    <i class="fa fa-save"></i> ${getTranslation('int.save') || 'Salva'}
+                                    <i class="fa fa-save"></i> ${getTranslation('ins.save') || 'Salva'}
                                 </button>
                             </div>
                         </form>
@@ -966,8 +966,8 @@
                 console.error('Errore durante il caricamento del form:', error);
                 formContainer.innerHTML = `
                     <div style="border: 1px solid var(--error-color); color: var(--error-color); padding: 20px; border-radius: 4px;">
-                        <h3><i class="fa fa-exclamation-triangle"></i> ${getTranslation('int.error.system') || 'Errore Sistema'}</h3>
-                        <p>${getTranslation('int.error.loading.module') || 'Errore caricamento modulo'}: ${error.message}</p>
+                        <h3><i class="fa fa-exclamation-triangle"></i> ${getTranslation('ins.error.system') || 'Errore Sistema'}</h3>
+                        <p>${getTranslation('ins.error.loading.module') || 'Errore caricamento modulo'}: ${error.message}</p>
                     </div>
                 `;
             }
@@ -1078,7 +1078,7 @@
                                              ${required ? 'required' : ''}
                                              class="form-select${fixedClass}"
                                              data-format="FE_Account">
-                                        <option value="">-- ${getTranslation('int.select.option') || 'Seleziona'} --</option>
+                                        <option value="">-- ${getTranslation('ins.select.option') || 'Seleziona'} --</option>
                                         ${options}
                                     </select>`;
                             break;
@@ -1109,7 +1109,7 @@
                                                      ${isFixed ? 'disabled' : ''}
                                                      class="form-select${fixedClass}"
                                                      data-format="list">
-                                                <option value="">-- ${getTranslation('int.select.option') || 'Seleziona'} --</option>
+                                                <option value="">-- ${getTranslation('ins.select.option') || 'Seleziona'} --</option>
                                                 ${options}
                                             </select>`;
                                 } catch (e) {
@@ -1156,7 +1156,7 @@
                         let value = e.target.value.trim();
 
                         if (!value && required) {
-                            this.showFieldError(input, getTranslation('int.field.required'));
+                            this.showFieldError(input, getTranslation('ins.field.required'));
                             return;
                         }
 
@@ -1171,7 +1171,7 @@
                         if (!FormatHelper.validateDecimal(normalized)) {
                             this.showFieldError(
                                 input,
-                                getTranslation('int.format.decimal.invalid') ||
+                                getTranslation('ins.format.decimal.invalid') ||
                                 'Formato non valido. Usa: valore:DIVISA'
                             );
                         } else {
@@ -1185,7 +1185,7 @@
                         let value = e.target.value.trim();
 
                         if (!value && required) {
-                            this.showFieldError(input, getTranslation('int.field.required'));
+                            this.showFieldError(input, getTranslation('ins.field.required'));
                             return;
                         }
 
@@ -1200,7 +1200,7 @@
                         if (!FormatHelper.validateExchange(normalized)) {
                             this.showFieldError(
                                 input,
-                                getTranslation('int.format.exchange.invalid') ||
+                                getTranslation('ins.format.exchange.invalid') ||
                                 'Formato non valido. Usa: valore:DIVISA/DIVISA'
                             );
                         } else {
@@ -1223,7 +1223,7 @@
                     if (required && !value) {
                         return {
                             isValid: false,
-                            message: getTranslation('int.field.required') || 'Campo obbligatorio'
+                            message: getTranslation('ins.field.required') || 'Campo obbligatorio'
                         };
                     }
 
@@ -1231,7 +1231,7 @@
                         if (!FormatHelper.validateDecimal(value)) {
                             return {
                                 isValid: false,
-                                message: getTranslation('int.format.decimal.invalid') || 'Formato non valido'
+                                message: getTranslation('ins.format.decimal.invalid') || 'Formato non valido'
                             };
                         }
                     }
@@ -1240,7 +1240,7 @@
                         if (!FormatHelper.validateDateTime(value)) {
                             return {
                                 isValid: false,
-                                message: getTranslation('int.format.datetime.invalid') || 'Formato non valido'
+                                message: getTranslation('ins.format.datetime.invalid') || 'Formato non valido'
                             };
                         }
                     }
@@ -1249,7 +1249,7 @@
                         if (!FormatHelper.validateDate(value)) {
                             return {
                                 isValid: false,
-                                message: getTranslation('int.format.date.invalid') || 'Formato non valido'
+                                message: getTranslation('ins.format.date.invalid') || 'Formato non valido'
                             };
                         }
                     }
@@ -1258,7 +1258,7 @@
                         if (!FormatHelper.validateExchange(value)) {
                             return {
                                 isValid: false,
-                                message: getTranslation('int.format.exchange.invalid') || 'Formato non valido'
+                                message: getTranslation('ins.format.exchange.invalid') || 'Formato non valido'
                             };
                         }
                     }
@@ -1335,8 +1335,8 @@
                     } else {
                         document.getElementById('form-container').innerHTML = `
                             <div style="border: 1px solid var(--error-color); color: var(--error-color); padding: 20px; border-radius: 4px;">
-                                <h3><i class="fa fa-exclamation-triangle"></i> ${getTranslation('int.error.system') || 'Errore Sistema'}</h3>
-                                <p>${getTranslation('int.error.no.instruments') || 'Nessun tipo di strumento disponibile'}</p>
+                                <h3><i class="fa fa-exclamation-triangle"></i> ${getTranslation('ins.error.system') || 'Errore Sistema'}</h3>
+                                <p>${getTranslation('ins.error.no.instruments') || 'Nessun tipo di strumento disponibile'}</p>
                             </div>
                         `;
                     }
@@ -1346,8 +1346,8 @@
                 console.error('Errore durante l\'inizializzazione:', error);
                 document.getElementById('form-container').innerHTML = `
                     <div style="border: 1px solid var(--error-color); color: var(--error-color); padding: 20px; border-radius: 4px;">
-                        <h3><i class="fa fa-exclamation-triangle"></i> ${getTranslation('int.error.system') || 'Errore Sistema'}</h3>
-                        <p>${getTranslation('int.error.loading.module') || 'Errore caricamento modulo'}: ${error.message}</p>
+                        <h3><i class="fa fa-exclamation-triangle"></i> ${getTranslation('ins.error.system') || 'Errore Sistema'}</h3>
+                        <p>${getTranslation('ins.error.loading.module') || 'Errore caricamento modulo'}: ${error.message}</p>
                     </div>
                 `;
             }
