@@ -613,7 +613,8 @@
             const userLanguage = credentials.language || 'it_IT';
             const userCurrency = 'EUR';
 
-            document.getElementById('usernameDisplay').textContent = credentials.username || '-';
+            const username = credentials.username || localStorage.getItem('username') || '-';
+            document.getElementById('usernameDisplay').textContent = username;
 
             if (userLanguage) {
                 if (availableLanguages.length === 0) await initializeLanguages();
@@ -742,12 +743,14 @@
                     instrument_type: instrumentType
                 };
 
-                // Usa dataentry/instrument/{instrument_type}@data@....json
-                const folderPath = `instrument/${instrumentType}@data@`;
+                // Correzione per i path degli strumenti
+                const folderPath = `instrument/`;
+                const filePrefix = instrumentType;
 
                 dataEntryManager = new DataEntryManager({
                     basePath: './dataentry/',
                     folder: folderPath,
+                    filePrefix: filePrefix,
                     defaultValues: defaultValues,
                     getEventTranslation: (code) => {
                         return eventTranslations[`eve.${code}`] || code;

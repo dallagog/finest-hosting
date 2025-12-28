@@ -111,6 +111,7 @@ class DataEntryManager {
         this.format = null;
         this.onSubmit = config.onSubmit || null;
         this.onChange = config.onChange || null;
+        this.filePrefix = config.filePrefix || 'trade';
 
         // Translation callbacks
         this.getTranslationFn = config.getTranslation || ((key) => this.translations[key] || key);
@@ -122,15 +123,23 @@ class DataEntryManager {
      */
     async loadConfiguration() {
         try {
-            const structurePath = `${this.basePath}${this.folder}/trade@data@structure.json`;
-            const mandatoryPath = `${this.basePath}${this.folder}/trade@data@mandatory.json`;
-            const formatPath = `${this.basePath}${this.folder}/trade@data@format.json`;
+            let folder = this.folder;
+            if (folder && !folder.endsWith('/')) {
+                folder += '/';
+            }
+            const structurePath = `${this.basePath}${folder}${this.filePrefix}@data@structure.json`;
+            const mandatoryPath = `${this.basePath}${folder}${this.filePrefix}@data@mandatory.json`;
+            const formatPath = `${this.basePath}${folder}${this.filePrefix}@data@format.json`;
 
             const [structureRes, mandatoryRes, formatRes] = await Promise.all([
                 fetch(structurePath),
                 fetch(mandatoryPath),
                 fetch(formatPath)
             ]);
+
+            if (!structureRes.ok) throw new Error(`Missing or invalid structure file: ${structurePath}`);
+            if (!mandatoryRes.ok) throw new Error(`Missing or invalid mandatory file: ${mandatoryPath}`);
+            if (!formatRes.ok) throw new Error(`Missing or invalid format file: ${formatPath}`);
 
             this.structure = await structureRes.json();
             this.mandatory = await mandatoryRes.json();
@@ -428,27 +437,25 @@ class DataEntryManager {
 
         // Validate FE_Decimal format
         if (formatType === 'FE_Decimal' && value) {
-
-            // 🔹 NORMALIZZA SEMPRE
             const normalized = FormatHelper.normalizeDecimal(value);
-            input.value = normalized;
-
-            // 🔹 VALIDA SOLO DOPO NORMALIZZAZIONE
+            // Non possiamo aggiornare l'input qui direttamente se non abbiamo il riferimento
+            // ma possiamo almeno validare il normalizzato
             if (!FormatHelper.validateDecimal(normalized)) {
-                error = true;
+                return {
+                    isValid: false,
+                    message: this.getTranslation('int.format.decimal.invalid') || 'Formato non valido. Usa: valore:DIVISA'
+                };
             }
         }
 
         // Validate FE_Exchange format
         if (formatType === 'FE_Exchange' && value) {
-
-            // 🔹 NORMALIZZA SEMPRE
             const normalized = FormatHelper.normalizeExchange(value);
-            input.value = normalized;
-
-            // 🔹 VALIDA SOLO DOPO NORMALIZZAZIONE
             if (!FormatHelper.validateExchange(normalized)) {
-                error = true;
+                return {
+                    isValid: false,
+                    message: this.getTranslation('int.format.exchange.invalid') || 'Formato non valido. Usa: valore:DIVISA/DIVISA'
+                };
             }
         }
 
