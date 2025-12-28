@@ -393,6 +393,7 @@
         let availableAccounts = [];
         let availableInstruments = {}; // id_instrument -> data
         let availableCurrenciesInstruments = {}; // id_instrument -> data
+        let instrumentManifest = {};
         const API_URL = "https://feweb-tunnel.fe-web.eu";
 
         // Recupera parametri URL
@@ -496,6 +497,18 @@
             } catch (error) {
                 console.error('Error loading event manifest:', error);
                 eventManifest = {};
+            }
+        }
+
+        async function loadInstrumentManifest() {
+            try {
+                const response = await fetch('dataentry/instrument/manifest.json?v=' + new Date().getTime());
+                if (!response.ok) throw new Error('Instrument manifest not found');
+                instrumentManifest = await response.json();
+                console.log('Instrument manifest loaded');
+            } catch (error) {
+                console.error('Error loading instrument manifest:', error);
+                instrumentManifest = {};
             }
         }
 
@@ -699,6 +712,7 @@
                 availableInstruments,
                 availableCurrenciesInstruments,
                 availableAccounts,
+                instrumentManifest,
                 urlParams
             });
 
@@ -756,6 +770,7 @@
                 availableInstruments,
                 availableCurrenciesInstruments,
                 availableAccounts,
+                instrumentManifest,
                 urlParams
             });
             const sharedValidator = new SharedDataEntryValidator(sharedRenderer);
@@ -777,6 +792,7 @@
                 await loadTranslations(language);
                 await loadEventTranslations(language);
                 await loadEventManifest();
+                await loadInstrumentManifest();
                 await loadAccounts();
 
                 // Load instruments and currencies for comboboxes

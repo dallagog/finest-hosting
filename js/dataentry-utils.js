@@ -35,10 +35,20 @@ class SharedDataEntryRenderer {
          *   availableInstruments: {},
          *   availableCurrenciesInstruments: {},
          *   availableAccounts: [],
+         *   instrumentManifest: {},
          *   urlParams: {}
          * }
          */
-        this.context = context;
+        this.context = {
+            translations: {},
+            instrumentTranslations: {},
+            availableInstruments: {},
+            availableCurrenciesInstruments: {},
+            availableAccounts: [],
+            instrumentManifest: {},
+            urlParams: {},
+            ...context
+        };
     }
 
     getTranslation(key) {
@@ -106,12 +116,20 @@ class SharedDataEntryRenderer {
                 break;
 
             case 'FE_Instrument':
-                const instOptions = Object.values(this.context.availableInstruments || {}).map(inst =>
-                    `<option value="${inst.id}" ${inst.id == value ? 'selected' : ''}>${inst.id} ${inst.instrument_description || ''}</option>`
-                ).join('');
+                const sector = this.context.urlParams.account_sector || '';
+                const manifestItems = this.context.instrumentManifest[sector] || [];
+                let options = '';
+
+                manifestItems.forEach(block => {
+                    Object.entries(block).forEach(([code, labelKey]) => {
+                        const label = this.getTranslation(labelKey) || code;
+                        options += `<option value="${code}" ${code == value ? 'selected' : ''}>${label}</option>`;
+                    });
+                });
+
                 input = `<select name="${name}" id="${fieldId}" ${required ? 'required' : ''} class="form-select${fixedClass}" data-format="FE_Instrument">
                             <option value="">-- ${this.getTranslation('ins.select.option') || 'Seleziona'} --</option>
-                            ${instOptions}
+                            ${options}
                         </select>`;
                 break;
 
