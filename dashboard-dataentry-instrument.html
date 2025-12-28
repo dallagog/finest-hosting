@@ -1178,6 +1178,29 @@
                                     </select>`;
                             break;
 
+                        case 'FE_Sector':
+                            const sectVal = (field.value !== undefined ? field.value : field.defaultValue) || '';
+                            const sectorOptions = Object.keys(translations)
+                                .filter(key => key.startsWith('dom.sector:'))
+                                .map(key => ({
+                                    code: key.split(':')[1],
+                                    label: translations[key]
+                                }))
+                                .sort((a, b) => a.label.localeCompare(b.label))
+                                .map(sect =>
+                                    `<option value="${sect.code}" ${sect.code === sectVal ? 'selected' : ''}>${sect.label}</option>`
+                                ).join('');
+
+                            input = `<select name="${name}" 
+                                             id="${fieldId}"
+                                             ${required ? 'required' : ''}
+                                             class="form-select${fixedClass}"
+                                             data-format="FE_Sector">
+                                        <option value="">-- ${getTranslation('ins.select.option') || 'Seleziona'} --</option>
+                                        ${sectorOptions}
+                                    </select>`;
+                            break;
+
                         default:
                             if (formatType.startsWith('list:')) {
                                 try {
