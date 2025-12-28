@@ -379,13 +379,13 @@
 
     <!-- Includi la libreria DataEntryManager -->
     <script src="./js/dataentry-manager.js"></script>
-    <script src="./js/dataentry-utils.js"></script>
 
     <script>
         // Parametri passati dall'URL
         let urlParams = {};
         let credentials = { username: '', token: '', language: '', filter: '' };
         let translations = {};
+        let instrumentTranslations = {};
         let eventTranslations = {};
         let eventManifest = {};
         let availableLanguages = [];
@@ -485,6 +485,18 @@
             } catch (error) {
                 console.error("Error loading event translations:", error);
                 eventTranslations = {};
+            }
+        }
+
+        async function loadInstrumentTranslations(lang, sourceFolder = 'instrument') {
+            try {
+                const response = await fetch(`dataentry/${sourceFolder}/${lang}.json?v=${new Date().getTime()}`);
+                if (!response.ok) throw new Error(`Instrument translation file not found dataentry/${sourceFolder}/${lang}.json`);
+                instrumentTranslations = await response.json();
+                console.log(`Instrument translations loaded from ${sourceFolder}:`, Object.keys(instrumentTranslations).length);
+            } catch (error) {
+                console.error("Error loading instrument translations:", error);
+                instrumentTranslations = {};
             }
         }
 
@@ -708,7 +720,7 @@
         function createCustomFieldRenderer() {
             const sharedRenderer = new SharedDataEntryRenderer({
                 translations: translations,
-                instrumentTranslations: {},
+                instrumentTranslations: instrumentTranslations,
                 availableInstruments,
                 availableCurrenciesInstruments,
                 availableAccounts,
@@ -766,7 +778,7 @@
         function createCustomValidator() {
             const sharedRenderer = new SharedDataEntryRenderer({
                 translations: translations,
-                instrumentTranslations: {},
+                instrumentTranslations: instrumentTranslations,
                 availableInstruments,
                 availableCurrenciesInstruments,
                 availableAccounts,
@@ -790,6 +802,7 @@
                 const language = urlParams.language || 'it_IT';
                 await initializeLanguages();
                 await loadTranslations(language);
+                await loadInstrumentTranslations(language);
                 await loadEventTranslations(language);
                 await loadEventManifest();
                 await loadInstrumentManifest();
