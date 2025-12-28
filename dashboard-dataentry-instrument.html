@@ -448,10 +448,16 @@
                 urlParams[key] = value;
             }
 
-            urlParams.username = urlParams.username || '';
-            urlParams.token = urlParams.token || '';
-            urlParams.language = urlParams.language || 'it_IT';
+            urlParams.username = urlParams.username || localStorage.getItem('username') || '';
+            urlParams.token = urlParams.token || localStorage.getItem('token') || '';
+            urlParams.language = urlParams.language || localStorage.getItem('language') || 'it_IT';
             urlParams.portfolio_data = urlParams.portfolio_data || '{}';
+
+            console.log('=== DEBUG CREDENTIALS ===');
+            console.log('urlParams.username:', urlParams.username);
+            console.log('localStorage.username:', localStorage.getItem('username'));
+            console.log('urlParams.token:', urlParams.token);
+            console.log('localStorage.token:', localStorage.getItem('token'));
 
             credentials = {
                 username: urlParams.username,
@@ -459,6 +465,9 @@
                 language: urlParams.language,
                 filter: ''
             };
+
+            console.log('Final credentials:', credentials);
+            console.log('========================');
 
             try {
                 urlParams.portfolio_data_obj = JSON.parse(urlParams.portfolio_data);
@@ -644,7 +653,7 @@
         function updatePageTranslations() {
             document.getElementById('userLabel').textContent = getTranslation('int.user.label') || 'Utente:';
             document.getElementById('pageTitle').textContent = getTranslation('int.instrument.dataentry') || 'Instrument Data Entry';
-            document.getElementById('pageSubtitle').textContent = getTranslation('int.select.instrument.first') || 'Inserisci i dati strumento';
+            document.getElementById('pageSubtitle').textContent = ''; // Rimossa scritta Seleziona strumento
             document.getElementById('loadingText').textContent = getTranslation('int.loading.data') || 'Inizializzazione sistema...';
             document.getElementById('successText').textContent = getTranslation('int.success.save') || 'Dati salvati con successo!';
             document.getElementById('closeText').textContent = getTranslation('int.close') || 'Chiudi';
@@ -774,6 +783,12 @@
                         const API_URL = "https://feweb-tunnel.fe-web.eu";
                         const successMsg = document.getElementById('success-msg');
                         const formContainerSubmit = document.getElementById('form-container');
+
+                        if (!credentials.username) {
+                            console.error('ERRORE: Username mancante nel payload!');
+                            alert(getTranslation('int.error.missing_username') || 'Username mancante. Per favore effettua nuovamente il login.');
+                            return;
+                        }
 
                         const payload = {
                             username: credentials.username,
@@ -1312,19 +1327,11 @@
                             if (selectedType) {
                                 loadInstrumentForm(selectedType);
                             } else {
-                                document.getElementById('form-container').innerHTML = `
-                                    <div class="loading">
-                                        <p>${getTranslation('int.select.instrument.first') || 'Seleziona un tipo di strumento per continuare'}</p>
-                                    </div>
-                                `;
+                                document.getElementById('form-container').innerHTML = '';
                             }
                         });
 
-                        document.getElementById('form-container').innerHTML = `
-                            <div class="loading">
-                                <p>${getTranslation('int.select.instrument.first') || 'Seleziona un tipo di strumento per continuare'}</p>
-                            </div>
-                        `;
+                        document.getElementById('form-container').innerHTML = '';
                     } else {
                         document.getElementById('form-container').innerHTML = `
                             <div style="border: 1px solid var(--error-color); color: var(--error-color); padding: 20px; border-radius: 4px;">
