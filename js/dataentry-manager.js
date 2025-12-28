@@ -736,18 +736,13 @@ class SharedDataEntryRenderer {
                         </select>`;
                 break;
             case 'FE_Instrument':
-                const sector = this.context.urlParams.account_sector || '';
-                const manifestItems = this.context.instrumentManifest[sector] || [];
-                let options = '';
-                manifestItems.forEach(block => {
-                    Object.entries(block).forEach(([code, labelKey]) => {
-                        const label = this.getTranslation(labelKey) || code;
-                        options += `<option value="${code}" ${code == value ? 'selected' : ''}>${label}</option>`;
-                    });
-                });
+                // Use instruments loaded from /getinstruments API
+                const instOptions = Object.values(this.context.availableInstruments || {}).map(inst =>
+                    `<option value="${inst.id}" ${inst.id == value ? 'selected' : ''}>${inst.id} ${inst.instrument_description || ''}</option>`
+                ).join('');
                 input = `<select name="${name}" id="${fieldId}" ${required ? 'required' : ''} class="form-select${fixedClass}" data-format="FE_Instrument">
                             <option value="">-- ${this.getTranslation('ins.select.option') || 'Seleziona'} --</option>
-                            ${options}
+                            ${instOptions}
                         </select>`;
                 break;
             case 'FE_Currency':
