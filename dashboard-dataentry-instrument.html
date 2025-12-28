@@ -491,19 +491,32 @@
 
         async function loadLanguageFile(langCode) {
             try {
-                const response = await fetch(`lang/${langCode}.json`);
+                const response = await fetch(`dataentry/instrument/${langCode}.json`);
                 if (!response.ok) return null;
                 const data = await response.json();
-                if (data['ins.language.code'] && data['ins.language.description'] && data['img.language.flag']) {
+
+                // Provo a recuperare flag dalla cartella principale se non c'è qui
+                let flag = data['ins.language.flag'];
+                if (!flag) {
+                    try {
+                        const mainLangResp = await fetch(`lang/${langCode}.json`);
+                        if (mainLangResp.ok) {
+                            const mainLangData = await mainLangResp.json();
+                            flag = mainLangData['img.language.flag'];
+                        }
+                    } catch (e) { }
+                }
+
+                if (data['ins.language.code'] && data['ins.language.description']) {
                     return {
                         code: data['ins.language.code'],
                         description: data['ins.language.description'],
-                        flag: data['img.language.flag']
+                        flag: flag || '🌐'
                     };
                 }
                 return null;
             } catch (error) {
-                console.error(`Error loading ${langCode}.json:`, error);
+                console.error(`Error loading ${langCode}.json from dataentry/instrument:`, error);
                 return null;
             }
         }
@@ -629,10 +642,8 @@
                 if (availableLanguages.length === 0) await initializeLanguages();
                 const langData = availableLanguages.find(l => l.code === userLanguage);
                 if (langData) {
-                    document.getElementById('languageFlag').textContent = langData.flag;
-                    const langDescription = getTranslation('ins.language.description');
-                    document.getElementById('languageDisplay').textContent =
-                        langDescription !== 'ins.language.description' ? langDescription : userLanguage;
+                    document.getElementById('languageFlag').textContent = langData.flag || '';
+                    document.getElementById('languageDisplay').textContent = langData.description || userLanguage;
                 } else {
                     document.getElementById('languageDisplay').textContent = userLanguage;
                 }

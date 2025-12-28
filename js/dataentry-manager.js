@@ -212,14 +212,20 @@ class DataEntryManager {
         }
 
         const fieldObject = this.structure.data[0];
-        return Object.keys(fieldObject).map(key => ({
-            name: key,
-            label: fieldObject[key],
-            required: this.mandatory.required.includes(key),
-            optional: this.mandatory.optional.includes(key),
-            format: this.format[key] || {},
-            defaultValue: this.defaultValues[key] || ''
-        }));
+        return Object.keys(fieldObject).map(key => {
+            const format = this.format[key] || {};
+            // Priorità al valore definito in format.json (se presente)
+            const defaultValue = this.defaultValues[key] !== undefined ? this.defaultValues[key] : (format.value || '');
+
+            return {
+                name: key,
+                label: fieldObject[key],
+                required: this.mandatory.required.includes(key),
+                optional: this.mandatory.optional.includes(key),
+                format: format,
+                defaultValue: defaultValue
+            };
+        });
     }
 
     /**
