@@ -528,12 +528,12 @@
             }
         }
 
-        async function loadInstrumentTranslations(lang) {
+        async function loadInstrumentTranslations(lang, sourceFolder = 'instrument') {
             try {
-                const response = await fetch(`instrument/${lang}.json`);
-                if (!response.ok) throw new Error(`Instrument translation file not found instrument/${lang}.json`);
+                const response = await fetch(`dataentry/${sourceFolder}/${lang}.json?v=${new Date().getTime()}`);
+                if (!response.ok) throw new Error(`Instrument translation file not found dataentry/${sourceFolder}/${lang}.json`);
                 instrumentTranslations = await response.json();
-                console.log('Instrument translations loaded:', Object.keys(instrumentTranslations).length);
+                console.log(`Instrument translations loaded from ${sourceFolder}:`, Object.keys(instrumentTranslations).length);
             } catch (error) {
                 console.error("Error loading instrument translations:", error);
                 instrumentTranslations = {};
@@ -542,7 +542,7 @@
 
         async function loadInstrumentManifest() {
             try {
-                const response = await fetch('instrument/manifest.json');
+                const response = await fetch('dataentry/instrument/manifest.json?v=' + new Date().getTime());
                 if (!response.ok) throw new Error('Instrument manifest not found');
                 instrumentManifest = await response.json();
                 console.log('Instrument manifest loaded');
@@ -957,8 +957,18 @@
                     return isValid;
                 };
 
-                console.log('Initializing DataEntryManager...');
-                await dataEntryManager.init('form-container');
+                console.log('Loading configuration...');
+                await dataEntryManager.loadConfiguration();
+
+                // Carica traduzioni specifiche basate sul "source" del file di struttura
+                const languageStr = credentials.language || 'it_IT';
+                const source = (dataEntryManager.structure && dataEntryManager.structure.source) || 'instrument';
+                console.log('Loading translations for source:', source);
+                await loadInstrumentTranslations(languageStr, source);
+
+                console.log('Generating form...');
+                dataEntryManager.generateForm('form-container');
+
                 console.log('Form loaded successfully for:', instrumentType);
                 console.log('--- END loadInstrumentForm ---');
 
