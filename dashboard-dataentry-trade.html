@@ -812,14 +812,33 @@
                 await loadInstrumentManifest();
                 await loadAccounts();
 
-                // Load instruments and currencies for comboboxes
-                const typeToLoad = urlParams.instrument_type || (urlParams.id_instrument ? urlParams.id_instrument.split('.')[0] : null);
-                const results = await Promise.all([
-                    typeToLoad ? loadInstruments(typeToLoad) : Promise.resolve({}),
-                    loadInstruments('CURRENCY')
-                ]);
-                availableInstruments = results[0];
-                availableCurrenciesInstruments = results[1];
+                // Load instruments for all types in the sector from manifest
+                const sector = urlParams.account_sector || '';
+                const sectorManifest = instrumentManifest[sector] || [];
+                const instrumentTypes = [];
+                sectorManifest.forEach(block => {
+                    Object.keys(block).forEach(typeCode => instrumentTypes.push(typeCode));
+                });
+                console.log('[FE_Instrument] Sector:', sector, '- Types to load:', instrumentTypes);
+
+                // Load all instrument types for this sector + CURRENCY
+                const allTypes = [...new Set([...instrumentTypes, 'CURRENCY'])];
+                const instrumentPromises = allTypes.map(type => loadInstruments(type));
+                const instrumentResults = await Promise.all(instrumentPromises);
+
+                // Merge all instruments (except CURRENCY which goes to availableCurrenciesInstruments)
+                availableInstruments = {};
+                availableCurrenciesInstruments = {};
+                allTypes.forEach((type, idx) => {
+                    const data = instrumentResults[idx] || {};
+                    if (type === 'CURRENCY') {
+                        availableCurrenciesInstruments = data;
+                    } else {
+                        Object.assign(availableInstruments, data);
+                    }
+                });
+                console.log('[FE_Instrument] Total instruments loaded:', Object.keys(availableInstruments).length);
+                console.log('[FE_Instrument] Total currencies loaded:', Object.keys(availableCurrenciesInstruments).length);
 
                 // Se manca account_sector ma abbiamo id_account, cerchiamo il settore nei conti caricati
                 if (!urlParams.account_sector && urlParams.id_account) {
