@@ -379,6 +379,7 @@
 
     <!-- Includi la libreria DataEntryManager -->
     <script src="./js/dataentry-manager.js"></script>
+    <script src="./js/dataentry-utils.js"></script>
 
     <script>
         // Parametri passati dall'URL
@@ -390,6 +391,9 @@
         let availableLanguages = [];
         let currencies = [];
         let availableAccounts = [];
+        let availableInstruments = {}; // id_instrument -> data
+        let availableCurrenciesInstruments = {}; // id_instrument -> data
+        const API_URL = "https://feweb-tunnel.fe-web.eu";
 
         // Recupera parametri URL
         function getURLParams() {
@@ -495,6 +499,36 @@
             }
         }
 
+        async function loadInstruments(instrumentType) {
+            if (!credentials.username) return {};
+
+            try {
+                const payload = {
+                    username: credentials.username,
+                    token: credentials.token,
+                    language: credentials.language,
+                    instrument: { instrument_type: instrumentType }
+                };
+
+                console.log('Loading instruments for type:', instrumentType);
+
+                const response = await fetch(`${API_URL}/getinstruments`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    console.log(`Instruments for ${instrumentType} loaded:`, Object.keys(data).length);
+                    return data;
+                }
+            } catch (error) {
+                console.error(`Error loading instruments for ${instrumentType}:`, error);
+            }
+            return {};
+        }
+
         async function loadAccounts() {
             try {
                 const API_URL = "https://feweb-tunnel.fe-web.eu";
@@ -563,27 +597,10 @@
             return translations[key] || key;
         }
 
-        // Utility per formattazione data/ora
-        function getTimezoneOffsetString() {
-            const tzo = -new Date().getTimezoneOffset();
-            const dif = tzo >= 0 ? '+' : '-';
-            const pad = (num) => String(Math.abs(num)).padStart(2, '0');
-            return dif + pad(Math.floor(tzo / 60)) + pad(tzo % 60);
-        }
-
-        function formatCurrentDateTime() {
-            const now = new Date();
-            const pad = (num) => String(num).padStart(2, '0');
-            const dateStr = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
-            const timeStr = `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
-            return `${dateStr} ${timeStr}${getTimezoneOffsetString()}`;
-        }
-
-        function formatCurrentDate() {
-            const now = new Date();
-            const pad = (num) => String(num).padStart(2, '0');
-            return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
-        }
+        // Utility per formattazione data/ora (Redirect to Shared Library)
+        function getTimezoneOffsetString() { return DataEntryUtils.getTimezoneOffsetString(); }
+        function formatCurrentDateTime() { return DataEntryUtils.formatCurrentDateTime(); }
+        function formatCurrentDate() { return DataEntryUtils.formatCurrentDate(); }
 
         async function updateUserInfo() {
             const userLanguage = credentials.language || 'it_IT';
@@ -676,423 +693,76 @@
 
         // Custom field renderer for DataEntryManager
         function createCustomFieldRenderer() {
+            const sharedRenderer = new SharedDataEntryRenderer({
+                translations: translations,
+                instrumentTranslations: {},
+                availableInstruments,
+                availableCurrenciesInstruments,
+                availableAccounts,
+                urlParams
+            });
+
             return {
-                // Override the method to get translation for labels
-                getTranslation: function (label) {
-                    return getTranslation(label);
-                },
-
+                getTranslation: label => sharedRenderer.getTranslation(label),
                 generateFieldInput: function (field) {
-                    const { name, label, format, defaultValue, required } = field;
-                    const formatType = format.format || 'text';
-                    const isFixed = format.modify === "False" && defaultValue;
+                    const { name } = field;
+                    const inputHtml = sharedRenderer.generateFieldInput(field);
 
-                    // Special handling for id_instrument - extract only the code
-                    let value = defaultValue || '';
-                    if (name === 'id_instrument' && value) {
-                        value = FormatHelper.formatInstrumentCode(value);
+                    if (name === 'id_instrument') {
+                        const btnTitle = getTranslation('int.new.instrument') || 'Nuovo Strumento';
+                        return `
+                            <div class="input-group" style="display: flex; gap: 5px;">
+                                <div style="flex: 1;">${inputHtml}</div>
+                                <button type="button" class="btn btn-secondary btn-sm" onclick="window.openNewInstrumentWindow()" title="${btnTitle}">
+                                    <i class="fas fa-plus"></i>
+                                </button>
+                            </div>
+                        `;
                     }
-
-                    let input = '';
-                    const fixedClass = isFixed ? ' fixed-field' : '';
-                    const fieldId = `field_${name}`;
-
-                    switch (formatType) {
-                        case 'FE_Decimal':
-                            input = `<input type="text" 
-                                           name="${name}" 
-                                           id="${fieldId}"
-                                           ${required ? 'required' : ''}
-                                           ${isFixed ? 'readonly' : ''}
-                                           value="${value}"
-                                           class="form-input${fixedClass}"
-                                           data-format="FE_Decimal"
-                                           placeholder="es: 123.45 EUR"
-                                           title="Formato: numero VALUTA (es: 123.45 EUR)">`;
-                            break;
-
-                        case 'FE_Exchange':
-                            input = `<input type="text" 
-                                           name="${name}" 
-                                           id="${fieldId}"
-                                           ${required ? 'required' : ''}
-                                           ${isFixed ? 'readonly' : ''}
-                                           value="${value}"
-                                           class="form-input${fixedClass}"
-                                           data-format="FE_Exchange"
-                                           placeholder="es: 1.10:EUR/USD"
-                                           title="Formato: numero:VALUTA1/VALUTA2 (es: 1.10:EUR/USD)">`;
-                            break;
-
-                        case 'FE_Date':
-                            // Standardizziamo su YYYY-MM-DD (Input di testo invece che date per maggiore controllo)
-                            let dateValue = value;
-                            if (value && value.includes(' ')) {
-                                dateValue = value.split(' ')[0];
-                            }
-                            input = `<div class="input-group">
-                                        <input type="text" 
-                                               name="${name}" 
-                                               id="${fieldId}"
-                                               ${required ? 'required' : ''}
-                                               ${isFixed ? 'readonly' : ''}
-                                               value="${dateValue}" 
-                                               class="form-input${fixedClass}"
-                                               data-format="FE_Date"
-                                               placeholder="YYYY-MM-DD">
-                                        <button type="button" class="btn btn-secondary btn-sm" onclick="document.getElementById('${fieldId}').value = formatCurrentDate()">
-                                            <i class="fas fa-calendar-day"></i>
-                                        </button>
-                                     </div>`;
-                            break;
-
-                        case 'FE_DateTime':
-                            // Formato richiesto: YYYY-MM-DD HH:MI:SS+ZZZZ
-                            input = `<div class="input-group">
-                                        <input type="text" 
-                                               name="${name}" 
-                                               id="${fieldId}"
-                                               ${required ? 'required' : ''}
-                                               ${isFixed ? 'readonly' : ''}
-                                               value="${value}" 
-                                               class="form-input${fixedClass}"
-                                               data-format="FE_DateTime"
-                                               placeholder="YYYY-MM-DD HH:MM:SS+ZZZZ">
-                                        <button type="button" class="btn btn-secondary btn-sm" onclick="document.getElementById('${fieldId}').value = formatCurrentDateTime()">
-                                            <i class="fas fa-clock"></i>
-                                        </button>
-                                     </div>`;
-                            break;
-
-                        case 'FE_Account':
-                            const val = (field.value !== undefined ? field.value : field.defaultValue) || '';
-                            const filterSector = (urlParams.account_sector || '').trim().toUpperCase();
-                            console.log('Filtering FE_Account for sector:', filterSector);
-
-                            const filtered = availableAccounts.filter(acc => {
-                                if (!filterSector) return true;
-                                const accSector = (acc.account_sector || '').trim().toUpperCase();
-                                return accSector === filterSector;
-                            });
-
-                            console.log('Filtered accounts for FE_Account:', filtered.length);
-
-                            const options = filtered.map(acc =>
-                                `<option value="${acc.id_account}" ${acc.id_account === val ? 'selected' : ''}>${acc.id_account}</option>`
-                            ).join('');
-
-                            input = `<select name="${name}" 
-                                             id="${fieldId}"
-                                             ${required ? 'required' : ''}
-                                             class="form-select${fixedClass}"
-                                             data-format="FE_Account">
-                                        <option value="">-- ${getTranslation('int.select.option') || 'Seleziona'} --</option>
-                                        ${options}
-                                    </select>`;
-                            break;
-
-                        case 'FE_Instrument':
-                        case 'FE_Event':
-                            if (name === 'id_instrument') {
-                                // MODIFICA QUI: Aggiunto pulsante + per nuovo strumento
-                                const btnTitle = getTranslation('int.new.instrument') || 'Nuovo Strumento';
-
-                                input = `<div class="input-group" style="display: flex; gap: 5px;">
-                                            <input type="text" 
-                                                   name="${name}" 
-                                                   id="${fieldId}"
-                                                   ${required ? 'required' : ''}
-                                                   ${isFixed ? 'readonly' : ''}
-                                                   value="${value}" 
-                                                   class="form-input${fixedClass}"
-                                                   data-format="${formatType}"
-                                                   placeholder="Codice strumento"
-                                                   style="flex: 1;">
-                                            <button type="button" 
-                                                    class="btn btn-secondary" 
-                                                    onclick="window.openNewInstrumentWindow()"
-                                                    title="${btnTitle}"
-                                                    style="padding: 0 15px; display: flex; align-items: center; justify-content: center;">
-                                                <i class="fa fa-plus"></i>
-                                            </button>
-                                         </div>`;
-                            } else if (name === 'type_event' || name.startsWith('type_event')) {
-                                // ... (resto del codice invariato per type_event) ...
-                                const curSector = (urlParams.account_sector || "").trim().toUpperCase();
-                                const sectorEvents = eventManifest[curSector] || [];
-
-                                // If no default value, create a SELECT combobox
-                                if (!value) {
-                                    let optionsHtml = sectorEvents.map(evt => {
-                                        const code = evt.type_event;
-                                        const lKey = evt.type_event_label || `eve.${code}`;
-                                        const desc = eventTranslations[lKey] || code;
-                                        const disp = `${code} - ${desc}`;
-                                        return `<option value="${code}">${disp}</option>`;
-                                    }).join("");
-
-                                    input = `<select name="${name}" 
-                                                     id="${fieldId}"
-                                                     ${required ? 'required' : ''}
-                                                     ${isFixed ? 'disabled' : ''}
-                                                     class="form-select${fixedClass}"
-                                                     data-format="${formatType}">
-                                                <option value="">-- ${getTranslation('int.select.option') || 'Seleziona'} --</option>
-                                                ${optionsHtml}
-                                            </select>`;
-                                } else {
-                                    // With default value, keep DATALIST
-                                    let eventCode = value;
-                                    if (value.includes(' - ')) {
-                                        eventCode = value.split(' - ')[0].trim();
-                                    }
-
-                                    let labelKey = `eve.${eventCode}`;
-                                    const manifestEvent = sectorEvents.find(e => e.type_event === eventCode);
-                                    if (manifestEvent && manifestEvent.type_event_label) {
-                                        labelKey = manifestEvent.type_event_label;
-                                    }
-                                    const description = eventTranslations[labelKey] || "";
-                                    const displayValue = description && description !== eventCode ? `${eventCode} - ${description}` : eventCode;
-
-                                    let optionsHtml = sectorEvents.map(evt => {
-                                        const code = evt.type_event;
-                                        const lKey = evt.type_event_label || `eve.${code}`;
-                                        const desc = eventTranslations[lKey] || code;
-                                        const disp = `${code} - ${desc}`;
-                                        return `<option value="${disp}">${disp}</option>`;
-                                    }).join("");
-
-                                    input = `<input type="text" 
-                                                   name="${name}" 
-                                                   id="${fieldId}"
-                                                   ${required ? "required" : ""}
-                                                   ${isFixed ? "readonly" : ""}
-                                                   value="${displayValue}" 
-                                                   data-code="${eventCode}"
-                                                   class="form-input${fixedClass}"
-                                                   data-format="${formatType}"
-                                                   list="${name}-list"
-                                                   oninput="const val = this.value; if(val.includes(' - ')) { this.dataset.code = val.split(' - ')[0].trim(); } else { this.dataset.code = val; }">
-                                             <datalist id="${name}-list">${optionsHtml}</datalist>`;
-                                }
-                            }
-                            else {
-                                // Default fallback for other FE_Instrument fields not named id_instrument
-                                input = `<input type="text" 
-                                               name="${name}" 
-                                               id="${fieldId}"
-                                               ${required ? 'required' : ''}
-                                               ${isFixed ? 'readonly' : ''}
-                                               value="${value}" 
-                                               class="form-input${fixedClass}"
-                                               data-format="${formatType}"
-                                               list="${name}-list">
-                                         <datalist id="${name}-list"></datalist>`;
-                            }
-                            break;
-
-                        default:
-                            if (formatType.startsWith('list:')) {
-                                try {
-                                    const listValues = JSON.parse(formatType.replace('list:', ''));
-                                    const options = listValues.map(v =>
-                                        `<option value="${v}" ${v == value ? 'selected' : ''}>${v}</option>`
-                                    ).join('');
-
-                                    input = `<select name="${name}" 
-                                                     id="${fieldId}"
-                                                     ${required ? 'required' : ''}
-                                                     ${isFixed ? 'disabled' : ''}
-                                                     class="form-select${fixedClass}"
-                                                     data-format="list">
-                                                <option value="">-- ${getTranslation('int.select.option') || 'Seleziona'} --</option>
-                                                ${options}
-                                            </select>`;
-                                } catch (e) {
-                                    input = `<input type="text" 
-                                                   name="${name}" 
-                                                   id="${fieldId}"
-                                                   ${required ? 'required' : ''}
-                                                   ${isFixed ? 'readonly' : ''}
-                                                   value="${value}" 
-                                                   class="form-input${fixedClass}">`;
-                                }
-                            } else {
-                                input = `<input type="text" 
-                                               name="${name}" 
-                                               id="${fieldId}"
-                                               ${required ? 'required' : ''}
-                                               ${isFixed ? 'readonly' : ''}
-                                               value="${value}" 
-                                               class="form-input${fixedClass}">`;
-                            }
-                    }
-
-                    return input;
+                    return inputHtml;
                 },
-
                 attachFieldListeners: function (field, inputElement) {
-                    const { name, required, format } = field;
-                    const formatType = format.format || 'text';
-                    const isFixed = format.modify === "False" && field.defaultValue;
-
-                    if (isFixed) return;
-
-                    const input = inputElement.querySelector('input') || inputElement;
-
-                    if (formatType === 'FE_Decimal') {
-                        this.attachDecimalListeners(input, required);
-                    } else if (formatType === 'FE_Exchange') {
-                        this.attachExchangeListeners(input, required);
+                    sharedRenderer.attachFieldListeners(field, inputElement, {
+                        showError: (input, msg) => this.showFieldError(input, msg),
+                        clearError: (input) => this.clearFieldError(input)
+                    });
+                },
+                showFieldError: function (input, message) {
+                    input.classList.add('error');
+                    const group = input.closest('.form-group');
+                    if (group) {
+                        const error = group.querySelector('.error-message');
+                        if (error) error.textContent = message;
                     }
                 },
-
-                attachDecimalListeners: function (input, required) {
-                    input.addEventListener('blur', (e) => {
-                        let value = e.target.value.trim();
-
-                        if (!value && required) {
-                            this.showFieldError(input, getTranslation('int.field.required'));
-                            return;
-                        }
-
-                        if (!value) {
-                            this.clearFieldError(input);
-                            return;
-                        }
-
-                        // 🔹 NORMALIZZAZIONE
-                        const normalized = FormatHelper.normalizeDecimal(value);
-                        e.target.value = normalized;
-
-                        // 🔹 VALIDAZIONE SOLO SU valore:divisa
-                        if (!FormatHelper.validateDecimal(normalized)) {
-                            this.showFieldError(
-                                input,
-                                getTranslation('int.format.decimal.invalid') ||
-                                'Formato non valido. Usa: valore:DIVISA (es: 123.45:EUR)'
-                            );
-                        } else {
-                            this.clearFieldError(input);
-                        }
-                    });
-                },
-
-
-                attachExchangeListeners: function (input, required) {
-                    input.addEventListener('blur', (e) => {
-                        let value = e.target.value.trim();
-
-                        if (!value && required) {
-                            this.showFieldError(input, getTranslation('int.field.required'));
-                            return;
-                        }
-
-                        if (!value) {
-                            this.clearFieldError(input);
-                            return;
-                        }
-
-                        // 🔹 NORMALIZZAZIONE
-                        const normalized = FormatHelper.normalizeExchange(value);
-                        e.target.value = normalized;
-
-                        // 🔹 VALIDAZIONE SOLO SU valore:divisa/divisa
-                        if (!FormatHelper.validateExchange(normalized)) {
-                            this.showFieldError(
-                                input,
-                                getTranslation('int.format.exchange.invalid') ||
-                                'Formato non valido. Usa: valore:DIVISA/DIVISA (es: 1.10:EUR/USD)'
-                            );
-                        } else {
-                            this.clearFieldError(input);
-                        }
-                    });
-                },
-
+                clearFieldError: function (input) {
+                    input.classList.remove('error');
+                    const group = input.closest('.form-group');
+                    if (group) {
+                        const error = group.querySelector('.error-message');
+                        if (error) error.textContent = '';
+                    }
+                }
             };
         }
 
+
+
         // Custom form validator
         function createCustomValidator() {
+            const sharedRenderer = new SharedDataEntryRenderer({
+                translations: translations,
+                instrumentTranslations: {},
+                availableInstruments,
+                availableCurrenciesInstruments,
+                availableAccounts,
+                urlParams
+            });
+            const sharedValidator = new SharedDataEntryValidator(sharedRenderer);
+
             return {
-                validateField: function (field, inputElement) {
-                    const { name, required, format } = field;
-                    const formatType = format.format || 'text';
-                    const input = inputElement.querySelector('input') || inputElement;
-                    const value = input.value.trim();
-
-                    // Check required fields
-                    if (required && !value) {
-                        return {
-                            isValid: false,
-                            message: getTranslation('int.field.required') || 'Campo obbligatorio'
-                        };
-                    }
-
-                    // Validate FE_Decimal format
-                    if (formatType === 'FE_Decimal' && value) {
-                        if (!FormatHelper.validateDecimal(value)) {
-                            return {
-                                isValid: false,
-                                message: getTranslation('int.format.decimal.invalid') || 'Formato non valido. Usa: numero VALUTA (es: 123.45 EUR)'
-                            };
-                        }
-                    }
-
-                    // Validate FE_DateTime format
-                    if (formatType === 'FE_DateTime' && value) {
-                        if (!FormatHelper.validateDateTime(value)) {
-                            return {
-                                isValid: false,
-                                message: getTranslation('int.format.datetime.invalid') || 'Formato non valido. Usa: YYYY-MM-DD HH:MM:SS+ZZZZ'
-                            };
-                        }
-                    }
-
-                    // Validate FE_Date format
-                    if (formatType === 'FE_Date' && value) {
-                        if (!FormatHelper.validateDate(value)) {
-                            return {
-                                isValid: false,
-                                message: getTranslation('int.format.date.invalid') || 'Formato non valido. Usa: YYYY-MM-DD'
-                            };
-                        }
-                    }
-
-                    // Validate FE_Exchange format
-                    if (formatType === 'FE_Exchange' && value) {
-                        if (!FormatHelper.validateExchange(value)) {
-                            return {
-                                isValid: false,
-                                message: getTranslation('int.format.exchange.invalid') || 'Formato non valido. Usa: numero:VALUTA1/VALUTA2 (es: 1.10:EUR/USD)'
-                            };
-                        }
-                    }
-
-                    return { isValid: true };
-                },
-
-                getFormData: function (formElement) {
-                    const data = {};
-                    const fields = formElement.querySelectorAll('[name]');
-
-                    fields.forEach(field => {
-                        // For fields with descriptions (like type_event), use data-code if it matches the current value
-                        // or extract the code part if it's in "CODE - DESCRIPTION" format
-                        let val = field.value.trim();
-                        if (field.dataset.code && val.startsWith(field.dataset.code)) {
-                            data[field.name] = field.dataset.code;
-                        } else if (val.includes(' - ')) {
-                            data[field.name] = val.split(' - ')[0].trim();
-                        } else {
-                            data[field.name] = val;
-                        }
-                    });
-
-                    return data;
-                }
+                validateField: (field, inputElement) => sharedValidator.validateField(field, inputElement),
+                getFormData: (formElement) => sharedValidator.getFormData(formElement)
             };
         }
 
@@ -1108,6 +778,15 @@
                 await loadEventTranslations(language);
                 await loadEventManifest();
                 await loadAccounts();
+
+                // Load instruments and currencies for comboboxes
+                const typeToLoad = urlParams.instrument_type || (urlParams.id_instrument ? urlParams.id_instrument.split('.')[0] : null);
+                const results = await Promise.all([
+                    typeToLoad ? loadInstruments(typeToLoad) : Promise.resolve({}),
+                    loadInstruments('CURRENCY')
+                ]);
+                availableInstruments = results[0];
+                availableCurrenciesInstruments = results[1];
 
                 // Se manca account_sector ma abbiamo id_account, cerchiamo il settore nei conti caricati
                 if (!urlParams.account_sector && urlParams.id_account) {
