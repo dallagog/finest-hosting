@@ -142,6 +142,10 @@ class SharedDataEntryRenderer {
                         </select>`;
                 break;
 
+            case 'FE_Text':
+                input = `<input type="text" name="${name}" id="${fieldId}" ${required ? 'required' : ''} ${isFixed ? 'readonly' : ''} value="${value}" class="form-input${fixedClass}" data-format="FE_Text">`;
+                break;
+
             default:
                 if (formatType.startsWith('list:')) {
                     try {
@@ -176,6 +180,8 @@ class SharedDataEntryRenderer {
             this.attachValidator(input, required, 'Decimal', callbacks);
         } else if (formatType === 'FE_Exchange') {
             this.attachValidator(input, required, 'Exchange', callbacks);
+        } else if (formatType === 'FE_Text') {
+            this.attachValidator(input, required, 'Text', callbacks);
         }
     }
 
@@ -188,6 +194,17 @@ class SharedDataEntryRenderer {
             }
             if (!value) {
                 if (callbacks.clearError) callbacks.clearError(input);
+                return;
+            }
+
+            if (type === 'Text') {
+                const isValidText = /^[a-zA-Z][a-zA-Z0-9]*$/.test(value);
+                if (!isValidText) {
+                    const msg = this.getTranslation('ins.format.text.invalid') || 'Deve essere alfanumerico e iniziare con una lettera';
+                    if (callbacks.showError) callbacks.showError(input, msg);
+                } else {
+                    if (callbacks.clearError) callbacks.clearError(input);
+                }
                 return;
             }
 
@@ -234,6 +251,9 @@ class SharedDataEntryValidator {
             }
             if (formatType === 'FE_Exchange' && !FormatHelper.validateExchange(value)) {
                 return { isValid: false, message: this.renderer.getTranslation('ins.format.exchange.invalid') || 'Formato non valido' };
+            }
+            if (formatType === 'FE_Text' && !/^[a-zA-Z][a-zA-Z0-9]*$/.test(value)) {
+                return { isValid: false, message: this.renderer.getTranslation('ins.format.text.invalid') || 'Formato non valido' };
             }
         }
 
