@@ -424,6 +424,7 @@
     <script>
         document.write('<script src="./js/translations.js?v=' + new Date().getTime() + '"><\/script>');
         document.write('<script src="./js/dataentry-manager.js?v=' + new Date().getTime() + '"><\/script>');
+        document.write('<script src="./js/dataentry-utils.js?v=' + new Date().getTime() + '"><\/script>');
     </script>
 
     <script>
@@ -635,35 +636,18 @@
         }
 
         function getTranslation(key) {
-            return instrumentTranslations[key] || translations[key] || key;
+            return (instrumentTranslations && instrumentTranslations[key]) || (translations && translations[key]) || key;
         }
 
         function getInstrumentTypeTranslation(instrumentType) {
             const key = `dom.instrument_type:${instrumentType}`;
-            return instrumentTranslations[key] || instrumentType;
+            return getTranslation(key);
         }
 
-        // Utility per formattazione data/ora
-        function getTimezoneOffsetString() {
-            const tzo = -new Date().getTimezoneOffset();
-            const dif = tzo >= 0 ? '+' : '-';
-            const pad = (num) => String(Math.abs(num)).padStart(2, '0');
-            return dif + pad(Math.floor(tzo / 60)) + pad(tzo % 60);
-        }
-
-        function formatCurrentDateTime() {
-            const now = new Date();
-            const pad = (num) => String(num).padStart(2, '0');
-            const dateStr = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
-            const timeStr = `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
-            return `${dateStr} ${timeStr}${getTimezoneOffsetString()}`;
-        }
-
-        function formatCurrentDate() {
-            const now = new Date();
-            const pad = (num) => String(num).padStart(2, '0');
-            return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
-        }
+        // Utility per formattazione data/ora (Redirect to Shared Library)
+        function getTimezoneOffsetString() { return DataEntryUtils.getTimezoneOffsetString(); }
+        function formatCurrentDateTime() { return DataEntryUtils.formatCurrentDateTime(); }
+        function formatCurrentDate() { return DataEntryUtils.formatCurrentDate(); }
 
         async function updateUserInfo() {
             const userLanguage = credentials.language || 'it_IT';
@@ -1319,76 +1303,19 @@
 
         // Custom form validator
         function createCustomValidator() {
+            const sharedRenderer = new SharedDataEntryRenderer({
+                translations,
+                instrumentTranslations,
+                availableInstruments,
+                availableCurrenciesInstruments,
+                availableAccounts,
+                urlParams
+            });
+            const sharedValidator = new SharedDataEntryValidator(sharedRenderer);
+
             return {
-                validateField: function (field, inputElement) {
-                    const { name, required, format } = field;
-                    const formatType = format.format || 'text';
-                    const input = inputElement.querySelector('input') || inputElement;
-                    const value = input.value.trim();
-
-                    if (required && !value) {
-                        return {
-                            isValid: false,
-                            message: getTranslation('ins.field.required') || 'Campo obbligatorio'
-                        };
-                    }
-
-                    if (formatType === 'FE_Decimal' && value) {
-                        if (!FormatHelper.validateDecimal(value)) {
-                            return {
-                                isValid: false,
-                                message: getTranslation('ins.format.decimal.invalid') || 'Formato non valido'
-                            };
-                        }
-                    }
-
-                    if (formatType === 'FE_DateTime' && value) {
-                        if (!FormatHelper.validateDateTime(value)) {
-                            return {
-                                isValid: false,
-                                message: getTranslation('ins.format.datetime.invalid') || 'Formato non valido'
-                            };
-                        }
-                    }
-
-                    if (formatType === 'FE_Date' && value) {
-                        if (!FormatHelper.validateDate(value)) {
-                            return {
-                                isValid: false,
-                                message: getTranslation('ins.format.date.invalid') || 'Formato non valido'
-                            };
-                        }
-                    }
-
-                    if (formatType === 'FE_Exchange' && value) {
-                        if (!FormatHelper.validateExchange(value)) {
-                            return {
-                                isValid: false,
-                                message: getTranslation('ins.format.exchange.invalid') || 'Formato non valido'
-                            };
-                        }
-                    }
-
-                    return { isValid: true };
-                },
-
-                getFormData: function (formElement) {
-                    const data = {};
-                    const fields = formElement.querySelectorAll('[name]');
-
-                    fields.forEach(field => {
-                        let val = field.value.trim();
-                        if (field.dataset.code && val.startsWith(field.dataset.code)) {
-                            data[field.name] = field.dataset.code;
-                        } else if (val.includes(' - ')) {
-                            data[field.name] = val.split(' - ')[0].trim();
-                        } else {
-                            data[field.name] = val;
-                        }
-                    });
-
-                    return data;
-                }
+                validateField: (field, inputElement) => sharedValidator.validateField(field, inputElement),
+                getFormData: (formElement) => sharedValidator.getFormData(formElement)
             };
         }
 
