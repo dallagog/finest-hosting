@@ -437,7 +437,6 @@
         let eventManifest = {};
         let availableLanguages = [];
         let currencies = [];
-        let availableAccounts = [];
         let currentInstrumentType = null;
         let dataEntryManager = null;
 
@@ -568,54 +567,6 @@
             }
         }
 
-        async function loadAccounts() {
-            try {
-                const API_URL = "https://feweb-tunnel.fe-web.eu";
-                const payload = {
-                    username: credentials.username,
-                    token: credentials.token,
-                    language: credentials.language,
-                    account: ""
-                };
-
-                const response = await fetch(`${API_URL}/getaccounts`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-
-                if (!response.ok) throw new Error('HTTP ' + response.status);
-
-                const data = await response.json();
-                console.log('GetAccounts Response:', data);
-                let accountList = [];
-
-                let rawAccounts = data.accounts || [];
-                const blocks = Array.isArray(rawAccounts) ? rawAccounts : Object.values(rawAccounts);
-
-                blocks.forEach(block => {
-                    if (block && typeof block === 'object') {
-                        Object.values(block).forEach(acc => {
-                            if (acc && acc.id_account) {
-                                accountList.push({
-                                    id_account: String(acc.id_account).trim(),
-                                    description: acc.description_account || acc.description || acc.id_account,
-                                    account_sector: String(acc.account_sector || '').trim(),
-                                    account_level: acc.account_level || ''
-                                });
-                            }
-                        });
-                    }
-                });
-
-                availableAccounts = accountList;
-                console.log('Accounts loaded:', availableAccounts.length);
-            } catch (error) {
-                console.error('Error loading accounts:', error);
-                availableAccounts = [];
-            }
-        }
-
         async function loadTranslations(lang) {
             try {
                 const response = await fetch(`lang/${lang}.json`);
@@ -692,7 +643,7 @@
         function updatePageTranslations() {
             document.getElementById('userLabel').textContent = getTranslation('int.user.label') || 'Utente:';
             document.getElementById('pageTitle').textContent = getTranslation('int.instrument.dataentry') || 'Instrument Data Entry';
-            document.getElementById('pageSubtitle').textContent = getTranslation('int.dataentry.subtitle') || 'Inserisci i dati della transazione';
+            document.getElementById('pageSubtitle').textContent = getTranslation('int.select.instrument.first') || 'Inserisci i dati strumento';
             document.getElementById('loadingText').textContent = getTranslation('int.loading.data') || 'Inizializzazione sistema...';
             document.getElementById('successText').textContent = getTranslation('int.success.save') || 'Dati salvati con successo!';
             document.getElementById('closeText').textContent = getTranslation('int.close') || 'Chiudi';
@@ -1323,7 +1274,6 @@
                 await loadInstrumentManifest();
                 await loadEventTranslations(language);
                 await loadEventManifest();
-                await loadAccounts();
 
                 updatePageTranslations();
                 await updateUserInfo();
