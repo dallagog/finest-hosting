@@ -641,6 +641,38 @@
             }
         }
 
+        // Funzione per aprire la finestra di creazione strumento
+        window.openNewInstrumentWindow = function () {
+            const params = new URLSearchParams();
+
+            // Passaggio credenziali
+            if (credentials.username) params.set('username', credentials.username);
+            if (credentials.token) params.set('token', credentials.token);
+            if (credentials.language) params.set('language', credentials.language);
+
+            // Passaggio account_sector (dai parametri URL correnti)
+            if (urlParams.account_sector) {
+                params.set('account_sector', urlParams.account_sector);
+            }
+
+            // Tentativo di recuperare instrument_type
+            // 1. Cerca se esiste un campo nel form attuale
+            const typeField = document.querySelector('[name="instrument_type"]');
+            // 2. Altrimenti controlla se era nei parametri URL originali
+            const typeValue = typeField ? typeField.value : (urlParams.instrument_type || '');
+
+            if (typeValue) {
+                params.set('instrument_type', typeValue);
+            }
+
+            // Opzionale: se l'utente ha già digitato un codice parziale, passalo come 'code'
+            const codeInput = document.querySelector('[name="id_instrument"]');
+            if (codeInput && codeInput.value) {
+                params.set('code', codeInput.value);
+            }
+
+            window.open(`dashboard-dataentry-instrument.html?${params.toString()}`, '_blank');
+        };
 
         // Custom field renderer for DataEntryManager
         function createCustomFieldRenderer() {
@@ -762,16 +794,30 @@
                         case 'FE_Instrument':
                         case 'FE_Event':
                             if (name === 'id_instrument') {
-                                input = `<input type="text" 
-                                               name="${name}" 
-                                               id="${fieldId}"
-                                               ${required ? 'required' : ''}
-                                               ${isFixed ? 'readonly' : ''}
-                                               value="${value}" 
-                                               class="form-input${fixedClass}"
-                                               data-format="${formatType}"
-                                               placeholder="Codice strumento">`;
+                                // MODIFICA QUI: Aggiunto pulsante + per nuovo strumento
+                                const btnTitle = getTranslation('int.new.instrument') || 'Nuovo Strumento';
+
+                                input = `<div class="input-group" style="display: flex; gap: 5px;">
+                                            <input type="text" 
+                                                   name="${name}" 
+                                                   id="${fieldId}"
+                                                   ${required ? 'required' : ''}
+                                                   ${isFixed ? 'readonly' : ''}
+                                                   value="${value}" 
+                                                   class="form-input${fixedClass}"
+                                                   data-format="${formatType}"
+                                                   placeholder="Codice strumento"
+                                                   style="flex: 1;">
+                                            <button type="button" 
+                                                    class="btn btn-secondary" 
+                                                    onclick="window.openNewInstrumentWindow()"
+                                                    title="${btnTitle}"
+                                                    style="padding: 0 15px; display: flex; align-items: center; justify-content: center;">
+                                                <i class="fa fa-plus"></i>
+                                            </button>
+                                         </div>`;
                             } else if (name === 'type_event' || name.startsWith('type_event')) {
+                                // ... (resto del codice invariato per type_event) ...
                                 const curSector = (urlParams.account_sector || "").trim().toUpperCase();
                                 const sectorEvents = eventManifest[curSector] || [];
 
@@ -795,7 +841,7 @@
                                                 ${optionsHtml}
                                             </select>`;
                                 } else {
-                                    // With default value, keep DATALIST for now (or readonly if fixed)
+                                    // With default value, keep DATALIST
                                     let eventCode = value;
                                     if (value.includes(' - ')) {
                                         eventCode = value.split(' - ')[0].trim();
@@ -832,6 +878,7 @@
                                 }
                             }
                             else {
+                                // Default fallback for other FE_Instrument fields not named id_instrument
                                 input = `<input type="text" 
                                                name="${name}" 
                                                id="${fieldId}"
