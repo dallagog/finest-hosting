@@ -720,10 +720,14 @@
 
         // Carica il form per un instrument_type specifico
         async function loadInstrumentForm(instrumentType) {
-            if (!instrumentType) return;
+            if (!instrumentType) {
+                console.warn('loadInstrumentForm called with empty instrumentType');
+                return;
+            }
 
             currentInstrumentType = instrumentType;
-            console.log('Loading form for instrument type:', instrumentType);
+            console.log('--- START loadInstrumentForm ---');
+            console.log('Instrument type:', instrumentType);
 
             const formContainer = document.getElementById('form-container');
             formContainer.innerHTML = `
@@ -938,8 +942,10 @@
                     return isValid;
                 };
 
+                console.log('Initializing DataEntryManager...');
                 await dataEntryManager.init('form-container');
                 console.log('Form loaded successfully for:', instrumentType);
+                console.log('--- END loadInstrumentForm ---');
 
             } catch (error) {
                 console.error('Errore durante il caricamento del form:', error);
@@ -1265,9 +1271,14 @@
             };
         }
 
-        // Inizializzazione principale
+        // Inizializzazione
+        window.addEventListener('unhandledrejection', event => {
+            console.error('Unhandled promise rejection:', event.reason);
+        });
+
         document.addEventListener('DOMContentLoaded', async () => {
             getURLParams();
+            console.log('Initializing with instrument_type from URL:', urlParams.instrument_type);
 
             try {
                 const language = urlParams.language || 'it_IT';

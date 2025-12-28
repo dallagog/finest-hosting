@@ -123,13 +123,32 @@ class DataEntryManager {
      */
     async loadConfiguration() {
         try {
-            let folder = this.folder;
-            if (folder && !folder.endsWith('/')) {
-                folder += '/';
-            }
-            const structurePath = `${this.basePath}${folder}${this.filePrefix}@data@structure.json`;
-            const mandatoryPath = `${this.basePath}${folder}${this.filePrefix}@data@mandatory.json`;
-            const formatPath = `${this.basePath}${folder}${this.filePrefix}@data@format.json`;
+            // Helper to join path parts and ensure single slashes
+            const joinPaths = (...parts) => {
+                return parts
+                    .filter(p => p !== undefined && p !== null)
+                    .map(p => p.toString().replace(/\/+$/, '').replace(/^\/+/, ''))
+                    .filter(p => p.length > 0)
+                    .join('/');
+            };
+
+            // Calculate paths
+            const folderPart = this.folder || '';
+            const basePathPart = this.basePath || '';
+
+            // Si presume che basePath possa essere relativo (es. ./dataentry/)
+            // Se inizia con ./ lo manteniamo per il fetch
+            const finalBase = basePathPart.startsWith('./') ? './' + joinPaths(basePathPart.substring(2)) : joinPaths(basePathPart);
+            const fullFolderPath = joinPaths(finalBase, folderPart);
+
+            const structurePath = `${fullFolderPath}/${this.filePrefix}@data@structure.json`;
+            const mandatoryPath = `${fullFolderPath}/${this.filePrefix}@data@mandatory.json`;
+            const formatPath = `${fullFolderPath}/${this.filePrefix}@data@format.json`;
+
+            console.log('DataEntryManager: Fetching configuration files:');
+            console.log(' - Structure:', structurePath);
+            console.log(' - Mandatory:', mandatoryPath);
+            console.log(' - Format:', formatPath);
 
             const [structureRes, mandatoryRes, formatRes] = await Promise.all([
                 fetch(structurePath),
@@ -137,13 +156,44 @@ class DataEntryManager {
                 fetch(formatPath)
             ]);
 
-            if (!structureRes.ok) throw new Error(`Missing or invalid structure file: ${structurePath}`);
-            if (!mandatoryRes.ok) throw new Error(`Missing or invalid mandatory file: ${mandatoryPath}`);
-            if (!formatRes.ok) throw new Error(`Missing or invalid format file: ${formatPath}`);
+            if (!structureRes.ok) throw new Error(`Missing or invalid structure file (${structureRes.status}): ${structurePath}`);
+            if (!mandatoryRes.ok) throw new Error(`Missing or invalid mandatory file (${mandatoryRes.status}): ${mandatoryPath}`);
+            if (!formatRes.ok) throw new Error(`Missing or invalid format file (${formatRes.status}): ${formatPath}`);
 
-            this.structure = await structureRes.json();
-            this.mandatory = await mandatoryRes.json();
-            this.format = await formatRes.json();
+            const structureRaw = await structureRes.text();
+            const mandatoryRaw = await mandatoryRes.text();
+            const formatRaw = await formatRes.text();
+
+            // Clean text (remove BOM and trim)
+            const clean = (txt) => txt.trim().replace(/^\uFEFF/, '');
+
+            const structureText = clean(structureRaw);
+            const mandatoryText = clean(mandatoryRaw);
+            const formatText = clean(formatRaw);
+
+            try {
+                this.structure = JSON.parse(structureText);
+            } catch (e) {
+                console.error('Invalid JSON in structure file:', structurePath);
+                console.log('Content starts with:', structureText.substring(0, 100));
+                throw e;
+            }
+
+            try {
+                this.mandatory = JSON.parse(mandatoryText);
+            } catch (e) {
+                console.error('Invalid JSON in mandatory file:', mandatoryPath);
+                console.log('Content starts with:', mandatoryText.substring(0, 100));
+                throw e;
+            }
+
+            try {
+                this.format = JSON.parse(formatText);
+            } catch (e) {
+                console.error('Invalid JSON in format file:', formatPath);
+                console.log('Content starts with:', formatText.substring(0, 100));
+                throw e;
+            }
 
             return true;
         } catch (error) {
