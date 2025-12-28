@@ -768,7 +768,11 @@ class SharedDataEntryRenderer {
                 break;
             case 'FE_Event':
                 const eventSector = (this.context.urlParams.account_sector || '').trim().toUpperCase();
+                console.log('[FE_Event] urlParams:', this.context.urlParams);
+                console.log('[FE_Event] account_sector from urlParams:', eventSector);
+                console.log('[FE_Event] eventManifest keys:', Object.keys(this.context.eventManifest || {}));
                 const sectorEvents = (this.context.eventManifest || {})[eventSector] || [];
+                console.log('[FE_Event] Events for sector', eventSector, ':', sectorEvents.length, 'events');
                 const eventOptions = sectorEvents.map(evt => {
                     const code = evt.type_event;
                     const lKey = evt.type_event_label || `eve.${code}`;
