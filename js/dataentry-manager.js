@@ -141,9 +141,10 @@ class DataEntryManager {
             const finalBase = basePathPart.startsWith('./') ? './' + joinPaths(basePathPart.substring(2)) : joinPaths(basePathPart);
             const fullFolderPath = joinPaths(finalBase, folderPart);
 
-            const structurePath = `${fullFolderPath}/${this.filePrefix}@data@structure.json`;
-            const mandatoryPath = `${fullFolderPath}/${this.filePrefix}@data@mandatory.json`;
-            const formatPath = `${fullFolderPath}/${this.filePrefix}@data@format.json`;
+            const v = new Date().getTime();
+            const structurePath = `${fullFolderPath}/${this.filePrefix}@data@structure.json?v=${v}`;
+            const mandatoryPath = `${fullFolderPath}/${this.filePrefix}@data@mandatory.json?v=${v}`;
+            const formatPath = `${fullFolderPath}/${this.filePrefix}@data@format.json?v=${v}`;
 
             console.log('DataEntryManager: Fetching configuration files:');
             console.log(' - Structure:', structurePath);
