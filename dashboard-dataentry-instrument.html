@@ -439,6 +439,8 @@
         let currencies = [];
         let currentInstrumentType = null;
         let dataEntryManager = null;
+        let availableAccounts = [];
+        let availableInstruments = {}; // id_instrument -> data
 
         // Recupera parametri URL
         function getURLParams() {
@@ -600,6 +602,35 @@
             }
         }
 
+        async function loadInstruments(instrumentType) {
+            if (!credentials.username) return;
+
+            try {
+                const payload = {
+                    username: credentials.username,
+                    token: credentials.token,
+                    language: credentials.language,
+                    instrument: {
+                        instrument_type: instrumentType
+                    }
+                };
+
+                const response = await fetch(`${API_URL}/getinstruments`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (response.ok) {
+                    availableInstruments = await response.json();
+                    console.log('Available instruments loaded:', Object.keys(availableInstruments).length);
+                }
+            } catch (error) {
+                console.error('Error loading instruments:', error);
+                availableInstruments = {};
+            }
+        }
+
         function getTranslation(key) {
             return instrumentTranslations[key] || translations[key] || key;
         }
@@ -758,6 +789,9 @@
             `;
 
             try {
+                // Carica gli strumenti per il tipo specificato
+                await loadInstruments(instrumentType);
+
                 const customRenderer = createCustomFieldRenderer();
                 const customValidator = createCustomValidator();
 
@@ -1105,15 +1139,19 @@
                             break;
 
                         case 'FE_Instrument':
-                            input = `<input type="text" 
-                                           name="${name}" 
-                                           id="${fieldId}"
-                                           ${required ? 'required' : ''}
-                                           ${isFixed ? 'readonly' : ''}
-                                           value="${value}" 
-                                           class="form-input${fixedClass}"
-                                           data-format="${formatType}"
-                                           placeholder="Codice strumento">`;
+                            const instVal = (field.value !== undefined ? field.value : field.defaultValue) || '';
+                            const instOptions = Object.values(availableInstruments).map(inst =>
+                                `<option value="${inst.id}" ${inst.id === instVal ? 'selected' : ''}>[${inst.id}] ${inst.instrument_description || inst.description_instrument || inst.description || ''}</option>`
+                            ).join('');
+
+                            input = `<select name="${name}" 
+                                             id="${fieldId}"
+                                             ${required ? 'required' : ''}
+                                             class="form-select${fixedClass}"
+                                             data-format="FE_Instrument">
+                                        <option value="">-- ${getTranslation('ins.select.option') || 'Seleziona'} --</option>
+                                        ${instOptions}
+                                    </select>`;
                             break;
 
                         default:
