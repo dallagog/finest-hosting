@@ -10,12 +10,12 @@ const FormatHelper = {
         const v = value.trim();
 
         // già corretto
-        if (/^\d+(\.\d+)?\:[A-Z]{3}$/.test(v)) {
+        if (/^-?\d+(\.\d+)?\:[A-Z]{3}$/.test(v)) {
             return v;
         }
 
         // "valore divisa"
-        const m = v.match(/^(\d+(?:\.\d+)?)\s+([A-Z]{3})$/);
+        const m = v.match(/^(-?\d+(?:\.\d+)?)\s+([A-Z]{3})$/);
         if (m) {
             return `${m[1]}:${m[2]}`;
         }
@@ -42,7 +42,7 @@ const FormatHelper = {
     },
 
     validateDecimal(value) {
-        return /^\d+(\.\d+)?\:[A-Z]{3}$/.test(value);
+        return /^-?\d+(\.\d+)?\:[A-Z]{3}$/.test(value);
     },
 
     validateExchange(value) {

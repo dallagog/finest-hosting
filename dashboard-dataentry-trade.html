@@ -769,18 +769,18 @@
 
                     // Handle default logic for type_event (liquidity context)
                     if (name === 'type_event' && urlParams.type_event) {
-                        // If we have a default value in URL, it means we are in a forced context (e.g. liquidity)
-                        // Make the field read-only/disabled
-                        // We must inject readonly or disabled attribute into the generated input
-                        // Since sharedRenderer.generateFieldInput returns a string, we can inject it.
-                        // Or better, we can assume the shared renderer handles 'readOnly' property if we modify the field definition before passing it.
-                        // But here we are wrapping. Let's do string replacement which is safer than modifying shared object.
+                        // Check validity of the passed event against manifest
+                        const curSector = (urlParams.account_sector || "").trim().toUpperCase();
+                        const sectorEvents = eventManifest[curSector] || [];
+                        const isValidEvent = sectorEvents.some(e => e.type_event === urlParams.type_event);
 
-                        // Check if it is a select or input
-                        if (inputHtml.includes('<select')) {
-                            return inputHtml.replace('<select', '<select disabled class="form-select fixed-field"');
-                        } else {
-                            return inputHtml.replace('<input', '<input readonly class="form-input fixed-field"');
+                        if (isValidEvent) {
+                            // If we have a valid default value in URL, lock it.
+                            if (inputHtml.includes('<select')) {
+                                return inputHtml.replace('<select', '<select disabled class="form-select fixed-field"');
+                            } else {
+                                return inputHtml.replace('<input', '<input readonly class="form-input fixed-field"');
+                            }
                         }
                     }
 
