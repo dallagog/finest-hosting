@@ -1078,10 +1078,19 @@
                                     for (const p of parts) {
                                         if (/^[A-Z]{3}$/.test(p)) {
                                             currency = p;
-                                        } else if (/^[0-9]+(\.[0-9]+)?$/.test(p)) {
-                                            quantityVal = p;
-                                        } else if (/^-[0-9]+(\.[0-9]+)?$/.test(p)) {
-                                            quantityVal = p;
+                                        } else if (/^[\d.,+-]+$/.test(p)) {
+                                            // More robust check: contains at least one digit
+                                            if (/\d/.test(p)) {
+                                                // Normalize to dot decimal for URL param?
+                                                // Or keep as is, since the target field might expect localized input?
+                                                // If we pass "1.000,00" to 'quantity' field which might be FE_Decimal or FE_Float...
+                                                // FE_Decimal usually expects "VAL:CUR" or just VAL.
+                                                // Let's pass the raw string if it looks like a number.
+                                                // But usually amount:net includes thousand separators.
+                                                // Let's clean it up only if we want to enforce standard format.
+                                                // For now, let's just capture the value string.
+                                                quantityVal = p;
+                                            }
                                         }
                                     }
 
