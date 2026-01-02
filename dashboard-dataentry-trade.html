@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Trade Data Entry 0.3</title>
+    <title>Trade Data Entry 0.4</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&display=swap');
@@ -134,17 +134,15 @@
         }
 
         .form-grid {
-            .form-grid {
-                display: grid;
-                grid-template-columns: repeat(2, 1fr);
-                gap: 20px;
-                margin-bottom: 30px;
-            }
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+            margin-bottom: 30px;
+        }
 
-            @media (max-width: 768px) {
-                .form-grid {
-                    grid-template-columns: 1fr;
-                }
+        @media (max-width: 768px) {
+            .form-grid {
+                grid-template-columns: 1fr;
             }
         }
 
@@ -997,39 +995,7 @@
                                 console.log('Account sector updated on change:', urlParams.account_sector);
 
                                 // Refresh Event datalist or select if sector changes
-                                const eventInput = document.querySelector('[data-format="FE_Event"]');
-                                if (eventInput) {
-                                    const sector = urlParams.account_sector.trim().toUpperCase();
-                                    const sectorEvents = eventManifest[sector] || [];
-
-                                    if (eventInput.tagName.toLowerCase() === 'select') {
-                                        // Update SELECT options
-                                        const currentVal = eventInput.value;
-                                        let html = `<option value="">-- ${getTranslation('int.select.option') || 'Seleziona'} --</option>`;
-                                        html += sectorEvents.map(evt => {
-                                            const code = evt.type_event;
-                                            const lKey = evt.type_event_label || `eve.${code}`;
-                                            const desc = eventTranslations[lKey] || code;
-                                            const disp = `${code} - ${desc}`;
-                                            return `<option value="${code}" ${code === currentVal ? 'selected' : ''}>${disp}</option>`;
-                                        }).join("");
-                                        eventInput.innerHTML = html;
-                                    } else {
-                                        // Update DATALIST options
-                                        const listId = eventInput.getAttribute('list');
-                                        const datalist = document.getElementById(listId);
-                                        if (datalist) {
-                                            datalist.innerHTML = sectorEvents.map(evt => {
-                                                const code = evt.type_event;
-                                                const lKey = evt.type_event_label || `eve.${code}`;
-                                                const desc = eventTranslations[lKey] || code;
-                                                const disp = `${code} - ${desc}`;
-                                                return `<option value="${disp}">${disp}</option>`;
-                                            }).join("");
-                                        }
-                                    }
-                                    console.log(`Refreshed event options for sector: ${sector}`);
-                                }
+                                populateEventOptions(urlParams.account_sector);
                             }
                         }
 
@@ -1251,6 +1217,57 @@
                     }
                 };
 
+                // Helper to populate event options based on sector
+                const populateEventOptions = (sector) => {
+                    if (!sector) return;
+
+                    const eventInput = document.querySelector('[data-format="FE_Event"]');
+                    if (!eventInput) return;
+
+                    const sec = sector.trim().toUpperCase();
+                    const sectorEvents = eventManifest[sec] || [];
+
+                    if (eventInput.tagName.toLowerCase() === 'select') {
+                        // Update SELECT options
+                        const currentVal = eventInput.value;
+                        let html = `<option value="">-- ${getTranslation('int.select.option') || 'Seleziona'} --</option>`;
+                        html += sectorEvents.map(evt => {
+                            const code = evt.type_event;
+                            const lKey = evt.type_event_label || `eve.${code}`;
+                            const desc = eventTranslations[lKey] || code;
+                            const disp = `${code} - ${desc}`;
+                            return `<option value="${code}">${disp}</option>`;
+                        }).join("");
+
+                        eventInput.innerHTML = html;
+
+                        // Retain value if valid, or re-apply default if available/empty
+                        // If currentVal is still valid for this sector, keep it.
+                        // Or if we have a default in URL/params, use it.
+                        if (sectorEvents.find(e => e.type_event === currentVal)) {
+                            eventInput.value = currentVal;
+                        } else if (urlParams.type_event) {
+                            // Try to set default if it matches
+                            eventInput.value = urlParams.type_event;
+                        }
+                    } else {
+                        // Update DATALIST options
+                        const listId = eventInput.getAttribute('list');
+                        const datalist = document.getElementById(listId);
+                        if (datalist) {
+                            datalist.innerHTML = sectorEvents.map(evt => {
+                                const code = evt.type_event;
+                                const lKey = evt.type_event_label || `eve.${code}`;
+                                const desc = eventTranslations[lKey] || code;
+                                const disp = `${code} - ${desc}`;
+                                return `<option value="${disp}">${disp}</option>`;
+                            }).join("");
+                        }
+                    }
+                    console.log(`Refreshed event options for sector: ${sec}`);
+                };
+
+
                 // Override validateForm
                 manager.validateForm = function (customValidator) {
                     this.clearErrors();
@@ -1281,9 +1298,24 @@
                 // Datalist population moved inside renderer for better reliability
                 console.log('Form initialization complete. Sector:', urlParams.account_sector);
 
-                // Initial check for liquidity alert if type_event is pre-filled
-                if (urlParams.type_event) {
-                    manager.onChange('type_event', urlParams.type_event);
+                // Initial populate events if sector is known
+                if (urlParams.account_sector) {
+                    populateEventOptions(urlParams.account_sector);
+
+                    // Re-apply type_event if it was passed (to ensure it is selected after options update)
+                    if (urlParams.type_event) {
+                        const eventInput = document.querySelector('[name="type_event"]');
+                        if (eventInput) {
+                            eventInput.value = urlParams.type_event;
+                            // Also trigger change to handle liquidity alert
+                            manager.onChange('type_event', urlParams.type_event);
+                        }
+                    }
+                } else {
+                    // Check logic for liquidity alert if type_event is pre-filled
+                    if (urlParams.type_event) {
+                        manager.onChange('type_event', urlParams.type_event);
+                    }
                 }
 
 
