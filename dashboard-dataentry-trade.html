@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Trade Data Entry 0.4</title>
+    <title>Trade Data Entry 0.5</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&display=swap');
@@ -835,13 +835,12 @@
 
                     // Custom validation for 'quantity'
                     if (field.name === 'quantity') {
-                        const value = inputElement.value;
-                        if (!value) return validation; // Empty handled by required check in shared
+                        const value = inputElement.value.trim();
+                        if (!value) return validation;
 
                         // Get current event type
                         const form = inputElement.closest('form');
                         let typeEvent = '';
-                        // Try to find in form
                         const eventInput = form.querySelector('[name="type_event"]');
                         if (eventInput) {
                             typeEvent = eventInput.value;
@@ -856,25 +855,18 @@
                             const eventData = sectorEvents.find(e => e.type_event === typeEvent);
 
                             if (eventData) {
-                                let mustBeNegative = false;
-                                if (eventData.type_event_sign === '-') mustBeNegative = true;
-                                if (eventData.type_event_liquidity_sign === '-') mustBeNegative = true;
-
-                                if (mustBeNegative) {
-                                    // Check if positive
-                                    const numVal = parseFloat(value);
-                                    if (!isNaN(numVal) && numVal > 0) {
-                                        // Auto-correct or Error?
-                                        // Prompt says: "la validazione devi farla aggiungendo '-' all'inizio del valore"
-                                        // We will return error but also attempt to auto-correct if we can,
-                                        // but validation function usually just checks.
-                                        // Use a small hack: update the value directly?
-                                        // Better to show error and let user fix, OR fix it on blur.
-                                        // However, sharedValidator is called on blur usually.
-
-                                        // Let's force the value to be negative
-                                        inputElement.value = '-' + value.trim();
-                                        return { isValid: true, message: '' };
+                                // Priorità a type_event_sign come richiesto esplicitamente
+                                const sign = eventData.type_event_sign;
+                                if (sign === '-') {
+                                    // Deve essere negativo. Se non ha il meno, lo aggiungiamo.
+                                    if (!value.startsWith('-')) {
+                                        inputElement.value = '-' + value;
+                                        // Trigger feedback visuale se necessario, ma per ora normalizziamo silenziosamente
+                                    }
+                                } else if (sign === '+') {
+                                    // Deve essere positivo. Se ha il meno, lo togliamo.
+                                    if (value.startsWith('-')) {
+                                        inputElement.value = value.substring(1);
                                     }
                                 }
                             }
@@ -1014,6 +1006,21 @@
                                 }
                             }
                         }
+
+                        if (name === 'amount:net') {
+                            // Estrai strumento da suffisso ":" se presente
+                            const val = String(value || '').trim();
+                            if (val.includes(':')) {
+                                const instr = val.split(':')[1].trim().split(' ')[0];
+                                if (instr && /^[A-Z]{3}$/.test(instr)) {
+                                    const instrInput = document.getElementById('field_id_instrument');
+                                    if (instrInput && (!instrInput.value || instrInput.value !== instr)) {
+                                        instrInput.value = instr;
+                                        console.log('id_instrument auto-filled from amount:net:', instr);
+                                    }
+                                }
+                            }
+                        }
                     },
                     onSubmit: async (data) => {
                         console.log('Dati inviati:', data);
@@ -1063,42 +1070,27 @@
                             if (eventData && eventData.type_event_liquidity) {
                                 const nextSector = eventData.type_event_liquidity_sector || 'CC';
 
-                                // Estrai la valuta e il valore numerico da amount:net (es: "100.00 EUR" -> "EUR" e "100.00")
+                                // Estraggo la valuta e il valore numerico da amount:net
+                                // Il suffisso dopo il carattere ":" identifica lo strumento (id_instrument)
                                 const amountNetStr = String(data['amount:net'] || '').trim();
-                                let currency = '';
-                                let quantityVal = '';
+                                let currencyFromNet = '';
+                                let numericValFromNet = '';
 
-                                // Robust extraction
                                 if (amountNetStr) {
-                                    const parts = amountNetStr.split(' ');
-                                    // Assumiamo formato "VALORE CURRENCY" o "VALORE" o "CURRENCY VALORE" ?
-                                    // Solitamente è "100.00 EUR".
-                                    // Proviamo a identificare parti numeriche e stringa
-
-                                    for (const p of parts) {
-                                        if (/^[A-Z]{3}$/.test(p)) {
-                                            currency = p;
-                                        } else if (/^[\d.,+-]+$/.test(p)) {
-                                            // More robust check: contains at least one digit
-                                            if (/\d/.test(p)) {
-                                                // Normalize to dot decimal for URL param?
-                                                // Or keep as is, since the target field might expect localized input?
-                                                // If we pass "1.000,00" to 'quantity' field which might be FE_Decimal or FE_Float...
-                                                // FE_Decimal usually expects "VAL:CUR" or just VAL.
-                                                // Let's pass the raw string if it looks like a number.
-                                                // But usually amount:net includes thousand separators.
-                                                // Let's clean it up only if we want to enforce standard format.
-                                                // For now, let's just capture the value string.
-                                                quantityVal = p;
+                                    if (amountNetStr.includes(':')) {
+                                        const parts = amountNetStr.split(':');
+                                        numericValFromNet = parts[0].trim();
+                                        currencyFromNet = parts[1].trim().split(' ')[0]; // Prendi solo il codice 3-lettere se c'è spazio
+                                    } else {
+                                        // Fallback se il formato non ha i ":" ma ha uno spazio
+                                        const parts = amountNetStr.split(' ');
+                                        for (const p of parts) {
+                                            if (/^[A-Z]{3}$/.test(p)) {
+                                                currencyFromNet = p;
+                                            } else if (/^[\d.,+-]+$/.test(p) && /\d/.test(p)) {
+                                                numericValFromNet = p;
                                             }
                                         }
-                                    }
-
-                                    // Fallback semplice se lo split space non basta o formato strano,
-                                    // ma per ora manteniamo la logica precedente estesa.
-                                    if (!currency && parts.length > 0) {
-                                        const possibleCurr = parts[parts.length - 1];
-                                        if (/^[A-Z]{3}$/.test(possibleCurr)) currency = possibleCurr;
                                     }
                                 }
 
@@ -1109,11 +1101,10 @@
                                     id_account: data.id_account || '',
                                     account_sector: nextSector,
                                     type_event: eventData.type_event_liquidity,
-                                    id_instrument: currency || data.id_instrument || '',
-                                    // Map amount:net numeric value to quantity
-                                    quantity: quantityVal || '',
-                                    // Non passiamo amount:net per evitare conflitti o doppie assegnazioni indesiderate,
-                                    // visto che stiamo "sostituendo" con quantity.
+                                    // Instrument estratto dal suffisso di amount:net
+                                    id_instrument: currencyFromNet || data.id_instrument || '',
+                                    // Valore di amount:net riportato in quantity
+                                    quantity: numericValFromNet || '',
                                     'cost:expense': data['cost:expense'] || '',
                                     'fee:commission': data['fee:commission'] || '',
                                     date_settlement: data.date_settlement || '',
