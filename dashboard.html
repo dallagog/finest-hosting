@@ -1058,6 +1058,15 @@
         // ========== MENU ==========
         async function loadMenu() {
             try {
+                const userRole = (filterData && filterData.Filter && filterData.Filter.role) ? filterData.Filter.role : null;
+                const menuContainerSection = document.getElementById('menu-container').closest('.collapsible-container');
+
+                if (!userRole) {
+                    console.warn('Ruolo utente non trovato in filterData. Nascondo il menu.');
+                    if (menuContainerSection) menuContainerSection.style.display = 'none';
+                    return;
+                }
+
                 const response = await fetch('menu.json');
                 const data = await response.json();
                 const container = document.getElementById('menu-container');
@@ -1065,9 +1074,31 @@
 
                 function createMenuList(items) {
                     const ul = document.createElement('ul');
-                    items.filter(i => i.status === "ok").sort((a, b) => a.id.localeCompare(b.id)).forEach(item => {
+
+                    // Filtro gli item in base a: status ok e corrispondenza ruolo (se specificato)
+                    const filteredItems = items.filter(item => {
+                        if (item.status !== "ok") return false;
+                        if (item.role && item.role.length > 0) {
+                            return item.role.includes(userRole);
+                        }
+                        return true; // Se non c'è il campo role, l'item è visibile a tutti? 
+                        // O solo se specificato? Seguendo la logica usuale: visibile se non ristretto.
+                    });
+
+                    if (filteredItems.length === 0) return null;
+
+                    filteredItems.sort((a, b) => a.id.localeCompare(b.id)).forEach(item => {
                         const li = document.createElement('li');
+
+                        let subUl = null;
                         if (item.submenu && item.submenu.length) {
+                            subUl = createMenuList(item.submenu);
+                        }
+
+                        // Se l'item non ha sottomenu validi e non ha una pagina html, lo saltiamo
+                        if (!item.html && !subUl) return;
+
+                        if (subUl) {
                             const toggle = document.createElement('span');
                             toggle.textContent = '+';
                             toggle.classList.add('toggle');
@@ -1079,23 +1110,30 @@
                             li.appendChild(toggle);
                             li.classList.add('has-submenu');
                         }
+
                         const link = document.createElement('a');
                         const translatedDesc = getTranslation(item.description);
                         link.textContent = translatedDesc !== item.description ? translatedDesc : item.description;
                         link.href = item.html || '#';
                         li.appendChild(link);
-                        if (item.submenu && item.submenu.length) {
-                            const subUl = createMenuList(item.submenu);
+
+                        if (subUl) {
                             subUl.classList.add('submenu');
                             li.appendChild(subUl);
                         }
                         ul.appendChild(li);
                     });
-                    return ul;
+
+                    return ul.children.length > 0 ? ul : null;
                 }
 
                 const menuList = createMenuList(data.menu || []);
-                container.appendChild(menuList);
+                if (menuList) {
+                    container.appendChild(menuList);
+                    if (menuContainerSection) menuContainerSection.style.display = 'block';
+                } else {
+                    if (menuContainerSection) menuContainerSection.style.display = 'none';
+                }
             } catch (error) {
                 console.error('Errore caricamento menu', error);
                 document.getElementById('menu-container').innerHTML = '<p style="color:red;">Errore caricamento menu</p>';
@@ -2479,9 +2517,10 @@
                 await loadTranslations(credentials.language);
                 updatePageTranslations();
                 await updateUserInfo();
-                loadMenu();
                 await loadAccounts();
                 await loadFilter();
+                // Ora che filterData è caricato, possiamo filtrare il menu per ruolo
+                loadMenu();
                 renderReportsList_patched();
                 loadPortfolio();
                 loadProfitability();
