@@ -12,7 +12,315 @@
 
     <script src="js/dashboard-shared.js"></script>
 
-    <link rel="stylesheet" href="css/style-latex.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&display=swap');
+
+        :root {
+            --bg-color: #050505;
+            --neon-cyan: #00f3ff;
+            --neon-blue: #0066ff;
+            --glass-bg: rgba(0, 20, 40, 0.95);
+            --text-color: #e0f7fa;
+            --neon-red: #ff0044;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html,
+        body {
+            height: 100%;
+            width: 100%;
+            overflow: hidden;
+            padding-right: 0;
+        }
+
+        body {
+            font-family: 'Orbitron', sans-serif;
+            background-color: var(--bg-color);
+            background-image:
+                radial-gradient(circle at 20% 80%, rgba(0, 243, 255, 0.05) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(0, 102, 255, 0.05) 0%, transparent 50%),
+                linear-gradient(rgba(0, 243, 255, 0.1) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 243, 255, 0.1) 1px, transparent 1px);
+            background-size: 100% 100%, 100% 100%, 50px 50px, 50px 50px;
+            color: var(--text-color);
+            display: flex;
+            flex-direction: column;
+            padding: 10px;
+            gap: 10px;
+        }
+
+        /* HEADER (mantenuto) */
+        .header-bar {
+            background: var(--glass-bg);
+            border: 1px solid var(--neon-cyan);
+            border-radius: 8px;
+            padding: 10px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 0 20px rgba(0, 243, 255, 0.2);
+            backdrop-filter: blur(10px);
+            min-height: 70px;
+            z-index: 10;
+        }
+
+        .header-left {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            flex: 1;
+        }
+
+        .user-info-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+        }
+
+        .user-label {
+            color: var(--neon-cyan);
+            font-weight: bold;
+        }
+
+        .username-display {
+            color: var(--text-color);
+            text-transform: uppercase;
+        }
+
+        .flag-icon {
+            font-size: 18px;
+        }
+
+        .header-center {
+            flex: 1;
+            text-align: center;
+        }
+
+        .header-center h1 {
+            font-size: 1.8rem;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            background: linear-gradient(90deg, var(--neon-cyan), var(--neon-blue));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            text-shadow: 0 0 10px var(--neon-cyan);
+            margin: 0;
+        }
+
+        .header-right {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            flex: 1;
+            justify-content: flex-end;
+        }
+
+        select,
+        button {
+            font-family: 'Orbitron', sans-serif;
+            text-transform: uppercase;
+            border-radius: 4px;
+            cursor: pointer;
+            border: 1px solid var(--neon-blue);
+            background: rgba(0, 10, 25, 0.9);
+            color: var(--neon-cyan);
+            padding: 8px 15px;
+            transition: all 0.3s;
+        }
+
+        select:hover,
+        button:hover {
+            border-color: var(--neon-cyan);
+            box-shadow: 0 0 10px rgba(0, 243, 255, 0.3);
+        }
+
+        .close-button:hover {
+            border-color: var(--neon-red);
+            color: var(--neon-red);
+            box-shadow: 0 0 15px rgba(255, 0, 68, 0.3);
+        }
+
+        /* CHART CONTAINER */
+        .chart-container {
+            flex: 1;
+            background: var(--glass-bg);
+            border: 1px solid var(--neon-cyan);
+            border-radius: 12px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 0 30px rgba(0, 243, 255, 0.2);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .pie-area {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* Wrapper del canvas + SVG + Labels */
+        /* Aumento il margine per le etichette esterne impilate */
+        .chart-wrapper {
+            position: relative;
+            width: 75vh;
+            height: 75vh;
+            max-width: 750px;
+            max-height: 750px;
+            margin: 80px;
+            box-sizing: content-box;
+        }
+
+        #pieCanvas {
+            width: 100% !important;
+            height: 100% !important;
+            z-index: 2;
+        }
+
+        /* SVG per le linee: deve coprire esattamente il canvas */
+        .connection-svg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+            overflow: visible;
+        }
+
+        .connection-line {
+            fill: none;
+            stroke-width: 1.5;
+            stroke-dasharray: 4, 4;
+            /* Linea tratteggiata Tron */
+            opacity: 0.9;
+            filter: drop-shadow(0 0 2px currentColor);
+            transition: stroke 0.2s;
+        }
+
+        /* LABEL ESTERNE (Legenda) */
+        #labelsContainer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        .chart-label {
+            position: absolute;
+            font-size: 11px;
+            font-weight: bold;
+            color: var(--text-color);
+            text-shadow: 0 0 3px rgba(0, 0, 0, 0.8);
+            background: rgba(0, 20, 40, 0.95);
+            padding: 4px 8px;
+            border-radius: 4px;
+            border: 1px solid;
+            white-space: nowrap;
+            pointer-events: auto;
+            transition: all 0.2s;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+            cursor: default;
+        }
+
+        .chart-label:hover {
+            z-index: 20;
+            background: rgba(0, 20, 40, 1);
+            transform: scale(1.05);
+            box-shadow: 0 0 15px var(--neon-cyan);
+        }
+
+        .total-display {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            z-index: 5;
+            pointer-events: none;
+        }
+
+        .total-label {
+            font-size: 12px;
+            color: var(--neon-blue);
+            margin-bottom: 2px;
+        }
+
+        .total-value {
+            font-size: 20px;
+            font-weight: 900;
+            color: var(--neon-cyan);
+            text-shadow: 0 0 10px var(--neon-cyan);
+        }
+
+        /* LOADING (mantenuto) */
+        #loading {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(5, 5, 5, 0.95);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 3px solid rgba(0, 243, 255, 0.1);
+            border-top: 3px solid var(--neon-cyan);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .header-bar {
+                flex-direction: column;
+                gap: 10px;
+                padding: 10px;
+            }
+
+            .header-center h1 {
+                font-size: 1.4rem;
+            }
+
+            .chart-wrapper {
+                width: 90vw;
+                height: 90vw;
+                margin: 10px;
+            }
+
+            .chart-label {
+                font-size: 9px;
+                padding: 2px 4px;
+            }
+        }
+    </style>
 </head>
 
 <body>
@@ -320,8 +628,8 @@
                     },
                     animation: {
                         // Dopo l'animazione, disegna le linee e le label
-                        onComplete: (animation) => {
-                            drawExternalLabelsAndLines(animation.chart, colors);
+                        onComplete: () => {
+                            drawExternalLabelsAndLines(pieChart, colors);
                         }
                     }
                 }
@@ -332,7 +640,6 @@
 
         /* ================= EXTERNAL LABELS & LINES DRAWING LOGIC (RISOLTO Sovrapposizioni) ================= */
         function drawExternalLabelsAndLines(chart, colors) {
-            if (!chart) return;
             const container = document.getElementById('labelsContainer');
             const svg = document.getElementById('connectionSvg');
             container.innerHTML = '';
