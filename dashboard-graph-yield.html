@@ -254,7 +254,20 @@
                         );
                     }
 
-                    const rawYield = data.portfolioyield || {};
+                    let rawYield = data.portfolioyield || {};
+                    if (typeof rawYield === 'string') {
+                        if (!rawYield.trim()) {
+                            rawYield = {};
+                        } else {
+                            try {
+                                rawYield = JSON.parse(rawYield.replace(/'/g, '"'));
+                            } catch (e) {
+                                console.error("Error parsing portfolioyield string", e);
+                                rawYield = {};
+                            }
+                        }
+                    }
+
                     let parsedData = parsePortfolioItems(rawYield, classificationFilter);
 
                     // Filter by selected accounts

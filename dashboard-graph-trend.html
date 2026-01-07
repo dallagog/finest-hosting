@@ -319,11 +319,15 @@
 
                     let rawTrend = data.trend;
                     if (typeof rawTrend === 'string') {
-                        try {
-                            rawTrend = JSON.parse(rawTrend.replace(/'/g, '"'));
-                        } catch (e) {
-                            console.error("Error parsing trend string", e);
+                        if (!rawTrend.trim()) {
                             rawTrend = [];
+                        } else {
+                            try {
+                                rawTrend = JSON.parse(rawTrend.replace(/'/g, '"'));
+                            } catch (e) {
+                                console.error("Error parsing trend string", e);
+                                rawTrend = [];
+                            }
                         }
                     }
 
