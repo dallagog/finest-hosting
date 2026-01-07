@@ -1435,25 +1435,26 @@
                 }
 
                 const data = await response.json();
-                console.log('loadFilter - Dati ricevuti da /getfilter:', data);
+                console.log('loadFilter - RAW DATA:', data);
 
                 let loaded = null;
 
                 // Caso 1: Dati standard { Filter: ..., Account: ... }
                 if (data && data.Filter) {
+                    console.log('loadFilter - MATCH Caso 1: data.Filter found');
                     loaded = data;
                 }
                 // Caso 2: Dati in sotto-chiave 'filter' (oggetto o stringa)
                 else if (data && data.filter) {
+                    console.log('loadFilter - MATCH Caso 2: data.filter found, type:', typeof data.filter);
                     if (typeof data.filter === 'string') {
                         try {
                             const parsed = JSON.parse(data.filter);
-                            // Alcuni backend restituiscono { Filter: ... } dentro la stringa
+                            console.log('loadFilter - parsed data.filter string:', parsed);
                             if (parsed.Filter) loaded = parsed;
-                            // Altri solo il contenuto di Filter, quindi lo rimettiamo a posto
                             else loaded = { Filter: parsed };
                         } catch (e) {
-                            console.error('Errore parsing data.filter string', e);
+                            console.error('loadFilter - Errore parsing data.filter string', e);
                             loaded = data;
                         }
                     } else if (data.filter.Filter) {
@@ -1464,23 +1465,32 @@
                 }
                 // Caso 3: Dati in sotto-chiave 'data'
                 else if (data.status === 'ok' && data.data) {
+                    console.log('loadFilter - MATCH Caso 3: data.status ok and data.data found');
                     loaded = data.data;
                 }
                 else {
+                    console.log('loadFilter - MATCH Caso Default: using data as is');
                     loaded = data;
                 }
 
-                // Verifica finale
-                if (!loaded || (!loaded.Filter && !loaded.portfolio && !loaded.yield)) {
-                    console.error('Formato non riconosciuto. Dati "loaded":', loaded);
-                    throw new Error('Formato filter.json non valido');
+                console.log('loadFilter - LOADED object BEFORE validation:', loaded);
+
+                // Verifica finale e inizializzazione default se vuoto
+                if (!loaded || typeof loaded !== 'object') {
+                    console.warn('loadFilter - loaded is null or not an object, initializing default');
+                    loaded = { Filter: {}, Account: { list: [] } };
                 }
 
-                // Normalizza se Filter manca ma ci sono i campi diretti
                 if (!loaded.Filter) {
-                    loaded = { Filter: loaded, Account: loaded.Account || { list: [] } };
+                    console.log('loadFilter - loaded.Filter missing, initializing empty');
+                    loaded.Filter = {};
+                }
+                if (!loaded.Account) {
+                    console.log('loadFilter - loaded.Account missing, initializing empty');
+                    loaded.Account = { list: [] };
                 }
 
+                console.log('loadFilter - FINAL normalized object:', loaded);
                 filterData = loaded;
                 await _afterFilterLoaded_mergeAccounts();
                 syncSelectedAccountsFromFilter();
@@ -1510,6 +1520,7 @@
 
         function populateFilterUI() {
             const f = filterData.Filter || {};
+            console.log('populateFilterUI - current Filter:', f);
             if (f.date_start) document.getElementById('date-start').value = f.date_start;
             if (f.date_end) document.getElementById('date-end').value = f.date_end;
 
@@ -1518,12 +1529,17 @@
             portfolioSelect.innerHTML = `<option value="">${getTranslation('int.select.option') || '-- seleziona --'}</option>`;
 
             const portfolioOptions = [];
+            console.log('populateFilterUI - domineData state:', domineData);
             if (domineData && Array.isArray(domineData.level_portfolio)) {
+                console.log('populateFilterUI - using domineData.level_portfolio');
                 domineData.level_portfolio.forEach(key => {
                     const suffix = key.split(':').pop();
-                    portfolioOptions.push({ value: suffix, description: getTranslation(key) || suffix });
+                    const desc = getTranslation(key);
+                    console.log(`populateFilterUI - Adding portfolio option: ${suffix} (${desc})`);
+                    portfolioOptions.push({ value: suffix, description: desc || suffix });
                 });
             } else {
+                console.warn('populateFilterUI - domineData.level_portfolio missing, using fallback (translations)');
                 // Fallback se domine.json non è caricato correttamente
                 Object.keys(translations).forEach(key => {
                     if (key.startsWith('dom.account_level_portfolio:')) {
@@ -1559,11 +1575,15 @@
 
             const yieldOptions = [];
             if (domineData && Array.isArray(domineData.level_yield)) {
+                console.log('populateFilterUI - using domineData.level_yield');
                 domineData.level_yield.forEach(key => {
                     const suffix = key.split(':').pop();
-                    yieldOptions.push({ value: suffix, description: getTranslation(key) || suffix });
+                    const desc = getTranslation(key);
+                    console.log(`populateFilterUI - Adding yield option: ${suffix} (${desc})`);
+                    yieldOptions.push({ value: suffix, description: desc || suffix });
                 });
             } else {
+                console.warn('populateFilterUI - domineData.level_yield missing, using fallback (translations)');
                 // Fallback se domine.json non è caricato correttamente
                 Object.keys(translations).forEach(key => {
                     if (key.startsWith('dom.account_level_yield:')) {
