@@ -8,7 +8,202 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <script src="js/dashboard-shared.js"></script>
-    <link rel="stylesheet" href="css/style-latex.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&display=swap');
+
+        :root {
+            --bg-color: #050505;
+            --neon-cyan: #00f3ff;
+            --neon-red: #ff0055;
+            --neon-blue: #0066ff;
+            --glass-bg: rgba(0, 20, 40, 0.85);
+            --text-color: #e0f7fa;
+            --button-bg: rgba(255, 0, 85, 0.1);
+            --button-border: var(--neon-red);
+            --button-hover: var(--neon-cyan);
+        }
+
+        html,
+        body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+
+        body {
+            font-family: 'Orbitron', sans-serif;
+            background-color: var(--bg-color);
+            background-image:
+                linear-gradient(rgba(255, 0, 85, 0.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 0, 85, 0.05) 1px, transparent 1px);
+            background-size: 50px 50px;
+            padding: 15px;
+            color: var(--text-color);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header-bar {
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
+            align-items: center;
+            padding: 15px 20px;
+            background: var(--glass-bg);
+            border: 1px solid var(--neon-red);
+            box-shadow: 0 0 15px rgba(255, 0, 85, 0.3);
+            border-radius: 8px;
+            margin-bottom: 15px;
+            flex-shrink: 0;
+        }
+
+        .header-left {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 5px;
+        }
+
+        .user-info-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+        }
+
+        .user-label {
+            color: var(--neon-cyan);
+            font-weight: bold;
+        }
+
+        .username-display {
+            color: var(--text-color);
+            text-transform: uppercase;
+        }
+
+        .flag-icon {
+            font-size: 18px;
+        }
+
+        .header-center {
+            text-align: center;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 1.5rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: var(--neon-red);
+            text-shadow: 0 0 10px var(--neon-red);
+        }
+
+        .header-right {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            justify-content: flex-end;
+        }
+
+        select {
+            padding: 8px 15px;
+            background: var(--button-bg);
+            border: 1px solid var(--neon-red);
+            color: var(--neon-cyan);
+            font-family: 'Orbitron', sans-serif;
+            border-radius: 4px;
+            cursor: pointer;
+            min-width: 150px;
+        }
+
+        select:focus {
+            outline: none;
+            box-shadow: 0 0 10px var(--neon-red);
+        }
+
+        .close-button {
+            padding: 8px 15px;
+            background: var(--button-bg);
+            border: 1px solid var(--neon-red);
+            color: var(--neon-red);
+            font-family: 'Orbitron', sans-serif;
+            border-radius: 4px;
+            cursor: pointer;
+            text-transform: uppercase;
+            font-size: 0.9rem;
+            transition: background 0.3s, color 0.3s, border-color 0.3s;
+        }
+
+        .close-button:hover {
+            background: rgba(0, 243, 255, 0.2);
+            border-color: var(--button-hover);
+            color: var(--button-hover);
+            box-shadow: 0 0 10px rgba(0, 243, 255, 0.5);
+        }
+
+        .chart-wrapper {
+            flex: 1;
+            position: relative;
+            background: var(--glass-bg);
+            border: 1px solid var(--neon-red);
+            border-radius: 8px;
+            box-shadow: 0 0 20px rgba(255, 0, 85, 0.1);
+            padding: 15px;
+            min-height: 0;
+            overflow: hidden;
+        }
+
+        #chartContainerInner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+        }
+
+        #chartCanvas {
+            width: 100% !important;
+            height: 100% !important;
+        }
+
+        #loading {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 3px solid var(--neon-red);
+            border-top: 3px solid transparent;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        #loadingText {
+            color: var(--neon-cyan);
+            font-size: 1.2rem;
+            letter-spacing: 1px;
+        }
+    </style>
 </head>
 
 <body>
@@ -254,20 +449,7 @@
                         );
                     }
 
-                    let rawYield = data.portfolioyield || {};
-                    if (typeof rawYield === 'string') {
-                        if (!rawYield.trim()) {
-                            rawYield = {};
-                        } else {
-                            try {
-                                rawYield = JSON.parse(rawYield.replace(/'/g, '"'));
-                            } catch (e) {
-                                console.error("Error parsing portfolioyield string", e);
-                                rawYield = {};
-                            }
-                        }
-                    }
-
+                    const rawYield = data.portfolioyield || {};
                     let parsedData = parsePortfolioItems(rawYield, classificationFilter);
 
                     // Filter by selected accounts
