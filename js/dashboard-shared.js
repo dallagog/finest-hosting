@@ -98,7 +98,7 @@ function populateGroupingSelectSummary(selectElement, classificationList, transl
 function getGroupedData(portfolioData, classificationMap, groupingKey, valueKey = "CTVMKTTQ") {
     let active = portfolioData.filter(x => {
         const val = parseFloat(x[valueKey]);
-        return !isNaN(val) && val > 0;
+        return !isNaN(val) && val !== 0;
     });
 
     let groupedResults = [];

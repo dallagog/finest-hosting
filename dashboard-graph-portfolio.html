@@ -320,8 +320,8 @@
                     },
                     animation: {
                         // Dopo l'animazione, disegna le linee e le label
-                        onComplete: () => {
-                            drawExternalLabelsAndLines(pieChart, colors);
+                        onComplete: (animation) => {
+                            drawExternalLabelsAndLines(animation.chart, colors);
                         }
                     }
                 }
@@ -332,6 +332,7 @@
 
         /* ================= EXTERNAL LABELS & LINES DRAWING LOGIC (RISOLTO Sovrapposizioni) ================= */
         function drawExternalLabelsAndLines(chart, colors) {
+            if (!chart) return;
             const container = document.getElementById('labelsContainer');
             const svg = document.getElementById('connectionSvg');
             container.innerHTML = '';
