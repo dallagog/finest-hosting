@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Dashboard 0.1 alfa</title>
+    <title>Dashboard 0.2 alfa</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <script src="js/dashboard-shared.js"></script>
@@ -738,10 +738,12 @@
         let selectedAccounts = [];
         let credentials = { username: '', token: '', language: '', filter: '' };
         let pdfBase64 = null;
+        let accountsData = []; // Lista completa degli account (non filtrata)
         let translations = {};
         let availableLanguages = [];
         let currencies = [];
         let classificationFilter = [];
+        let domineData = null;
         let portfolioColumns = [];
         let profitabilityColumns = [];
         let showHistorical = false;
@@ -811,6 +813,17 @@
                 if (manifest.classification && Array.isArray(manifest.classification)) classificationFilter = manifest.classification;
                 if (manifest.portfolio && Array.isArray(manifest.portfolio)) portfolioColumns = manifest.portfolio;
                 if (manifest.portfolio_yield && Array.isArray(manifest.portfolio_yield)) profitabilityColumns = manifest.portfolio_yield;
+
+                // Load domine.json
+                try {
+                    const domResponse = await fetch('lang/domine.json');
+                    if (domResponse.ok) {
+                        domineData = await domResponse.json();
+                    }
+                } catch (domErr) {
+                    console.error("Error loading domine.json:", domErr);
+                }
+
                 return manifest.languages || [];
             } catch (error) {
                 console.error("Error loading manifest:", error);
@@ -1128,7 +1141,6 @@
         }
 
         // ========== FILTER & ACCOUNTS ==========
-        let accountsData = [];
         let accountsSortCol = 'description';
         let accountsSortDir = 'asc';
 
@@ -1175,7 +1187,10 @@
 
             if (Array.isArray(fAccountList)) {
                 fAccountList.forEach(a => {
-                    if (a && a.id_account) selectedMap[String(a.id_account).trim()] = !!a.selected;
+                    if (a && a.id_account) {
+                        const isSelected = a.selected === true || a.selected === 'True' || a.selected === 'true';
+                        selectedMap[String(a.id_account).trim()] = isSelected;
+                    }
                 });
             }
 
@@ -1420,13 +1435,51 @@
                 }
 
                 const data = await response.json();
-                let loaded = null;
-                if (data && data.Filter && data.Account) loaded = data;
-                else if (data && data.filter && data.filter.Filter) loaded = data.filter;
-                else if (data.status === 'ok' && data.data && data.data.Filter) loaded = data.data;
-                else loaded = data;
+                console.log('loadFilter - Dati ricevuti da /getfilter:', data);
 
-                if (!loaded || !loaded.Filter) throw new Error('Formato filter.json non valido');
+                let loaded = null;
+
+                // Caso 1: Dati standard { Filter: ..., Account: ... }
+                if (data && data.Filter) {
+                    loaded = data;
+                }
+                // Caso 2: Dati in sotto-chiave 'filter' (oggetto o stringa)
+                else if (data && data.filter) {
+                    if (typeof data.filter === 'string') {
+                        try {
+                            const parsed = JSON.parse(data.filter);
+                            // Alcuni backend restituiscono { Filter: ... } dentro la stringa
+                            if (parsed.Filter) loaded = parsed;
+                            // Altri solo il contenuto di Filter, quindi lo rimettiamo a posto
+                            else loaded = { Filter: parsed };
+                        } catch (e) {
+                            console.error('Errore parsing data.filter string', e);
+                            loaded = data;
+                        }
+                    } else if (data.filter.Filter) {
+                        loaded = data.filter;
+                    } else {
+                        loaded = data.filter;
+                    }
+                }
+                // Caso 3: Dati in sotto-chiave 'data'
+                else if (data.status === 'ok' && data.data) {
+                    loaded = data.data;
+                }
+                else {
+                    loaded = data;
+                }
+
+                // Verifica finale
+                if (!loaded || (!loaded.Filter && !loaded.portfolio && !loaded.yield)) {
+                    console.error('Formato non riconosciuto. Dati "loaded":', loaded);
+                    throw new Error('Formato filter.json non valido');
+                }
+
+                // Normalizza se Filter manca ma ci sono i campi diretti
+                if (!loaded.Filter) {
+                    loaded = { Filter: loaded, Account: loaded.Account || { list: [] } };
+                }
 
                 filterData = loaded;
                 await _afterFilterLoaded_mergeAccounts();
@@ -1443,11 +1496,13 @@
         }
         function syncSelectedAccountsFromFilter() {
             selectedAccounts = [];
-            const accountsFilter = filterData?.Filter?.accounts;
+            // Cerca in Account.list (formato FE_FilterManager) o Filter.accounts (vecchio formato)
+            const accountsFilter = filterData?.Account?.list || filterData?.Filter?.accounts || filterData?.Filter?.list;
             if (!Array.isArray(accountsFilter)) return;
 
             accountsFilter.forEach(a => {
-                if (a.selected) {
+                const isSelected = a.selected === true || a.selected === 'True' || a.selected === 'true';
+                if (isSelected) {
                     selectedAccounts.push(String(a.id_account).trim());
                 }
             });
@@ -1458,19 +1513,25 @@
             if (f.date_start) document.getElementById('date-start').value = f.date_start;
             if (f.date_end) document.getElementById('date-end').value = f.date_end;
 
-            // Popola il dropdown del portafoglio con i suffissi dom.account_level_portfolio:
+            // Popola il dropdown del portafoglio usando domine.json (level_portfolio)
             const portfolioSelect = document.getElementById('portfolio');
             portfolioSelect.innerHTML = `<option value="">${getTranslation('int.select.option') || '-- seleziona --'}</option>`;
 
-            // Cerca tutte le chiavi di traduzione che iniziano con dom.account_level_portfolio:
             const portfolioOptions = [];
-            Object.keys(translations).forEach(key => {
-                if (key.startsWith('dom.account_level_portfolio:')) {
-                    const suffix = key.split(':')[1];
-                    const description = translations[key];
-                    portfolioOptions.push({ value: suffix, description: description });
-                }
-            });
+            if (domineData && Array.isArray(domineData.level_portfolio)) {
+                domineData.level_portfolio.forEach(key => {
+                    const suffix = key.split(':').pop();
+                    portfolioOptions.push({ value: suffix, description: getTranslation(key) || suffix });
+                });
+            } else {
+                // Fallback se domine.json non è caricato correttamente
+                Object.keys(translations).forEach(key => {
+                    if (key.startsWith('dom.account_level_portfolio:')) {
+                        const suffix = key.split(':')[1];
+                        portfolioOptions.push({ value: suffix, description: translations[key] });
+                    }
+                });
+            }
 
             // Ordina le opzioni per il suffisso
             portfolioOptions.sort((a, b) => a.value.localeCompare(b.value));
@@ -1484,7 +1545,7 @@
                 // Controlla se questa opzione è già selezionata come default
                 if (Array.isArray(f.portfolio)) {
                     const found = f.portfolio.find(p => p.value === option.value);
-                    if (found && found.selected) {
+                    if (found && (found.selected === true || found.selected === 'True' || found.selected === 'true')) {
                         opt.selected = true;
                     }
                 }
@@ -1492,19 +1553,25 @@
                 portfolioSelect.appendChild(opt);
             });
 
-            // Popola il dropdown della redditività con i suffissi dom.account_level_yield:
+            // Popola il dropdown della redditività usando domine.json (level_yield)
             const profitabilitySelect = document.getElementById('profitability');
             profitabilitySelect.innerHTML = `<option value="">${getTranslation('int.select.option') || '-- seleziona --'}</option>`;
 
-            // Cerca tutte le chiavi di traduzione che iniziano con dom.account_level_yield:
             const yieldOptions = [];
-            Object.keys(translations).forEach(key => {
-                if (key.startsWith('dom.account_level_yield:')) {
-                    const suffix = key.split(':')[1];
-                    const description = translations[key];
-                    yieldOptions.push({ value: suffix, description: description });
-                }
-            });
+            if (domineData && Array.isArray(domineData.level_yield)) {
+                domineData.level_yield.forEach(key => {
+                    const suffix = key.split(':').pop();
+                    yieldOptions.push({ value: suffix, description: getTranslation(key) || suffix });
+                });
+            } else {
+                // Fallback se domine.json non è caricato correttamente
+                Object.keys(translations).forEach(key => {
+                    if (key.startsWith('dom.account_level_yield:')) {
+                        const suffix = key.split(':')[1];
+                        yieldOptions.push({ value: suffix, description: translations[key] });
+                    }
+                });
+            }
 
             // Ordina le opzioni per il suffisso
             yieldOptions.sort((a, b) => a.value.localeCompare(b.value));
@@ -1518,7 +1585,7 @@
                 // Controlla se questa opzione è già selezionata come default
                 if (Array.isArray(f.yield)) {
                     const found = f.yield.find(y => y.value === option.value);
-                    if (found && found.selected) {
+                    if (found && (found.selected === true || found.selected === 'True' || found.selected === 'true')) {
                         opt.selected = true;
                     }
                 }
