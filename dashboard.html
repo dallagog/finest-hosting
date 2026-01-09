@@ -2296,49 +2296,15 @@
             tr.classList.add('selected');
         }
 
-        async function openPortfolioDetails(idAccount, idInstrument) {
-            try {
-                const payload = {
-                    username: credentials.username || "",
-                    token: credentials.token || "",
-                    language: credentials.language || "",
-                    filter: "",
-                    code: `${idAccount}:${idInstrument}` || ""
-                };
-                const response = await fetch(`${API_URL}/getwallet`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-                if (!response.ok) throw new Error('HTTP ' + response.status);
-                const data = await response.json();
-                if (data.status === 'ok' && data.wallet) displayPortfolioDetails(data.wallet, idInstrument);
-                else alert('Portfolio details not available');
-            } catch (error) { console.error('Error loading details:', error); }
-        }
+        function openPortfolioDetails(idAccount, idInstrument) {
+            const params = new URLSearchParams();
+            params.set('username', credentials.username || '');
+            params.set('token', credentials.token || '');
+            params.set('language', credentials.language || '');
+            params.set('id_account', idAccount);
+            params.set('id_instrument', idInstrument);
 
-        function displayPortfolioDetails(walletData, idInstrument) {
-            const overlay = document.createElement('div');
-            overlay.style.cssText = `position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.5); z-index: 10000; display: flex; justify-content: flex-start; align-items: center; padding: 20px; padding-left: 2%;`;
-            const modal = document.createElement('div');
-            modal.style.cssText = `background: #fff; border: 1px solid #000; border-radius: 12px; padding: 30px; max-width: 90%; max-height: 90%; overflow-y: auto; box-shadow: 0 4px 15px rgba(0,0,0,0.1);`;
-            const instrumentDesc = walletData[0]?.instrument?.instrument_description || idInstrument;
-            let html = `<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;"><h2 style="color: #000; margin: 0;">${instrumentDesc} - Transaction History</h2><button id="close-modal" style="background: #000; border: 1px solid #000; color: #fff; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-family: inherit;">Close</button></div><table style="width: 100%; border-collapse: collapse; color: #333;"><thead><tr style="background: #f0f0f0; border-bottom: 2px solid #000;"><th style="padding: 10px; text-align: left;">Date</th><th style="padding: 10px; text-align: left;">Event</th><th style="padding: 10px; text-align: right;">Quantity</th><th style="padding: 10px; text-align: right;">Price</th><th style="padding: 10px; text-align: right;">Amount</th><th style="padding: 10px; text-align: right;">Balance</th></tr></thead><tbody>`;
-            walletData.forEach((transaction, index) => {
-                const date = transaction.date_evaluation || '-';
-                const event = transaction.event?.event_description || transaction.id_event || '-';
-                const quantity = transaction.quantity || '0';
-                const price = transaction.price || '-';
-                const amount = transaction['amount:net'] || transaction.controvaloresupersecco || '-';
-                const balance = transaction.valutazioni?.saldo || '-';
-                html += `<tr style="border-bottom: 1px solid #eee; ${index % 2 === 0 ? 'background: #f9f9f9;' : ''}"><td style="padding: 10px;">${date}</td><td style="padding: 10px;">${event}</td><td style="padding: 10px; text-align: right;">${quantity}</td><td style="padding: 10px; text-align: right;">${price}</td><td style="padding: 10px; text-align: right;">${amount}</td><td style="padding: 10px; text-align: right;">${balance}</td></tr>`;
-            });
-            html += `</tbody></table>`;
-            modal.innerHTML = html;
-            overlay.appendChild(modal);
-            document.body.appendChild(overlay);
-            document.getElementById('close-modal').addEventListener('click', () => { document.body.removeChild(overlay); });
-            overlay.addEventListener('click', (e) => { if (e.target === overlay) document.body.removeChild(overlay); });
+            window.open(`dashboard-wallet-instrument-trades.html?${params.toString()}`, '_blank');
         }
 
         function openTradeDetails(symbol) {
