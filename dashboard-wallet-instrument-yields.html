@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Dashboard Trade</title>
+    <title>Instrument Yield Details 1.0</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&display=swap');
@@ -15,7 +15,7 @@
             --neon-blue: #333333;
             --glass-bg: #ffffff;
             --text-color: #333333;
-            --border-color: #dddddd;
+            --border-color: #000000;
         }
 
         * {
@@ -37,7 +37,7 @@
             margin: 0 auto;
             background: var(--glass-bg);
             border: 1px solid #ddd;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
             border-radius: 8px;
             padding: 20px;
         }
@@ -53,11 +53,10 @@
         .info-bar {
             margin-bottom: 20px;
             padding: 10px;
-            border-bottom: 1px solid #eee;
+            border-bottom: 1px solid #ddd;
             display: flex;
             justify-content: space-between;
             font-size: 1.2rem;
-            color: #000;
         }
 
         .symbol-link {
@@ -106,7 +105,7 @@
         }
 
         tr:hover {
-            background-color: #f9f9f9;
+            background-color: #f5f5f5;
         }
 
         .error-msg {
@@ -120,7 +119,7 @@
             text-align: center;
             margin-top: 20px;
             font-style: italic;
-            color: var(--neon-blue);
+            color: #666;
         }
     </style>
 </head>
@@ -128,10 +127,10 @@
 <body>
 
     <div class="container">
-        <h1>Trade Details</h1>
+        <h1>Trade Yield Details</h1>
         <div class="info-bar">
             <span id="symbolDisplay">Symbol: -</span>
-            <span id="typeDisplay">Type: Trade</span>
+            <span>Type: Yield</span>
         </div>
         <div id="loading" class="loading">Loading data...</div>
         <div id="error" class="error-msg" style="display: none;"></div>
@@ -164,12 +163,12 @@
 
         const symbolDisplay = document.getElementById('symbolDisplay');
         if (code) {
-            symbolDisplay.innerHTML = (getTranslation('int.symbol') || 'Symbol:') + ' <span class="symbol-link" onclick="openInstrumentDetails(\'' + code + '\')">' + code + '</span>';
+            symbolDisplay.innerHTML = 'Symbol: <span class="symbol-link" onclick="openInstrumentDetails(\'' + code + '\')">' + code + '</span>';
         }
 
         let tableData = [];
         let tableColumns = [];
-        let tradeColumns = [];
+        let tradeYieldColumns = [];
         let currentSort = { column: null, direction: 'asc' };
         let translations = {};
 
@@ -181,7 +180,7 @@
                 const manifest = await response.json();
                 return {
                     languages: manifest.languages || [],
-                    columns: manifest['dashboard-trade'] || []
+                    columns: manifest['dashboard-tradeyield'] || []
                 };
             } catch (error) {
                 console.error("Error loading manifest:", error);
@@ -202,19 +201,6 @@
 
         function getTranslation(key) {
             return translations[key] || key;
-        }
-
-        function updatePageTranslations() {
-            document.title = getTranslation('int.trade.title');
-            document.querySelector('h1').textContent = getTranslation('int.trade.title');
-
-            const typeDisplay = document.getElementById('typeDisplay');
-            if (typeDisplay) typeDisplay.textContent = getTranslation('int.type.trade');
-
-            const loading = document.getElementById('loading');
-            if (loading && loading.textContent === 'Loading data...') {
-                loading.textContent = getTranslation('int.loading.data') || 'Loading data...';
-            }
         }
 
         // ========== DATA FLATTENING ==========
@@ -250,7 +236,7 @@
             };
 
             try {
-                const response = await fetch(`${API_URL}/gettrade`, {
+                const response = await fetch(`${API_URL}/gettradeyield`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
@@ -258,25 +244,19 @@
                 const data = await response.json();
 
                 if (data.status === 'ok') {
-                    if (data.trade && Array.isArray(data.trade) && data.trade.length > 0) {
+                    if (data.tradeyield && Array.isArray(data.tradeyield) && data.tradeyield.length > 0) {
                         // Flatten nested objects
-                        tableData = data.trade.map(item => flattenObject(item));
-
-                        // Debug: log first flattened item to see structure
-                        console.log('Flattened trade item sample:', tableData[0]);
-                        console.log('Available keys:', Object.keys(tableData[0]));
+                        tableData = data.tradeyield.map(item => flattenObject(item));
 
                         // Use columns from manifest if available, otherwise discover from data
-                        if (tradeColumns.length > 0) {
-                            tableColumns = [...tradeColumns];
-                            console.log('Using manifest columns:', tableColumns);
+                        if (tradeYieldColumns.length > 0) {
+                            tableColumns = [...tradeYieldColumns];
                         } else {
                             const allKeys = new Set();
                             tableData.forEach(item => {
                                 Object.keys(item).forEach(k => allKeys.add(k));
                             });
                             tableColumns = Array.from(allKeys);
-                            console.log('Discovered columns:', tableColumns);
                         }
 
                         renderTable();
@@ -329,11 +309,8 @@
             }
 
             // Rows
-            displayData.forEach((item, idx) => {
+            displayData.forEach(item => {
                 const tr = document.createElement('tr');
-                tr.style.cursor = 'pointer';
-                tr.onclick = () => showTradeDetails(idx);
-
                 tableColumns.forEach(col => {
                     const td = document.createElement('td');
                     let val = item[col];
@@ -347,10 +324,6 @@
                 });
                 tbody.appendChild(tr);
             });
-        }
-
-        function showTradeDetails(index) {
-            window.open(`dashboard-trade-details.html?code=${encodeURIComponent(code)}&index=${index}`, '_blank');
         }
 
         function sortTable(col) {
@@ -394,9 +367,8 @@
         // Init
         (async function init() {
             const manifest = await loadLanguageManifest();
-            tradeColumns = manifest.columns;
+            tradeYieldColumns = manifest.columns;
             translations = await loadTranslations(language);
-            updatePageTranslations();
             await loadData();
         })();
 
