@@ -154,7 +154,10 @@
 
         // Get URL params
         const urlParams = new URLSearchParams(window.location.search);
-        const code = urlParams.get('code');
+        let code = urlParams.get('code');
+        if (!code && urlParams.get('id_account') && urlParams.get('id_instrument')) {
+            code = `${urlParams.get('id_account')}:${urlParams.get('id_instrument')}`;
+        }
 
         // Get Auth from LocalStorage
         const username = localStorage.getItem("username");
@@ -232,7 +235,7 @@
                 username: username,
                 token: token,
                 language: language,
-                code: `${urlParams.id_account}:${urlParams.id_instrument}` || ""
+                code: code || ""
             };
 
             try {
