@@ -505,6 +505,33 @@ class DataEntryManager {
                 this.onChange(e.target.name, e.target.value);
             });
         }
+
+        // Handle blur events for normalization
+        form.addEventListener('focusout', (e) => {
+            if (e.target.matches('.form-input')) {
+                const format = e.target.dataset.format;
+                const value = e.target.value;
+
+                if (!value) return;
+
+                let normalized = value;
+                if (format === 'FE_Crypto') {
+                    normalized = FormatHelper.normalizeCrypto(value);
+                } else if (format === 'FE_Decimal') {
+                    normalized = FormatHelper.normalizeDecimal(value);
+                } else if (format === 'FE_Exchange') {
+                    normalized = FormatHelper.normalizeExchange(value);
+                }
+
+                if (normalized !== value) {
+                    e.target.value = normalized;
+                    // Also trigger onChange if defined
+                    if (this.onChange) {
+                        this.onChange(e.target.name, normalized);
+                    }
+                }
+            }
+        });
     }
 
     /**
