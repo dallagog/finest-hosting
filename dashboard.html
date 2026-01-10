@@ -552,6 +552,71 @@
             color: #999;
             margin-right: 5px;
         }
+
+        /* Modal Styles */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            backdrop-filter: blur(5px);
+        }
+
+        .modal-content {
+            background: #fff;
+            border: 2px solid #000;
+            border-radius: 8px;
+            padding: 30px;
+            max-width: 500px;
+            width: 90%;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+
+        .modal-header {
+            margin-bottom: 25px;
+        }
+
+        .modal-header h2 {
+            color: #000;
+            font-size: 1.5em;
+            text-transform: uppercase;
+        }
+
+        .sector-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .sector-item {
+            padding: 12px;
+            background: #f9f9f9;
+            border: 1px solid #ddd;
+            color: #333;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 500;
+        }
+
+        .sector-item:hover {
+            background: #eee;
+            border-color: #000;
+            transform: translateX(5px);
+        }
+
+        .modal-footer {
+            margin-top: 20px;
+            text-align: center;
+        }
     </style>
 </head>
 
@@ -643,6 +708,9 @@
                             <button class="button-secondary" id="createAccountBtn" onclick="createNewAccount()">
                                 <i class="fa fa-plus"></i> <span id="createAccountText">Crea rapporto</span>
                             </button>
+                            <button class="button-secondary" id="operationsBtn" onclick="openTradeOperations()">
+                                <i class="fa fa-cogs"></i> <span id="operationsText">Operazioni</span>
+                            </button>
                         </div>
                         <div id="reports-list">
                             <p style="color:var(--neon-blue);" id="reportsLoading">Caricamento rapporti in corso...</p>
@@ -696,6 +764,8 @@
                 </div>
             </div>
 
+
+
             <div id="profitability-section" class="collapsible-container" style="display:none;">
                 <div class="collapsible-header" onclick="toggleCollapsible(this)">
                     <h2 id="profitabilityTableTitle">Redditività</h2>
@@ -736,6 +806,24 @@
         </div>
     </div>
 
+    <!-- Sector Selector Modal -->
+    <div id="sector-modal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="sectorModalTitle">Seleziona Settore</h2>
+            </div>
+            <div id="sector-list" class="sector-list">
+                <!-- Sectors will be injected here -->
+                <div style="color: var(--neon-blue);">Caricamento settori...</div>
+            </div>
+            <div class="modal-footer">
+                <button class="button-secondary" onclick="closeSectorModal()">
+                    <i class="fa fa-times"></i> <span id="cancelBtnText">Annulla</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
     <script>
         // Mobile detection and redirection
         (function () {
@@ -760,6 +848,59 @@
         let profitabilityColumns = [];
         let showHistorical = false;
         let trendData = [];
+
+        // ========== OPERATIONS / SECTOR SELECTOR ==========
+        async function openTradeOperations() {
+            try {
+                const response = await fetch('lang/domine.json');
+                if (!response.ok) throw new Error('Cannot load domine.json');
+                const domine = await response.json();
+
+                const sectors = domine.account_sector || [];
+                const sectorListContainer = document.getElementById('sector-list');
+                const modalTitle = document.getElementById('sectorModalTitle');
+                const cancelBtnText = document.getElementById('cancelBtnText');
+
+                modalTitle.textContent = getTranslation('int.account.account_sector') || 'Seleziona Settore';
+                cancelBtnText.textContent = getTranslation('int.cancel') || 'Annulla';
+
+                sectorListContainer.innerHTML = '';
+
+                sectors.forEach(sectorKey => {
+                    const sectorLabel = getTranslation(sectorKey);
+                    // Extracting the value from the key (e.g., "dom.account_sector:FI" -> "FI")
+                    const sectorValue = sectorKey.split(':').pop();
+
+                    const div = document.createElement('div');
+                    div.className = 'sector-item';
+                    div.textContent = sectorLabel || sectorKey;
+                    div.onclick = () => selectSector(sectorValue);
+                    sectorListContainer.appendChild(div);
+                });
+
+                document.getElementById('sector-modal').style.display = 'flex';
+            } catch (error) {
+                console.error('Error opening trade operations:', error);
+                showMessage('Errore nel caricamento del selettore settori', 'error');
+            }
+        }
+
+        function closeSectorModal() {
+            document.getElementById('sector-modal').style.display = 'none';
+        }
+
+        function selectSector(sectorValue) {
+            closeSectorModal();
+
+            const params = new URLSearchParams({
+                username: credentials.username,
+                token: credentials.token,
+                language: credentials.language,
+                account_sector: sectorValue
+            });
+
+            window.open(`dashboard-dataentry-trade.html?${params.toString()}`, '_blank');
+        }
 
         // ========== NEW GRAPH FUNCTION ==========
         function openGraphNewWindow(type) {
@@ -946,18 +1087,15 @@
 
             const graphSpan = document.getElementById('graphText');
             if (graphSpan) graphSpan.textContent = getTranslation('int.graph');
-
             const profitabilityGraphText = document.getElementById('profitabilityGraphText');
             if (profitabilityGraphText) profitabilityGraphText.textContent = getTranslation('int.graph');
 
-            const createAccountText = getTranslation('int.newaccount');
-            if (createAccountText !== 'int.newaccount') document.getElementById('createAccountText').textContent = createAccountText;
+            let el; // Declare el once for reuse
 
-            const generatePdfText = getTranslation('int.pdf.report');
-            if (generatePdfText !== 'int.pdf.report') document.getElementById('generatePdfText').textContent = generatePdfText;
-
-            const trendText = getTranslation('int.trend');
-            if (trendText !== 'int.trend') document.getElementById('trendText').textContent = trendText;
+            if (el = document.getElementById('createAccountText')) el.textContent = getTranslation('int.newaccount');
+            if (el = document.getElementById('operationsText')) el.textContent = getTranslation('int.operation');
+            if (el = document.getElementById('generatePdfText')) el.textContent = getTranslation('int.pdf.report');
+            if (el = document.getElementById('trendText')) el.textContent = getTranslation('int.trend');
 
             const applyFiltersText = getTranslation('int.apply.filters');
             if (applyFiltersText !== 'int.apply.filters') document.getElementById('apply-filters').textContent = applyFiltersText;

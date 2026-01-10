@@ -573,7 +573,16 @@
         }
 
         function openRegistryForm() {
-            window.open(`dashboard-registry.html?username=${credentials.username}&token=${credentials.token}&language=${credentials.language}`, '_blank');
+            const registryWindow = window.open(`dashboard-registry.html?username=${credentials.username}&token=${credentials.token}&language=${credentials.language}`, '_blank');
+
+            // Polling per rilevare la chiusura della finestra
+            const timer = setInterval(() => {
+                if (registryWindow.closed) {
+                    clearInterval(timer);
+                    console.log("Registry window closed, refreshing registries...");
+                    loadRegistries();
+                }
+            }, 1000);
         }
 
         async function loadTranslations(lang) {
