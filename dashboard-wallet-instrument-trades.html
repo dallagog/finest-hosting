@@ -248,6 +248,10 @@
                 token: urlParams.token || '',
                 language: urlParams.language || 'it_IT'
             };
+
+            if (!urlParams.code && urlParams.id_account && urlParams.id_instrument) {
+                urlParams.code = `${urlParams.id_account}:${urlParams.id_instrument}`;
+            }
         }
 
         // Language & Translation System
@@ -352,7 +356,7 @@
                     token: credentials.token || "",
                     language: credentials.language || "",
                     filter: "",
-                    code: `${urlParams.id_account}:${urlParams.id_instrument}` || ""
+                    code: urlParams.code || ""
                 };
 
                 const response = await fetch(`${API_URL}/gettrade`, {
@@ -388,7 +392,9 @@
             document.getElementById('instrumentTitle').textContent = instrumentDesc;
 
             // Filter to show only executed trades
-            const executedTrades = walletData.filter(transaction => transaction.tradetype === 'executed');
+            // const executedTrades = walletData.filter(transaction => transaction.tradetype === 'executed');
+            const executedTrades = walletData;
+            console.log("Wallet Data:", walletData);
 
             let html = `<table>
                 <thead>
