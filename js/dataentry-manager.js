@@ -49,6 +49,26 @@ const FormatHelper = {
         return /^\d+(\.\d+)?\:[A-Z]{3}\/[A-Z]{3}$/.test(value);
     },
 
+    normalizeCrypto(value) {
+        // accetta: "123.45 BTC" oppure "123.45:BTC"
+        const v = value.trim();
+        // Check if already correct format (number:string)
+        // Regex: Number followed by colon followed by 2+ chars
+        if (/^-?\d+(\.\d+)?\:[A-Z0-9a-z\.\-_]+$/.test(v)) {
+            return v;
+        }
+        // Normalize space -> colon
+        const m = v.match(/^(-?\d+(?:\.\d+)?)\s+([A-Z0-9a-z\.\-_]+)$/i);
+        if (m) {
+            return `${m[1]}:${m[2]}`;
+        }
+        return v;
+    },
+
+    validateCrypto(value) {
+        return /^-?\d+(\.\d+)?\:[A-Z0-9a-z\.\-_]+$/i.test(value);
+    },
+
     validateFloat(value) {
         if (!value) return false;
         const floatRegex = /^\d+(\.\d+)?$/;
@@ -285,6 +305,18 @@ class DataEntryManager {
                                placeholder="es: 1.10 EUR/USD">`;
                 break;
 
+            case 'FE_Crypto':
+                input = `<input type="text" 
+                               name="${name}" 
+                               id="${fieldId}"
+                               ${required ? 'required' : ''}
+                               ${isFixed ? 'readonly' : ''}
+                               value="${value}"
+                               class="form-input${fixedClass}"
+                               data-format="FE_Crypto"
+                               placeholder="es: 0.05 BTC">`;
+                break;
+
             case 'FE_Float':
                 input = `<input type="text" 
                                name="${name}" 
@@ -516,6 +548,17 @@ class DataEntryManager {
             }
         }
 
+        // Validate FE_Crypto format
+        if (formatType === 'FE_Crypto' && value) {
+            const normalized = FormatHelper.normalizeCrypto(value);
+            if (!FormatHelper.validateCrypto(normalized)) {
+                return {
+                    isValid: false,
+                    message: this.getTranslation('int.format.crypto.invalid') || 'Formato non valido. Usa: valore:CODICE (es: 0.5:BTC)'
+                };
+            }
+        }
+
         // Validate FE_Float format
         if (formatType === 'FE_Float') {
             if (!FormatHelper.validateFloat(value)) {
@@ -702,6 +745,9 @@ class SharedDataEntryRenderer {
                 break;
             case 'FE_Exchange':
                 input = `<input type="text" name="${name}" id="${fieldId}" ${required ? 'required' : ''} ${isFixed ? 'readonly' : ''} value="${value}" class="form-input${fixedClass}" data-format="FE_Exchange" placeholder="es: 1.10:EUR/USD">`;
+                break;
+            case 'FE_Crypto':
+                input = `<input type="text" name="${name}" id="${fieldId}" ${required ? 'required' : ''} ${isFixed ? 'readonly' : ''} value="${value}" class="form-input${fixedClass}" data-format="FE_Crypto" placeholder="es: 0.05:BTC">`;
                 break;
             case 'FE_Date':
                 let dateValue = value;
