@@ -53,12 +53,11 @@ const FormatHelper = {
         // accetta: "123.45 BTC" oppure "123.45:BTC"
         const v = value.trim();
         // Check if already correct format (number:string)
-        // Regex: Number followed by colon followed by 2+ chars
-        if (/^-?\d+(\.\d+)?\:[A-Z0-9a-z\.\-_]+$/.test(v)) {
+        if (/^-?\d+(\.\d+)?\:.+$/.test(v)) {
             return v;
         }
-        // Normalize space -> colon
-        const m = v.match(/^(-?\d+(?:\.\d+)?)\s+([A-Z0-9a-z\.\-_]+)$/i);
+        // Normalize space -> colon (Number + Space(s) + Anything)
+        const m = v.match(/^(-?\d+(?:\.\d+)?)\s+(.+)$/);
         if (m) {
             return `${m[1]}:${m[2]}`;
         }
@@ -66,7 +65,8 @@ const FormatHelper = {
     },
 
     validateCrypto(value) {
-        return /^-?\d+(\.\d+)?\:[A-Z0-9a-z\.\-_]+$/i.test(value);
+        // Valida numero:stringaqualunque
+        return /^-?\d+(\.\d+)?\:.+$/.test(value);
     },
 
     validateFloat(value) {
@@ -584,6 +584,7 @@ class DataEntryManager {
                     message: this.getTranslation('int.format.crypto.invalid') || 'Formato non valido. Usa: valore:CODICE (es: 0.5:BTC)'
                 };
             }
+            return { isValid: true, normalized: normalized };
         }
 
         // Validate FE_Float format
@@ -635,6 +636,8 @@ class DataEntryManager {
             if (!result.isValid) {
                 this.showError(field.name, result.message);
                 isValid = false;
+            } else if (result.normalized && result.normalized !== input.value) {
+                input.value = result.normalized;
             }
         });
 
