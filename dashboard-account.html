@@ -270,6 +270,25 @@
             opacity: 0.5;
             pointer-events: none;
         }
+
+        @keyframes pulse-highlight {
+
+            0%,
+            100% {
+                box-shadow: 0 0 10px var(--neon-cyan);
+                transform: scale(1);
+            }
+
+            50% {
+                box-shadow: 0 0 25px var(--neon-cyan), 0 0 40px var(--neon-cyan);
+                transform: scale(1.02);
+            }
+        }
+
+        .highlight-btn {
+            animation: pulse-highlight 1.5s infinite;
+            border: 2px solid var(--neon-cyan);
+        }
     </style>
 </head>
 
@@ -529,13 +548,15 @@
                 const data = await response.json();
                 console.log("Dati anagrafiche ricevuti:", data);
 
-                if (data.registries) {
+                if (data.registries && Object.keys(data.registries).length > 0) {
                     registries = data.registries;
                     populateRegistriesDropdown();
                     enableForm();
-                    document.getElementById('createRegistryBtn').classList.remove('highlight');
+                    const btn = document.getElementById('createRegistryBtn');
+                    if (btn) btn.classList.remove('highlight-btn');
                 } else {
-                    document.getElementById('createRegistryBtn').classList.add('highlight');
+                    const btn = document.getElementById('createRegistryBtn');
+                    if (btn) btn.classList.add('highlight-btn');
                 }
             } catch (error) {
                 console.error('Error loading registries:', error);
