@@ -769,12 +769,12 @@
                         `;
                     }
 
-                    // Handle default logic for type_event (liquidity context)
-                    if (name === 'type_event' && urlParams.type_event) {
+                    // Handle default logic for id_event (liquidity context)
+                    if (name === 'id_event' && urlParams.id_event) {
                         // Check validity of the passed event against manifest
                         const curSector = (urlParams.account_sector || "").trim().toUpperCase();
                         const sectorEvents = eventManifest[curSector] || [];
-                        const isValidEvent = sectorEvents.some(e => e.type_event === urlParams.type_event);
+                        const isValidEvent = sectorEvents.some(e => e.id_event === urlParams.id_event);
 
                         if (isValidEvent) {
                             // If we have a valid default value in URL, lock it.
@@ -846,22 +846,25 @@
                         // Get current event type
                         const form = inputElement.closest('form');
                         let typeEvent = '';
-                        const eventInput = form.querySelector('[name="type_event"]');
+                        const eventInput = form.querySelector('[name="id_event"]');
                         if (eventInput) {
                             typeEvent = eventInput.value;
                             if (typeEvent.includes(' - ')) typeEvent = typeEvent.split(' - ')[0].trim();
-                        } else if (urlParams.type_event) {
-                            typeEvent = urlParams.type_event;
+                        } else if (urlParams.id_event) {
+                            typeEvent = urlParams.id_event;
+                            // Select automatically if present
+                            if (eventInput) eventInput.value = typeEvent;
                         }
 
-                        if (typeEvent && (field.name === 'quantity')) {
-                            const curSector = (urlParams.account_sector || "").trim().toUpperCase();
-                            const sectorEvents = eventManifest[curSector] || [];
-                            const eventData = sectorEvents.find(e => e.type_event === typeEvent);
+                        // Recupera il segno dal manifest eventi
+                        const curSector = (urlParams.account_sector || "").trim().toUpperCase();
+                        const sectorEvents = eventManifest[curSector] || [];
+                        if (typeEvent && sectorEvents.length > 0) {
+                            const eventData = sectorEvents.find(e => e.id_event === typeEvent);
 
                             if (eventData) {
-                                // Priorità a type_event_sign come richiesto esplicitamente
-                                const sign = eventData.type_event_sign;
+                                // Priorità a id_event_sign come richiesto esplicitamente
+                                const sign = eventData.id_event_sign;
                                 if (sign === '-') {
                                     // Deve essere negativo. Se non ha il meno, lo aggiungiamo.
                                     if (!value.startsWith('-')) {
@@ -956,8 +959,8 @@
 
                     // Cerca prima se c'è un dashboard definito per l'evento specifico
                     let targetEvent = null;
-                    if (urlParams.type_event) {
-                        targetEvent = sectorEvents.find(e => e.type_event === urlParams.type_event);
+                    if (urlParams.id_event) {
+                        targetEvent = sectorEvents.find(e => e.id_event === urlParams.id_event);
                     }
 
                     // Fallback al primo evento del settore se non trovato l'evento specifico
@@ -995,15 +998,15 @@
                             }
                         }
 
-                        if (name === 'type_event' || name.startsWith('type_event')) {
-                            const eventCode = value.includes(' - ') ? value.split(' - ')[0].trim() : value.trim();
-                            const curSector = (urlParams.account_sector || "").trim().toUpperCase();
-                            const sectorEvents = eventManifest[curSector] || [];
-                            const eventData = sectorEvents.find(e => e.type_event === eventCode);
+                        if (name === 'id_event' || name.startsWith('id_event')) {
+                            // Find event data to check if it has liquidity info
+                            const eventCode = manager.getFieldValue('id_event');
+                            const sectorEvents = eventManifest[urlParams.account_sector] || [];
+                            const eventData = sectorEvents.find(e => e.id_event === eventCode);
 
                             const alertBox = document.getElementById('liquidity-alert');
                             if (alertBox) {
-                                if (eventData && eventData.type_event_liquidity) {
+                                if (eventData && eventData.id_event_liquidity) {
                                     alertBox.style.display = 'block';
                                 } else {
                                     alertBox.style.display = 'none';
@@ -1062,17 +1065,16 @@
                             window.scrollTo({ top: 0, behavior: 'smooth' });
 
                             // Gestione propagazione liquidità
-                            let eventCode = data.type_event || '';
-                            if (eventCode.includes(' - ')) {
-                                eventCode = eventCode.split(' - ')[0].trim();
-                            }
+                            let eventCode = data.id_event || '';
+                            const sectorEvents = eventManifest[urlParams.account_sector] || [];
+                            let overrideData = {};
 
-                            const curSector = (urlParams.account_sector || "").trim().toUpperCase();
-                            const sectorEvents = eventManifest[curSector] || [];
-                            const eventData = sectorEvents.find(e => e.type_event === eventCode);
+                            // Check if this event implies a liquidity transaction
+                            // e.g. "CC-25" -> implies a - change in CC sector
+                            const eventData = sectorEvents.find(e => e.id_event === eventCode);
 
-                            if (eventData && eventData.type_event_liquidity) {
-                                const nextSector = eventData.type_event_liquidity_sector || 'CC';
+                            if (eventData && eventData.id_event_liquidity) {
+                                const nextSector = eventData.id_event_liquidity_sector || 'CC';
 
                                 // Estraggo la valuta da amount:net per id_instrument della liquidità
                                 const amountNetStr = String(data['amount:net'] || '').trim();
@@ -1093,20 +1095,23 @@
                                 // Il valore di amount:net viene riportato integralmente in quantity
                                 // con applicazione del segno previsto per la liquidità
                                 let quantityProp = amountNetStr;
-                                const liqSign = eventData.type_event_liquidity_sign;
+                                const liqSign = eventData.id_event_liquidity_sign;
                                 if (liqSign === '-' && !quantityProp.startsWith('-')) {
                                     quantityProp = '-' + quantityProp;
                                 } else if (liqSign === '+' && quantityProp.startsWith('-')) {
                                     quantityProp = quantityProp.substring(1);
                                 }
 
+                                // Find the account for the liquidity transaction
+                                const liqAccount = availableAccounts.find(a => a.account_sector === nextSector && a.is_default_liquidity_account)?.id_account || data.id_account || '';
+
                                 const params = new URLSearchParams({
                                     username: credentials.username,
                                     token: credentials.token,
                                     language: credentials.language,
-                                    id_account: data.id_account || '',
+                                    id_account: liqAccount,
                                     account_sector: nextSector,
-                                    type_event: eventData.type_event_liquidity,
+                                    id_event: eventData.id_event_liquidity,
                                     // Instrument della liquidità è la divisa di amount:net
                                     id_instrument: currencyFromNet || data.id_instrument || '',
                                     // Quantity della liquidità è il valore di amount:net (con segno corretto)
@@ -1262,8 +1267,8 @@
                         const currentVal = eventInput.value;
                         let html = `<option value="">-- ${getTranslation('int.select.option') || 'Seleziona'} --</option>`;
                         html += sectorEvents.map(evt => {
-                            const code = evt.type_event;
-                            const lKey = evt.type_event_label || `eve.${code}`;
+                            const code = evt.id_event;
+                            const lKey = evt.id_event_label || `eve.${code}`;
                             const desc = eventTranslations[lKey] || code;
                             const disp = `${code} - ${desc}`;
                             return `<option value="${code}">${disp}</option>`;
@@ -1275,8 +1280,16 @@
                         // If currentVal is still valid for this sector, keep it.
                         // Or if we have a default in URL/params, use it.
                         // OR if there is only one option, select it.
-                        if (sectorEvents.length === 1) {
-                            eventInput.value = sectorEvents[0].type_event;
+                        if (sectorEvents.length > 0) {
+                            if (sectorEvents.length === 1) {
+                                eventInput.value = sectorEvents[0].id_event;
+                            } else if (sectorEvents.find(e => e.id_event === currentVal)) {
+                                // Current value is valid, keep it
+                                eventInput.value = currentVal;
+                            } else if (urlParams.id_event) {
+                                // Fallback to URL param
+                                eventInput.value = urlParams.id_event;
+                            }
                             // Trigger change to update UI/alerts if needed
                             if (eventInput.value !== currentVal) {
                                 // Optional: trigger change event or manually call onChange logic?
@@ -1284,11 +1297,6 @@
                                 const event = new Event('change');
                                 eventInput.dispatchEvent(event);
                             }
-                        } else if (sectorEvents.find(e => e.type_event === currentVal)) {
-                            eventInput.value = currentVal;
-                        } else if (urlParams.type_event) {
-                            // Try to set default if it matches
-                            eventInput.value = urlParams.type_event;
                         }
                     } else {
                         // Update DATALIST options
@@ -1296,8 +1304,8 @@
                         const datalist = document.getElementById(listId);
                         if (datalist) {
                             datalist.innerHTML = sectorEvents.map(evt => {
-                                const code = evt.type_event;
-                                const lKey = evt.type_event_label || `eve.${code}`;
+                                const code = evt.id_event;
+                                const lKey = evt.id_event_label || `eve.${code}`;
                                 const desc = eventTranslations[lKey] || code;
                                 const disp = `${code} - ${desc}`;
                                 return `<option value="${disp}">${disp}</option>`;
@@ -1342,19 +1350,19 @@
                 if (urlParams.account_sector) {
                     populateEventOptions(urlParams.account_sector);
 
-                    // Re-apply type_event if it was passed (to ensure it is selected after options update)
-                    if (urlParams.type_event) {
-                        const eventInput = document.querySelector('[name="type_event"]');
+                    // Re-apply id_event if it was passed (to ensure it is selected after options update)
+                    if (urlParams.id_event) {
+                        const eventInput = document.querySelector('[name="id_event"]');
                         if (eventInput) {
-                            eventInput.value = urlParams.type_event;
-                            // Also trigger change to handle liquidity alert
-                            manager.onChange('type_event', urlParams.type_event);
+                            eventInput.value = urlParams.id_event;
+                            // Trigger change manually to update sign/liquidity
+                            manager.onChange('id_event', urlParams.id_event);
                         }
                     }
                 } else {
-                    // Check logic for liquidity alert if type_event is pre-filled
-                    if (urlParams.type_event) {
-                        manager.onChange('type_event', urlParams.type_event);
+                    // Check logic for liquidity alert if id_event is pre-filled
+                    if (urlParams.id_event) {
+                        manager.onChange('id_event', urlParams.id_event);
                     }
                 }
 

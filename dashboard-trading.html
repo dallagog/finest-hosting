@@ -521,6 +521,9 @@
                         const flatItem = { Ticker: symbol };
                         if (details && typeof details === 'object') {
                             Object.keys(details).forEach(key => {
+                                // Prevent overwriting Ticker which is key/symbol
+                                if (key === 'Ticker') return;
+
                                 let val = details[key];
                                 if (typeof val === 'string' && val.trim() !== '') {
                                     const numberRegex = /^-?\d+(\.\d+)?$/;
@@ -682,8 +685,10 @@
             });
 
             // Pass ticker/strumento
-            if (item && item.Ticker) {
-                params.append('id_instrument', item.Ticker);
+            // Pass ticker/strumento
+            const instrumentCode = item.Ticker || item.id_instrument || item.code || '';
+            if (instrumentCode) {
+                params.append('id_instrument', instrumentCode);
             }
 
             // Pass l'account se disponibile
