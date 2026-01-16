@@ -418,6 +418,12 @@
             urlParams.language = urlParams.language || 'it_IT';
             urlParams.portfolio_data = urlParams.portfolio_data || '{}';
 
+            // Compatibilità legacy
+            if (urlParams.type_event && !urlParams.id_event) {
+                urlParams.id_event = urlParams.type_event;
+                console.log('Legacy parameter type_event mapped to id_event:', urlParams.id_event);
+            }
+
             credentials = {
                 username: urlParams.username,
                 token: urlParams.token,
@@ -1018,8 +1024,12 @@
                             // Estrai strumento da suffisso ":" se presente
                             const val = String(value || '').trim();
                             if (val.includes(':')) {
-                                const instr = val.split(':')[1].trim().split(' ')[0];
-                                if (instr && /^[A-Z]{3}$/.test(instr)) {
+                                let instr = val.split(':')[1].trim().split(' ')[0];
+                                if (instr && /^[A-Z0-9]{3,12}$/i.test(instr)) {
+                                    // Use FormatHelper if available to be consistent
+                                    if (typeof FormatHelper !== 'undefined') {
+                                        instr = FormatHelper.formatInstrumentCode(instr);
+                                    }
                                     const instrInput = document.getElementById('field_id_instrument');
                                     if (instrInput && (!instrInput.value || instrInput.value !== instr)) {
                                         instrInput.value = instr;
