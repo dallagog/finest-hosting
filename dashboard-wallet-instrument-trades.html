@@ -192,6 +192,23 @@
             text-align: center;
             margin: 20px 0;
         }
+
+        .btn-delete {
+            padding: 5px 10px;
+            background: #ff4444;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 10px;
+            text-transform: uppercase;
+            transition: background 0.3s;
+        }
+
+        .btn-delete:hover {
+            background: #cc0000;
+        }
     </style>
 </head>
 
@@ -391,10 +408,9 @@
             const instrumentDesc = walletData[0]?.instrument?.instrument_description || urlParams.id_instrument;
             document.getElementById('instrumentTitle').textContent = instrumentDesc;
 
-            // Filter to show only executed trades
-            // const executedTrades = walletData.filter(transaction => transaction.tradetype === 'executed');
-            const executedTrades = walletData;
-            console.log("Wallet Data:", walletData);
+            // Filter to show only trade records (marked with trade: "True" by fe_wallet.py)
+            const executedTrades = walletData.filter(transaction => transaction.trade === 'True');
+            console.log("Wallet Data (Filtered):", executedTrades);
 
             let html = `<table>
                 <thead>
@@ -405,6 +421,7 @@
                         <th class="col-right">${getTranslation('int.price') || 'Price'}</th>
                         <th class="col-right">${getTranslation('int.amount') || 'Amount'}</th>
                         <th class="col-right">${getTranslation('int.balance') || 'Balance'}</th>
+                        <th style="text-align: center;">${getTranslation('int.action') || 'Action'}</th>
                     </tr>
                 </thead>
                 <tbody>`;
@@ -416,6 +433,7 @@
                 const price = formatCurrency(transaction.price || '-');
                 const amount = formatCurrency(transaction['amount:net'] || transaction.controvaloresupersecco || '-');
                 const balance = formatCurrency(transaction.valutazioni?.saldo || '-');
+                const id_operation = transaction.id_operation;
 
                 html += `<tr>
                     <td>${date}</td>
@@ -424,11 +442,50 @@
                     <td class="col-right">${price}</td>
                     <td class="col-right">${amount}</td>
                     <td class="col-right">${balance}</td>
+                    <td style="text-align: center;">
+                        <button class="btn-delete" onclick="deleteTrade('${id_operation}')">
+                            ${getTranslation('int.delete') || 'Delete'}
+                        </button>
+                    </td>
                 </tr>`;
             });
 
             html += `</tbody></table>`;
             document.getElementById('content').innerHTML = html;
+        }
+
+        async function deleteTrade(idOperation) {
+            if (!confirm(getTranslation('int.confirm.delete') || 'Are you sure you want to delete this trade?')) {
+                return;
+            }
+
+            try {
+                const payload = {
+                    username: credentials.username || "",
+                    token: credentials.token || "",
+                    language: credentials.language || "",
+                    id_operation: idOperation
+                };
+
+                const response = await fetch(`${API_URL}/deltrade`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) throw new Error('HTTP ' + response.status);
+                const data = await response.json();
+
+                if (data.status === 'ok') {
+                    alert(data.msg);
+                    await loadWalletData(); // Refresh table
+                } else {
+                    alert('Error: ' + data.msg);
+                }
+            } catch (error) {
+                console.error('Error deleting trade:', error);
+                alert('Error: ' + error.message);
+            }
         }
 
         function showError(message) {
