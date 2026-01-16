@@ -151,7 +151,8 @@
         }
 
         th {
-            padding: 12px;
+            padding: 6px 10px;
+            height: 32px;
             text-align: left;
             font-weight: 600;
             text-transform: uppercase;
@@ -176,7 +177,8 @@
         }
 
         td {
-            padding: 12px;
+            padding: 6px 10px;
+            height: 32px;
         }
 
         td.col-right {
@@ -404,7 +406,10 @@
             return String(value).replace(':', ' ');
         }
 
+        let currentWalletData = [];
+
         function displayWalletData(walletData) {
+            currentWalletData = walletData;
             const instrumentDesc = walletData[0]?.instrument?.instrument_description || urlParams.id_instrument;
             document.getElementById('instrumentTitle').textContent = instrumentDesc;
 
@@ -459,12 +464,18 @@
                 return;
             }
 
+            const transaction = currentWalletData.find(t => t.id_operation === idOperation);
+            if (!transaction) {
+                alert('Error: Transaction details not found');
+                return;
+            }
+
             try {
                 const payload = {
                     username: credentials.username || "",
                     token: credentials.token || "",
                     language: credentials.language || "",
-                    id_operation: idOperation
+                    trade: transaction
                 };
 
                 const response = await fetch(`${API_URL}/deltrade`, {
