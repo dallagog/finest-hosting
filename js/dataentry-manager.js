@@ -89,10 +89,18 @@ const FormatHelper = {
         return dateTimeRegex.test(value.trim());
     },
 
-    // Format instrument code (remove everything after first space or hyphen)
+    // Format instrument code (remove everything after first space or hyphen, handles colons)
     formatInstrumentCode(value) {
         if (!value) return '';
-        let code = value.split(' ')[0];
+
+        // Se contiene due punti, prendiamo l'ultima parte (es: ACCOUNT:TICKER -> TICKER)
+        let code = value;
+        if (code.includes(':')) {
+            const parts = code.split(':');
+            code = parts[parts.length - 1];
+        }
+
+        code = code.split(' ')[0];
         if (code.includes('-')) {
             code = code.split('-')[0];
         }
@@ -366,10 +374,10 @@ class DataEntryManager {
                                    class="form-input${fixedClass}"
                                    data-format="${formatType}"
                                    placeholder="Codice strumento">`;
-                } else if (name === 'type_event' || name.startsWith('type_event')) {
-                    // For type_event, show translated description
+                } else if (name === 'id_event' || name.startsWith('id_event') || name === 'type_event' || name.startsWith('type_event')) {
+                    // For id_event/type_event, show translated description
                     const eventDesc = value ? this.getEventTranslation(value) : '';
-                    const displayValue = eventDesc !== value ? `${value} - ${eventDesc}` : value;
+                    const displayValue = eventDesc && eventDesc !== value ? `${value} - ${eventDesc}` : value;
                     input = `<input type="text" 
                                    name="${name}" 
                                    id="${fieldId}"
@@ -672,7 +680,7 @@ class DataEntryManager {
         const data = {};
 
         for (let [key, value] of formData.entries()) {
-            // For type_event fields, extract the code from data-code attribute
+            // For type_event/id_event fields, extract the code from data-code attribute
             const input = document.getElementById(`field_${key}`);
             if (input && input.dataset.code) {
                 data[key] = input.dataset.code;
@@ -682,6 +690,21 @@ class DataEntryManager {
         }
 
         return data;
+    }
+
+    /**
+     * Ottiene il valore di un campo dal DOM
+     */
+    getFieldValue(name) {
+        const input = document.getElementById(`field_${name}`);
+        if (!input) return null;
+
+        // Se è un campo con data-code, restituisci quello
+        if (input.dataset && input.dataset.code) {
+            return input.dataset.code;
+        }
+
+        return input.value;
     }
 
     /**
@@ -813,18 +836,22 @@ class SharedDataEntryRenderer {
                 break;
             case 'FE_Instrument':
                 // Use instruments loaded from /getinstruments API
-                const instOptions = Object.values(this.context.availableInstruments || {}).map(inst =>
-                    `<option value="${inst.id}" ${inst.id == value ? 'selected' : ''}>${inst.id} ${inst.instrument_description || ''}</option>`
-                ).join('');
+                const instOptions = Object.entries(this.context.availableInstruments || {}).map(([id, inst]) => {
+                    const instId = inst.id || id;
+                    const isSelected = String(instId).toUpperCase() === String(value).toUpperCase();
+                    return `<option value="${instId}" ${isSelected ? 'selected' : ''}>${instId} ${inst.instrument_description || ''}</option>`;
+                }).join('');
                 input = `<select name="${name}" id="${fieldId}" ${required ? 'required' : ''} class="form-select${fixedClass}" data-format="FE_Instrument">
                             <option value="">-- ${this.getTranslation('ins.select.option') || 'Seleziona'} --</option>
                             ${instOptions}
                         </select>`;
                 break;
             case 'FE_Currency':
-                const currOptions = Object.values(this.context.availableCurrenciesInstruments || {}).map(curr =>
-                    `<option value="${curr.id}" ${curr.id == value ? 'selected' : ''}>${curr.id} ${curr.instrument_description || ''}</option>`
-                ).join('');
+                const currOptions = Object.entries(this.context.availableCurrenciesInstruments || {}).map(([id, curr]) => {
+                    const currId = curr.id || id;
+                    const isSelected = String(currId).toUpperCase() === String(value).toUpperCase();
+                    return `<option value="${currId}" ${isSelected ? 'selected' : ''}>${currId} ${curr.instrument_description || ''}</option>`;
+                }).join('');
                 input = `<select name="${name}" id="${fieldId}" ${required ? 'required' : ''} class="form-select${fixedClass}" data-format="FE_Currency">
                             <option value="">-- ${this.getTranslation('ins.select.option') || 'Seleziona'} --</option>
                             ${currOptions}
@@ -850,8 +877,8 @@ class SharedDataEntryRenderer {
                 const sectorEvents = (this.context.eventManifest || {})[eventSector] || [];
                 console.log('[FE_Event] Events for sector', eventSector, ':', sectorEvents.length, 'events');
                 const eventOptions = sectorEvents.map(evt => {
-                    const code = evt.type_event;
-                    const lKey = evt.type_event_label || `eve.${code}`;
+                    const code = evt.id_event || evt.type_event;
+                    const lKey = evt.id_event_label || evt.type_event_label || `eve.${code}`;
                     const desc = this.getTranslation(lKey);
                     return `<option value="${code}" ${code == value ? 'selected' : ''}>${code} - ${desc}</option>`;
                 }).join('');
