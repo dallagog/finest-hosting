@@ -478,13 +478,19 @@
                     trade: transaction
                 };
 
+                console.log('[DEBUG] DelTrade Payload:', payload);
+
                 const response = await fetch(`${API_URL}/deltrade`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
                 });
 
-                if (!response.ok) throw new Error('HTTP ' + response.status);
+                if (!response.ok) {
+                    const errorBody = await response.text();
+                    console.error('[DEBUG] DelTrade 422 Details:', errorBody);
+                    throw new Error('HTTP ' + response.status + ': ' + errorBody);
+                }
                 const data = await response.json();
 
                 if (data.status === 'ok') {
