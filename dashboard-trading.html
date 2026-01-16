@@ -676,6 +676,9 @@
         }
 
         function openTrade(item, action) {
+            console.log('[openTrade] Item data:', item);
+            console.log('[openTrade] Action:', action);
+
             const params = new URLSearchParams({
                 username: credentials.username,
                 token: credentials.token,
@@ -686,14 +689,18 @@
 
             // Pass ticker/strumento
             let instrumentCode = item.Ticker || item.id_instrument || item.code || '';
+            console.log('[openTrade] Raw instrument code candidate:', instrumentCode);
+
             if (instrumentCode) {
                 // Normalize: remove anything before last colon (ACCOUNT:TICKER -> TICKER)
                 if (instrumentCode.includes(':')) {
                     const parts = instrumentCode.split(':');
                     instrumentCode = parts[parts.length - 1];
+                    console.log('[openTrade] Normalized after colon split:', instrumentCode);
                 }
                 // Also remove anything after space or hyphen
                 instrumentCode = instrumentCode.split(' ')[0].split('-')[0].trim();
+                console.log('[openTrade] Final normalized instrument code:', instrumentCode);
 
                 params.append('id_instrument', instrumentCode);
             }
@@ -705,6 +712,16 @@
             );
             if (accountKey && item[accountKey]) {
                 params.append('id_account', String(item[accountKey]));
+            }
+
+            // [NEW] Passa il settore se disponibile
+            const sectorKey = Object.keys(item).find(k =>
+                k.toLowerCase().includes('sector') ||
+                k.toLowerCase().includes('settore')
+            );
+            if (sectorKey && item[sectorKey]) {
+                params.append('account_sector', String(item[sectorKey]));
+                console.log('[DEBUG] Passing account_sector to URL:', item[sectorKey]);
             }
 
             // Pass exchange if available

@@ -240,6 +240,7 @@ class DataEntryManager {
         }
 
         const fieldObject = this.structure.data[0];
+        console.log('[DataEntryManager] getFields structure data:', fieldObject);
         return Object.keys(fieldObject).map(key => {
             const format = this.format[key] || {};
             // Priorità al valore definito in format.json (se presente)
@@ -247,7 +248,9 @@ class DataEntryManager {
 
             // Normalize id_instrument if it contains colons (e.g. ACCOUNT:TICKER -> TICKER)
             if (key === 'id_instrument' && defaultValue && typeof FormatHelper !== 'undefined') {
+                const original = defaultValue;
                 defaultValue = FormatHelper.formatInstrumentCode(defaultValue);
+                console.log('[DataEntryManager] id_instrument normalized in getFields:', original, '->', defaultValue);
             }
 
             return {
@@ -716,12 +719,15 @@ class DataEntryManager {
      * Imposta i valori del form
      */
     setFormData(data) {
+        console.log('[DataEntryManager] setFormData called with:', data);
         Object.keys(data).forEach(key => {
             const input = document.getElementById(`field_${key}`);
             if (input) {
                 let value = data[key];
                 if (key === 'id_instrument' && value && typeof FormatHelper !== 'undefined') {
+                    const original = value;
                     value = FormatHelper.formatInstrumentCode(value);
+                    console.log('[DataEntryManager] id_instrument normalized in setFormData:', original, '->', value);
                 }
                 input.value = value;
             }
@@ -796,7 +802,11 @@ class SharedDataEntryRenderer {
         let value = (field.value !== undefined ? field.value : defaultValue) || '';
 
         if (name === 'id_instrument' && value && typeof FormatHelper !== 'undefined') {
+            const original = value;
             value = FormatHelper.formatInstrumentCode(value);
+            console.log('[SharedDataEntryRenderer] id_instrument normalized in generateFieldInput:', original, '->', value);
+        } else if (name === 'id_instrument') {
+            console.log('[SharedDataEntryRenderer] id_instrument rendering for field:', field);
         }
 
         let input = '';

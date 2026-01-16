@@ -411,6 +411,7 @@
             for (const [key, value] of params.entries()) {
                 urlParams[key] = value;
             }
+            console.log('[getURLParams] Received URL params:', urlParams);
 
             // Set defaults for essential parameters
             urlParams.username = urlParams.username || '';
@@ -421,7 +422,7 @@
             // Compatibilità legacy
             if (urlParams.type_event && !urlParams.id_event) {
                 urlParams.id_event = urlParams.type_event;
-                console.log('Legacy parameter type_event mapped to id_event:', urlParams.id_event);
+                console.log('[getURLParams] Legacy parameter type_event mapped to id_event:', urlParams.id_event);
             }
 
             credentials = {
@@ -433,7 +434,9 @@
 
             try {
                 urlParams.portfolio_data_obj = JSON.parse(urlParams.portfolio_data);
+                console.log('[getURLParams] Parsed portfolio_data_obj:', urlParams.portfolio_data_obj);
             } catch (e) {
+                console.error('[getURLParams] Error parsing portfolio_data:', e);
                 urlParams.portfolio_data_obj = {};
             }
         }
@@ -907,6 +910,16 @@
                 await loadInstrumentManifest();
                 await loadAccounts();
 
+                // CRITICAL: Se manca account_sector ma abbiamo id_account, cerchiamo il settore nei conti caricati
+                // Dobbiamo farlo PRIMA di caricare gli strumenti, perché caricamento dipende dal settore.
+                if (!urlParams.account_sector && urlParams.id_account) {
+                    const acc = availableAccounts.find(a => a.id_account === urlParams.id_account);
+                    if (acc && acc.account_sector) {
+                        urlParams.account_sector = acc.account_sector;
+                        console.log('[DEBUG] Account sector resolved from id_account before loading instruments:', urlParams.account_sector);
+                    }
+                }
+
                 // Load instruments for all types in the sector from manifest
                 const sector = urlParams.account_sector || '';
                 const sectorManifest = instrumentManifest[sector] || [];
@@ -935,15 +948,6 @@
                 console.log('[FE_Instrument] Total instruments loaded:', Object.keys(availableInstruments).length);
                 console.log('[FE_Instrument] Total currencies loaded:', Object.keys(availableCurrenciesInstruments).length);
 
-                // Se manca account_sector ma abbiamo id_account, cerchiamo il settore nei conti caricati
-                if (!urlParams.account_sector && urlParams.id_account) {
-                    const acc = availableAccounts.find(a => a.id_account === urlParams.id_account);
-                    if (acc && acc.account_sector) {
-                        urlParams.account_sector = acc.account_sector;
-                        console.log('Account sector resolved from id_account:', urlParams.account_sector);
-                    }
-                }
-
                 updatePageTranslations();
                 await updateUserInfo();
 
@@ -955,13 +959,16 @@
 
                 const defaultValues = {
                     ...urlParams,
-                    ...urlParams.portfolio_data_obj
+                    ...(urlParams.portfolio_data_obj || {})
                 };
 
-                // Normalize id_instrument if it contains colons (e.g. ACCOUNT:TICKER -> TICKER)
+                // Normalizzazione id_instrument in defaultValues
                 if (defaultValues.id_instrument && typeof FormatHelper !== 'undefined') {
+                    const originalStr = defaultValues.id_instrument;
                     defaultValues.id_instrument = FormatHelper.formatInstrumentCode(defaultValues.id_instrument);
-                    console.log('id_instrument normalized for pre-filling:', defaultValues.id_instrument);
+                    console.log('[DEBUG] Normalized id_instrument in defaultValues:', originalStr, '->', defaultValues.id_instrument);
+                } else {
+                    console.log('[Initialization] id_instrument normalization skipped. instrument:', defaultValues.id_instrument, 'FormatHelper defined:', typeof FormatHelper !== 'undefined');
                 }
 
                 // Risoluzione dinamica della cartella formati dal manifest in base al settore
