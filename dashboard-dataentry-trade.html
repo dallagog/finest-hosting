@@ -958,6 +958,12 @@
                     ...urlParams.portfolio_data_obj
                 };
 
+                // Normalize id_instrument if it contains colons (e.g. ACCOUNT:TICKER -> TICKER)
+                if (defaultValues.id_instrument && typeof FormatHelper !== 'undefined') {
+                    defaultValues.id_instrument = FormatHelper.formatInstrumentCode(defaultValues.id_instrument);
+                    console.log('id_instrument normalized for pre-filling:', defaultValues.id_instrument);
+                }
+
                 // Risoluzione dinamica della cartella formati dal manifest in base al settore
                 if (!urlParams.folder && urlParams.account_sector) {
                     const sector = urlParams.account_sector.trim().toUpperCase();

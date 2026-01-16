@@ -243,7 +243,12 @@ class DataEntryManager {
         return Object.keys(fieldObject).map(key => {
             const format = this.format[key] || {};
             // Priorità al valore definito in format.json (se presente)
-            const defaultValue = this.defaultValues[key] !== undefined ? this.defaultValues[key] : (format.value || '');
+            let defaultValue = this.defaultValues[key] !== undefined ? this.defaultValues[key] : (format.value || '');
+
+            // Normalize id_instrument if it contains colons (e.g. ACCOUNT:TICKER -> TICKER)
+            if (key === 'id_instrument' && defaultValue && typeof FormatHelper !== 'undefined') {
+                defaultValue = FormatHelper.formatInstrumentCode(defaultValue);
+            }
 
             return {
                 name: key,
@@ -714,7 +719,11 @@ class DataEntryManager {
         Object.keys(data).forEach(key => {
             const input = document.getElementById(`field_${key}`);
             if (input) {
-                input.value = data[key];
+                let value = data[key];
+                if (key === 'id_instrument' && value && typeof FormatHelper !== 'undefined') {
+                    value = FormatHelper.formatInstrumentCode(value);
+                }
+                input.value = value;
             }
         });
     }

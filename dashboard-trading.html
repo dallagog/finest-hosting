@@ -685,9 +685,16 @@
             });
 
             // Pass ticker/strumento
-            // Pass ticker/strumento
-            const instrumentCode = item.Ticker || item.id_instrument || item.code || '';
+            let instrumentCode = item.Ticker || item.id_instrument || item.code || '';
             if (instrumentCode) {
+                // Normalize: remove anything before last colon (ACCOUNT:TICKER -> TICKER)
+                if (instrumentCode.includes(':')) {
+                    const parts = instrumentCode.split(':');
+                    instrumentCode = parts[parts.length - 1];
+                }
+                // Also remove anything after space or hyphen
+                instrumentCode = instrumentCode.split(' ')[0].split('-')[0].trim();
+
                 params.append('id_instrument', instrumentCode);
             }
 
