@@ -383,14 +383,31 @@
                     body: JSON.stringify(payload)
                 });
 
-                const data = await response.json();
+                const contentType = response.headers.get("content-type");
 
-                if (data.status === 'ok') {
-                    statusMsg.textContent = data.msg || 'Esportazione completata con successo!';
+                if (contentType && contentType.includes("application/zip")) {
+                    // Direct download
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.style.display = 'none';
+                    a.href = url;
+                    a.download = `backup_${credentials.username}_${new Date().toISOString().split('T')[0]}.zip`;
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+
+                    statusMsg.textContent = getTranslation('int.export.success') || 'Esportazione completata. Il download inizierà a breve.';
                     statusMsg.classList.add('success');
                 } else {
-                    statusMsg.textContent = 'Errore: ' + (data.msg || 'Impossibile completare l\'esportazione');
-                    statusMsg.classList.add('error');
+                    const data = await response.json();
+                    if (data.status === 'ok') {
+                        statusMsg.textContent = data.msg || 'Esportazione completata con successo!';
+                        statusMsg.classList.add('success');
+                    } else {
+                        statusMsg.textContent = 'Errore: ' + (data.msg || 'Impossibile completare l\'esportazione');
+                        statusMsg.classList.add('error');
+                    }
                 }
             } catch (error) {
                 console.error("Export error:", error);
