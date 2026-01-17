@@ -262,6 +262,14 @@
                             tableColumns = Array.from(allKeys);
                         }
 
+                        // Filter out columns that have no meaningful data in any row
+                        tableColumns = tableColumns.filter(col => {
+                            return tableData.some(item => {
+                                const val = item[col];
+                                return val !== undefined && val !== null && val !== '' && val !== '-';
+                            });
+                        });
+
                         renderTable();
                     } else {
                         showError(getTranslation("int.no.data") || "No data found.");
@@ -321,7 +329,8 @@
                         td.textContent = val.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
                         td.style.textAlign = 'right';
                     } else {
-                        td.textContent = val !== undefined ? val : '';
+                        // Replace colon with space (e.g. "100.00:EUR" -> "100.00 EUR")
+                        td.textContent = (val !== undefined && val !== null) ? String(val).replace(':', ' ') : '';
                     }
                     tr.appendChild(td);
                 });
