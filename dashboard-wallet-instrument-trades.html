@@ -417,13 +417,20 @@
             const executedTrades = walletData.filter(transaction => transaction.trade === 'True');
             console.log("Wallet Data (Filtered):", executedTrades);
 
+            // Determine if columns should be shown
+            const showQuantity = executedTrades.some(t => {
+                const q = parseFloat(t.quantity);
+                return !isNaN(q) && q !== 0;
+            });
+            const showPrice = executedTrades.some(t => t.price && t.price !== '-');
+
             let html = `<table>
                 <thead>
                     <tr>
                         <th>${getTranslation('int.date') || 'Date'}</th>
                         <th>${getTranslation('int.event') || 'Event'}</th>
-                        <th class="col-right">${getTranslation('int.quantity') || 'Quantity'}</th>
-                        <th class="col-right">${getTranslation('int.price') || 'Price'}</th>
+                        ${showQuantity ? `<th class="col-right">${getTranslation('int.quantity') || 'Quantity'}</th>` : ''}
+                        ${showPrice ? `<th class="col-right">${getTranslation('int.price') || 'Price'}</th>` : ''}
                         <th class="col-right">${getTranslation('int.amount') || 'Amount'}</th>
                         <th class="col-right">${getTranslation('int.balance') || 'Balance'}</th>
                         <th style="text-align: center;">${getTranslation('int.action') || 'Action'}</th>
@@ -443,8 +450,8 @@
                 html += `<tr>
                     <td>${date}</td>
                     <td>${event}</td>
-                    <td class="col-right">${quantity}</td>
-                    <td class="col-right">${price}</td>
+                    ${showQuantity ? `<td class="col-right">${quantity}</td>` : ''}
+                    ${showPrice ? `<td class="col-right">${price}</td>` : ''}
                     <td class="col-right">${amount}</td>
                     <td class="col-right">${balance}</td>
                     <td style="text-align: center;">
