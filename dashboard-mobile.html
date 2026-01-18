@@ -8,16 +8,17 @@
     <title>Dashboard Tesseratto</title>
 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,400;0,700;1,400&display=swap"
+        rel="stylesheet">
+    <script src="js/translations.js"></script>
 
     <style>
         :root {
-            --tron-bg: #000000;
-            --tron-cyan: #00f3ff;
-            --tron-cyan-dim: rgba(0, 243, 255, 0.2);
-            --tron-blue: #0066ff;
-            --tron-glass: rgba(0, 20, 30, 0.85);
-            --tron-text: #ffffff;
+            --latex-bg: #fdfdfd;
+            --latex-text: #1a1a1a;
+            --latex-accent: #333333;
+            --latex-border: #666666;
+            --latex-glass: rgba(255, 255, 255, 0.9);
             /* Dimensione del cubo ridotta a 200px */
             --cube-size: 200px;
         }
@@ -31,9 +32,9 @@
         }
 
         body {
-            background-color: var(--tron-bg);
-            font-family: 'Orbitron', sans-serif;
-            color: var(--tron-text);
+            background-color: var(--latex-bg);
+            font-family: 'Crimson Pro', 'Times New Roman', serif;
+            color: var(--latex-text);
             height: 100vh;
             width: 100vw;
             overflow: hidden;
@@ -43,23 +44,19 @@
             touch-action: none;
         }
 
-        /* --- SFONDO GRIGLIA TRON --- */
+        /* --- SFONDO STILE CARTA LATEX --- */
         .the-grid {
             position: absolute;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background:
-                linear-gradient(transparent 95%, var(--tron-cyan) 100%),
-                linear-gradient(90deg, transparent 95%, var(--tron-cyan) 100%);
-            background-size: 40px 40px;
-            opacity: 0.15;
-            transform: perspective(500px) rotateX(60deg) scale(2);
-            transform-origin: center bottom;
-            pointer-events: none;
+            background-image:
+                radial-gradient(circle at 2px 2px, rgba(0, 0, 0, 0.05) 1px, transparent 0);
+            background-size: 30px 30px;
+            opacity: 0.5;
             z-index: -1;
-            animation: gridMove 20s linear infinite;
+            animation: gridMove 60s linear infinite;
         }
 
         @keyframes gridMove {
@@ -68,7 +65,7 @@
             }
 
             100% {
-                background-position: 0 40px;
+                background-position: 30px 30px;
             }
         }
 
@@ -84,32 +81,38 @@
             align-items: center;
             padding: 0 20px;
             z-index: 100;
-            background: linear-gradient(to bottom, rgba(0, 0, 0, 0.9), transparent);
-            border-bottom: 1px solid var(--tron-cyan-dim);
+            background: linear-gradient(to bottom, rgba(255, 255, 255, 0.95), transparent);
+            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
         }
 
         .user-badge {
-            font-size: 0.8rem;
-            color: var(--tron-cyan);
-            border: 1px solid var(--tron-cyan);
-            padding: 5px 10px;
-            border-radius: 2px;
-            box-shadow: 0 0 10px var(--tron-cyan-dim);
-            text-transform: uppercase;
-            letter-spacing: 1px;
+            font-size: 0.9rem;
+            color: var(--latex-text);
+            border: 1px solid var(--latex-border);
+            padding: 4px 12px;
+            border-radius: 0;
+            background: #fff;
+            box-shadow: 2px 2px 0px rgba(0, 0, 0, 0.1);
+            letter-spacing: 0.5px;
+            font-style: italic;
         }
 
         .logout-btn {
-            background: transparent;
-            border: 1px solid #ff3333;
-            color: #ff3333;
-            padding: 8px 15px;
-            border-radius: 2px;
-            font-family: 'Orbitron', sans-serif;
+            background: #fff;
+            border: 1px solid #721c24;
+            color: #721c24;
+            padding: 6px 14px;
+            border-radius: 0;
+            font-family: inherit;
             font-size: 0.8rem;
             text-transform: uppercase;
-            box-shadow: 0 0 5px rgba(255, 51, 51, 0.3);
             cursor: pointer;
+            box-shadow: 2px 2px 0px rgba(114, 28, 36, 0.1);
+            transition: all 0.2s;
+        }
+
+        .logout-btn:hover {
+            background: #f8d7da;
         }
 
         /* --- SCENA 3D --- */
@@ -131,7 +134,7 @@
             will-change: transform;
         }
 
-        /* --- CUBO ESTERNO --- */
+        /* --- CUBO STILE LATEX --- */
         .outer-cube {
             width: 100%;
             height: 100%;
@@ -143,52 +146,50 @@
             position: absolute;
             width: var(--cube-size);
             height: var(--cube-size);
-            background: rgba(0, 10, 20, 0.6);
-            border: 2px solid var(--tron-cyan);
+            background: rgba(255, 255, 255, 0.95);
+            border: 1px solid var(--latex-border);
             display: flex;
             flex-direction: column;
             align-items: center;
-            box-shadow: 0 0 15px var(--tron-cyan-dim), inset 0 0 20px var(--tron-cyan-dim);
+            box-shadow: 5px 5px 15px rgba(0, 0, 0, 0.05);
             backface-visibility: visible;
-            transition: background 0.2s, box-shadow 0.2s;
+            transition: all 0.3s;
             cursor: pointer;
             text-align: center;
-            padding: 10px;
+            padding: 15px;
             overflow: hidden;
         }
 
         .face.disabled {
-            filter: grayscale(100%);
-            opacity: 0.3;
+            filter: sepia(50%) grayscale(50%);
+            opacity: 0.4;
             cursor: default;
             pointer-events: none;
-            border-color: #555;
-            box-shadow: none;
+            background: #f0f0f0;
         }
 
         .face:active:not(.disabled) {
-            background: rgba(0, 243, 255, 0.15);
-            box-shadow: 0 0 30px var(--tron-cyan);
+            background: #fff;
+            box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.1);
+            transform: translateZ(-5px);
         }
 
-        /* Icona di default (rimossa la rotella) */
         .face i {
-            font-size: 2.5rem;
-            color: var(--tron-cyan);
-            margin-bottom: 5px;
-            text-shadow: 0 0 15px var(--tron-cyan);
-            transform: translateZ(20px);
+            font-size: 2.2rem;
+            color: var(--latex-accent);
+            margin-bottom: 8px;
+            transform: translateZ(10px);
         }
 
         .face .face-title {
-            font-size: 0.9rem;
-            text-transform: uppercase;
-            letter-spacing: 1px;
+            font-size: 1.1rem;
             font-weight: 700;
-            color: #fff;
-            text-shadow: 0 0 10px var(--tron-cyan);
-            transform: translateZ(20px);
-            margin-bottom: 5px;
+            color: var(--latex-text);
+            transform: translateZ(15px);
+            margin-bottom: 10px;
+            border-bottom: 1px solid #ddd;
+            width: 100%;
+            padding-bottom: 5px;
         }
 
         /* Contenitore Dati Scrollabile */
@@ -197,35 +198,41 @@
             flex-grow: 1;
             overflow-y: auto;
             padding-top: 5px;
-            font-size: 0.65rem;
+            font-size: 0.75rem;
             text-align: left;
-            transform: translateZ(20px);
-            scrollbar-width: none;
+            transform: translateZ(10px);
+            scrollbar-width: thin;
+            scrollbar-color: #ddd transparent;
         }
 
         .face-data-container::-webkit-scrollbar {
-            display: none;
+            width: 2px;
+        }
+
+        .face-data-container::-webkit-scrollbar-thumb {
+            background: #ddd;
         }
 
         .data-item {
             display: flex;
             justify-content: space-between;
-            padding: 2px 0;
-            border-bottom: 1px dotted var(--tron-cyan-dim);
+            padding: 3px 0;
+            border-bottom: 1px solid #f0f0f0;
         }
 
         .data-item-label {
-            color: var(--tron-cyan);
+            color: #555;
+            font-weight: 400;
+            max-width: 60%;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
-            max-width: 60%;
         }
 
         .data-item-value {
-            color: var(--tron-blue);
+            color: #000;
             font-weight: 700;
-            margin-left: 5px;
+            font-family: serif;
         }
 
         /* Loading State */
@@ -234,14 +241,15 @@
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            color: var(--tron-cyan);
+            color: var(--latex-text);
             font-size: 1.2rem;
-            animation: pulse 1s infinite;
+            animation: pulse 1.5s infinite;
             z-index: 200;
             pointer-events: none;
-            background: rgba(0, 0, 0, 0.8);
-            padding: 20px;
-            border: 1px solid var(--tron-cyan);
+            background: rgba(255, 255, 255, 0.9);
+            padding: 25px;
+            border: 1px solid var(--latex-border);
+            font-style: italic;
         }
 
         /* Posizioni Faccia Esterna */
@@ -275,24 +283,23 @@
             bottom: 30px;
             width: 100%;
             text-align: center;
-            color: rgba(0, 243, 255, 0.6);
-            font-size: 0.75rem;
-            text-transform: uppercase;
+            color: #888;
+            font-size: 0.8rem;
             letter-spacing: 1px;
             pointer-events: none;
-            animation: pulse 2s infinite;
+            animation: pulse 3s infinite;
+            font-style: italic;
         }
 
         @keyframes pulse {
 
             0%,
             100% {
-                opacity: 0.4;
+                opacity: 0.5;
             }
 
             50% {
                 opacity: 1;
-                text-shadow: 0 0 10px var(--tron-cyan);
             }
         }
     </style>
@@ -304,7 +311,7 @@
 
     <div class="hud-header">
         <div class="user-badge" id="username">USER: GUEST</div>
-        <button class="logout-btn" onclick="handleLogout()">ESCI</button>
+        <button class="logout-btn" onclick="handleLogout()" id="logout-btn-text">ESCI</button>
     </div>
 
     <div id="loadingIndicator" class="loading-text" style="display: none;">LOADING CUBE...</div>
@@ -348,7 +355,7 @@
         </div>
     </div>
 
-    <div class="hint">
+    <div class="hint" id="hint-text">
         <i class="fa fa-fingerprint"></i> Ruota il Cubo
     </div>
 
@@ -421,10 +428,14 @@
 
         // Init
         document.addEventListener('DOMContentLoaded', async () => {
+            const language = localStorage.getItem("language") || 'it_IT';
+            await TranslationManager.loadTranslations(language);
+
             if (checkAuth()) {
                 loadUser();
                 await loadCubeData();
             }
+            updateTranslations();
             animate();
         });
 
@@ -444,6 +455,7 @@
             const token = localStorage.getItem("token");
             const language = localStorage.getItem("language") || 'it_IT';
 
+            loadingIndicator.innerText = (getTranslation('int.loading') || 'LOADING') + '...';
             loadingIndicator.style.display = 'block';
 
             try {
@@ -491,7 +503,7 @@
             faceMap.forEach(id => {
                 const el = document.getElementById(id);
                 el.classList.add('disabled');
-                el.querySelector('.face-title').innerText = "Vuoto";
+                el.querySelector('.face-title').innerText = getTranslation('cube.empty') || "Empty";
                 el.querySelector('.face-data-container').innerHTML = "";
                 el.querySelector('i').className = "fa fa-ban";
                 el.onclick = null;
@@ -503,12 +515,17 @@
                 const faceId = faceMap[index];
                 const el = document.getElementById(faceId);
                 const itemData = dataObj[key];
-                const config = cubeConfig[key] || { ...genericConfig, label: key };
+
+                // Cerca traduzione per la chiave (es. cube.Portfolio)
+                let label = getTranslation('cube.' + key);
+                if (label === 'cube.' + key) label = key;
+
+                const config = cubeConfig[key] || { ...genericConfig, label: label };
 
                 if (el) {
                     el.classList.remove('disabled');
                     el.querySelector('i').className = `fa ${config.icon}`;
-                    el.querySelector('.face-title').innerText = config.label;
+                    el.querySelector('.face-title').innerText = config.label || label;
 
                     // Logica: Inserisci tutti i campi
                     const dataContainer = el.querySelector('.face-data-container');
@@ -627,7 +644,13 @@
 
         function loadUser() {
             const u = localStorage.getItem("username");
-            if (u) usernameDisplay.innerText = "OP: " + u;
+            const label = getTranslation('int.user.label') || "USER:";
+            if (u) usernameDisplay.innerText = label + " " + u;
+        }
+
+        function updateTranslations() {
+            document.getElementById('logout-btn-text').textContent = getTranslation('int.logout') || "LOGOUT";
+            document.getElementById('hint-text').innerHTML = `<i class="fa fa-fingerprint"></i> ${getTranslation('cube.rotate') || "Rotate the Cube"}`;
         }
 
         function handleLogout() {
