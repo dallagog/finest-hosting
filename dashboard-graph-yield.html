@@ -503,28 +503,30 @@
                         x: {
                             position: 'bottom',
                             ticks: {
-                                color: '#e0f7fa',
+                                color: '#1a1a1a', // Darker color for better visibility
                                 font: {
-                                    family: 'Orbitron',
-                                    size: 10
+                                    family: '"Times New Roman", Times, serif', // LaTeX-style font
+                                    size: 11
                                 },
-                                maxRotation: 90, // Etichette verticali
+                                maxRotation: 90,
                                 minRotation: 90,
                                 padding: 5
                             },
                             grid: {
-                                color: 'rgba(0, 243, 255, 0.1)'
+                                color: 'rgba(0, 0, 0, 0.05)'
                             },
-                            // Limita il numero di etichette mostrate
                             afterFit: function (scale) {
-                                scale.height = 80; // Aumenta lo spazio per le etichette verticali
+                                scale.height = 100; // Increased space for vertical labels
                             }
                         },
                         y: {
                             beginAtZero: false,
                             ticks: {
-                                color: '#e0f7fa',
-                                font: { size: 10 },
+                                color: '#1a1a1a',
+                                font: {
+                                    family: '"Times New Roman", Times, serif',
+                                    size: 11
+                                },
                                 callback: function (value) {
                                     return new Intl.NumberFormat('it-IT', {
                                         style: "currency",
@@ -535,7 +537,7 @@
                                 }
                             },
                             grid: {
-                                color: (context) => context.tick.value === 0 ? 'var(--neon-red)' : 'rgba(0, 243, 255, 0.1)',
+                                color: (context) => context.tick.value === 0 ? '#333' : 'rgba(0, 0, 0, 0.05)',
                                 lineWidth: (context) => context.tick.value === 0 ? 2 : 1
                             }
                         }
@@ -545,10 +547,12 @@
                             display: false
                         },
                         tooltip: {
-                            backgroundColor: 'rgba(0, 5, 16, 0.9)',
-                            titleColor: '#fff',
-                            bodyColor: '#e0f7fa',
-                            borderColor: '#0066FF',
+                            backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                            titleColor: '#000',
+                            bodyColor: '#333',
+                            titleFont: { family: 'serif' },
+                            bodyFont: { family: 'serif' },
+                            borderColor: '#333',
                             borderWidth: 1,
                             callbacks: {
                                 label: function (context) {
@@ -561,12 +565,11 @@
                             }
                         }
                     },
-                    // Aggiungi padding per evitare che le etichette escano
                     layout: {
                         padding: {
-                            top: 20,
-                            right: 10,
-                            bottom: 50, // Più spazio per le etichette verticali
+                            top: 25,
+                            right: 20,
+                            bottom: 20,
                             left: 10
                         }
                     }
@@ -576,8 +579,7 @@
                     afterDatasetsDraw: (chart) => {
                         const ctx = chart.ctx;
                         ctx.save();
-                        // Font più piccola per evitare sovrapposizioni
-                        ctx.font = 'bold 9px "Orbitron", sans-serif';
+                        ctx.font = 'bold 11px "Times New Roman", Times, serif';
                         ctx.textAlign = 'center';
                         ctx.textBaseline = 'middle';
 
@@ -588,7 +590,6 @@
                                 const value = dataset.data[index];
                                 if (value === 0) return;
 
-                                // Formatta il valore in modo compatto
                                 const formatted = new Intl.NumberFormat('it-IT', {
                                     style: 'currency',
                                     currency: 'EUR',
@@ -599,10 +600,9 @@
                                 const x = element.x;
                                 let y = element.y;
 
-                                ctx.fillStyle = '#ffffff';
+                                ctx.fillStyle = '#1a1a1a';
 
-                                // Posizionamento sopra i positivi (-12) e sotto i negativi (+12)
-                                y += (value >= 0) ? -12 : 12;
+                                y += (value >= 0) ? -15 : 15;
 
                                 ctx.fillText(formatted, x, y);
                             });

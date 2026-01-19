@@ -410,8 +410,14 @@
 
         function displayWalletData(walletData) {
             currentWalletData = walletData;
-            const instrumentDesc = walletData[0]?.instrument?.instrument_description || urlParams.id_instrument;
-            document.getElementById('instrumentTitle').textContent = instrumentDesc;
+            const instrumentCode = urlParams.id_instrument || (walletData[0] && walletData[0].instrument && walletData[0].instrument.id_instrument) || '';
+            const instrumentDesc = (walletData[0] && walletData[0].instrument && walletData[0].instrument.instrument_description) || '';
+
+            const titleElement = document.getElementById('instrumentTitle');
+            titleElement.textContent = `${instrumentCode} - ${instrumentDesc}`;
+            titleElement.style.cursor = 'pointer';
+            titleElement.style.textDecoration = 'underline';
+            titleElement.onclick = () => openInstrumentDataEntry(instrumentCode);
 
             // Filter to show only trade records (marked with trade: "True" by fe_wallet.py)
             const executedTrades = walletData.filter(transaction => transaction.trade === 'True');
@@ -464,6 +470,15 @@
 
             html += `</tbody></table>`;
             document.getElementById('content').innerHTML = html;
+        }
+
+        function openInstrumentDataEntry(instrumentCode) {
+            const params = new URLSearchParams();
+            params.set('username', credentials.username);
+            params.set('token', credentials.token);
+            params.set('language', credentials.language || 'it_IT');
+            params.set('id_instrument', instrumentCode);
+            window.open(`dashboard-dataentry-instrument.html?${params.toString()}`, '_blank');
         }
 
         async function deleteTrade(idOperation) {

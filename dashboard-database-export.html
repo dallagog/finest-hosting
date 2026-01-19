@@ -284,7 +284,7 @@
         </div>
         <h1><i class="fa fa-database"></i> <span id="pageTitle">Database Export</span></h1>
         <div style="flex: 1; text-align: right;">
-            <button class="close-btn" onclick="window.close()">
+            <button class="close-btn" onclick="closePage()">
                 <i class="fa fa-times"></i> <span id="closeText">Chiudi</span>
             </button>
         </div>
@@ -296,16 +296,15 @@
         <div id="status-msg" class="status-message"></div>
 
         <div class="export-form">
-            <div class="form-group-checkbox"
-                onclick="document.getElementById('sendmail').click(); event.stopPropagation();">
-                <input type="checkbox" id="sendmail" name="sendmail">
-                <label for="sendmail" id="sendmailLabel">Invia flusso via mail</label>
-            </div>
-
             <div class="form-actions">
                 <button id="export-btn" class="btn btn-primary" onclick="performExport()">
                     <i class="fa fa-spinner loading-spinner"></i>
-                    <i class="fa fa-download"></i> <span id="exportText">Esporta</span>
+                    <i class="fa fa-gear"></i> <span id="exportText">Esporta</span>
+                </button>
+                <button id="download-btn" class="btn btn-primary" onclick="performDownload()"
+                    style="margin-left: 10px;">
+                    <i class="fa fa-spinner loading-spinner"></i>
+                    <i class="fa fa-download"></i> <span id="downloadText">Download</span>
                 </button>
             </div>
         </div>
@@ -347,8 +346,8 @@
             document.getElementById('userLabel').textContent = getTranslation('int.user.label') || 'Utente:';
             document.getElementById('pageTitle').textContent = getTranslation('int.database.export') || 'Database Export';
             document.getElementById('pageSubtitle').textContent = getTranslation('int.export.subtitle') || 'Esporta i tuoi dati dal sistema';
-            document.getElementById('sendmailLabel').textContent = getTranslation('int.sendmail.label') || 'Invia flusso via mail';
             document.getElementById('exportText').textContent = getTranslation('int.export') || 'Esporta';
+            document.getElementById('downloadText').textContent = getTranslation('int.download') || 'Download';
             document.getElementById('closeText').textContent = getTranslation('int.close') || 'Chiudi';
 
             document.getElementById('usernameDisplay').textContent = credentials.username || '-';
@@ -373,7 +372,7 @@
                 token: credentials.token,
                 language: credentials.language,
                 filter: null,
-                code: JSON.stringify({ sendmail: sendmail })
+                code: JSON.stringify({ sendmail: false })
             };
 
             try {
@@ -418,6 +417,68 @@
                 btn.disabled = false;
                 btn.parentElement.parentElement.classList.remove('loading');
             }
+        }
+
+        async function performDownload() {
+            const btn = document.getElementById('download-btn');
+            const statusMsg = document.getElementById('status-msg');
+
+            // Reset UI
+            statusMsg.className = 'status-message';
+            statusMsg.style.display = 'none';
+            btn.disabled = true;
+            btn.parentElement.parentElement.classList.add('loading');
+
+            const payload = {
+                username: credentials.username,
+                token: credentials.token,
+                language: credentials.language,
+                filter: null,
+                code: null
+            };
+
+            try {
+                const response = await fetch(`${API_URL}/downloaddata`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (response.ok) {
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.style.display = 'none';
+                    a.href = url;
+                    a.download = `backup_${credentials.username}_${new Date().toISOString().split('T')[0]}.zip`;
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+
+                    statusMsg.textContent = getTranslation('int.export.success') || 'Download completato.';
+                    statusMsg.classList.add('success');
+                } else {
+                    const data = await response.json();
+                    statusMsg.textContent = 'Errore: ' + (data.msg || 'Impossibile completare il download');
+                    statusMsg.classList.add('error');
+                }
+            } catch (error) {
+                console.error("Download error:", error);
+                statusMsg.textContent = 'Errore di sistema: ' + error.message;
+                statusMsg.classList.add('error');
+            } finally {
+                statusMsg.style.display = 'block';
+                btn.disabled = false;
+                btn.parentElement.parentElement.classList.remove('loading');
+            }
+        }
+
+        function closePage() {
+            window.close();
+            // Fallback if window.close() doesn't work (e.g. not opened via window.open)
+            setTimeout(() => {
+                window.location.href = 'dashboard.html' + window.location.search;
+            }, 100);
         }
 
         // Init

@@ -589,28 +589,54 @@
             text-transform: uppercase;
         }
 
-        .sector-list {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-            margin-bottom: 20px;
+        .sector-combobox-container {
+            margin-bottom: 25px;
+            text-align: left;
         }
 
-        .sector-item {
+        .sector-combobox-container label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 0.9em;
+            color: #666;
+        }
+
+        .sector-combobox-container select {
+            width: 100%;
             padding: 12px;
-            background: #f9f9f9;
+            font-size: 1em;
+            font-family: inherit;
             border: 1px solid #ddd;
-            color: #333;
             border-radius: 4px;
+            background-color: #f9f9f9;
+            color: #333;
             cursor: pointer;
             transition: all 0.3s;
-            font-weight: 500;
         }
 
-        .sector-item:hover {
-            background: #eee;
+        .sector-combobox-container select:focus {
+            outline: none;
             border-color: #000;
-            transform: translateX(5px);
+            box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .confirm-btn {
+            width: 100%;
+            padding: 12px;
+            background: #000;
+            color: #fff;
+            border: 1px solid #000;
+            border-radius: 4px;
+            font-size: 1em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-bottom: 10px;
+        }
+
+        .confirm-btn:hover {
+            background: #333;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
         }
 
         .modal-footer {
@@ -812,12 +838,17 @@
             <div class="modal-header">
                 <h2 id="sectorModalTitle">Seleziona Settore</h2>
             </div>
-            <div id="sector-list" class="sector-list">
-                <!-- Sectors will be injected here -->
-                <div style="color: var(--neon-blue);">Caricamento settori...</div>
+            <div class="sector-combobox-container">
+                <label for="sector-select" id="sectorSelectLabel">Scegli il settore dell'account:</label>
+                <select id="sector-select">
+                    <option value="" id="sectorSelectPlaceholder">Seleziona...</option>
+                </select>
             </div>
-            <div class="modal-footer">
-                <button class="button-secondary" onclick="closeSectorModal()">
+            <button class="confirm-btn" onclick="confirmSectorSelection()">
+                <i class="fa fa-check"></i> <span id="confirmBtnText">Conferma</span>
+            </button>
+            <div class="modal-footer" style="margin-top: 10px;">
+                <button class="button-secondary" onclick="closeSectorModal()" style="width: 100%; margin: 0;">
                     <i class="fa fa-times"></i> <span id="cancelBtnText">Annulla</span>
                 </button>
             </div>
@@ -857,25 +888,32 @@
                 const domine = await response.json();
 
                 const sectors = domine.account_sector || [];
-                const sectorListContainer = document.getElementById('sector-list');
+                const sectorSelect = document.getElementById('sector-select');
                 const modalTitle = document.getElementById('sectorModalTitle');
                 const cancelBtnText = document.getElementById('cancelBtnText');
+                const confirmBtnText = document.getElementById('confirmBtnText');
+                const selectLabel = document.getElementById('sectorSelectLabel');
+                const selectPlaceholder = document.getElementById('sectorSelectPlaceholder');
 
                 modalTitle.textContent = getTranslation('int.account.account_sector') || 'Seleziona Settore';
                 cancelBtnText.textContent = getTranslation('int.cancel') || 'Annulla';
+                confirmBtnText.textContent = getTranslation('int.confirm') || 'Conferma';
+                selectLabel.textContent = getTranslation('int.select.sector.prompt') || 'Scegli il settore dell\'account:';
+                selectPlaceholder.textContent = getTranslation('int.select.option') || 'Seleziona...';
 
-                sectorListContainer.innerHTML = '';
+                // Clear previous options except placeholder
+                while (sectorSelect.options.length > 1) {
+                    sectorSelect.remove(1);
+                }
 
                 sectors.forEach(sectorKey => {
                     const sectorLabel = getTranslation(sectorKey);
-                    // Extracting the value from the key (e.g., "dom.account_sector:FI" -> "FI")
                     const sectorValue = sectorKey.split(':').pop();
 
-                    const div = document.createElement('div');
-                    div.className = 'sector-item';
-                    div.textContent = sectorLabel || sectorKey;
-                    div.onclick = () => selectSector(sectorValue);
-                    sectorListContainer.appendChild(div);
+                    const option = document.createElement('option');
+                    option.value = sectorValue;
+                    option.textContent = sectorLabel || sectorKey;
+                    sectorSelect.appendChild(option);
                 });
 
                 document.getElementById('sector-modal').style.display = 'flex';
@@ -883,6 +921,16 @@
                 console.error('Error opening trade operations:', error);
                 showMessage('Errore nel caricamento del selettore settori', 'error');
             }
+        }
+
+        function confirmSectorSelection() {
+            const sectorSelect = document.getElementById('sector-select');
+            const sectorValue = sectorSelect.value;
+            if (!sectorValue) {
+                showMessage('Seleziona un settore per procedere', 'error');
+                return;
+            }
+            selectSector(sectorValue);
         }
 
         function closeSectorModal() {
@@ -1106,6 +1154,20 @@
                 const opt2 = document.getElementById('selectOption2');
                 if (opt1) opt1.textContent = selectOpt;
                 if (opt2) opt2.textContent = selectOpt;
+                const sectorPlaceholder = document.getElementById('sectorSelectPlaceholder');
+                if (sectorPlaceholder) sectorPlaceholder.textContent = selectOpt;
+            }
+
+            const confirmText = getTranslation('int.confirm');
+            if (confirmText !== 'int.confirm') {
+                const confirmBtn = document.getElementById('confirmBtnText');
+                if (confirmBtn) confirmBtn.textContent = confirmText;
+            }
+
+            const sectorPrompt = getTranslation('int.select.sector.prompt');
+            if (sectorPrompt !== 'int.select.sector.prompt') {
+                const sectorLabel = document.getElementById('sectorSelectLabel');
+                if (sectorLabel) sectorLabel.textContent = sectorPrompt;
             }
 
             const goLiveText = getTranslation('int.golive');
@@ -1346,7 +1408,8 @@
                                 id_account: String(acc.id_account).trim(),
                                 account_type: acc.account_type || '',
                                 account_sector: acc.account_sector || '',
-                                account_level: acc.account_level || ''
+                                account_level: acc.account_level || '',
+                                date_accession: acc.date_accession || ''
                             });
                         }
                     });
@@ -1410,6 +1473,7 @@
                 id_account: a.id_account,
                 account_type: a.account_type,
                 account_sector: a.account_sector || (a.raw && a.raw.account_sector) || '',
+                date_accession: a.date_accession || (a.raw && a.raw.date_accession) || '',
                 description: a.description || (a.raw && (a.raw.description_account || a.raw.description)) || '',
                 selected: !!a.selected
             })) : [];
@@ -1421,6 +1485,7 @@
                         id_account: a.id_account || a.id || '',
                         account_type: a.account_type || '',
                         account_sector: a.account_sector || a.sector || '',
+                        date_accession: a.date_accession || a.accession || '',
                         description: a.description_account || a.description || '',
                         selected: !!a.selected
                     }));
@@ -1505,9 +1570,14 @@
             headerRow.appendChild(th3);
 
             const th4 = document.createElement('th');
-            th4.style.cssText = 'padding: 8px; text-align: center; width: 120px;';
-            th4.textContent = getTranslation('int.operation') || 'Operazione';
+            th4.style.cssText = 'padding: 8px; text-align: left;';
+            th4.textContent = getTranslation('int.account.date_opening') || 'Data apertura';
             headerRow.appendChild(th4);
+
+            const th5 = document.createElement('th');
+            th5.style.cssText = 'padding: 8px; text-align: center; width: 120px;';
+            th5.textContent = getTranslation('int.operation') || 'Operazione';
+            headerRow.appendChild(th5);
 
             thead.appendChild(headerRow);
             table.appendChild(thead);
@@ -1551,7 +1621,12 @@
                 tr.appendChild(td3);
 
                 const td4 = document.createElement('td');
-                td4.style.cssText = 'padding: 4px; text-align: center;';
+                td4.style.cssText = 'padding: 8px;';
+                td4.textContent = (item.date_accession && item.date_accession.length >= 10) ? item.date_accession.substring(0, 10) : (item.date_accession || '');
+                tr.appendChild(td4);
+
+                const td5 = document.createElement('td');
+                td5.style.cssText = 'padding: 4px; text-align: center;';
                 const opBtn = document.createElement('button');
                 opBtn.style.cssText = 'padding: 4px 8px; margin: 0; font-size: 11px;';
                 opBtn.innerHTML = `<i class="fa fa-exchange-alt"></i> ${getTranslation('int.operation') || 'Operazione'}`;
@@ -1559,8 +1634,8 @@
                     e.stopPropagation();
                     openTradeDataEntry(item.id_account, item.account_sector);
                 });
-                td4.appendChild(opBtn);
-                tr.appendChild(td4);
+                td5.appendChild(opBtn);
+                tr.appendChild(td5);
 
                 tbody.appendChild(tr);
             });

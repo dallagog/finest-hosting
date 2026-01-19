@@ -163,6 +163,39 @@
             cursor: pointer;
         }
 
+        .form-group-checkbox {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            background: #f9f9f9;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+            width: 100%;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 20px;
+        }
+
+        .form-group-checkbox:hover {
+            background: #f0f0f0;
+            border-color: #999;
+        }
+
+        .form-group-checkbox input[type="checkbox"] {
+            width: 25px;
+            height: 25px;
+            cursor: pointer;
+        }
+
+        .form-group-checkbox label {
+            font-weight: 500;
+            color: var(--neon-blue);
+            font-size: 1rem;
+            cursor: pointer;
+            flex: 1;
+        }
+
         .form-actions {
             width: 100%;
             display: flex;
@@ -284,7 +317,7 @@
         </div>
         <h1><i class="fa fa-upload"></i> <span id="pageTitle">Database Import</span></h1>
         <div style="flex: 1; text-align: right;">
-            <button class="close-btn" onclick="window.close()">
+            <button class="close-btn" onclick="closePage()">
                 <i class="fa fa-times"></i> <span id="closeText">Chiudi</span>
             </button>
         </div>
@@ -301,6 +334,12 @@
                 <label id="fileLabel">Seleziona file ZIP</label>
                 <input type="file" id="fileInput" style="display: none;" accept=".zip"
                     onchange="handleFileSelect(this)">
+            </div>
+
+            <div class="form-group-checkbox"
+                onclick="document.getElementById('recreate').click(); event.stopPropagation();">
+                <input type="checkbox" id="recreate" name="recreate">
+                <label for="recreate" id="recreateLabel">Rigenera tabelle (attento: cancella i dati esistenti)</label>
             </div>
 
             <div class="form-actions">
@@ -351,6 +390,7 @@
             document.getElementById('importText').textContent = getTranslation('int.import') || 'Importa';
             document.getElementById('closeText').textContent = getTranslation('int.close') || 'Chiudi';
             document.getElementById('fileLabel').textContent = getTranslation('int.select.file') || 'Seleziona file ZIP';
+            document.getElementById('recreateLabel').textContent = getTranslation('int.regenerate.tables') || 'Rigenera tabelle (attento: cancella i dati esistenti)';
 
             document.getElementById('usernameDisplay').textContent = credentials.username || '-';
             document.getElementById('languageDisplay').textContent = getTranslation('int.language.description') || credentials.language;
@@ -390,6 +430,7 @@
             formData.append('token', credentials.token);
             formData.append('language', credentials.language);
             formData.append('file', fileInput.files[0]);
+            formData.append('recreate', document.getElementById('recreate').checked);
 
             try {
                 const response = await fetch(`${API_URL}/importdata`, {
@@ -415,6 +456,14 @@
                 btn.disabled = false;
                 btn.parentElement.parentElement.classList.remove('loading');
             }
+        }
+
+        function closePage() {
+            window.close();
+            // Fallback if window.close() doesn't work (e.g. not opened via window.open)
+            setTimeout(() => {
+                window.location.href = 'dashboard.html' + window.location.search;
+            }, 100);
         }
 
         // Init

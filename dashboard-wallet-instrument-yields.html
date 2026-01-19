@@ -270,6 +270,17 @@
                             });
                         });
 
+                        // Update H1 title with code and description
+                        const instrumentCode = urlParams.get('id_instrument') || (data.tradeyield[0] && data.tradeyield[0].instrument && data.tradeyield[0].instrument.id_instrument) || '';
+                        const instrumentDesc = (data.tradeyield[0] && data.tradeyield[0].instrument && data.tradeyield[0].instrument.instrument_description) || '';
+                        const h1 = document.querySelector('h1');
+                        if (h1) {
+                            h1.textContent = `${instrumentCode} - ${instrumentDesc}`;
+                            h1.style.cursor = 'pointer';
+                            h1.style.textDecoration = 'underline';
+                            h1.onclick = () => openInstrumentDetails(instrumentCode);
+                        }
+
                         renderTable();
                     } else {
                         showError(getTranslation("int.no.data") || "No data found.");
@@ -366,7 +377,12 @@
         }
 
         function openInstrumentDetails(symbol) {
-            window.open(`dashboard-dataentry-instrument.html?code=${encodeURIComponent(symbol)}`, '_blank');
+            const params = new URLSearchParams();
+            params.set('username', username);
+            params.set('token', token);
+            params.set('language', language);
+            params.set('id_instrument', symbol);
+            window.open(`dashboard-dataentry-instrument.html?${params.toString()}`, '_blank');
         }
 
         function showError(msg) {
