@@ -1543,7 +1543,7 @@
 
             const thead = document.createElement('thead');
             const headerRow = document.createElement('tr');
-            headerRow.style.cssText = 'background: rgba(0, 243, 255, 0.1); border-bottom: 2px solid var(--neon-cyan);';
+            headerRow.style.cssText = 'background: rgba(0, 0, 0, 0.05); border-bottom: 2px solid var(--border-color);';
 
             const th1 = document.createElement('th');
             th1.style.cssText = 'padding: 8px; text-align: left; width: 30px;';
@@ -1586,7 +1586,7 @@
 
             accountsList.forEach((item, index) => {
                 const tr = document.createElement('tr');
-                tr.style.cssText = `border-bottom: 1px solid rgba(0, 243, 255, 0.2); ${index % 2 === 0 ? 'background: rgba(0, 243, 255, 0.05);' : ''}`;
+                tr.style.cssText = `border-bottom: 1px solid #eee; ${index % 2 === 0 ? 'background: #fcfcfc;' : ''}`;
 
                 const td1 = document.createElement('td');
                 td1.style.cssText = 'padding: 8px; text-align: center;';
@@ -2028,6 +2028,16 @@
                 // Assegna la lista pulita
                 filterData.Account.list = cleanedAccountList;
 
+                // Aggiungi data richiesta
+                const now = new Date();
+                const dateRequest = now.getFullYear() + '-' +
+                    String(now.getMonth() + 1).padStart(2, '0') + '-' +
+                    String(now.getDate()).padStart(2, '0') + ' ' +
+                    String(now.getHours()).padStart(2, '0') + ':' +
+                    String(now.getMinutes()).padStart(2, '0') + ':' +
+                    String(now.getSeconds()).padStart(2, '0');
+                filterData.date_request = dateRequest;
+
                 // Mantieni il campo Name
                 if (!filterData.Name) {
                     filterData.Name = {
@@ -2129,12 +2139,84 @@
                         // Salva localmente per backup
                         localStorage.setItem('lastFilter', filterDataString);
 
-                        // Ricarica il filtro dal server per sincronizzazione
-                        setTimeout(() => loadFilter(), 1000);
+                        // Cambia il pulsante a sfondo bianco/testo nero (stato "in attesa")
+                        const applyBtn = document.getElementById('apply-filters');
+                        if (applyBtn) {
+                            applyBtn.style.background = '#fff';
+                            applyBtn.style.color = '#000';
+                            applyBtn.style.border = '1px solid #000';
+                        }
+
+                        // Avvia connessione WebSocket per monitorare lo stato del filtro
+                        const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+                        const wsUrl = `${wsProtocol}//feweb-tunnel.fe-web.eu/ws/filterstatus/${credentials.username}`;
+                        console.log('WebSocket connecting to:', wsUrl);
+
+                        const ws = new WebSocket(wsUrl);
+
+                        ws.onopen = () => {
+                            console.log('WebSocket connected, sending date_request:', dateRequest);
+                            ws.send(JSON.stringify({ date_request: dateRequest }));
+                        };
+
+                        ws.onmessage = (event) => {
+                            try {
+                                const data = JSON.parse(event.data);
+                                console.log('WebSocket message received:', data);
+
+                                if (data.ready === true) {
+                                    // Cambia il pulsante a sfondo verde
+                                    if (applyBtn) {
+                                        applyBtn.style.background = '#28a745';
+                                        applyBtn.style.color = '#fff';
+                                        applyBtn.style.border = '1px solid #28a745';
+                                    }
+                                    showMessage(getTranslation('int.evaluation.complete') || 'Elaborazione completata!', 'success');
+
+                                    // Dopo 3 secondi, ripristina il pulsante e aggiorna i dati
+                                    setTimeout(() => {
+                                        if (applyBtn) {
+                                            applyBtn.style.background = '#000';
+                                            applyBtn.style.color = '#fff';
+                                            applyBtn.style.border = '1px solid #000';
+                                        }
+                                        // Ricarica i dati della dashboard
+                                        loadFilter();
+                                        loadPortfolio();
+                                        loadProfitability();
+                                    }, 3000);
+                                } else if (data.error) {
+                                    console.error('WebSocket error:', data.error);
+                                    // Ripristina il pulsante in caso di errore
+                                    if (applyBtn) {
+                                        applyBtn.style.background = '#000';
+                                        applyBtn.style.color = '#fff';
+                                        applyBtn.style.border = '1px solid #000';
+                                    }
+                                }
+                            } catch (e) {
+                                console.error('Error parsing WebSocket message:', e);
+                            }
+                        };
+
+                        ws.onerror = (error) => {
+                            console.error('WebSocket error:', error);
+                            // Ripristina il pulsante in caso di errore
+                            if (applyBtn) {
+                                applyBtn.style.background = '#000';
+                                applyBtn.style.color = '#fff';
+                                applyBtn.style.border = '1px solid #000';
+                            }
+                        };
+
+                        ws.onclose = () => {
+                            console.log('WebSocket connection closed');
+                        };
 
                     } else {
                         throw new Error(responseData.message || 'Errore dal server');
                     }
+
 
                 } catch (fetchError) {
                     clearTimeout(timeoutId);
