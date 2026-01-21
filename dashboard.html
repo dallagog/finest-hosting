@@ -2141,10 +2141,10 @@
 
                         // Cambia il pulsante a sfondo bianco/testo nero (stato "in attesa")
                         const applyBtn = document.getElementById('apply-filters');
+                        console.log('applyBtn element:', applyBtn);
                         if (applyBtn) {
-                            applyBtn.style.background = '#fff';
-                            applyBtn.style.color = '#000';
-                            applyBtn.style.border = '1px solid #000';
+                            applyBtn.setAttribute('style', 'flex: 1; background: #fff !important; color: #000 !important; border: 2px solid #000 !important;');
+                            console.log('Button changed to WHITE');
                         }
 
                         // Avvia connessione WebSocket per monitorare lo stato del filtro
@@ -2152,12 +2152,19 @@
                         const wsUrl = `${wsProtocol}//feweb-tunnel.fe-web.eu/ws/filterstatus/${credentials.username}`;
                         console.log('WebSocket connecting to:', wsUrl);
 
-                        const ws = new WebSocket(wsUrl);
+                        let ws;
+                        try {
+                            ws = new WebSocket(wsUrl);
+                        } catch (wsError) {
+                            console.error('WebSocket creation error:', wsError);
+                            return;
+                        }
 
                         ws.onopen = () => {
                             console.log('WebSocket connected, sending date_request:', dateRequest);
                             ws.send(JSON.stringify({ date_request: dateRequest }));
                         };
+
 
                         ws.onmessage = (event) => {
                             try {
@@ -2166,19 +2173,17 @@
 
                                 if (data.ready === true) {
                                     // Cambia il pulsante a sfondo verde
+                                    console.log('Changing button to GREEN');
                                     if (applyBtn) {
-                                        applyBtn.style.background = '#28a745';
-                                        applyBtn.style.color = '#fff';
-                                        applyBtn.style.border = '1px solid #28a745';
+                                        applyBtn.setAttribute('style', 'flex: 1; background: #28a745 !important; color: #fff !important; border: 2px solid #28a745 !important;');
                                     }
                                     showMessage(getTranslation('int.evaluation.complete') || 'Elaborazione completata!', 'success');
 
                                     // Dopo 3 secondi, ripristina il pulsante e aggiorna i dati
                                     setTimeout(() => {
+                                        console.log('Restoring button to BLACK');
                                         if (applyBtn) {
-                                            applyBtn.style.background = '#000';
-                                            applyBtn.style.color = '#fff';
-                                            applyBtn.style.border = '1px solid #000';
+                                            applyBtn.setAttribute('style', 'flex: 1; background: #000 !important; color: #fff !important; border: 1px solid #000 !important;');
                                         }
                                         // Ricarica i dati della dashboard
                                         loadFilter();
@@ -2189,9 +2194,7 @@
                                     console.error('WebSocket error:', data.error);
                                     // Ripristina il pulsante in caso di errore
                                     if (applyBtn) {
-                                        applyBtn.style.background = '#000';
-                                        applyBtn.style.color = '#fff';
-                                        applyBtn.style.border = '1px solid #000';
+                                        applyBtn.setAttribute('style', 'flex: 1; background: #000 !important; color: #fff !important; border: 1px solid #000 !important;');
                                     }
                                 }
                             } catch (e) {
@@ -2203,14 +2206,13 @@
                             console.error('WebSocket error:', error);
                             // Ripristina il pulsante in caso di errore
                             if (applyBtn) {
-                                applyBtn.style.background = '#000';
-                                applyBtn.style.color = '#fff';
-                                applyBtn.style.border = '1px solid #000';
+                                applyBtn.setAttribute('style', 'flex: 1; background: #000 !important; color: #fff !important; border: 1px solid #000 !important;');
                             }
                         };
 
                         ws.onclose = () => {
                             console.log('WebSocket connection closed');
+
                         };
 
                     } else {
