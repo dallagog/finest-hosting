@@ -521,19 +521,23 @@
         }
 
         .data-table tbody tr:nth-child(even) {
-            background-color: #f9f9f9; /* Grigio chiaro */
+            background-color: #f9f9f9;
+            /* Grigio chiaro */
         }
 
         .data-table tbody tr:nth-child(odd) {
-            background-color: #ffffff; /* Bianco */
+            background-color: #ffffff;
+            /* Bianco */
         }
 
         .data-table tbody tr:hover {
-            background: #f0f0f0 !important; /* Grigio più scuro al passaggio del mouse */
+            background: #f0f0f0 !important;
+            /* Grigio più scuro al passaggio del mouse */
         }
 
         .data-table tbody tr.selected {
-            background: #e0e0e0 !important; /* Grigio per riga selezionata */
+            background: #e0e0e0 !important;
+            /* Grigio per riga selezionata */
             border-left: 3px solid #000;
         }
 
@@ -579,11 +583,13 @@
         }
 
         #reports-list table tbody tr:nth-child(even) {
-            background-color: #f9f9f9; /* Grigio chiaro */
+            background-color: #f9f9f9;
+            /* Grigio chiaro */
         }
 
         #reports-list table tbody tr:nth-child(odd) {
-            background-color: #ffffff; /* Bianco */
+            background-color: #ffffff;
+            /* Bianco */
         }
 
         #reports-list table tbody tr:hover {
@@ -2588,19 +2594,34 @@
             } else {
                 tr.addEventListener('click', async () => {
                     await selectRow(tr, item);
-                    if (item.id_instrument && item.id_account) openPortfolioDetails(item.id_account, item.id_instrument);
+                    // Row click only selects, no longer opens details
                 });
             }
             tableColumns.forEach((col, index) => {
                 const td = document.createElement('td');
                 let val = item[col];
-                if (index === 0 && !isTotal) {
+
+                // Determine if we need to make this cell clickable
+                let isClickableAccount = (col === 'id_account') && !isTotal;
+                let isClickableDescription = (col === 'instrument_description' || col === 'description') && !isTotal;
+
+                if (isClickableAccount) {
                     const span = document.createElement('span');
                     span.textContent = val !== undefined ? val : '';
                     span.style.cursor = 'pointer'; span.style.color = '#000'; span.style.textDecoration = 'underline';
                     span.onclick = (e) => {
                         e.stopPropagation();
-                        // Open instrument details
+                        // Open Trades (Portfolio Details)
+                        if (item.id_instrument && item.id_account) openPortfolioDetails(item.id_account, item.id_instrument);
+                    };
+                    td.appendChild(span);
+                } else if (isClickableDescription) {
+                    const span = document.createElement('span');
+                    span.textContent = val !== undefined ? val : '';
+                    span.style.cursor = 'pointer'; span.style.color = '#000'; span.style.textDecoration = 'underline';
+                    span.onclick = (e) => {
+                        e.stopPropagation();
+                        // Open Instrument Details
                         const params = new URLSearchParams();
                         params.set('username', credentials.username || '');
                         params.set('token', credentials.token || '');
