@@ -304,12 +304,17 @@
             // Rows
             displayData.forEach(item => {
                 const tr = document.createElement('tr');
-                tableColumns.forEach(col => {
+                tableColumns.forEach((col, colIndex) => {
                     const td = document.createElement('td');
                     let val = item[col];
+                    
+                    // Align right from second column onwards
+                    if (colIndex > 0) {
+                        td.style.textAlign = 'right';
+                    }
+                    
                     if (typeof val === 'number') {
                         td.textContent = val.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-                        td.style.textAlign = 'right';
                     } else {
                         // Replace colon with space (e.g. "100.00:EUR" -> "100.00 EUR")
                         td.textContent = (val !== undefined && val !== null) ? String(val).replace(':', ' ') : '';
