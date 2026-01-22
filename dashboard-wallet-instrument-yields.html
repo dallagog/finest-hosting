@@ -265,7 +265,7 @@
     const manifest = await response.json();
     return {
     languages: manifest.languages || [],
-    columns: manifest['dashboard-tradeyield'] || []
+    columns: manifest['portfolio_yield'] || []
     };
     } catch (error) {
     console.error("Error loading manifest:", error);
@@ -374,7 +374,7 @@
     }
 
     async function loadData() {
-    if (!urlParams.code || !credentials.username) {
+    if (!credentials.username) {
     showError(getTranslation("int.error.missing.params") || "Missing parameters or authentication.");
     return;
     }
@@ -383,11 +383,12 @@
     username: credentials.username,
     token: credentials.token,
     language: credentials.language,
-    code: urlParams.code || ""
+    code: urlParams.code || "",
+    filter: ""
     };
 
     try {
-    const response = await fetch(`${API_URL}/gettradeyield`, {
+    const response = await fetch(`${API_URL}/getportfolioyield`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload)
@@ -395,21 +396,30 @@
     const data = await response.json();
 
     if (data.status === 'ok') {
-    if (data.tradeyield && Array.isArray(data.tradeyield) && data.tradeyield.length > 0) {
-    // 1. Flatten
-    const flattenedData = data.tradeyield.map(item => flattenObject(item));
+    let rawData = data.portfolioyield;
 
-    // 2. Filter: Show only rows where 'causale' exists and is not empty
-    tableData = flattenedData.filter(item => {
-    return item.causale && item.causale.trim() !== '';
-    });
+    // Robust parsing for string data if returned
+    if (typeof rawData === 'string') {
+    try { rawData = JSON.parse(rawData.replace(/'/g, '"')); } catch(e){}
+    }
+
+    if (Array.isArray(rawData) && rawData.length > 0) {
+    // Filter logic if API returns all
+    if (urlParams.id_instrument) {
+    const filtered = rawData.filter(item => item.id_instrument === urlParams.id_instrument || item.Ticker ===
+    urlParams.id_instrument);
+    if (filtered.length > 0) rawData = filtered;
+    }
+
+    const flattenedData = rawData.map(item => flattenObject(item));
+    tableData = flattenedData;
 
     if (tableData.length === 0) {
     showError(getTranslation("int.no.data") || "No data found.");
     return;
     }
 
-    // Use columns from manifest if available, otherwise discover from data
+    // Use columns from manifest if available
     if (tradeYieldColumns.length > 0) {
     tableColumns = [...tradeYieldColumns];
     } else {
@@ -420,7 +430,7 @@
     tableColumns = Array.from(allKeys);
     }
 
-    // Filter out columns that have no meaningful data in any row
+    // Filter out empty columns
     tableColumns = tableColumns.filter(col => {
     return tableData.some(item => {
     const val = item[col];
@@ -428,11 +438,11 @@
     });
     });
 
-    // Update H1 title with code and description
-    const instrumentCode = urlParams.id_instrument || (data.tradeyield[0] && data.tradeyield[0].instrument &&
-    data.tradeyield[0].instrument.id_instrument) || '';
-    const instrumentDesc = (data.tradeyield[0] && data.tradeyield[0].instrument &&
-    data.tradeyield[0].instrument.instrument_description) || '';
+    // Update Title
+    const firstItem = tableData[0];
+    const instrumentCode = urlParams.id_instrument || firstItem.id_instrument || firstItem.Ticker || '';
+    const instrumentDesc = firstItem.instrument_description || firstItem.description || '';
+
     const h1 = document.getElementById('pageTitle');
     if (h1) {
     h1.textContent = `${instrumentCode} - ${instrumentDesc}`;

@@ -285,35 +285,50 @@
         // ========== MAIN DATA LOAD ==========
         async function loadData(idInstrument) {
             if (!idInstrument) {
-                showError("No instrument ID provided.");
+                showError(getTranslation('int.error.missing.params') || "No instrument ID provided.");
                 return;
             }
 
+            const API_URL = 'https://feweb-tunnel.fe-web.eu';
+
+            const payload = {
+                username: credentials.username,
+                token: credentials.token,
+                language: credentials.language,
+                filter: "",
+                code: ""
+            };
+
             try {
-                const response = await fetch('classification.json');
+                const response = await fetch(`${API_URL}/getportfolio`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
                 if (!response.ok) {
-                    throw new Error(`Failed to load classification data (HTTP ${response.status})`);
+                    throw new Error(`Failed to load data (HTTP ${response.status})`);
                 }
 
                 const data = await response.json();
-                let instrument = null;
+                if (data.status !== 'ok') {
+                    throw new Error(data.msg || 'API Error');
+                }
 
-                // Handle both array and object formats if necessary, though typical JSON list is array
-                if (Array.isArray(data)) {
-                    instrument = data.find(item => item.id_instrument === idInstrument);
-                } else if (typeof data === 'object') {
-                    // If it's a map keyed by ID
-                    instrument = data[idInstrument];
-                    // Or if it's an object with a list property
-                    if (!instrument && data.items && Array.isArray(data.items)) {
-                        instrument = data.items.find(item => item.id_instrument === idInstrument);
-                    }
+                let cList = data.classification;
+                if (typeof cList === 'string') {
+                    try { cList = JSON.parse(cList.replace(/'/g, '"')); } catch { cList = []; }
+                }
+
+                let instrument = null;
+                if (Array.isArray(cList)) {
+                    instrument = cList.find(item => item.id_instrument === idInstrument);
                 }
 
                 if (instrument) {
                     renderDetails(instrument);
                 } else {
-                    showError(getTranslation('int.instrument.not.found') || `Instrument ${idInstrument} not found.`);
+                    showError(getTranslation('int.error.instrument.notfound') || `Instrument ${idInstrument} not found.`);
                 }
 
             } catch (err) {
