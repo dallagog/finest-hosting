@@ -392,19 +392,51 @@
         </div>
 
         <div class="header-right">
-            <div class="control-group">
-                <label for="period-select" id="period-label">Period:</label>
-                <select id="period-select" onchange="renderChart()">
-                    <option value="daily">Daily</option>
-                    <option value="monthly">Monthly</option>
-                    <option value="quarterly">Quarterly</option>
-                    <option value="semesterly">Semesterly</option>
-                    <option value="yearly">Yearly</option>
-                </select>
-            </div>
+            <style>
+                .control-group {
+                    margin-right: 15px;
+                }
+
+                .date-input {
+                    padding: 8px;
+                    border: 1px solid #ccc;
+                    border-radius: 4px;
+                    font-family: inherit;
+                }
+
+                .action-btn {
+                    padding: 8px 20px;
+                    background: #000;
+                    color: #fff;
+                    border: 1px solid #000;
+                    border-radius: 4px;
+                    cursor: pointer;
+                    font-family: inherit;
+                    transition: all 0.3s;
+                }
+
+                .action-btn:hover {
+                    background: #333;
+                }
+            </style>
 
             <div class="control-group">
-                <label id="chart-type-label">Chart Type:</label>
+                <label for="start-date" id="label-start-date">Start:</label>
+                <input type="date" id="start-date" class="date-input">
+            </div>
+            <div class="control-group">
+                <label for="end-date" id="label-end-date">End:</label>
+                <input type="date" id="end-date" class="date-input">
+            </div>
+
+            <!-- Hidden Period Select for renderChart compatibility -->
+            <input type="hidden" id="period-select" value="daily">
+
+            <button class="action-btn" onclick="loadPrices()" id="btn-confirm">Carica</button>
+
+            <!-- Hidden Chart Type Selector (optional, kept for layout or removed if desired) -->
+            <div class="control-group" style="display:none;">
+                <label id="chart-type-label">Chart:</label>
                 <div class="chart-type-selector">
                     <button class="chart-type-btn active" onclick="changeChartType('line')" id="line-chart-btn">
                         <i class="fas fa-chart-line"></i> Line
@@ -415,6 +447,7 @@
                 </div>
             </div>
 
+            <!-- Metrics Selector kept but simplified/hidden if needed. Auto-populated by data -->
             <div class="control-group">
                 <label id="metric-label">Metrics:</label>
                 <div class="metrics-selector-container">
@@ -424,12 +457,6 @@
                     </button>
                     <div class="metrics-dropdown-content" id="metrics-dropdown-content">
                         <div id="metrics-checkbox-list"></div>
-                        <div class="metric-checkbox-actions">
-                            <button class="metric-action-btn" onclick="selectAllMetrics()" id="select-all-btn">Select
-                                All</button>
-                            <button class="metric-action-btn clear" onclick="clearAllMetrics()" id="clear-all-btn">Clear
-                                All</button>
-                        </div>
                     </div>
                 </div>
             </div>
@@ -585,6 +612,14 @@
                 return;
             }
 
+            // Set default dates: Today and 1 Year ago
+            const today = new Date();
+            const oneYearAgo = new Date();
+            oneYearAgo.setFullYear(today.getFullYear() - 1);
+
+            document.getElementById('end-date').value = today.toISOString().split('T')[0];
+            document.getElementById('start-date').value = oneYearAgo.toISOString().split('T')[0];
+
             // Load translations first
             await Promise.all([
                 initializeLanguages(),
@@ -593,16 +628,31 @@
             ]);
 
             updateUserInfoUI();
-            updateHeaderTranslations();
 
-            // Load Trend Data
-            await loadTrend();
+            // Update labels
+            document.getElementById('page-title').textContent = getTranslation('int.detail.prices') || "Price Analysis";
+            const btnConfirm = document.getElementById('btn-confirm');
+            if (btnConfirm) btnConfirm.textContent = getTranslation('int.conferma') || 'Conferma';
+            document.getElementById('close-btn').textContent = getTranslation('int.close') || 'Close';
+
+            if (document.getElementById('label-start-date')) document.getElementById('label-start-date').textContent = (getTranslation('int.date.start') || 'Start') + ':';
+            if (document.getElementById('label-end-date')) document.getElementById('label-end-date').textContent = (getTranslation('int.date.end') || 'End') + ':';
+
+            if (!idInstrument) {
+                alert("No Instrument ID provided");
+                return;
+            }
+
+            // Load Prices automatically or wait for user?
+            // "Aggiungi un tasto... premuto il tasto richiama".
+            // Let's load automatically for UX but button refreshes.
+            await loadPrices();
 
             // Chiudi dropdown se si clicca fuori
             document.addEventListener('click', function (event) {
                 const dropdown = document.getElementById('metrics-dropdown-content');
                 const btn = document.getElementById('metrics-dropdown-btn');
-                if (!dropdown.contains(event.target) && !btn.contains(event.target)) {
+                if (dropdown && btn && !dropdown.contains(event.target) && !btn.contains(event.target)) {
                     dropdown.classList.remove('show');
                 }
             });
@@ -648,68 +698,77 @@
             }
         }
 
-        async function loadTrend() {
+        async function loadPrices() {
+            document.getElementById('loading').style.display = 'flex';
+            const startDate = document.getElementById('start-date').value;
+            const endDate = document.getElementById('end-date').value;
+
             try {
                 const payload = {
                     username: username,
                     token: token,
                     language: language,
-                    filter: "",
-                    code: ""
+                    instrument: {
+                        id_instrument: idInstrument, // From URL
+                        date_start: startDate,
+                        date_end: endDate
+                    }
                 };
 
-                const response = await fetch(`${API_URL}/gettrend`, {
+                const response = await fetch(`${API_URL}/getprices`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
                 });
 
+                // If it's a FileResponse, response.json() works if content-type is json
+                // But the backend returns a FILE. Let's handle both cases.
+                // The backend implementation sends `FileResponse(path=..., media_type="application/json")`.
+                // fetch() treats this as a regular response body.
+
                 const data = await response.json();
 
-                if (data.status === 'ok') {
-
-                    console.log("Selected:", selectedAccounts);
-                    console.log("First item account:", trendDataRaw[0]?.id_account);
-                    console.log("Match:", selectedAccounts.includes(trendDataRaw[0]?.id_account));
-
-                    let rawTrend = data.trend;
-                    if (typeof rawTrend === 'string') {
-                        try {
-                            rawTrend = JSON.parse(rawTrend.replace(/'/g, '"'));
-                        } catch (e) {
-                            console.error("Error parsing trend string", e);
-                            rawTrend = [];
-                        }
-                    }
-
-                    if (!Array.isArray(rawTrend)) {
-                        rawTrend = [];
-                    }
-
-                    // Filter by selected accounts
-                    if (selectedAccounts.length > 0) {
-                        rawTrend = rawTrend.filter(item => selectedAccounts.includes(item.id_account));
-                    }
-
-                    trendDataRaw = rawTrend;
-
-                    // Ordina i dati per data in modo ascendente
-                    trendDataRaw.sort((a, b) => {
-                        if (!a.date_start || !b.date_start) return 0;
-                        return new Date(a.date_start) - new Date(b.date_start);
-                    });
-
-                    populateMetricsCheckbox();
-                    renderChart();
-                    document.getElementById('loading').style.display = 'none';
-
-                } else {
-                    document.getElementById('loadingText').textContent = "Error loading data";
-                    alert("Error loading trend data");
+                let rawData = data;
+                // If backend wraps in {status: ok, prices: [...]}, check
+                if (data.status && data.prices) {
+                    rawData = data.prices;
+                } else if (Array.isArray(data)) {
+                    rawData = data;
+                } else if (data.status === 'ko') {
+                    throw new Error(data.msg || "Server returned KO");
                 }
+
+                trendDataRaw = rawData;
+
+                // Sort by date (prices typically have 'date' or 'date_start')
+                trendDataRaw.sort((a, b) => {
+                    // Normalize date field if needed
+                    const d1 = a.date || a.date_start;
+                    const d2 = b.date || b.date_start;
+                    return new Date(d1) - new Date(d2);
+                });
+
+                // Ensure date_start is present for shared aggregation logic
+                trendDataRaw.forEach(item => {
+                    if (!item.date_start && item.date) item.date_start = item.date;
+                });
+
+                populateMetricsCheckbox();
+
+                // Default select 'price_mkt' if nothing selected
+                if (getSelectedMetrics().length === 0) {
+                    const priceCheckbox = document.getElementById('metric-price_mkt');
+                    if (priceCheckbox) priceCheckbox.checked = true;
+                }
+
+                updateSelectedMetrics();
+                document.getElementById('loading').style.display = 'none';
+
             } catch (error) {
                 console.error(error);
-                document.getElementById('loadingText').textContent = "Connection Error";
+                document.getElementById('loadingText').textContent = "Error loading data " + error.message;
+                alert("Error loading prices: " + error.message);
+                document.getElementById('loading').style.display = 'none';
             }
         }
 
