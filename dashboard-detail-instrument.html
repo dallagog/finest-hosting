@@ -161,6 +161,10 @@
         </div>
         <h1 id="pageTitle">Instrument Details</h1>
         <div style="flex: 1; text-align: right;">
+            <button class="close-btn" onclick="openPricesGraph()"
+                style="margin-right: 10px; background: rgba(0, 255, 255, 0.1); border-color: #00ffff; color: #000;">
+                <i class="fa fa-chart-line"></i> <span id="pricesText">Prices</span>
+            </button>
             <button class="close-btn" onclick="window.close()">
                 <i class="fa fa-times"></i> <span id="closeText">Chiudi</span>
             </button>
@@ -184,6 +188,7 @@
         let credentials = { username: '', token: '', language: '' };
         let availableLanguages = [];
         let translations = {};
+        let currentInstrumentId = null;
 
         // ========== SETUP & UTIL ==========
         function getURLParams() {
@@ -193,9 +198,16 @@
                 token: params.get('token') || localStorage.getItem('token') || '',
                 language: params.get('language') || localStorage.getItem('language') || 'it_IT'
             };
+            currentInstrumentId = params.get('id_instrument');
             return {
-                id_instrument: params.get('id_instrument')
+                id_instrument: currentInstrumentId
             };
+        }
+
+        function openPricesGraph() {
+            if (!currentInstrumentId) return;
+            const url = `dashboard-graph-prices.html?username=${credentials.username}&token=${credentials.token}&language=${credentials.language}&id_instrument=${currentInstrumentId}`;
+            window.open(url, '_blank', 'width=1200,height=800');
         }
 
         async function loadLanguageManifest() {
@@ -273,6 +285,7 @@
             document.getElementById('userLabel').textContent = getTranslation('int.user.label') || 'Utente:';
             document.getElementById('closeText').textContent = getTranslation('int.close') || 'Chiudi';
             document.getElementById('pageTitle').textContent = getTranslation('int.instrument.details') || 'Instrument Details';
+            document.getElementById('pricesText').textContent = getTranslation('int.detail.prices') || 'Prices';
         }
 
         function showError(msg) {
