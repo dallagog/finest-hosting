@@ -429,37 +429,7 @@
                 <input type="date" id="end-date" class="date-input">
             </div>
 
-            <!-- Hidden Period Select for renderChart compatibility -->
-            <input type="hidden" id="period-select" value="daily">
-
             <button class="action-btn" onclick="loadPrices()" id="btn-confirm">Carica</button>
-
-            <!-- Hidden Chart Type Selector (optional, kept for layout or removed if desired) -->
-            <div class="control-group" style="display:none;">
-                <label id="chart-type-label">Chart:</label>
-                <div class="chart-type-selector">
-                    <button class="chart-type-btn active" onclick="changeChartType('line')" id="line-chart-btn">
-                        <i class="fas fa-chart-line"></i> Line
-                    </button>
-                    <button class="chart-type-btn" onclick="changeChartType('bar')" id="bar-chart-btn">
-                        <i class="fas fa-chart-bar"></i> Bar
-                    </button>
-                </div>
-            </div>
-
-            <!-- Metrics Selector kept but simplified/hidden if needed. Auto-populated by data -->
-            <div class="control-group">
-                <label id="metric-label">Metrics:</label>
-                <div class="metrics-selector-container">
-                    <button class="metrics-dropdown-btn" onclick="toggleMetricsDropdown()" id="metrics-dropdown-btn">
-                        <span>Select Metrics</span>
-                        <i class="fas fa-chevron-down"></i>
-                    </button>
-                    <div class="metrics-dropdown-content" id="metrics-dropdown-content">
-                        <div id="metrics-checkbox-list"></div>
-                    </div>
-                </div>
-            </div>
 
             <button class="close-button" onclick="closeWindow()" id="close-btn">Close</button>
         </div>
@@ -579,18 +549,6 @@
 
         // Variabili globali
         const API_URL = "https://feweb-tunnel.fe-web.eu";
-        let chartInstance = null;
-        let trendDataRaw = [];
-        let chartType = 'line'; // 'line' o 'bar'
-        let availableMetrics = [];
-
-        const urlParams = new URLSearchParams(window.location.search);
-        const username = urlParams.get('username') || 'UTENTE_NON_AUTORIZZATO';
-        const token = urlParams.get('token');
-        const language = urlParams.get('language') || 'it_IT';
-        const initialMetric = urlParams.get('metric') || '';
-        const accountsParam = urlParams.get('accounts');
-        const selectedAccounts = accountsParam ? accountsParam.split(',') : [];
 
         // Colori per i diversi dataset
         const datasetColors = [
@@ -603,6 +561,9 @@
             { border: '#ffff00', bg: 'rgba(255, 255, 0, 0.4)' },      // yellow
             { border: '#ff00ff', bg: 'rgba(255, 0, 255, 0.4)' }       // magenta
         ];
+
+        let trendDataRaw = [];
+        let chartInstance = null;
 
         async function init() {
             document.getElementById('username-display').textContent = username;
@@ -643,59 +604,8 @@
                 return;
             }
 
-            // Load Prices automatically or wait for user?
-            // "Aggiungi un tasto... premuto il tasto richiama".
-            // Let's load automatically for UX but button refreshes.
+            // Load Prices automatically
             await loadPrices();
-
-            // Chiudi dropdown se si clicca fuori
-            document.addEventListener('click', function (event) {
-                const dropdown = document.getElementById('metrics-dropdown-content');
-                const btn = document.getElementById('metrics-dropdown-btn');
-                if (dropdown && btn && !dropdown.contains(event.target) && !btn.contains(event.target)) {
-                    dropdown.classList.remove('show');
-                }
-            });
-        }
-
-        function updateHeaderTranslations() {
-            document.getElementById('page-title').textContent = getTranslation('int.trend.analysis') || "Trend Analysis";
-            document.getElementById('metric-label').textContent = (getTranslation('int.metrics') || "Metrics") + ":";
-            document.getElementById('period-label').textContent = (getTranslation('int.period') || "Period") + ":";
-            document.getElementById('chart-type-label').textContent = (getTranslation('int.chart_type') || "Chart Type") + ":";
-            document.getElementById('close-btn').textContent = getTranslation('int.close') || "Close";
-
-            // User Label
-            const userLabel = document.getElementById('user-label-text');
-            if (userLabel) userLabel.textContent = getTranslation('int.user.label');
-
-            // Traduci bottoni selezione metriche
-            const selectAllBtn = document.getElementById('select-all-btn');
-            if (selectAllBtn) selectAllBtn.textContent = getTranslation('int.selectall') || 'Select All';
-
-            const clearAllBtn = document.getElementById('clear-all-btn');
-            if (clearAllBtn) clearAllBtn.textContent = getTranslation('int.deselectall') || 'Clear All';
-
-            // Traduci opzioni periodo
-            const periodSelect = document.getElementById('period-select');
-            periodSelect.options[0].text = getTranslation('int.daily') || 'Daily';
-            periodSelect.options[1].text = getTranslation('int.monthly') || 'Monthly';
-            periodSelect.options[2].text = getTranslation('int.quarterly') || 'Quarterly';
-            periodSelect.options[3].text = getTranslation('int.semesterly') || 'Semesterly';
-            periodSelect.options[4].text = getTranslation('int.yearly') || 'Yearly';
-
-            // Traduci bottoni tipo grafico
-            document.getElementById('line-chart-btn').innerHTML = `<i class="fas fa-chart-line"></i> ${getTranslation('int.line_chart') || 'Line'}`;
-            document.getElementById('bar-chart-btn').innerHTML = `<i class="fas fa-chart-bar"></i> ${getTranslation('int.bar_chart') || 'Bar'}`;
-
-            // Aggiorna testo dropdown metriche
-            const selectedCount = getSelectedMetrics().length;
-            const metricsBtn = document.getElementById('metrics-dropdown-btn');
-            if (selectedCount === 0) {
-                metricsBtn.querySelector('span').textContent = getTranslation('int.select.metrics') || 'Select Metrics';
-            } else {
-                metricsBtn.querySelector('span').textContent = `${selectedCount} ${getTranslation('int.selected') || 'selected'}`;
-            }
         }
 
         async function loadPrices() {
@@ -709,7 +619,7 @@
                     token: token,
                     language: language,
                     instrument: {
-                        id_instrument: idInstrument, // From URL
+                        id_instrument: idInstrument,
                         date_start: startDate,
                         date_end: endDate
                     }
@@ -721,15 +631,9 @@
                     body: JSON.stringify(payload)
                 });
 
-                // If it's a FileResponse, response.json() works if content-type is json
-                // But the backend returns a FILE. Let's handle both cases.
-                // The backend implementation sends `FileResponse(path=..., media_type="application/json")`.
-                // fetch() treats this as a regular response body.
-
                 const data = await response.json();
 
                 let rawData = data;
-                // If backend wraps in {status: ok, prices: [...]}, check
                 if (data.status && data.prices) {
                     rawData = data.prices;
                 } else if (Array.isArray(data)) {
@@ -740,28 +644,19 @@
 
                 trendDataRaw = rawData;
 
-                // Sort by date (prices typically have 'date' or 'date_start')
+                // Sort by date
                 trendDataRaw.sort((a, b) => {
-                    // Normalize date field if needed
                     const d1 = a.date || a.date_start;
                     const d2 = b.date || b.date_start;
                     return new Date(d1) - new Date(d2);
                 });
 
-                // Ensure date_start is present for shared aggregation logic
+                // Ensure date_start is present
                 trendDataRaw.forEach(item => {
                     if (!item.date_start && item.date) item.date_start = item.date;
                 });
 
-                populateMetricsCheckbox();
-
-                // Default select 'price_mkt' if nothing selected
-                if (getSelectedMetrics().length === 0) {
-                    const priceCheckbox = document.getElementById('metric-price_mkt');
-                    if (priceCheckbox) priceCheckbox.checked = true;
-                }
-
-                updateSelectedMetrics();
+                renderChart();
                 document.getElementById('loading').style.display = 'none';
 
             } catch (error) {
@@ -772,263 +667,49 @@
             }
         }
 
-        function populateMetricsCheckbox() {
-            const container = document.getElementById('metrics-checkbox-list');
-            container.innerHTML = '';
-
-            if (trendDataRaw.length === 0) return;
-
-            const metricsSet = new Set();
-
-            // Scansiona tutti i record per trovare tutti i campi con valori numerici
-            trendDataRaw.forEach(item => {
-                Object.keys(item).forEach(key => {
-                    // Escludi campi non rilevanti
-                    if (key === 'date_start' || key === 'date_end' ||
-                        key.includes('id_') || key === 'account_level' || key === 'yield_level') {
-                        return;
-                    }
-
-                    const val = item[key];
-                    // Verifica se è un numero o una stringa con formato "val:cur" o "val%:cur"
-                    if (typeof val === 'number') {
-                        metricsSet.add(key);
-                    } else if (typeof val === 'string') {
-                        // Formato: "14.47:EUR" o "5.12%:EUR"
-                        if (val.includes(':') || val.includes('%')) {
-                            metricsSet.add(key);
-                        }
-                    }
-                });
-            });
-
-            // Converti Set in Array e ordina
-            availableMetrics = Array.from(metricsSet).sort();
-
-            availableMetrics.forEach(key => {
-                const metricId = `metric-${key}`;
-
-                // Prova prima con traduzione
-                const translationKey = 'lbl.' + key;
-                let label = getTranslation(translationKey);
-
-                // Se non trovata, usa il nome del campo formattato
-                if (label === translationKey) {
-                    label = key.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
-                }
-
-                const div = document.createElement('div');
-                div.className = 'metric-checkbox-item';
-
-                // Default logic: if no initialMetric is set, default to "up_negoziazione" or "u/p"
-                let isChecked = false;
-                if (initialMetric) {
-                    isChecked = (initialMetric === key);
-                } else {
-                    // Check if key matches "up_negoziazione" or contains "u/p" (case insensitive)
-                    const lowerKey = key.toLowerCase();
-                    if (lowerKey === 'up_negoziazione') {
-                        isChecked = true;
-                    }
-                }
-
-                div.innerHTML = `
-                    <input type="checkbox" id="${metricId}" value="${key}" 
-                           ${isChecked ? 'checked' : ''} 
-                           onchange="updateSelectedMetrics()">
-                    <label for="${metricId}">${label}</label>
-                `;
-                container.appendChild(div);
-            });
-
-            // Aggiorna il testo del bottone
-            updateMetricsButtonText();
-        }
-
-        function toggleMetricsDropdown() {
-            const dropdown = document.getElementById('metrics-dropdown-content');
-            dropdown.classList.toggle('show');
-        }
-
-        function getSelectedMetrics() {
-            const checkboxes = document.querySelectorAll('#metrics-checkbox-list input[type="checkbox"]:checked');
-            return Array.from(checkboxes).map(cb => cb.value);
-        }
-
-        function updateSelectedMetrics() {
-            updateMetricsButtonText();
-            renderChart();
-        }
-
-        function updateMetricsButtonText() {
-            const selectedCount = getSelectedMetrics().length;
-            const metricsBtn = document.getElementById('metrics-dropdown-btn');
-
-            if (selectedCount === 0) {
-                metricsBtn.querySelector('span').textContent = getTranslation('int.select.metrics') || 'Select Metrics';
-            } else {
-                metricsBtn.querySelector('span').textContent = `${selectedCount} ${getTranslation('int.selected') || 'selected'}`;
-            }
-        }
-
-        function selectAllMetrics() {
-            const checkboxes = document.querySelectorAll('#metrics-checkbox-list input[type="checkbox"]');
-            checkboxes.forEach(cb => cb.checked = true);
-            updateSelectedMetrics();
-        }
-
-        function clearAllMetrics() {
-            const checkboxes = document.querySelectorAll('#metrics-checkbox-list input[type="checkbox"]');
-            checkboxes.forEach(cb => cb.checked = false);
-            updateSelectedMetrics();
-        }
-
-        function changeChartType(type) {
-            chartType = type;
-
-            // Aggiorna lo stato attivo dei bottoni
-            document.getElementById('line-chart-btn').classList.toggle('active', type === 'line');
-            document.getElementById('bar-chart-btn').classList.toggle('active', type === 'bar');
-
-            renderChart();
-        }
-
-        // Funzione per parsare i valori (es. "14.47:EUR" -> 14.47, "5.12%:EUR" -> 5.12)
-        function parseValue(value) {
-            if (typeof value === 'number') return value;
-            if (typeof value === 'string') {
-                // Rimuovi % e divisa, mantieni solo il numero
-                const cleanValue = value.replace(/%|:EUR|:USD|:GBP|:CHF/g, '').trim();
-                return parseFloat(cleanValue) || 0;
-            }
-            return 0;
-        }
-
-        // Verifica se un campo è una percentuale
-        function isPercentageField(fieldName) {
-            // Controlla se nel dataset ci sono valori con %
-            for (let item of trendDataRaw) {
-                if (item[fieldName] && typeof item[fieldName] === 'string' && item[fieldName].includes('%')) {
-                    return true;
-                }
-            }
-            return fieldName.toLowerCase().includes('irr') ||
-                fieldName.toLowerCase().includes('performance') ||
-                fieldName.toLowerCase().includes('percent');
-        }
-
-        // Funzione per aggregare dati per periodo con tracking degli strumenti
-        function aggregateByPeriod(data, metric, period) {
-            const aggregated = {};
-
-            data.forEach(item => {
-                if (!item.date_start || !item[metric]) return;
-
-                const date = new Date(item.date_start);
-                let key;
-
-                switch (period) {
-                    case 'monthly':
-                        key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-                        break;
-                    case 'quarterly':
-                        const quarter = Math.floor(date.getMonth() / 3) + 1;
-                        key = `${date.getFullYear()}-Q${quarter}`;
-                        break;
-                    case 'semesterly':
-                        const semester = date.getMonth() < 6 ? 'S1' : 'S2';
-                        key = `${date.getFullYear()}-${semester}`;
-                        break;
-                    case 'yearly':
-                        key = `${date.getFullYear()}`;
-                        break;
-                    default: // daily
-                        key = item.date_start;
-                }
-
-                const val = parseValue(item[metric]);
-                const instrument = item.id_instrument || 'Unknown';
-
-                if (!aggregated[key]) {
-                    aggregated[key] = {
-                        sum: 0,
-                        count: 0,
-                        date: date,
-                        instruments: {}
-                    };
-                }
-                aggregated[key].sum += val;
-                aggregated[key].count++;
-
-                // Traccia contributo per strumento
-                if (!aggregated[key].instruments[instrument]) {
-                    aggregated[key].instruments[instrument] = 0;
-                }
-                aggregated[key].instruments[instrument] += val;
-            });
-
-            // Ordina per data in modo ascendente (dalla più vecchia alla più recente)
-            const sorted = Object.keys(aggregated).sort((a, b) => {
-                return aggregated[a].date - aggregated[b].date;
-            });
-
-            return sorted.map(key => ({
-                label: key,
-                value: aggregated[key].sum,
-                instruments: aggregated[key].instruments,
-                date: aggregated[key].date
-            }));
-        }
-
         function renderChart() {
             const ctx = document.getElementById('chartCanvas').getContext('2d');
             if (chartInstance) chartInstance.destroy();
 
-            const selectedMetrics = getSelectedMetrics();
-            const selectedPeriod = document.getElementById('period-select').value;
+            // Hardcoded for prices
+            const selectedMetrics = ['price_mkt'];
+            const selectedPeriod = 'daily';
+            let chartType = 'line'; // Default to line for prices
 
-            if (selectedMetrics.length === 0) {
-                // Mostra un grafico vuoto o messaggio
+            // Check if price_mkt exists, otherwise try fallback
+            if (trendDataRaw.length > 0) {
+                if (!trendDataRaw[0].hasOwnProperty('price_mkt')) {
+                    // Try to find a valid numeric key if price_mkt is missing
+                    const fallback = Object.keys(trendDataRaw[0]).find(k =>
+                        !['date', 'date_start', 'date_end', 'id_instrument'].includes(k) && typeof trendDataRaw[0][k] === 'number'
+                    );
+                    if (fallback) selectedMetrics[0] = fallback;
+                }
+            }
+
+            if (selectedMetrics.length === 0 || trendDataRaw.length === 0) {
+                // Empty chart logic
                 chartInstance = new Chart(ctx, {
                     type: chartType,
-                    data: {
-                        labels: [],
-                        datasets: []
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: { display: false },
-                            tooltip: { enabled: false }
-                        }
-                    }
+                    data: { labels: [], datasets: [] },
+                    options: { responsive: true, maintainAspectRatio: false }
                 });
                 return;
             }
 
-            // Prepara i datasets
             const datasets = [];
             const allLabelsSet = new Set();
-            const metricDataMap = new Map(); // Store aggregated data for each metric
+            const metricDataMap = new Map();
 
-            // First pass: Aggregate data and collect all unique labels
             selectedMetrics.forEach((metric) => {
                 const aggregatedData = aggregateByPeriod(trendDataRaw, metric, selectedPeriod);
                 metricDataMap.set(metric, aggregatedData);
-
-                aggregatedData.forEach(item => {
-                    allLabelsSet.add(item.label);
-                });
+                aggregatedData.forEach(item => allLabelsSet.add(item.label));
             });
 
-            // Creates sorted array of all unique labels (X-axis)
             const allLabels = Array.from(allLabelsSet).sort((a, b) => {
-                // We need to pick a representative date for sorting
-                // Try to find the date object from any metric that has this label
                 let dateA = null;
                 let dateB = null;
-
                 for (let [m, data] of metricDataMap) {
                     const itemA = data.find(i => i.label === a);
                     if (itemA) { dateA = itemA.date; break; }
@@ -1037,125 +718,50 @@
                     const itemB = data.find(i => i.label === b);
                     if (itemB) { dateB = itemB.date; break; }
                 }
-
                 if (!dateA || !dateB) return 0;
                 return dateA - dateB;
             });
 
-            // Second pass: Build datasets synchronized with allLabels
             selectedMetrics.forEach((metric, index) => {
-                const isPercentage = isPercentageField(metric);
                 const aggregatedData = metricDataMap.get(metric);
-
-                // Map global labels to values for this metric
                 const alignedData = allLabels.map(label => {
                     const item = aggregatedData.find(d => d.label === label);
-                    return item ? item.value : null; // Use null for missing data points
+                    return item ? item.value : null;
                 });
 
-                // Also map detailed data for tooltips
-                const alignedAggregatedDetails = allLabels.map(label => {
-                    const item = aggregatedData.find(d => d.label === label);
-                    return item ? item : null;
-                });
-
-                const colorIndex = index % datasetColors.length;
-                const color = datasetColors[colorIndex];
+                // Colors hardcoded for single dataset
+                const color = { bg: 'rgba(75, 192, 192, 0.4)', border: 'rgba(75, 192, 192, 1)' };
 
                 const gradient = ctx.createLinearGradient(0, 0, 0, 400);
                 gradient.addColorStop(0, color.bg);
                 gradient.addColorStop(1, color.bg.replace('0.4', '0.05'));
 
-                // Find metric label
-                const metricLabel = Array.from(document.querySelectorAll('#metrics-checkbox-list label'))
-                    .find(label => label.htmlFor === `metric-${metric}`)?.textContent || metric;
-
                 datasets.push({
-                    label: metricLabel,
+                    label: getTranslation('int.detail.prices') || 'Price',
                     data: alignedData,
                     borderColor: color.border,
-                    backgroundColor: chartType === 'bar' ? color.bg : gradient,
-                    borderWidth: chartType === 'bar' ? 1 : 2,
+                    backgroundColor: gradient,
+                    borderWidth: 2,
                     pointBackgroundColor: color.border,
                     pointBorderColor: '#fff',
                     pointHoverBackgroundColor: '#fff',
                     pointHoverBorderColor: color.border,
-                    fill: chartType === 'line',
-                    tension: chartType === 'line' ? 0.4 : 0,
-                    spanGaps: true, // Connect lines over missing data points
-                    yAxisID: isPercentage ? 'y-percent' : 'y-value',
-                    metricKey: metric,
-                    aggregatedData: alignedAggregatedDetails // Synchronized details
+                    fill: true,
+                    tension: 0.4,
+                    spanGaps: true
                 });
             });
 
-
-            // Configura assi Y
             const scales = {
                 x: {
                     ticks: {
                         color: '#1a1a1a',
-                        font: {
-                            family: '"Times New Roman", Times, serif',
-                            size: 11
-                        },
-                        maxRotation: 45,
-                        minRotation: 45
+                        font: { family: '"Times New Roman", Times, serif', size: 11 },
+                        maxRotation: 45, minRotation: 45
                     },
-                    grid: {
-                        color: 'rgba(0, 0, 0, 0.05)'
-                    }
+                    grid: { color: 'rgba(0, 0, 0, 0.05)' }
                 }
             };
-
-            // Asse Y sinistro per percentuali
-            const hasPercentages = datasets.some(ds => ds.yAxisID === 'y-percent');
-            if (hasPercentages) {
-                scales['y-percent'] = {
-                    position: 'left',
-                    ticks: {
-                        color: '#4b0082', // Indigo for contrast
-                        font: {
-                            family: '"Times New Roman", Times, serif',
-                            size: 11
-                        },
-                        callback: function (value) {
-                            return value.toFixed(2) + '%';
-                        }
-                    },
-                    grid: {
-                        color: (context) => context.tick.value === 0 ? '#333' : 'rgba(0, 0, 0, 0.05)',
-                        lineWidth: 1
-                    }
-                };
-            }
-
-            // Asse Y destro per valori
-            const hasValues = datasets.some(ds => ds.yAxisID === 'y-value');
-            if (hasValues) {
-                scales['y-value'] = {
-                    position: 'right',
-                    ticks: {
-                        color: '#005f6b', // Deep teal for contrast
-                        font: {
-                            family: '"Times New Roman", Times, serif',
-                            size: 11
-                        },
-                        callback: function (value) {
-                            return new Intl.NumberFormat('it-IT', {
-                                style: "currency",
-                                currency: "EUR",
-                                notation: "compact"
-                            }).format(value);
-                        }
-                    },
-                    grid: {
-                        color: (context) => context.tick.value === 0 ? '#333' : 'rgba(0, 0, 0, 0.05)',
-                        lineWidth: 1,
-                        drawOnChartArea: !hasPercentages
-                    }
-                };
-            }
 
             chartInstance = new Chart(ctx, {
                 type: chartType,
@@ -1166,99 +772,106 @@
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    interaction: {
-                        mode: 'index',
-                        intersect: false,
-                    },
-                    scales: scales,
                     plugins: {
                         legend: {
-                            display: selectedMetrics.length > 1,
+                            display: true,
                             labels: {
-                                color: '#1a1a1a',
-                                font: {
-                                    family: '"Times New Roman", Times, serif',
-                                    size: 12
-                                },
-                                boxWidth: 20,
-                                padding: 15
+                                font: { family: '"Times New Roman", Times, serif' }
                             }
                         },
                         tooltip: {
-                            backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                            mode: 'index',
+                            intersect: false,
+                            backgroundColor: 'rgba(255, 255, 255, 0.9)',
                             titleColor: '#000',
-                            bodyColor: '#333',
-                            borderColor: '#333',
+                            bodyColor: '#000',
+                            borderColor: '#ccc',
                             borderWidth: 1,
-                            titleFont: { family: 'serif', size: 13, weight: 'bold' },
-                            bodyFont: { family: 'serif', size: 12 },
-                            padding: 12,
-                            callbacks: {
-                                title: function (context) {
-                                    return context[0].label;
-                                },
-                                label: function (context) {
-                                    const dataset = context.dataset;
-                                    const dataIndex = context.dataIndex;
-                                    const isPercentage = dataset.yAxisID === 'y-percent';
-
-                                    let label = dataset.label + ': ';
-
-                                    if (context.parsed.y !== null) {
-                                        if (isPercentage) {
-                                            label += context.parsed.y.toFixed(2) + '%';
-                                        } else {
-                                            label += new Intl.NumberFormat('it-IT', {
-                                                style: 'currency',
-                                                currency: 'EUR'
-                                            }).format(context.parsed.y);
-                                        }
-                                    }
-
-                                    return label;
-                                },
-                                afterLabel: function (context) {
-                                    const dataset = context.dataset;
-                                    const dataIndex = context.dataIndex;
-                                    const aggregatedData = dataset.aggregatedData;
-
-                                    if (aggregatedData && aggregatedData[dataIndex]) {
-                                        const instruments = aggregatedData[dataIndex].instruments;
-                                        const isPercentage = dataset.yAxisID === 'y-percent';
-
-                                        const lines = ['\n--- Instruments ---'];
-
-                                        // Ordina strumenti per valore
-                                        const sortedInstruments = Object.entries(instruments)
-                                            .sort((a, b) => Math.abs(b[1]) - Math.abs(a[1]));
-
-                                        sortedInstruments.forEach(([instrument, value]) => {
-                                            let formattedValue;
-                                            if (isPercentage) {
-                                                formattedValue = value.toFixed(2) + '%';
-                                            } else {
-                                                formattedValue = new Intl.NumberFormat('it-IT', {
-                                                    style: 'currency',
-                                                    currency: 'EUR',
-                                                    minimumFractionDigits: 2
-                                                }).format(value);
-                                            }
-                                            lines.push(`${instrument}: ${formattedValue}`);
-                                        });
-
-                                        return lines;
-                                    }
-                                    return [];
-                                }
-                            }
+                            titleFont: { family: '"Times New Roman", Times, serif', size: 14 },
+                            bodyFont: { family: '"Times New Roman", Times, serif', size: 13 }
                         }
+                    },
+                    scales: scales,
+                    interaction: {
+                        mode: 'nearest',
+                        axis: 'x',
+                        intersect: false
                     }
                 }
             });
         }
 
-        window.onload = init;
-    </script>
-</body>
 
-</html>
+function parseValue(value) {
+    if (typeof value === 'number') return value;
+    if (typeof value === 'string') {
+        const cleanValue = value.replace(/%|:EUR|:USD|:GBP|:CHF/g, '').trim();
+        return parseFloat(cleanValue) || 0;
+    }
+    return 0;
+}
+
+function aggregateByPeriod(data, metric, period) {
+    const aggregated = {};
+
+    data.forEach(item => {
+        if (!item.date_start || !item[metric]) return;
+
+        const date = new Date(item.date_start);
+        let key;
+
+        switch (period) {
+            case 'monthly':
+                key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+                break;
+            case 'quarterly':
+                const quarter = Math.floor(date.getMonth() / 3) + 1;
+                key = `${date.getFullYear()}-Q${quarter}`;
+                break;
+            case 'semesterly':
+                const semester = date.getMonth() < 6 ? 'S1' : 'S2';
+                key = `${date.getFullYear()}-${semester}`;
+                break;
+            case 'yearly':
+                key = `${date.getFullYear()}`;
+                break;
+            default: // daily
+                key = item.date_start;
+        }
+
+        const val = parseValue(item[metric]);
+        const instrument = item.id_instrument || 'Unknown';
+
+        if (!aggregated[key]) {
+            aggregated[key] = {
+                sum: 0,
+                count: 0,
+                date: date,
+                instruments: {}
+            };
+        }
+        aggregated[key].sum += val;
+        aggregated[key].count++;
+
+        if (!aggregated[key].instruments[instrument]) {
+            aggregated[key].instruments[instrument] = 0;
+        }
+        aggregated[key].instruments[instrument] += val;
+    });
+
+    const sorted = Object.keys(aggregated).sort((a, b) => {
+        return aggregated[a].date - aggregated[b].date;
+    });
+
+    return sorted.map(key => ({
+        label: key,
+        value: aggregated[key].sum,
+        instruments: aggregated[key].instruments,
+        date: aggregated[key].date
+    }));
+}
+
+window.onload = init;
+    </script >
+</body >
+</html >
