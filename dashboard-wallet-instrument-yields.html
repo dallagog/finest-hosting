@@ -50,21 +50,6 @@
             letter-spacing: 2px;
         }
 
-        .info-bar {
-            margin-bottom: 20px;
-            padding: 10px;
-            border-bottom: 1px solid #ddd;
-            display: flex;
-            justify-content: space-between;
-            font-size: 1.2rem;
-        }
-
-        .symbol-link {
-            color: #000;
-            text-decoration: underline;
-            cursor: pointer;
-        }
-
         table {
             width: 100%;
             border-collapse: collapse;
@@ -128,10 +113,6 @@
 
     <div class="container">
         <h1>Trade Yield Details</h1>
-        <div class="info-bar">
-            <span id="symbolDisplay">Symbol: -</span>
-            <span>Type: Yield</span>
-        </div>
         <div id="loading" class="loading">Loading data...</div>
         <div id="error" class="error-msg" style="display: none;"></div>
 
@@ -163,11 +144,6 @@
         const username = localStorage.getItem("username");
         const token = localStorage.getItem("token");
         const language = localStorage.getItem("language") || 'it_IT';
-
-        const symbolDisplay = document.getElementById('symbolDisplay');
-        if (code) {
-            symbolDisplay.innerHTML = 'Symbol: <span class="symbol-link" onclick="openInstrumentDetails(\'' + code + '\')">' + code + '</span>';
-        }
 
         let tableData = [];
         let tableColumns = [];
@@ -249,7 +225,13 @@
                 if (data.status === 'ok') {
                     if (data.tradeyield && Array.isArray(data.tradeyield) && data.tradeyield.length > 0) {
                         // Flatten nested objects
-                        tableData = data.tradeyield.map(item => flattenObject(item));
+                        let flattenedData = data.tradeyield.map(item => flattenObject(item));
+                        
+                        // Filter out rows without event_event_description
+                        tableData = flattenedData.filter(item => {
+                            const desc = item.event_event_description;
+                            return desc !== undefined && desc !== null && desc !== '' && desc !== '-';
+                        });
 
                         // Use columns from manifest if available, otherwise discover from data
                         if (tradeYieldColumns.length > 0) {
@@ -363,10 +345,6 @@
             const col = tableColumns.splice(draggedColIndex, 1)[0];
             tableColumns.splice(index, 0, col);
             renderTable();
-        }
-
-        function openInstrumentDetails(symbol) {
-            window.open(`dashboard-dataentry-instrument.html?code=${encodeURIComponent(symbol)}`, '_blank');
         }
 
         function showError(msg) {
