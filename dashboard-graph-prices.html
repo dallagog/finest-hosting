@@ -802,76 +802,77 @@
         }
 
 
-function parseValue(value) {
-    if (typeof value === 'number') return value;
-    if (typeof value === 'string') {
-        const cleanValue = value.replace(/%|:EUR|:USD|:GBP|:CHF/g, '').trim();
-        return parseFloat(cleanValue) || 0;
-    }
-    return 0;
-}
-
-function aggregateByPeriod(data, metric, period) {
-    const aggregated = {};
-
-    data.forEach(item => {
-        if (!item.date_start || !item[metric]) return;
-
-        const date = new Date(item.date_start);
-        let key;
-
-        switch (period) {
-            case 'monthly':
-                key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-                break;
-            case 'quarterly':
-                const quarter = Math.floor(date.getMonth() / 3) + 1;
-                key = `${date.getFullYear()}-Q${quarter}`;
-                break;
-            case 'semesterly':
-                const semester = date.getMonth() < 6 ? 'S1' : 'S2';
-                key = `${date.getFullYear()}-${semester}`;
-                break;
-            case 'yearly':
-                key = `${date.getFullYear()}`;
-                break;
-            default: // daily
-                key = item.date_start;
+        function parseValue(value) {
+            if (typeof value === 'number') return value;
+            if (typeof value === 'string') {
+                const cleanValue = value.replace(/%|:EUR|:USD|:GBP|:CHF/g, '').trim();
+                return parseFloat(cleanValue) || 0;
+            }
+            return 0;
         }
 
-        const val = parseValue(item[metric]);
-        const instrument = item.id_instrument || 'Unknown';
+        function aggregateByPeriod(data, metric, period) {
+            const aggregated = {};
 
-        if (!aggregated[key]) {
-            aggregated[key] = {
-                sum: 0,
-                count: 0,
-                date: date,
-                instruments: {}
-            };
+            data.forEach(item => {
+                if (!item.date_start || !item[metric]) return;
+
+                const date = new Date(item.date_start);
+                let key;
+
+                switch (period) {
+                    case 'monthly':
+                        key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+                        break;
+                    case 'quarterly':
+                        const quarter = Math.floor(date.getMonth() / 3) + 1;
+                        key = `${date.getFullYear()}-Q${quarter}`;
+                        break;
+                    case 'semesterly':
+                        const semester = date.getMonth() < 6 ? 'S1' : 'S2';
+                        key = `${date.getFullYear()}-${semester}`;
+                        break;
+                    case 'yearly':
+                        key = `${date.getFullYear()}`;
+                        break;
+                    default: // daily
+                        key = item.date_start;
+                }
+
+                const val = parseValue(item[metric]);
+                const instrument = item.id_instrument || 'Unknown';
+
+                if (!aggregated[key]) {
+                    aggregated[key] = {
+                        sum: 0,
+                        count: 0,
+                        date: date,
+                        instruments: {}
+                    };
+                }
+                aggregated[key].sum += val;
+                aggregated[key].count++;
+
+                if (!aggregated[key].instruments[instrument]) {
+                    aggregated[key].instruments[instrument] = 0;
+                }
+                aggregated[key].instruments[instrument] += val;
+            });
+
+            const sorted = Object.keys(aggregated).sort((a, b) => {
+                return aggregated[a].date - aggregated[b].date;
+            });
+
+            return sorted.map(key => ({
+                label: key,
+                value: aggregated[key].sum,
+                instruments: aggregated[key].instruments,
+                date: aggregated[key].date
+            }));
         }
-        aggregated[key].sum += val;
-        aggregated[key].count++;
 
-        if (!aggregated[key].instruments[instrument]) {
-            aggregated[key].instruments[instrument] = 0;
-        }
-        aggregated[key].instruments[instrument] += val;
-    });
+        window.onload = init;
+    </script>
+</body>
 
-    const sorted = Object.keys(aggregated).sort((a, b) => {
-        return aggregated[a].date - aggregated[b].date;
-    });
-
-    return sorted.map(key => ({
-        label: key,
-        value: aggregated[key].sum,
-        instruments: aggregated[key].instruments,
-        date: aggregated[key].date
-    }));
-}
-
-window.onload = init;
-    </script >
-</body >
-</html >
+</html>

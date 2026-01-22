@@ -2873,18 +2873,33 @@
             } else {
                 tr.onclick = () => {
                     selectProfitabilityRow(tr, item);
-                    if (item.Ticker) openTradeYieldDetails(item.Ticker);
+                    // Row click only selects
                 };
             }
             profitabilityTableColumns.forEach((col, index) => {
                 const td = document.createElement('td');
                 let val = item[col];
-                if (index === 0 && !isTotal) {
+
+                let isClickableAccount = (col === 'id_account') && !isTotal;
+                let isClickableDescription = (col === 'instrument_description' || col === 'description') && !isTotal;
+
+                if (isClickableAccount) {
                     const span = document.createElement('span');
                     span.textContent = val !== undefined ? val : '';
                     span.style.cursor = 'pointer'; span.style.color = '#000'; span.style.textDecoration = 'underline';
                     span.onclick = (e) => {
                         e.stopPropagation();
+                        // Open Yield Details
+                        if (item.Ticker) openTradeYieldDetails(item.Ticker);
+                    };
+                    td.appendChild(span);
+                } else if (isClickableDescription) {
+                    const span = document.createElement('span');
+                    span.textContent = val !== undefined ? val : '';
+                    span.style.cursor = 'pointer'; span.style.color = '#000'; span.style.textDecoration = 'underline';
+                    span.onclick = (e) => {
+                        e.stopPropagation();
+                        // Open Instrument Details
                         const params = new URLSearchParams();
                         params.set('username', credentials.username || '');
                         params.set('token', credentials.token || '');
