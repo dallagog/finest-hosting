@@ -8,23 +8,17 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <link rel="icon" type="image/png" href="images/icon-finest.png">
     <style>
-        /* STILE COPIATO DA dashboard-wallet-instrument-trades.html */
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&display=swap');
 
         :root {
             --bg-color: #f5f5f0;
             --neon-cyan: #000000;
-            --neon-blue: #333333;
             --glass-bg: #ffffff;
             --text-color: #333333;
             --border-color: #000000;
         }
 
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
             font-family: 'Orbitron', sans-serif;
@@ -59,7 +53,7 @@
 
         .close-btn {
             padding: 10px 20px;
-            background: rgba(255, 0, 0, 0.2);
+            background: rgba(255, 0, 0, 0.1);
             border: 1px solid #ff3333;
             color: #ff3333;
             font-family: 'Orbitron', sans-serif;
@@ -71,28 +65,17 @@
         }
 
         .close-btn:hover {
-            background: rgba(255, 0, 0, 0.4);
-            box-shadow: 0 0 10px #ff3333;
+            background: #ff3333;
+            color: white;
+            box-shadow: 0 0 10px rgba(255, 51, 51, 0.5);
         }
 
         .user-info-left {
             flex: 1;
-            text-align: left;
             font-size: 14px;
-            color: var(--neon-cyan);
             display: flex;
             flex-direction: column;
             gap: 5px;
-        }
-
-        .user-info-row {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .flag-icon {
-            font-size: 18px;
         }
 
         .container {
@@ -100,64 +83,47 @@
             margin: 0 auto;
             background: var(--glass-bg);
             border: 1px solid #ddd;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
             border-radius: 8px;
             padding: 40px;
         }
 
-        h2 {
-            text-align: center;
-            margin-bottom: 30px;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            color: #000;
-            font-size: 1.5rem;
-        }
+        h2 { text-align: center; margin-bottom: 30px; text-transform: uppercase; letter-spacing: 2px; }
 
-        /* TABELLA E UTILITY */
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            color: #333;
-        }
-
-        thead tr {
-            background: #f0f0f0;
-            border-bottom: 2px solid #000;
-        }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        
+        thead tr { background: #f0f0f0; border-bottom: 2px solid #000; }
 
         th {
-            padding: 6px 10px;
-            height: 32px;
+            padding: 12px 10px;
             text-align: left;
             font-weight: 600;
-            text-transform: uppercase;
             font-size: 0.85rem;
-            letter-spacing: 1px;
             cursor: pointer;
+            position: relative;
+            transition: background 0.2s;
         }
 
-        th:hover { background-color: #e0e0e0; }
-        th.col-right { text-align: right; }
+        th:hover { background-color: #e8e8e8; }
         
-        td {
-            padding: 6px 10px;
-            height: 32px;
-            border-bottom: 1px solid #eee;
-        }
+        /* Indicatori di ordinamento */
+        th.sort-asc::after { content: ' \25B4'; position: absolute; right: 5px; opacity: 0.6; }
+        th.sort-desc::after { content: ' \25BE'; position: absolute; right: 5px; opacity: 0.6; }
 
-        td.col-right { text-align: right; }
+        th.col-right, td.col-right { text-align: right; }
 
-        .loading { text-align: center; padding: 40px; }
+        td { padding: 10px; border-bottom: 1px solid #eee; font-size: 0.9rem; }
+        
+        tbody tr:hover { background: #f9f9f9; }
+
+        .loading { text-align: center; padding: 50px; }
         .spinner {
-            border: 3px solid #eee;
-            border-top: 3px solid #000;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #000;
             border-radius: 50%;
-            width: 50px;
-            height: 50px;
+            width: 40px;
+            height: 40px;
             animation: spin 1s linear infinite;
-            margin: 0 auto 20px;
+            margin: 0 auto 15px;
         }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
@@ -166,16 +132,8 @@
 <body>
     <div class="header-bar">
         <div class="user-info-left">
-            <div class="user-info-row">
-                <strong id="userLabel">Utente:</strong>
-                <span id="usernameDisplay">-</span>
-            </div>
-            <div class="user-info-row">
-                <span class="flag-icon" id="languageFlag"></span>
-                <span id="languageDisplay">-</span>
-                <span style="margin: 0 5px;">|</span>
-                <span id="currencyDisplay">-</span>
-            </div>
+            <div><strong>Utente:</strong> <span id="usernameDisplay">-</span></div>
+            <div><span id="languageDisplay">-</span> | <span id="currencyDisplay">EUR</span></div>
         </div>
         <h1 id="pageTitle">Yield History</h1>
         <div style="flex: 1; text-align: right;">
@@ -186,11 +144,11 @@
     </div>
 
     <div class="container">
-        <h2 id="instrumentTitle">Caricamento Rendimenti...</h2>
+        <h2 id="instrumentTitle">Caricamento...</h2>
         <div id="content">
             <div class="loading">
                 <div class="spinner"></div>
-                <p id="loadingText">Caricamento dati in corso...</p>
+                <p>Recupero dati in corso...</p>
             </div>
         </div>
     </div>
@@ -199,10 +157,11 @@
         const API_URL = "https://feweb-tunnel.fe-web.eu";
         let urlParams = {};
         let credentials = { username: '', token: '', language: 'it_IT' };
-        let translations = {};
+        let yieldData = [];
+        let currentSort = { column: 'date_evaluation', direction: 'desc' };
 
-        // Inizializzazione parametri URL
-        function initParams() {
+        // 1. Inizializzazione Parametri
+        function init() {
             const params = new URLSearchParams(window.location.search);
             urlParams = Object.fromEntries(params.entries());
             credentials.username = urlParams.username || '';
@@ -212,83 +171,95 @@
             if (!urlParams.code && urlParams.id_account && urlParams.id_instrument) {
                 urlParams.code = `${urlParams.id_account}:${urlParams.id_instrument}`;
             }
-        }
-
-        async function loadTranslations() {
-            try {
-                const response = await fetch(`lang/${credentials.language}.json`);
-                if (response.ok) translations = await response.json();
-                updateUI();
-            } catch (e) { console.error("Errore traduzioni", e); }
-        }
-
-        function getTranslation(key) { return translations[key] || key; }
-
-        function updateUI() {
+            
             document.getElementById('usernameDisplay').textContent = credentials.username;
-            document.getElementById('currencyDisplay').textContent = 'EUR';
-            document.getElementById('userLabel').textContent = getTranslation('int.user.label');
-            document.getElementById('pageTitle').textContent = getTranslation('int.yield.history') || 'Yield History';
-            document.getElementById('closeText').textContent = getTranslation('int.close');
+            loadData();
         }
 
-        async function loadYieldData() {
+        // 2. Caricamento Dati
+        async function loadData() {
             try {
-                const payload = {
-                    username: credentials.username,
-                    token: credentials.token,
-                    language: credentials.language,
-                    filter: "",
-                    code: urlParams.code || ""
-                };
-
-                // Utilizzo l'endpoint gettrade come esempio (o getyield se esistente)
                 const response = await fetch(`${API_URL}/gettrade`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
+                    body: JSON.stringify({
+                        username: credentials.username,
+                        token: credentials.token,
+                        language: credentials.language,
+                        code: urlParams.code || ""
+                    })
                 });
 
                 const data = await response.json();
                 if (data.status === 'ok' && data.trade) {
-                    renderTable(data.trade);
+                    // Filtriamo solo i record che sono effettivamente rendimenti (trade === 'True')
+                    yieldData = data.trade.filter(t => t.trade === 'True');
+                    
+                    if (yieldData.length > 0) {
+                        const inst = yieldData[0].instrument;
+                        document.getElementById('instrumentTitle').textContent = `${inst.id_instrument} - ${inst.instrument_description}`;
+                    }
+                    
+                    renderTable();
                 } else {
-                    document.getElementById('content').innerHTML = "Nessun dato trovato.";
+                    document.getElementById('content').innerHTML = "<p>Nessun dato trovato.</p>";
                 }
             } catch (error) {
-                document.getElementById('content').innerHTML = "Errore nel caricamento.";
+                document.getElementById('content').innerHTML = "<p>Errore di connessione.</p>";
             }
         }
 
-        function renderTable(trades) {
-            // Filtra solo cedole/dividendi (eventi specifici)
-            const yields = trades.filter(t => t.trade === 'True'); 
-            
-            if(yields.length > 0) {
-                const inst = yields[0].instrument;
-                document.getElementById('instrumentTitle').textContent = `${inst.id_instrument} - ${inst.instrument_description}`;
-                document.getElementById('instrumentTitle').style.cursor = "pointer";
-                document.getElementById('instrumentTitle').onclick = () => {
-                    window.open(`dashboard-detail-instrument.html?username=${credentials.username}&token=${credentials.token}&id_instrument=${inst.id_instrument}`, '_blank');
-                };
+        // 3. Funzione di ordinamento
+        function sortTable(column) {
+            if (currentSort.column === column) {
+                currentSort.direction = currentSort.direction === 'asc' ? 'desc' : 'asc';
+            } else {
+                currentSort.column = column;
+                currentSort.direction = 'asc';
             }
+
+            yieldData.sort((a, b) => {
+                let valA = getFieldValue(a, column);
+                let valB = getFieldValue(b, column);
+
+                // Pulizia per valori numerici (rimozione valuta e spazi)
+                if (typeof valA === 'string' && valA.includes(':')) valA = parseFloat(valA.split(':')[1]) || 0;
+                if (typeof valB === 'string' && valB.includes(':')) valB = parseFloat(valB.split(':')[1]) || 0;
+
+                if (valA < valB) return currentSort.direction === 'asc' ? -1 : 1;
+                if (valA > valB) return currentSort.direction === 'asc' ? 1 : -1;
+                return 0;
+            });
+
+            renderTable();
+        }
+
+        // Helper per estrarre valori annidati
+        function getFieldValue(obj, path) {
+            return path.split('.').reduce((prev, curr) => prev && prev[curr], obj) || '';
+        }
+
+        // 4. Renderizzazione Tabella
+        function renderTable() {
+            const getSortClass = (col) => currentSort.column === col ? `class="sort-${currentSort.direction}"` : '';
+            const getSortClassRight = (col) => currentSort.column === col ? `class="col-right sort-${currentSort.direction}"` : `class="col-right"`;
 
             let html = `<table>
                 <thead>
                     <tr>
-                        <th>${getTranslation('int.date')}</th>
-                        <th>${getTranslation('int.event')}</th>
-                        <th class="col-right">${getTranslation('int.gross.amount') || 'Lordo'}</th>
-                        <th class="col-right">${getTranslation('int.tax') || 'Ritenuta'}</th>
-                        <th class="col-right">${getTranslation('int.net.amount') || 'Netto'}</th>
+                        <th ${getSortClass('date_evaluation')} onclick="sortTable('date_evaluation')">Data</th>
+                        <th ${getSortClass('event.event_description')} onclick="sortTable('event.event_description')">Evento</th>
+                        <th ${getSortClassRight('valutazioni.importo_lordo')} onclick="sortTable('valutazioni.importo_lordo')">Lordo</th>
+                        <th ${getSortClassRight('valutazioni.ritenuta')} onclick="sortTable('valutazioni.ritenuta')">Ritenuta</th>
+                        <th ${getSortClassRight('amount:net')} onclick="sortTable('amount:net')">Netto</th>
                     </tr>
                 </thead>
                 <tbody>`;
 
-            yields.forEach(item => {
+            yieldData.forEach(item => {
                 html += `<tr>
                     <td>${item.date_evaluation || '-'}</td>
-                    <td>${item.event?.event_description || item.id_event}</td>
+                    <td>${item.event?.event_description || item.id_event || '-'}</td>
                     <td class="col-right">${item.valutazioni?.importo_lordo || '-'}</td>
                     <td class="col-right">${item.valutazioni?.ritenuta || '-'}</td>
                     <td class="col-right">${item['amount:net'] || item.controvaloresupersecco || '-'}</td>
@@ -299,11 +270,7 @@
             document.getElementById('content').innerHTML = html;
         }
 
-        document.addEventListener('DOMContentLoaded', async () => {
-            initParams();
-            await loadTranslations();
-            await loadYieldData();
-        });
+        window.onload = init;
     </script>
 </body>
 </html>
