@@ -109,6 +109,67 @@
             background-color: #f5f5f5;
         }
 
+        .header-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: var(--glass-bg);
+            border: 1px solid var(--border-color);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+        }
+
+        .header-bar h1 {
+            text-align: center;
+            margin: 0;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: #000;
+            font-size: 1.8em;
+            flex: 1;
+        }
+
+        .close-btn {
+            padding: 10px 20px;
+            background: rgba(255, 0, 0, 0.2);
+            border: 1px solid #ff3333;
+            color: #ff3333;
+            font-family: 'Orbitron', sans-serif;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+
+        .close-btn:hover {
+            background: rgba(255, 0, 0, 0.4);
+            box-shadow: 0 0 10px #ff3333;
+        }
+
+        .user-info-left {
+            flex: 1;
+            text-align: left;
+            font-size: 14px;
+            color: var(--neon-cyan);
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .user-info-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .flag-icon {
+            font-size: 18px;
+        }
+
         .error-msg {
             color: #ff3333;
             text-align: center;
@@ -128,11 +189,27 @@
 <body>
 
     <div class="container">
-        <h1>Trade Yield Details</h1>
-        <div class="info-bar">
-            <span id="symbolDisplay">Symbol: -</span>
-            <span>Type: Yield</span>
+        <div class="header-bar">
+            <div class="user-info-left">
+                <div class="user-info-row">
+                    <strong id="userLabel">Utente:</strong>
+                    <span id="usernameDisplay">-</span>
+                </div>
+                <div class="user-info-row">
+                    <span class="flag-icon" id="languageFlag"></span>
+                    <span id="languageDisplay">-</span>
+                    <span style="margin: 0 5px;">|</span>
+                    <span id="currencyDisplay">-</span>
+                </div>
+            </div>
+            <h1 id="pageTitle">Trade Yield Details</h1>
+            <div style="flex: 1; text-align: right;">
+                <button class="close-btn" onclick="window.close()">
+                    <i class="fa fa-times"></i> <span id="closeText">Chiudi</span>
+                </button>
+            </div>
         </div>
+
         <div id="loading" class="loading">Loading data...</div>
         <div id="error" class="error-msg" style="display: none;"></div>
 
@@ -150,258 +227,346 @@
         </div>
     </div>
 
-    <script>
-        const API_URL = 'https://feweb-tunnel.fe-web.eu';
+    const API_URL = 'https://feweb-tunnel.fe-web.eu';
+    let urlParams = {};
+    let credentials = { username: '', token: '', language: '' };
+    let tableData = [];
+    let tableColumns = [];
+    let tradeYieldColumns = [];
+    let currentSort = { column: null, direction: 'asc' };
+    let translations = {};
+    let currencies = [];
+    let availableLanguages = [];
 
-        // Get URL params
-        const urlParams = new URLSearchParams(window.location.search);
-        let code = urlParams.get('code');
-        if (!code && urlParams.get('id_account') && urlParams.get('id_instrument')) {
-            code = `${urlParams.get('id_account')}:${urlParams.get('id_instrument')}`;
+    // Get URL params
+    function getURLParams() {
+    const params = new URLSearchParams(window.location.search);
+    urlParams = {};
+    for (const [key, value] of params.entries()) {
+    urlParams[key] = value;
+    }
+
+    credentials = {
+    username: localStorage.getItem("username") || urlParams.username || '',
+    token: localStorage.getItem("token") || urlParams.token || '',
+    language: localStorage.getItem("language") || urlParams.language || 'it_IT'
+    };
+
+    if (!urlParams.code && urlParams.id_account && urlParams.id_instrument) {
+    urlParams.code = `${urlParams.id_account}:${urlParams.id_instrument}`;
+    }
+    }
+
+    // ========== TRANSLATION & USER INFO SYSTEM ==========
+    async function loadLanguageManifest() {
+    try {
+    const response = await fetch('lang/manifest.json');
+    if (!response.ok) return { languages: [], columns: [] };
+    const manifest = await response.json();
+    return {
+    languages: manifest.languages || [],
+    columns: manifest['dashboard-tradeyield'] || []
+    };
+    } catch (error) {
+    console.error("Error loading manifest:", error);
+    return { languages: [], columns: [] };
+    }
+    }
+
+    async function loadLanguageFile(langCode) {
+    try {
+    const response = await fetch(`lang/${langCode}.json`);
+    if (!response.ok) return null;
+    const data = await response.json();
+    if (data['int.language.code'] && data['int.language.description'] && data['img.language.flag']) {
+    return {
+    code: data['int.language.code'],
+    description: data['int.language.description'],
+    flag: data['img.language.flag']
+    };
+    }
+    return null;
+    } catch (error) {
+    console.error(`Error loading ${langCode}.json:`, error);
+    return null;
+    }
+    }
+
+    async function initializeLanguages() {
+    const manifest = await loadLanguageManifest();
+    tradeYieldColumns = manifest.columns;
+    for (const langCode of manifest.languages) {
+    const langData = await loadLanguageFile(langCode);
+    if (langData) availableLanguages.push(langData);
+    }
+    availableLanguages.sort((a, b) => a.code.localeCompare(b.code));
+    }
+
+    async function loadTranslations(langCode) {
+    try {
+    const response = await fetch(`lang/${langCode}.json`);
+    if (!response.ok) return {};
+    translations = await response.json();
+    await loadCurrencies(langCode);
+    } catch (error) {
+    console.error(`Error loading ${langCode}.json:`, error);
+    translations = {};
+    }
+    }
+
+    async function loadCurrencies(lang) {
+    try {
+    const response = await fetch(`currency/${lang}.json`);
+    if (!response.ok) throw new Error(`Currency file not found currency/${lang}.json`);
+    currencies = await response.json();
+    } catch (error) {
+    console.error('Error loading currencies:', error);
+    currencies = [];
+    }
+    }
+
+    function getTranslation(key) {
+    return translations[key] || key;
+    }
+
+    async function updateUserInfo() {
+    document.getElementById('usernameDisplay').textContent = credentials.username || '-';
+
+    const userLanguage = credentials.language || 'it_IT';
+    if (userLanguage) {
+    if (availableLanguages.length === 0) await initializeLanguages();
+    const langData = availableLanguages.find(l => l.code === userLanguage);
+    if (langData) {
+    document.getElementById('languageFlag').textContent = langData.flag;
+    const langDescription = getTranslation('int.language.description');
+    document.getElementById('languageDisplay').textContent =
+    langDescription !== 'int.language.description' ? langDescription : userLanguage;
+    } else {
+    document.getElementById('languageDisplay').textContent = userLanguage;
+    }
+    }
+
+    // Currency display (placeholder)
+    document.getElementById('currencyDisplay').textContent = 'EUR';
+
+    // Update static labels
+    document.getElementById('userLabel').textContent = getTranslation('int.user.label') || 'Utente:';
+    document.getElementById('closeText').textContent = getTranslation('int.close') || 'Chiudi';
+    }
+
+    // ========== DATA FLATTENING ==========
+    function flattenObject(obj, prefix = '') {
+    let result = {};
+    for (const key in obj) {
+    if (obj.hasOwnProperty(key)) {
+    const value = obj[key];
+    const newKey = prefix ? `${prefix}_${key}` : key;
+
+    if (value !== null && typeof value === 'object' && !Array.isArray(value)) {
+    // Recursively flatten nested objects
+    Object.assign(result, flattenObject(value, newKey));
+    } else {
+    result[newKey] = value;
+    }
+    }
+    }
+    return result;
+    }
+
+    async function loadData() {
+    if (!urlParams.code || !credentials.username) {
+    showError(getTranslation("int.error.missing.params") || "Missing parameters or authentication.");
+    return;
+    }
+
+    const payload = {
+    username: credentials.username,
+    token: credentials.token,
+    language: credentials.language,
+    code: urlParams.code || ""
+    };
+
+    try {
+    const response = await fetch(`${API_URL}/gettradeyield`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+    });
+    const data = await response.json();
+
+    if (data.status === 'ok') {
+    if (data.tradeyield && Array.isArray(data.tradeyield) && data.tradeyield.length > 0) {
+    // 1. Flatten
+    const flattenedData = data.tradeyield.map(item => flattenObject(item));
+
+    // 2. Filter: Show only rows where 'causale' exists and is not empty
+    tableData = flattenedData.filter(item => {
+    return item.causale && item.causale.trim() !== '';
+    });
+
+    if (tableData.length === 0) {
+    showError(getTranslation("int.no.data") || "No data found.");
+    return;
+    }
+
+    // Use columns from manifest if available, otherwise discover from data
+    if (tradeYieldColumns.length > 0) {
+    tableColumns = [...tradeYieldColumns];
+    } else {
+    const allKeys = new Set();
+    tableData.forEach(item => {
+    Object.keys(item).forEach(k => allKeys.add(k));
+    });
+    tableColumns = Array.from(allKeys);
+    }
+
+    // Filter out columns that have no meaningful data in any row
+    tableColumns = tableColumns.filter(col => {
+    return tableData.some(item => {
+    const val = item[col];
+    return val !== undefined && val !== null && val !== '' && val !== '-';
+    });
+    });
+
+    // Update H1 title with code and description
+    const instrumentCode = urlParams.id_instrument || (data.tradeyield[0] && data.tradeyield[0].instrument &&
+    data.tradeyield[0].instrument.id_instrument) || '';
+    const instrumentDesc = (data.tradeyield[0] && data.tradeyield[0].instrument &&
+    data.tradeyield[0].instrument.instrument_description) || '';
+    const h1 = document.getElementById('pageTitle');
+    if (h1) {
+    h1.textContent = `${instrumentCode} - ${instrumentDesc}`;
+    h1.style.cursor = 'pointer';
+    h1.style.textDecoration = 'underline';
+    h1.onclick = () => openInstrumentDetails(instrumentCode);
+    }
+
+    renderTable();
+    } else {
+    showError(getTranslation("int.no.data") || "No data found.");
+    }
+    } else {
+    showError(data.msg || getTranslation("int.error.fetch") || "Error fetching data.");
+    }
+    } catch (e) {
+    console.error(e);
+    showError(getTranslation("int.error.network") || "Network or server error.");
+    } finally {
+    document.getElementById('loading').style.display = 'none';
+    }
+    }
+
+    function renderTable() {
+    const thead = document.getElementById('tableHeader');
+    const tbody = document.getElementById('tableBody');
+    thead.innerHTML = '';
+    tbody.innerHTML = '';
+
+    // Headers
+    tableColumns.forEach((col, index) => {
+    const th = document.createElement('th');
+    th.textContent = getTranslation(col) || col;
+    th.draggable = true;
+    th.ondragstart = (e) => handleDragStart(e, index);
+    th.ondragover = (e) => handleDragOver(e);
+    th.ondrop = (e) => handleDrop(e, index);
+    th.onclick = () => sortTable(col);
+
+    if (currentSort.column === col) {
+    th.classList.add(currentSort.direction === 'asc' ? 'sort-asc' : 'sort-desc');
+    }
+    thead.appendChild(th);
+    });
+
+    // Sort Data
+    let displayData = [...tableData];
+    if (currentSort.column) {
+    displayData.sort((a, b) => {
+    const valA = a[currentSort.column];
+    const valB = b[currentSort.column];
+    if (valA < valB) return currentSort.direction==='asc' ? -1 : 1; if (valA> valB) return currentSort.direction ===
+        'asc' ? 1 : -1;
+        return 0;
+        });
         }
 
-        // Get Auth from LocalStorage
-        const username = localStorage.getItem("username");
-        const token = localStorage.getItem("token");
-        const language = localStorage.getItem("language") || 'it_IT';
-
-        const symbolDisplay = document.getElementById('symbolDisplay');
-        if (code) {
-            symbolDisplay.innerHTML = 'Symbol: <span class="symbol-link" onclick="openInstrumentDetails(\'' + code + '\')">' + code + '</span>';
+        // Rows
+        displayData.forEach(item => {
+        const tr = document.createElement('tr');
+        tableColumns.forEach(col => {
+        const td = document.createElement('td');
+        let val = item[col];
+        if (typeof val === 'number') {
+        td.textContent = val.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        td.style.textAlign = 'right';
+        } else {
+        // Replace colon with space (e.g. "100.00:EUR" -> "100.00 EUR")
+        td.textContent = (val !== undefined && val !== null) ? String(val).replace(':', ' ') : '';
         }
-
-        let tableData = [];
-        let tableColumns = [];
-        let tradeYieldColumns = [];
-        let currentSort = { column: null, direction: 'asc' };
-        let translations = {};
-
-        // ========== TRANSLATION SYSTEM ==========
-        async function loadLanguageManifest() {
-            try {
-                const response = await fetch('lang/manifest.json');
-                if (!response.ok) return { languages: [], columns: [] };
-                const manifest = await response.json();
-                return {
-                    languages: manifest.languages || [],
-                    columns: manifest['dashboard-tradeyield'] || []
-                };
-            } catch (error) {
-                console.error("Error loading manifest:", error);
-                return { languages: [], columns: [] };
-            }
-        }
-
-        async function loadTranslations(langCode) {
-            try {
-                const response = await fetch(`lang/${langCode}.json`);
-                if (!response.ok) return {};
-                return await response.json();
-            } catch (error) {
-                console.error(`Error loading ${langCode}.json:`, error);
-                return {};
-            }
-        }
-
-        function getTranslation(key) {
-            return translations[key] || key;
-        }
-
-        // ========== DATA FLATTENING ==========
-        function flattenObject(obj, prefix = '') {
-            let result = {};
-            for (const key in obj) {
-                if (obj.hasOwnProperty(key)) {
-                    const value = obj[key];
-                    const newKey = prefix ? `${prefix}_${key}` : key;
-
-                    if (value !== null && typeof value === 'object' && !Array.isArray(value)) {
-                        // Recursively flatten nested objects
-                        Object.assign(result, flattenObject(value, newKey));
-                    } else {
-                        result[newKey] = value;
-                    }
-                }
-            }
-            return result;
-        }
-
-        async function loadData() {
-            if (!code || !username) {
-                showError(getTranslation("int.error.missing.params") || "Missing parameters or authentication.");
-                return;
-            }
-
-            const payload = {
-                username: username,
-                token: token,
-                language: language,
-                code: code || ""
-            };
-
-            try {
-                const response = await fetch(`${API_URL}/gettradeyield`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-                const data = await response.json();
-
-                if (data.status === 'ok') {
-                    if (data.tradeyield && Array.isArray(data.tradeyield) && data.tradeyield.length > 0) {
-                        // Flatten nested objects
-                        tableData = data.tradeyield.map(item => flattenObject(item));
-
-                        // Use columns from manifest if available, otherwise discover from data
-                        if (tradeYieldColumns.length > 0) {
-                            tableColumns = [...tradeYieldColumns];
-                        } else {
-                            const allKeys = new Set();
-                            tableData.forEach(item => {
-                                Object.keys(item).forEach(k => allKeys.add(k));
-                            });
-                            tableColumns = Array.from(allKeys);
-                        }
-
-                        // Filter out columns that have no meaningful data in any row
-                        tableColumns = tableColumns.filter(col => {
-                            return tableData.some(item => {
-                                const val = item[col];
-                                return val !== undefined && val !== null && val !== '' && val !== '-';
-                            });
-                        });
-
-                        // Update H1 title with code and description
-                        const instrumentCode = urlParams.get('id_instrument') || (data.tradeyield[0] && data.tradeyield[0].instrument && data.tradeyield[0].instrument.id_instrument) || '';
-                        const instrumentDesc = (data.tradeyield[0] && data.tradeyield[0].instrument && data.tradeyield[0].instrument.instrument_description) || '';
-                        const h1 = document.querySelector('h1');
-                        if (h1) {
-                            h1.textContent = `${instrumentCode} - ${instrumentDesc}`;
-                            h1.style.cursor = 'pointer';
-                            h1.style.textDecoration = 'underline';
-                            h1.onclick = () => openInstrumentDetails(instrumentCode);
-                        }
-
-                        renderTable();
-                    } else {
-                        showError(getTranslation("int.no.data") || "No data found.");
-                    }
-                } else {
-                    showError(data.msg || getTranslation("int.error.fetch") || "Error fetching data.");
-                }
-            } catch (e) {
-                console.error(e);
-                showError(getTranslation("int.error.network") || "Network or server error.");
-            } finally {
-                document.getElementById('loading').style.display = 'none';
-            }
-        }
-
-        function renderTable() {
-            const thead = document.getElementById('tableHeader');
-            const tbody = document.getElementById('tableBody');
-            thead.innerHTML = '';
-            tbody.innerHTML = '';
-
-            // Headers
-            tableColumns.forEach((col, index) => {
-                const th = document.createElement('th');
-                th.textContent = getTranslation(col) || col;
-                th.draggable = true;
-                th.ondragstart = (e) => handleDragStart(e, index);
-                th.ondragover = (e) => handleDragOver(e);
-                th.ondrop = (e) => handleDrop(e, index);
-                th.onclick = () => sortTable(col);
-
-                if (currentSort.column === col) {
-                    th.classList.add(currentSort.direction === 'asc' ? 'sort-asc' : 'sort-desc');
-                }
-                thead.appendChild(th);
-            });
-
-            // Sort Data
-            let displayData = [...tableData];
-            if (currentSort.column) {
-                displayData.sort((a, b) => {
-                    const valA = a[currentSort.column];
-                    const valB = b[currentSort.column];
-                    if (valA < valB) return currentSort.direction === 'asc' ? -1 : 1;
-                    if (valA > valB) return currentSort.direction === 'asc' ? 1 : -1;
-                    return 0;
-                });
-            }
-
-            // Rows
-            displayData.forEach(item => {
-                const tr = document.createElement('tr');
-                tableColumns.forEach(col => {
-                    const td = document.createElement('td');
-                    let val = item[col];
-                    if (typeof val === 'number') {
-                        td.textContent = val.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-                        td.style.textAlign = 'right';
-                    } else {
-                        // Replace colon with space (e.g. "100.00:EUR" -> "100.00 EUR")
-                        td.textContent = (val !== undefined && val !== null) ? String(val).replace(':', ' ') : '';
-                    }
-                    tr.appendChild(td);
-                });
-                tbody.appendChild(tr);
-            });
+        tr.appendChild(td);
+        });
+        tbody.appendChild(tr);
+        });
         }
 
         function sortTable(col) {
-            if (currentSort.column === col) {
-                currentSort.direction = currentSort.direction === 'asc' ? 'desc' : 'asc';
-            } else {
-                currentSort.column = col;
-                currentSort.direction = 'asc';
-            }
-            renderTable();
+        if (currentSort.column === col) {
+        currentSort.direction = currentSort.direction === 'asc' ? 'desc' : 'asc';
+        } else {
+        currentSort.column = col;
+        currentSort.direction = 'asc';
+        }
+        renderTable();
         }
 
         let draggedColIndex = null;
         function handleDragStart(e, index) {
-            draggedColIndex = index;
-            e.dataTransfer.effectAllowed = 'move';
+        draggedColIndex = index;
+        e.dataTransfer.effectAllowed = 'move';
         }
         function handleDragOver(e) {
-            e.preventDefault();
-            e.dataTransfer.dropEffect = 'move';
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
         }
         function handleDrop(e, index) {
-            e.preventDefault();
-            if (draggedColIndex === index) return;
-            const col = tableColumns.splice(draggedColIndex, 1)[0];
-            tableColumns.splice(index, 0, col);
-            renderTable();
+        e.preventDefault();
+        if (draggedColIndex === index) return;
+        const col = tableColumns.splice(draggedColIndex, 1)[0];
+        tableColumns.splice(index, 0, col);
+        renderTable();
         }
 
         function openInstrumentDetails(symbol) {
-            const params = new URLSearchParams();
-            params.set('username', username);
-            params.set('token', token);
-            params.set('language', language);
-            params.set('id_instrument', symbol);
-            window.open(`dashboard-dataentry-instrument.html?${params.toString()}`, '_blank');
+        const params = new URLSearchParams();
+        params.set('username', credentials.username);
+        params.set('token', credentials.token);
+        params.set('language', credentials.language);
+        params.set('id_instrument', symbol);
+        window.open(`dashboard-detail-instrument.html?${params.toString()}`, '_blank');
         }
 
         function showError(msg) {
-            const errDiv = document.getElementById('error');
-            errDiv.textContent = msg;
-            errDiv.style.display = 'block';
-            document.getElementById('loading').style.display = 'none';
+        const errDiv = document.getElementById('error');
+        errDiv.textContent = msg;
+        errDiv.style.display = 'block';
+        document.getElementById('loading').style.display = 'none';
         }
 
         // Init
         (async function init() {
-            const manifest = await loadLanguageManifest();
-            tradeYieldColumns = manifest.columns;
-            translations = await loadTranslations(language);
-            await loadData();
+        getURLParams();
+        try {
+        await initializeLanguages();
+        await loadTranslations(credentials.language);
+        await updateUserInfo();
+        await loadData();
+        } catch (error) {
+        console.error("Init Error:", error);
+        showError("Initialization error.");
+        }
         })();
 
-    </script>
+        </script>
 </body>
 
 </html>

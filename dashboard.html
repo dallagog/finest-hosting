@@ -2561,6 +2561,16 @@
                     const span = document.createElement('span');
                     span.textContent = val !== undefined ? val : '';
                     span.style.cursor = 'pointer'; span.style.color = '#000'; span.style.textDecoration = 'underline';
+                    span.onclick = (e) => {
+                        e.stopPropagation();
+                        // Open instrument details
+                        const params = new URLSearchParams();
+                        params.set('username', credentials.username || '');
+                        params.set('token', credentials.token || '');
+                        params.set('language', credentials.language || '');
+                        params.set('id_instrument', item.id_instrument || val);
+                        window.open(`dashboard-detail-instrument.html?${params.toString()}`, '_blank');
+                    };
                     td.appendChild(span);
                 } else if (val !== undefined) {
                     const colDescription = getTranslation(col) || col;
@@ -2815,6 +2825,15 @@
                     const span = document.createElement('span');
                     span.textContent = val !== undefined ? val : '';
                     span.style.cursor = 'pointer'; span.style.color = '#000'; span.style.textDecoration = 'underline';
+                    span.onclick = (e) => {
+                        e.stopPropagation();
+                        const params = new URLSearchParams();
+                        params.set('username', credentials.username || '');
+                        params.set('token', credentials.token || '');
+                        params.set('language', credentials.language || '');
+                        params.set('id_instrument', item.id_instrument || item.Ticker || val);
+                        window.open(`dashboard-detail-instrument.html?${params.toString()}`, '_blank');
+                    };
                     td.appendChild(span);
                 } else if (val !== undefined) {
                     const colDescription = getTranslation(col) || col;

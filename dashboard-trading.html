@@ -624,6 +624,11 @@
                         span.style.cursor = 'pointer';
                         span.style.color = '#000';
                         span.style.textDecoration = 'underline';
+                        span.onclick = (e) => {
+                            e.stopPropagation();
+                            const code = item.id_instrument || item.Ticker || val;
+                            openInstrumentDetails(code);
+                        };
                         td.appendChild(span);
                     } else if (val !== undefined) {
                         const colDescription = getTranslation(col) || col;
@@ -798,24 +803,46 @@
                 sectors.forEach(sectorKey => {
                     const sectorLabel = getTranslation(sectorKey);
                     // Extracting the value from the key (e.g., "dom.account_sector:FI" -> "FI")
-                    const sectorValue = sectorKey.split(':').pop();
+                    let sectorValue = sectorKey.split(':').pop();
 
                     const div = document.createElement('div');
                     div.className = 'sector-item';
-                    div.textContent = sectorLabel || sectorKey;
-                    div.onclick = () => selectSector(sectorValue);
+                    div.textContent = sectorLabel;
+                    div.onclick = () => {
+                        closeSectorModal();
+                        // Open Data Entry for Filtered Sector
+                        const params = new URLSearchParams({
+                            username: credentials.username,
+                            token: credentials.token,
+                            language: credentials.language,
+                            action: 'buy', // Default to buy or generic
+                            type_event: 'FI-BB', // Default
+                            account_sector: sectorValue
+                        });
+                        window.open(`dashboard-dataentry-trade.html?${params.toString()}`, '_blank');
+                    };
                     sectorListContainer.appendChild(div);
                 });
 
                 document.getElementById('sector-modal').style.display = 'flex';
+
             } catch (error) {
-                console.error('Error opening trade operations:', error);
-                showMessage('Errore nel caricamento del selettore settori', 'error');
+                console.error("Error loading sectors:", error);
+                showMessage(getTranslation('int.error.loading_sectors') || "Errore caricamento settori", 'error');
             }
         }
 
         function closeSectorModal() {
             document.getElementById('sector-modal').style.display = 'none';
+        }
+
+        function openInstrumentDetails(symbol) {
+            const params = new URLSearchParams();
+            params.set('username', credentials.username);
+            params.set('token', credentials.token);
+            params.set('language', credentials.language || 'it_IT');
+            params.set('id_instrument', symbol);
+            window.open(`dashboard-detail-instrument.html?${params.toString()}`, '_blank');
         }
 
         function selectSector(sectorValue) {
