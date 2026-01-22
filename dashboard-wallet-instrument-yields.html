@@ -33,7 +33,7 @@
             min-height: 100vh;
         }
 
-        /* HEADER BAR STYLE */
+        /* --- STILE HEADER BAR (DA TRADES.HTML) --- */
         .header-bar {
             display: flex;
             justify-content: space-between;
@@ -57,6 +57,31 @@
             flex: 1;
         }
 
+        .user-info-left {
+            flex: 1;
+            text-align: left;
+            font-size: 14px;
+            color: var(--neon-cyan);
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .user-info-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .flag-icon {
+            width: 20px;
+            height: 14px;
+            display: inline-block;
+            background-size: cover;
+            background-position: center;
+            border: 1px solid #ddd;
+        }
+
         .close-btn {
             padding: 10px 20px;
             background: rgba(255, 0, 0, 0.2);
@@ -75,22 +100,7 @@
             box-shadow: 0 0 10px #ff3333;
         }
 
-        .user-info-left {
-            flex: 1;
-            text-align: left;
-            font-size: 14px;
-            color: var(--neon-cyan);
-            display: flex;
-            flex-direction: column;
-            gap: 5px;
-        }
-
-        .user-info-row {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
+        /* --- CONTAINER E TABELLA --- */
         .container {
             max-width: 1600px;
             margin: 0 auto;
@@ -111,6 +121,7 @@
             padding: 12px 15px;
             text-align: left;
             border-bottom: 1px solid #eee;
+            font-family: 'Orbitron', sans-serif; /* Font richiesto */
         }
 
         th {
@@ -126,7 +137,6 @@
 
         th:hover { background-color: #e0e0e0; }
 
-        /* Icone per l'ordinamento */
         th.sort-asc::after { content: ' ▲'; font-size: 0.8em; position: absolute; right: 5px; }
         th.sort-desc::after { content: ' ▼'; font-size: 0.8em; position: absolute; right: 5px; }
 
@@ -146,6 +156,7 @@
                 <span id="usernameDisplay">-</span>
             </div>
             <div class="user-info-row">
+                <span class="flag-icon" id="languageFlag"></span>
                 <span id="languageDisplay">-</span>
                 <span style="margin: 0 5px;">|</span>
                 <span id="currencyDisplay">EUR</span>
@@ -211,11 +222,15 @@
                 const data = await response.json();
                 translations = data;
                 
-                // Popolamento Header
-                document.getElementById('userLabel').textContent = data['int.user.label'] || 'Utente:';
-                document.getElementById('closeText').textContent = data['int.close'] || 'Chiudi';
+                // --- AGGIORNAMENTO UI HEADER (User, Lang, Flag, Font) ---
+                document.getElementById('userLabel').textContent = translations['int.user.label'] || 'Utente:';
+                document.getElementById('closeText').textContent = translations['int.close'] || 'Chiudi';
+                document.getElementById('pageTitle').textContent = translations['int.yield.history'] || 'Yield Details';
                 document.getElementById('usernameDisplay').textContent = username || '-';
-                document.getElementById('languageDisplay').textContent = language;
+                
+                const langBase = language.split('_')[0];
+                document.getElementById('languageDisplay').textContent = langBase.toUpperCase();
+                document.getElementById('languageFlag').style.backgroundImage = `url('images/flags/${langBase}.png')`;
                 
                 return data;
             } catch (error) { return {}; }
@@ -250,9 +265,8 @@
                 });
                 const data = await response.json();
                 if (data.status === 'ok' && data.tradeyield) {
-                    // Manteniamo esattamente il tuo filtraggio originale
+                    // Mantenuta la logica originale
                     tableData = data.tradeyield.map(item => flattenObject(item)).filter(item => item.event_event_description);
-
                     if (tradeYieldColumns.length > 0) {
                         tableColumns = [...tradeYieldColumns];
                     } else {
@@ -272,18 +286,17 @@
             thead.innerHTML = '';
             tbody.innerHTML = '';
 
-            // Render Header con Drag & Drop e Click per Sort
             tableColumns.forEach((col, index) => {
                 const th = document.createElement('th');
                 th.textContent = getTranslation(col) || col;
                 th.draggable = true;
                 
-                // Funzione di ordinamento al click
+                // Aggiunto ordinamento
                 th.onclick = () => sortTable(col);
                 
-                // Funzioni Drag & Drop originali
-                th.ondragstart = (e) => { draggedColIndex = index; };
-                th.ondragover = (e) => e.preventDefault();
+                // Mantenuto drag & drop originale
+                th.ondragstart = (e) => handleDragStart(e, index);
+                th.ondragover = (e) => handleDragOver(e);
                 th.ondrop = (e) => handleDrop(e, index);
 
                 if (currentSort.column === col) {
@@ -292,64 +305,49 @@
                 thead.appendChild(th);
             });
 
-            // LOGICA DI ORDINAMENTO (SORTING)
             let displayData = [...tableData];
             if (currentSort.column) {
                 displayData.sort((a, b) => {
                     let valA = a[currentSort.column];
                     let valB = b[currentSort.column];
-
-                    // Helper per pulire valori numerici con valuta (es: "EUR: 100")
-                    const parseValue = (v) => {
-                        if (typeof v === 'string' && v.includes(':')) {
-                            return parseFloat(v.split(':')[1].trim()) || 0;
-                        }
-                        return v;
-                    };
-
-                    let normA = parseValue(valA);
-                    let normB = parseValue(valB);
-
-                    if (normA === normB) return 0;
-                    if (normA === null || normA === undefined) return 1;
-                    if (normB === null || normB === undefined) return -1;
-                    
-                    return currentSort.direction === 'asc' 
-                        ? (normA < normB ? -1 : 1) 
-                        : (normA > normB ? -1 : 1);
+                    const parseVal = v => (typeof v === 'string' && v.includes(':')) ? parseFloat(v.split(':')[1].trim()) || 0 : v;
+                    let nA = parseVal(valA), nB = parseVal(valB);
+                    if (nA === nB) return 0;
+                    return currentSort.direction === 'asc' ? (nA < nB ? -1 : 1) : (nA > nB ? -1 : 1);
                 });
             }
 
-            // Render Righe
             displayData.forEach(item => {
                 const tr = document.createElement('tr');
                 tableColumns.forEach((col, idx) => {
                     const td = document.createElement('td');
                     let val = item[col];
                     if (idx > 0) td.style.textAlign = 'right';
-                    td.textContent = (typeof val === 'number') 
-                        ? val.toLocaleString(undefined, { minimumFractionDigits: 2 }) 
-                        : String(val || '').replace(':', ' ');
+                    td.textContent = (typeof val === 'number') ? val.toLocaleString(undefined, { minimumFractionDigits: 2 }) : String(val || '').replace(':', ' ');
                     tr.appendChild(td);
                 });
                 tbody.appendChild(tr);
             });
         }
 
-        // Gestione stato ordinamento
         function sortTable(col) {
-            if (currentSort.column === col) {
-                currentSort.direction = currentSort.direction === 'asc' ? 'desc' : 'asc';
-            } else {
-                currentSort.column = col;
-                currentSort.direction = 'asc';
-            }
+            currentSort.direction = (currentSort.column === col && currentSort.direction === 'asc') ? 'desc' : 'asc';
+            currentSort.column = col;
             renderTable();
         }
 
-        // Drag & Drop originale
+        // --- FUNZIONI ORIGINALI MANTENUTE ---
         let draggedColIndex = null;
+        function handleDragStart(e, index) {
+            draggedColIndex = index;
+            e.dataTransfer.effectAllowed = 'move';
+        }
+        function handleDragOver(e) {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+        }
         function handleDrop(e, index) {
+            e.preventDefault();
             if (draggedColIndex === null || draggedColIndex === index) return;
             const col = tableColumns.splice(draggedColIndex, 1)[0];
             tableColumns.splice(index, 0, col);
