@@ -159,6 +159,23 @@
             text-transform: uppercase;
             font-size: 0.85rem;
             letter-spacing: 1px;
+            cursor: pointer;
+            user-select: none;
+            position: relative;
+        }
+
+        th:hover {
+            background-color: #e0e0e0;
+        }
+
+        th.sort-asc::after {
+            content: ' ▲';
+            font-size: 0.8em;
+        }
+
+        th.sort-desc::after {
+            content: ' ▼';
+            font-size: 0.8em;
         }
 
         th.col-right {
@@ -167,6 +184,7 @@
 
         tbody tr {
             border-bottom: 1px solid #eee;
+            cursor: move;
         }
 
         tbody tr:nth-child(even) {
@@ -175,6 +193,10 @@
 
         tbody tr:hover {
             background: #f0f0f0;
+        }
+
+        tbody tr[draggable="true"] {
+            cursor: move;
         }
 
         td {
@@ -254,6 +276,9 @@
         let translations = {};
         let currencies = [];
         let availableLanguages = [];
+        let currentWalletData = [];
+        let currentSort = { column: null, direction: 'asc' };
+        let draggedRowIndex = null;
 
         // Get URL parameters
         function getURLParams() {
@@ -358,7 +383,6 @@
                 }
             }
 
-            // Currency display (placeholder for now)
             document.getElementById('currencyDisplay').textContent = 'EUR';
         }
 
@@ -403,14 +427,102 @@
 
         function formatCurrency(value) {
             if (!value || value === '-') return value;
-            // Replace colon with space in format "1000.00:EUR" -> "1000.00 EUR"
             return String(value).replace(':', ' ');
         }
 
-        let currentWalletData = [];
+        function parseNumericValue(value) {
+            if (!value || value === '-') return 0;
+            const cleaned = String(value).replace(/[^\d.,-]/g, '').replace(',', '.');
+            return parseFloat(cleaned) || 0;
+        }
 
-        function displayWalletData(walletData) {
+        function sortData(data, column, direction) {
+            return [...data].sort((a, b) => {
+                let valA, valB;
+
+                switch (column) {
+                    case 'date':
+                        valA = a.date_evaluation || '';
+                        valB = b.date_evaluation || '';
+                        break;
+                    case 'event':
+                        valA = a.event?.event_description || a.id_event || '';
+                        valB = b.event?.event_description || b.id_event || '';
+                        break;
+                    case 'quantity':
+                        valA = parseNumericValue(a.quantity);
+                        valB = parseNumericValue(b.quantity);
+                        break;
+                    case 'price':
+                        valA = parseNumericValue(a.price);
+                        valB = parseNumericValue(b.price);
+                        break;
+                    case 'amount':
+                        valA = parseNumericValue(a['amount:net'] || a.controvaloresupersecco);
+                        valB = parseNumericValue(b['amount:net'] || b.controvaloresupersecco);
+                        break;
+                    case 'balance':
+                        valA = parseNumericValue(a.valutazioni?.saldo);
+                        valB = parseNumericValue(b.valutazioni?.saldo);
+                        break;
+                    default:
+                        return 0;
+                }
+
+                if (valA < valB) return direction === 'asc' ? -1 : 1;
+                if (valA > valB) return direction === 'asc' ? 1 : -1;
+                return 0;
+            });
+        }
+
+        function handleSort(column) {
+            if (currentSort.column === column) {
+                currentSort.direction = currentSort.direction === 'asc' ? 'desc' : 'asc';
+            } else {
+                currentSort.column = column;
+                currentSort.direction = 'asc';
+            }
+            displayWalletData(currentWalletData, true);
+        }
+
+        function handleRowDragStart(e, index) {
+            draggedRowIndex = index;
+            e.currentTarget.style.opacity = '0.4';
+            e.dataTransfer.effectAllowed = 'move';
+        }
+
+        function handleRowDragEnd(e) {
+            e.currentTarget.style.opacity = '1';
+        }
+
+        function handleRowDragOver(e) {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+            return false;
+        }
+
+        function handleRowDrop(e, index) {
+            e.stopPropagation();
+            e.preventDefault();
+
+            if (draggedRowIndex !== index) {
+                const executedTrades = currentWalletData.filter(transaction => transaction.trade === 'True');
+                const row = executedTrades.splice(draggedRowIndex, 1)[0];
+                executedTrades.splice(index, 0, row);
+                
+                // Update the full data array
+                currentWalletData = currentWalletData.filter(t => t.trade !== 'True').concat(executedTrades);
+                displayWalletData(currentWalletData, true);
+            }
+            return false;
+        }
+
+        function displayWalletData(walletData, skipReset = false) {
+            if (!skipReset) {
+                currentSort = { column: null, direction: 'asc' };
+            }
             currentWalletData = walletData;
+            
             const instrumentCode = urlParams.id_instrument || (walletData[0] && walletData[0].instrument && walletData[0].instrument.id_instrument) || '';
             const instrumentDesc = (walletData[0] && walletData[0].instrument && walletData[0].instrument.instrument_description) || '';
 
@@ -420,11 +532,14 @@
             titleElement.style.textDecoration = 'underline';
             titleElement.onclick = () => openInstrumentDataEntry(instrumentCode);
 
-            // Filter to show only trade records (marked with trade: "True" by fe_wallet.py)
-            const executedTrades = walletData.filter(transaction => transaction.trade === 'True');
+            let executedTrades = walletData.filter(transaction => transaction.trade === 'True');
+            
+            if (currentSort.column) {
+                executedTrades = sortData(executedTrades, currentSort.column, currentSort.direction);
+            }
+
             console.log("Wallet Data (Filtered):", executedTrades);
 
-            // Determine if columns should be shown
             const showQuantity = executedTrades.some(t => {
                 const q = parseFloat(t.quantity);
                 return !isNaN(q) && q !== 0;
@@ -434,18 +549,18 @@
             let html = `<table>
                 <thead>
                     <tr>
-                        <th>${getTranslation('int.date') || 'Date'}</th>
-                        <th>${getTranslation('int.event') || 'Event'}</th>
-                        ${showQuantity ? `<th class="col-right">${getTranslation('int.quantity') || 'Quantity'}</th>` : ''}
-                        ${showPrice ? `<th class="col-right">${getTranslation('int.price') || 'Price'}</th>` : ''}
-                        <th class="col-right">${getTranslation('int.amount') || 'Amount'}</th>
-                        <th class="col-right">${getTranslation('int.balance') || 'Balance'}</th>
+                        <th onclick="handleSort('date')" class="${currentSort.column === 'date' ? (currentSort.direction === 'asc' ? 'sort-asc' : 'sort-desc') : ''}">${getTranslation('int.date') || 'Date'}</th>
+                        <th onclick="handleSort('event')" class="${currentSort.column === 'event' ? (currentSort.direction === 'asc' ? 'sort-asc' : 'sort-desc') : ''}">${getTranslation('int.event') || 'Event'}</th>
+                        ${showQuantity ? `<th class="col-right ${currentSort.column === 'quantity' ? (currentSort.direction === 'asc' ? 'sort-asc' : 'sort-desc') : ''}" onclick="handleSort('quantity')">${getTranslation('int.quantity') || 'Quantity'}</th>` : ''}
+                        ${showPrice ? `<th class="col-right ${currentSort.column === 'price' ? (currentSort.direction === 'asc' ? 'sort-asc' : 'sort-desc') : ''}" onclick="handleSort('price')">${getTranslation('int.price') || 'Price'}</th>` : ''}
+                        <th class="col-right ${currentSort.column === 'amount' ? (currentSort.direction === 'asc' ? 'sort-asc' : 'sort-desc') : ''}" onclick="handleSort('amount')">${getTranslation('int.amount') || 'Amount'}</th>
+                        <th class="col-right ${currentSort.column === 'balance' ? (currentSort.direction === 'asc' ? 'sort-asc' : 'sort-desc') : ''}" onclick="handleSort('balance')">${getTranslation('int.balance') || 'Balance'}</th>
                         <th style="text-align: center;">${getTranslation('int.action') || 'Action'}</th>
                     </tr>
                 </thead>
                 <tbody>`;
 
-            executedTrades.forEach((transaction) => {
+            executedTrades.forEach((transaction, index) => {
                 const date = transaction.date_evaluation || '-';
                 const event = transaction.event?.event_description || transaction.id_event || '-';
                 const quantity = formatCurrency(transaction.quantity || '0');
@@ -454,7 +569,11 @@
                 const balance = formatCurrency(transaction.valutazioni?.saldo || '-');
                 const id_operation = transaction.id_operation;
 
-                html += `<tr>
+                html += `<tr draggable="true" 
+                    ondragstart="handleRowDragStart(event, ${index})"
+                    ondragend="handleRowDragEnd(event)"
+                    ondragover="handleRowDragOver(event)"
+                    ondrop="handleRowDrop(event, ${index})">
                     <td>${date}</td>
                     <td>${event}</td>
                     ${showQuantity ? `<td class="col-right">${quantity}</td>` : ''}
@@ -518,7 +637,7 @@
 
                 if (data.status === 'ok') {
                     alert(data.msg);
-                    await loadWalletData(); // Refresh table
+                    await loadWalletData();
                 } else {
                     alert('Error: ' + data.msg);
                 }
