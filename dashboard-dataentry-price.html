@@ -4,20 +4,28 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Price Data Entry 0.1 alfa</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <title id="pageTitle">Price Data Entry</title>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700&display=swap"
+        rel="stylesheet">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&display=swap');
-
         :root {
-            --bg-color: #f5f5f0;
-            --neon-cyan: #000000;
-            --neon-blue: #333333;
-            --glass-bg: #ffffff;
-            --text-color: #333333;
-            --border-color: #000000;
-            --error-color: #d32f2f;
-            --success-color: #2e7d32;
+            --primary-color: #2563eb;
+            --primary-hover: #1d4ed8;
+            --secondary-color: #64748b;
+            --secondary-hover: #475569;
+            --bg-color: #f8fafc;
+            --card-bg: #ffffff;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --border-color: #e2e8f0;
+            --success-color: #10b981;
+            --error-color: #ef4444;
+            --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+            --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
         }
 
         * {
@@ -27,153 +35,125 @@
         }
 
         body {
-            font-family: 'Orbitron', sans-serif;
+            font-family: 'Inter', sans-serif;
             background-color: var(--bg-color);
+            color: var(--text-main);
+            line-height: 1.5;
             padding: 20px;
-            color: var(--text-color);
-            min-height: 100vh;
         }
 
-        .header-bar {
+        .header {
             display: flex;
             justify-content: space-between;
             align-items: center;
             margin-bottom: 30px;
-            padding: 20px;
-            background: var(--glass-bg);
-            border: 1px solid var(--border-color);
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-            border-radius: 8px;
+            padding: 15px 25px;
+            background: var(--card-bg);
+            border-radius: 12px;
+            box-shadow: var(--shadow-sm);
         }
 
-        .header-bar h1 {
-            text-align: center;
-            margin: 0;
+        .header-title {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.5rem;
             font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            color: #000;
-            font-size: 1.8em;
+            color: var(--primary-color);
         }
 
-        .close-btn {
-            padding: 10px 20px;
-            background: rgba(255, 0, 0, 0.2);
-            border: 1px solid #ff3333;
-            color: #ff3333;
-            font-family: 'Orbitron', sans-serif;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 14px;
-            font-weight: bold;
-            transition: all 0.3s;
-        }
-
-        .close-btn:hover {
-            background: rgba(255, 0, 0, 0.4);
-            box-shadow: 0 0 10px #ff3333;
-        }
-
-        .user-info-left {
-            flex: 1;
-            text-align: left;
-            font-size: 14px;
-            color: var(--neon-cyan);
+        .user-info {
             display: flex;
-            flex-direction: column;
-            gap: 5px;
+            align-items: center;
+            gap: 15px;
         }
 
-        .user-info-row {
+        .user-name {
+            font-weight: 500;
+            color: var(--secondary-color);
+        }
+
+        .btn-close {
+            padding: 8px 16px;
+            border-radius: 6px;
+            background: var(--secondary-color);
+            color: white;
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: all 0.2s;
             display: flex;
             align-items: center;
             gap: 8px;
         }
 
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            background: var(--glass-bg);
-            border: 1px solid #ddd;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
-            border-radius: 8px;
-            padding: 40px;
+        .btn-close:hover {
+            background: var(--secondary-hover);
         }
 
-        h1 {
-            text-align: center;
-            margin: 0 0 10px 0;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            color: #000;
-            font-size: 2rem;
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
         }
 
         .subtitle {
-            text-align: center;
-            color: #666;
-            margin-bottom: 30px;
-            font-size: 1rem;
-            text-transform: uppercase;
-            letter-spacing: 1px;
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 25px;
+            color: var(--text-main);
         }
 
         .instrument-selector {
-            margin-bottom: 30px;
-            padding: 20px;
-            background: #f9f9f9;
-            border: 1px solid #ddd;
-            border-radius: 8px;
+            background: var(--card-bg);
+            padding: 25px;
+            border-radius: 12px;
+            margin-bottom: 25px;
+            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--border-color);
         }
 
         .selector-label {
-            font-weight: 500;
-            color: #000;
-            margin-bottom: 10px;
-            font-size: 1rem;
             display: block;
+            font-weight: 600;
+            margin-bottom: 12px;
+            color: var(--text-main);
         }
 
         .selector-select {
             width: 100%;
             padding: 12px;
-            background: #fff;
-            border: 1px solid #ccc;
-            border-radius: 4px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
             font-size: 1rem;
-            font-family: 'Orbitron', sans-serif;
-            color: #333;
-            transition: all 0.3s;
+            outline: none;
+            transition: border-color 0.2s;
         }
 
         .selector-select:focus {
-            outline: none;
-            border-color: #000;
-            box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
-            background: #fff;
+            border-color: var(--primary-color);
         }
 
         .dataentry-form {
-            width: 100%;
+            background: var(--card-bg);
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: var(--shadow-md);
+            border: 1px solid var(--border-color);
         }
 
         .form-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            grid-template-columns: repeat(2, 1fr);
             gap: 20px;
-            margin-bottom: 30px;
         }
 
         .form-group {
-            display: flex;
-            flex-direction: column;
+            margin-bottom: 20px;
         }
 
         .form-label {
+            display: block;
+            margin-bottom: 8px;
             font-weight: 500;
-            color: var(--neon-blue);
-            margin-bottom: 6px;
+            color: var(--secondary-color);
             font-size: 0.9rem;
         }
 
@@ -184,97 +164,101 @@
 
         .form-input,
         .form-select {
-            padding: 6px 12px;
-            background: #fff;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            font-size: 0.95rem;
-            font-family: 'Orbitron', sans-serif;
-            color: #333;
-            transition: all 0.3s;
-            height: 30px;
+            width: 100%;
+            padding: 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: all 0.2s;
         }
 
         .form-input:focus,
         .form-select:focus {
             outline: none;
-            border-color: #000;
-            box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
-            background: #fff;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
         }
 
-        .form-input.error,
-        .form-select.error {
+        .form-input.error {
             border-color: var(--error-color);
-            box-shadow: 0 0 5px rgba(211, 47, 47, 0.2);
         }
 
         .error-message {
             color: var(--error-color);
-            font-size: 0.85rem;
-            margin-top: 6px;
-            min-height: 20px;
+            font-size: 0.8rem;
+            margin-top: 4px;
+            height: 16px;
         }
 
-        .form-actions {
+        .input-group {
             display: flex;
-            gap: 12px;
-            justify-content: flex-end;
-            padding-top: 20px;
-            border-top: 1px solid #eee;
+            gap: 10px;
+        }
+
+        .input-group .form-input {
+            flex: 1;
         }
 
         .btn {
-            padding: 10px 30px;
-            font-family: 'Orbitron', sans-serif;
-            border-radius: 4px;
-            font-size: 1rem;
-            font-weight: bold;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 600;
             cursor: pointer;
-            transition: all 0.3s;
-            text-transform: uppercase;
-            letter-spacing: 1px;
+            transition: all 0.2s;
+            border: none;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            justify-content: center;
         }
 
         .btn-primary {
-            background: #000;
-            border: 1px solid #000;
-            color: #fff;
+            background: var(--primary-color);
+            color: white;
         }
 
         .btn-primary:hover {
-            background: #333;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-            transform: translateY(-2px);
+            background: var(--primary-hover);
         }
 
         .btn-secondary {
-            background: #fff;
-            border: 1px solid #ccc;
-            color: #666;
+            background: white;
+            color: var(--secondary-color);
+            border: 1px solid var(--border-color);
         }
 
         .btn-secondary:hover {
-            background: #f5f5f5;
-            border-color: #999;
-            color: #333;
+            background: #f1f5f9;
+        }
+
+        .btn-sm {
+            padding: 8px 16px;
+            font-size: 0.9rem;
+        }
+
+        .form-actions {
+            margin-top: 30px;
+            display: flex;
+            justify-content: flex-end;
+            gap: 15px;
+            padding-top: 25px;
+            border-top: 1px solid var(--border-color);
         }
 
         .loading {
             text-align: center;
             padding: 40px;
-            color: var(--neon-cyan);
+            color: var(--text-muted);
         }
 
         .spinner {
-            border: 3px solid rgba(0, 243, 255, 0.1);
-            border-top: 3px solid var(--neon-cyan);
+            width: 40px;
+            height: 40px;
+            border: 3px solid rgba(37, 99, 235, 0.1);
+            border-top: 3px solid var(--primary-color);
             border-radius: 50%;
-            width: 50px;
-            height: 50px;
             animation: spin 1s linear infinite;
-            margin: 0 auto 20px;
-            box-shadow: 0 0 15px var(--neon-cyan);
+            margin: 0 auto 15px;
         }
 
         @keyframes spin {
@@ -288,20 +272,20 @@
         }
 
         .success-message {
-            background: #e8f5e9;
-            border: 1px solid var(--success-color);
-            color: var(--success-color);
+            background-color: #ecfdf5;
+            color: #065f46;
             padding: 16px;
-            border-radius: 4px;
-            margin-bottom: 20px;
+            border-radius: 8px;
+            border: 1px solid #a7f3d0;
+            margin-bottom: 25px;
             display: none;
-            text-align: center;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-            animation: fadeIn 0.5s ease-in-out;
+            align-items: center;
+            gap: 12px;
+            animation: fadeIn 0.3s ease-out;
         }
 
         .success-message.show {
-            display: block;
+            display: flex;
         }
 
         @keyframes fadeIn {
@@ -316,65 +300,89 @@
             }
         }
 
-        .input-group {
-            display: flex;
-            gap: 8px;
-        }
+        /* Mobile Responsive */
+        @media (max-width: 640px) {
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
 
-        .input-group input {
-            flex: 1;
-        }
-
-        .btn-sm {
-            padding: 6px 12px;
-            font-size: 0.85rem;
+            .header {
+                flex-direction: column;
+                gap: 15px;
+                text-align: center;
+            }
         }
     </style>
 </head>
 
 <body>
-    <div class="header-bar">
-        <div class="user-info-left">
-            <div class="user-info-row">
-                <strong id="userLabel">Utente:</strong>
-                <span id="usernameDisplay">-</span>
-            </div>
-            <div class="user-info-row">
-                <span id="languageDisplay">IT</span>
-                <span style="margin: 0 5px;">|</span>
-                <span id="currencyDisplay">EUR</span>
-            </div>
-        </div>
-        <h1 style="flex: 1; text-align: center; margin: 0;">
-            <i class="fa fa-chart-line"></i>
-            <span id="pageTitle">Price Data Entry</span>
-        </h1>
-        <div style="flex: 1; display: flex; justify-content: flex-end;">
-            <button class="close-btn" onclick="window.close()">
-                <i class="fa fa-times"></i> <span id="closeText">Chiudi</span>
-            </button>
+
+    <div class="header">
+        <div class="header-title">FE-WEB | Price Entry</div>
+        <div class="user-info">
+            <span class="user-name"><i class="fa fa-user-circle"></i> <span id="usernameDisplay">...</span></span>
+            <a href="dashboard-main.html" class="btn-close">
+                <i class="fa fa-times-circle"></i> <span id="closeText">Chiudi</span>
+            </a>
         </div>
     </div>
 
     <div class="container">
-        <p class="subtitle" id="pageSubtitle">Inserisci i dati del prezzo</p>
+        <p class="subtitle" id="pageSubtitle">Price Data Entry</p>
 
         <div id="success-msg" class="success-message">
             <i class="fa fa-check-circle"></i> <span id="successText">Dati salvati con successo!</span>
         </div>
 
-        <div id="instrument-selector" class="instrument-selector">
-            <label for="instrument-type-select" class="selector-label">
-                <i class="fa fa-list"></i> <span id="selectorLabel">Seleziona tipo strumento:</span>
+        <div class="top-controls"
+            style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 30px;">
+            <div id="instrument-selector" class="instrument-selector" style="margin-bottom: 0;">
+                <label for="instrument-type-select" class="selector-label">
+                    <i class="fa fa-list"></i> <span id="selectorLabel">Select Instrument Type:</span>
+                </label>
+                <select id="instrument-type-select" class="selector-select">
+                    <option value="">-- Seleziona --</option>
+                    <option value="STOCK">Azioni (STOCK)</option>
+                    <option value="BOND">Obbligazioni (BOND)</option>
+                    <option value="ETF">ETF</option>
+                    <option value="FUND">Fondi (FUND)</option>
+                    <option value="CRYPTO">Criptovalute (CRYPTO)</option>
+                </select>
+            </div>
+
+            <div class="extra-controls"
+                style="padding: 20px; background: #f9f9f9; border: 1px solid #ddd; border-radius: 8px;">
+                <div class="db-selector" style="margin-bottom: 15px;">
+                    <label class="selector-label"
+                        style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                        <input type="checkbox" id="db-toggle" style="width: 18px; height: 18px;">
+                        <span>Shared Database</span>
+                    </label>
+                    <small style="color: #666; display: block; margin-top: 5px;">Seleziona per salvare nel database
+                        condiviso</small>
+                </div>
+
+                <div class="import-controls" style="display: flex; gap: 10px;">
+                    <button class="btn btn-secondary btn-sm" onclick="triggerFileUpload()" style="flex: 1;">
+                        <i class="fa fa-file-import"></i> Importa JSON/CSV
+                    </button>
+                    <input type="file" id="file-import-input" accept=".json,.csv" style="display: none;"
+                        onchange="handleFileImport(event)">
+                </div>
+            </div>
+        </div>
+
+        <div class="web-search-box"
+            style="margin-bottom: 30px; padding: 20px; background: #f9f9f9; border: 1px solid #ddd; border-radius: 8px;">
+            <label for="search-url" class="selector-label">
+                <i class="fa fa-globe"></i> <span id="webSearchLabel">Web Search / URL:</span>
             </label>
-            <select id="instrument-type-select" class="selector-select">
-                <option value="">-- Seleziona --</option>
-                <option value="STOCK">Azioni</option>
-                <option value="BOND">Obbligazioni</option>
-                <option value="ETF">ETF</option>
-                <option value="FUND">Fondi</option>
-                <option value="CRYPTO">Criptovalute</option>
-            </select>
+            <div class="input-group">
+                <input type="text" id="search-url" class="form-input" placeholder="https://..." style="height: 40px;">
+                <button class="btn btn-primary btn-sm" onclick="executeWebSearch()" style="height: 40px;">
+                    <i class="fa fa-search"></i> <span id="btnWebSearch">Search</span>
+                </button>
+            </div>
         </div>
 
         <div id="form-container">
@@ -386,33 +394,58 @@
     </div>
 
     <script>
-        // Configurazione dati da file JSON
+        // Configurazione dati da file JSON - Schema: id, date_start, field, value
         const priceConfig = {
             mapping: {
-                "date": { "label": "Date", "mapped_name": "date" },
-                "price": { "label": "Price", "mapped_name": "price" },
-                "ticker": { "label": "Ticker", "mapped_name": "ticker" },
-                "type": { "label": "Type", "mapped_name": "type" }
+                "id": { "label": "Ticker", "mapped_name": "id" },
+                "date_start": { "label": "Date", "mapped_name": "date_start" },
+                "field": { "label": "Type", "mapped_name": "field" },
+                "value": { "label": "Price", "mapped_name": "value" }
             },
             mandatory: {
-                "required": ["date", "price", "ticker", "type", "date_birth"],
-                "optional": ["name", "surname", "address"]
+                "required": ["id", "date_start", "field", "value"],
+                "optional": []
             },
             format: {
-                "date": { "type": "date", "format": "YYYY-MM-DD" },
-                "price": { "type": "string", "regex": "^[0-9]*[.]?[0-9]*" },
-                "ticker": { "type": "string" },
-                "type": { "type": "string" },
-                "address": { "type": "string" },
-                "date_birth": { "type": "date", "format": "YYYY-MM-DD" }
+                "id": { "type": "string" },
+                "date_start": { "type": "date", "format": "YYYY-MM-DD" },
+                "field": { "type": "string" }, // Es: close, high, low
+                "value": { "type": "string", "regex": "^[0-9]*[.,]?[0-9]*" }
             }
         };
 
-        // Parametri URL e credenziali
         let urlParams = {};
         let credentials = { username: '', token: '', language: 'it_IT' };
         let currentInstrumentType = null;
-        let priceData = [];
+        let currentInstrumentId = null;
+        const API_URL = 'https://feweb-tunnel.fe-web.eu';
+
+        // Translations bridge
+        let translations = {};
+        async function loadTranslations(langCode) {
+            try {
+                const response = await fetch(`lang/${langCode}.json`);
+                if (!response.ok) return;
+                translations = await response.json();
+                applyTranslations();
+            } catch (error) {
+                console.error("Error loading translations:", error);
+            }
+        }
+
+        function getTranslation(key) {
+            return translations[key] || key;
+        }
+
+        function applyTranslations() {
+            document.getElementById('pageTitle').textContent = getTranslation('sel.dataentry.price') || 'Price Data Entry';
+            document.getElementById('pageSubtitle').textContent = getTranslation('int.dataentry.subtitle') || 'Price Data Entry';
+            document.getElementById('closeText').textContent = getTranslation('int.close') || 'Chiudi';
+            document.getElementById('selectorLabel').textContent = getTranslation('int.select.instrument.type') || 'Select Instrument Type:';
+            document.getElementById('webSearchLabel').textContent = getTranslation('int.websearch') || 'Web Search / URL:';
+            document.getElementById('btnWebSearch').textContent = getTranslation('int.websearch') || 'Search';
+            document.getElementById('loadingText').textContent = getTranslation('int.select.instrument.first') || 'Select an instrument type to start...';
+        }
 
         // Recupera parametri URL
         function getURLParams() {
@@ -428,10 +461,80 @@
                 language: urlParams.language || localStorage.getItem('language') || 'it_IT'
             };
 
+            currentInstrumentId = urlParams.id_instrument || '';
             document.getElementById('usernameDisplay').textContent = credentials.username;
+
+            if (urlParams.url) {
+                document.getElementById('search-url').value = urlParams.url;
+            }
+
+            loadTranslations(credentials.language);
         }
 
-        // Formatta data corrente
+        function executeWebSearch() {
+            const url = document.getElementById('search-url').value;
+            if (url) {
+                window.open(url, '_blank');
+            } else {
+                alert("Please enter a URL first");
+            }
+        }
+
+        function triggerFileUpload() {
+            document.getElementById('file-import-input').click();
+        }
+
+        function handleFileImport(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                const content = e.target.result;
+                if (file.name.endsWith('.json')) {
+                    try {
+                        const data = JSON.parse(content);
+                        populateFromImport(data);
+                    } catch (err) {
+                        alert("Invalid JSON file");
+                    }
+                } else if (file.name.endsWith('.csv')) {
+                    parseCSV(content);
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        function parseCSV(content) {
+            const lines = content.split('\n');
+            if (lines.length < 2) return;
+            const headers = lines[0].split(',').map(h => h.trim());
+            const firstData = lines[1].split(',').map(v => v.trim());
+
+            const obj = {};
+            headers.forEach((h, i) => {
+                obj[h] = firstData[i];
+            });
+            populateFromImport(obj);
+        }
+
+        function populateFromImport(data) {
+            const mapping = {
+                'id': data.id || data.ticker || data.symbol || '',
+                'date_start': data.date_start || data.date || '',
+                'field': data.field || data.type || 'close',
+                'value': data.value || data.price || ''
+            };
+
+            Object.keys(mapping).forEach(key => {
+                const input = document.getElementById(`field_${key}`);
+                if (input) {
+                    input.value = mapping[key];
+                }
+            });
+            alert("Data imported into the form. Please review and save.");
+        }
+
         function formatCurrentDate() {
             const now = new Date();
             const year = now.getFullYear();
@@ -440,323 +543,155 @@
             return `${year}-${month}-${day}`;
         }
 
-        // Valida campo
         function validateField(fieldName, value) {
             const formatConfig = priceConfig.format[fieldName];
             const isRequired = priceConfig.mandatory.required.includes(fieldName);
 
-            // Campo obbligatorio vuoto
             if (isRequired && !value) {
-                return { valid: false, message: 'Campo obbligatorio' };
+                return { valid: false, message: getTranslation('int.field.required') || 'Campo obbligatorio' };
             }
+            if (!value) return { valid: true, message: '' };
 
-            // Campo opzionale vuoto
-            if (!value) {
-                return { valid: true, message: '' };
-            }
-
-            // Validazione formato
             if (formatConfig) {
                 if (formatConfig.type === 'date') {
                     const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
-                    if (!dateRegex.test(value)) {
-                        return { valid: false, message: `Formato richiesto: ${formatConfig.format}` };
-                    }
+                    if (!dateRegex.test(value)) return { valid: false, message: `Format: ${formatConfig.format}` };
                 } else if (formatConfig.regex) {
                     const regex = new RegExp(formatConfig.regex);
-                    if (!regex.test(value)) {
-                        return { valid: false, message: 'Formato non valido' };
-                    }
+                    if (!regex.test(value)) return { valid: false, message: getTranslation('int.format.decimal.invalid') || 'Formato non valido' };
                 }
             }
-
             return { valid: true, message: '' };
         }
 
-        // Mostra errore campo
         function showFieldError(fieldName, message) {
             const errorElement = document.getElementById(`error_${fieldName}`);
             const inputElement = document.getElementById(`field_${fieldName}`);
-
-            if (errorElement) {
-                errorElement.textContent = message;
-            }
-            if (inputElement) {
-                inputElement.classList.add('error');
-            }
+            if (errorElement) errorElement.textContent = message;
+            if (inputElement) inputElement.classList.add('error');
         }
 
-        // Pulisci errore campo
         function clearFieldError(fieldName) {
             const errorElement = document.getElementById(`error_${fieldName}`);
             const inputElement = document.getElementById(`field_${fieldName}`);
-
-            if (errorElement) {
-                errorElement.textContent = '';
-            }
-            if (inputElement) {
-                inputElement.classList.remove('error');
-            }
+            if (errorElement) errorElement.textContent = '';
+            if (inputElement) inputElement.classList.remove('error');
         }
 
-        // Pulisci tutti gli errori
         function clearAllErrors() {
             document.querySelectorAll('.error-message').forEach(el => el.textContent = '');
             document.querySelectorAll('.form-input, .form-select').forEach(el => el.classList.remove('error'));
         }
 
-        // Genera form
         function generatePriceForm() {
             const fields = Object.keys(priceConfig.mapping);
             const container = document.getElementById('form-container');
-
             let html = '<form id="price-form" class="dataentry-form"><div class="form-grid">';
 
             fields.forEach(fieldName => {
                 const fieldConfig = priceConfig.mapping[fieldName];
                 const formatConfig = priceConfig.format[fieldName];
                 const isRequired = priceConfig.mandatory.required.includes(fieldName);
-                const label = fieldConfig.label;
+                const label = getTranslation(fieldName) || fieldConfig.label;
 
-                html += `
-                    <div class="form-group ${isRequired ? 'required' : ''}">
-                        <label for="field_${fieldName}" class="form-label">
-                            ${label}${isRequired ? '<span class="required-mark">*</span>' : ''}
-                        </label>
-                `;
+                html += `<div class="form-group ${isRequired ? 'required' : ''}">
+                    <label for="field_${fieldName}" class="form-label">${label}${isRequired ? '<span class="required-mark">*</span>' : ''}</label>`;
 
-                if (fieldName === 'type') {
-                    html += `
-                        <input type="text" 
-                               name="${fieldName}" 
-                               id="field_${fieldName}"
-                               value="${currentInstrumentType || ''}"
-                               readonly
-                               class="form-input"
-                               style="background: #eee; cursor: not-allowed;">
-                    `;
+                if (fieldName === 'id') {
+                    html += `<input type="text" name="${fieldName}" id="field_${fieldName}" value="${currentInstrumentId || ''}" ${isRequired ? 'required' : ''} class="form-input">`;
                 } else if (formatConfig && formatConfig.type === 'date') {
-                    html += `
-                        <div class="input-group">
-                            <input type="text" 
-                                   name="${fieldName}" 
-                                   id="field_${fieldName}"
-                                   ${isRequired ? 'required' : ''}
-                                   placeholder="${formatConfig.format}"
-                                   class="form-input">
-                            <button type="button" class="btn btn-secondary btn-sm" 
-                                    onclick="document.getElementById('field_${fieldName}').value = formatCurrentDate()">
-                                <i class="fas fa-calendar-day"></i>
-                            </button>
-                        </div>
-                    `;
+                    html += `<div class="input-group">
+                        <input type="text" name="${fieldName}" id="field_${fieldName}" ${isRequired ? 'required' : ''} placeholder="${formatConfig.format}" class="form-input">
+                        <button type="button" class="btn btn-secondary btn-sm" onclick="document.getElementById('field_${fieldName}').value = formatCurrentDate()"><i class="fas fa-calendar-day"></i></button>
+                    </div>`;
+                } else if (fieldName === 'field') {
+                    html += `<select name="${fieldName}" id="field_${fieldName}" class="form-select">
+                        <option value="close">Close</option><option value="high">High</option><option value="low">Low</option><option value="open">Open</option><option value="adjClose">Adj Close</option>
+                    </select>`;
                 } else {
-                    html += `
-                        <input type="text" 
-                               name="${fieldName}" 
-                               id="field_${fieldName}"
-                               ${isRequired ? 'required' : ''}
-                               class="form-input">
-                    `;
+                    html += `<input type="text" name="${fieldName}" id="field_${fieldName}" ${isRequired ? 'required' : ''} class="form-input">`;
                 }
-
-                html += `
-                        <span class="error-message" id="error_${fieldName}"></span>
-                    </div>
-                `;
+                html += `<span class="error-message" id="error_${fieldName}"></span></div>`;
             });
 
-            // Aggiungi campi opzionali
-            priceConfig.mandatory.optional.forEach(fieldName => {
-                const formatConfig = priceConfig.format[fieldName];
-
-                html += `
-                    <div class="form-group">
-                        <label for="field_${fieldName}" class="form-label">
-                            ${fieldName.charAt(0).toUpperCase() + fieldName.slice(1)}
-                        </label>
-                `;
-
-                if (formatConfig && formatConfig.type === 'date') {
-                    html += `
-                        <div class="input-group">
-                            <input type="text" 
-                                   name="${fieldName}" 
-                                   id="field_${fieldName}"
-                                   placeholder="${formatConfig.format}"
-                                   class="form-input">
-                            <button type="button" class="btn btn-secondary btn-sm" 
-                                    onclick="document.getElementById('field_${fieldName}').value = formatCurrentDate()">
-                                <i class="fas fa-calendar-day"></i>
-                            </button>
-                        </div>
-                    `;
-                } else {
-                    html += `
-                        <input type="text" 
-                               name="${fieldName}" 
-                               id="field_${fieldName}"
-                               class="form-input">
-                    `;
-                }
-
-                html += `
-                        <span class="error-message" id="error_${fieldName}"></span>
-                    </div>
-                `;
-            });
-
-            html += `
-                    </div>
-                    <div class="form-actions">
-                        <button type="button" id="reset-btn" class="btn btn-secondary">
-                            <i class="fa fa-undo"></i> Reset
-                        </button>
-                        <button type="submit" class="btn btn-primary">
-                            <i class="fa fa-save"></i> Salva
-                        </button>
-                    </div>
-                </form>
-            `;
+            html += `</div><div class="form-actions">
+                <button type="button" id="reset-btn" class="btn btn-secondary"><i class="fa fa-undo"></i> Reset</button>
+                <button type="submit" class="btn btn-primary"><i class="fa fa-save"></i> ${getTranslation('int.save') || 'Salva'}</button>
+            </div></form>`;
 
             container.innerHTML = html;
             attachFormListeners();
         }
 
-        // Attach form listeners
         function attachFormListeners() {
             const form = document.getElementById('price-form');
-
-            // Submit handler
             form.addEventListener('submit', async (e) => {
                 e.preventDefault();
-
                 clearAllErrors();
                 let isValid = true;
                 const formData = {};
-
-                // Valida campi obbligatori
-                [...priceConfig.mandatory.required, ...priceConfig.mandatory.optional].forEach(fieldName => {
+                priceConfig.mandatory.required.forEach(fieldName => {
                     const input = document.getElementById(`field_${fieldName}`);
-                    if (input) {
-                        const value = input.value.trim();
-                        const validation = validateField(fieldName, value);
-
-                        if (!validation.valid) {
-                            showFieldError(fieldName, validation.message);
-                            isValid = false;
-                        } else if (value) {
-                            formData[fieldName] = value;
-                        }
-                    }
+                    const value = input ? input.value.trim() : '';
+                    const validation = validateField(fieldName, value);
+                    if (!validation.valid) { showFieldError(fieldName, validation.message); isValid = false; }
+                    else if (value) formData[fieldName] = value;
                 });
-
-                // Aggiungi campi mappati
-                Object.keys(priceConfig.mapping).forEach(fieldName => {
-                    const input = document.getElementById(`field_${fieldName}`);
-                    if (input && !formData[fieldName]) {
-                        const value = input.value.trim();
-                        if (value) {
-                            formData[fieldName] = value;
-                        }
-                    }
-                });
-
-                if (isValid) {
-                    await savePrice(formData);
-                }
+                if (isValid) await savePrice(formData);
             });
 
-            // Reset handler
-            const resetBtn = document.getElementById('reset-btn');
-            resetBtn.addEventListener('click', () => {
-                form.reset();
-                clearAllErrors();
-                // Ripristina il tipo
-                const typeField = document.getElementById('field_type');
-                if (typeField) {
-                    typeField.value = currentInstrumentType || '';
-                }
-            });
-
-            // Validazione in tempo reale
             form.addEventListener('blur', (e) => {
-                if (e.target.classList.contains('form-input')) {
+                if (e.target.classList.contains('form-input') || e.target.classList.contains('form-select')) {
                     const fieldName = e.target.name;
                     const value = e.target.value.trim();
                     const validation = validateField(fieldName, value);
-
-                    if (!validation.valid) {
-                        showFieldError(fieldName, validation.message);
-                    } else {
-                        clearFieldError(fieldName);
-                    }
+                    if (!validation.valid) showFieldError(fieldName, validation.message);
+                    else clearFieldError(fieldName);
                 }
             }, true);
+
+            document.getElementById('reset-btn').addEventListener('click', () => { form.reset(); clearAllErrors(); });
         }
 
-        // Salva prezzo
         async function savePrice(data) {
-            console.log('Saving price data:', data);
-
-            const successMsg = document.getElementById('success-msg');
-
-            // Simula salvataggio
-            priceData.push({
-                ...data,
-                timestamp: new Date().toISOString()
-            });
-
-            console.log('All saved prices:', priceData);
-
-            // Mostra messaggio successo
-            successMsg.classList.add('show');
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-
-            setTimeout(() => {
-                successMsg.classList.remove('show');
-            }, 3000);
-
-            // Reset form
-            const form = document.getElementById('price-form');
-            form.reset();
-            clearAllErrors();
-
-            // Ripristina il tipo
-            const typeField = document.getElementById('field_type');
-            if (typeField) {
-                typeField.value = currentInstrumentType || '';
-            }
+            const dbToggle = document.getElementById('db-toggle');
+            data.db_type = dbToggle.checked ? 'shared' : 'local';
+            try {
+                const payload = {
+                    username: credentials.username,
+                    token: credentials.token,
+                    language: credentials.language,
+                    price: JSON.stringify(data)
+                };
+                const response = await fetch(`${API_URL}/putprice`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const result = await response.json();
+                if (result.status === 'ok') {
+                    const successMsg = document.getElementById('success-msg');
+                    document.getElementById('successText').textContent = result.msg || getTranslation('int.success.save') || 'Salva!';
+                    successMsg.classList.add('show');
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                    setTimeout(() => successMsg.classList.remove('show'), 3000);
+                    document.getElementById('price-form').reset();
+                } else alert("Error: " + (result.msg || "Unknown error"));
+            } catch (err) { alert("Error: " + err.message); }
         }
 
-        // Carica form per tipo strumento
         function loadInstrumentForm(instrumentType) {
             if (!instrumentType) {
-                document.getElementById('form-container').innerHTML = `
-                    <div class="loading">
-                        <p>Seleziona un tipo di strumento per iniziare...</p>
-                    </div>
-                `;
+                document.getElementById('form-container').innerHTML = `<div class="loading"><div class="spinner"></div><p id="loadingText">Seleziona uno strumento...</p></div>`;
                 return;
             }
-
             currentInstrumentType = instrumentType;
-            console.log('Loading price form for:', instrumentType);
             generatePriceForm();
         }
 
-        // Inizializzazione
         document.addEventListener('DOMContentLoaded', () => {
             getURLParams();
-
-            // Listener per selezione tipo strumento
-            document.getElementById('instrument-type-select').addEventListener('change', (e) => {
-                const selectedType = e.target.value;
-                loadInstrumentForm(selectedType);
-            });
-
-            console.log('Price Data Entry initialized');
-            console.log('Configuration loaded:', priceConfig);
+            document.getElementById('instrument-type-select').addEventListener('change', (e) => loadInstrumentForm(e.target.value));
         });
     </script>
 </body>
