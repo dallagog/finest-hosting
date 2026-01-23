@@ -57,10 +57,10 @@
 
         .close-btn {
             padding: 10px 20px;
-            background: rgba(255, 0, 0, 0.2);
-            border: 1px solid #ff3333;
-            color: #ff3333;
-            font-family: 'Orbitron', sans-serif;
+            background: #dc3545;
+            border: 1px solid #dc3545;
+            color: #fff;
+            font-family: inherit;
             border-radius: 4px;
             cursor: pointer;
             font-size: 14px;
@@ -69,8 +69,25 @@
         }
 
         .close-btn:hover {
-            background: rgba(255, 0, 0, 0.4);
-            box-shadow: 0 0 10px #ff3333;
+            background: #c82333;
+            border-color: #bd2130;
+        }
+
+        .action-btn {
+            padding: 10px 20px;
+            background: #000;
+            color: #fff;
+            border: 1px solid #000;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            transition: all 0.3s;
+            margin-right: 10px;
+        }
+
+        .action-btn:hover {
+            background: #333;
         }
 
         .user-info-left {
@@ -161,8 +178,7 @@
         </div>
         <h1 id="pageTitle">Instrument Details</h1>
         <div style="flex: 1; text-align: right;">
-            <button class="close-btn" onclick="openPricesGraph()"
-                style="margin-right: 10px; background: rgba(0, 255, 255, 0.1); border-color: #00ffff; color: #000;">
+            <button class="action-btn" onclick="openPricesGraph()">
                 <i class="fa fa-chart-line"></i> <span id="pricesText">Prices</span>
             </button>
             <button class="close-btn" onclick="window.close()">
@@ -189,6 +205,7 @@
         let availableLanguages = [];
         let translations = {};
         let currentInstrumentId = null;
+        let currentInstrumentName = '';
 
         // ========== SETUP & UTIL ==========
         function getURLParams() {
@@ -206,7 +223,7 @@
 
         function openPricesGraph() {
             if (!currentInstrumentId) return;
-            const url = `dashboard-graph-prices.html?username=${credentials.username}&token=${credentials.token}&language=${credentials.language}&id_instrument=${currentInstrumentId}`;
+            const url = `dashboard-graph-prices.html?username=${credentials.username}&token=${credentials.token}&language=${credentials.language}&id_instrument=${currentInstrumentId}&instrument_name=${encodeURIComponent(currentInstrumentName)}`;
             window.open(url, '_blank', 'width=1200,height=800');
         }
 
@@ -354,7 +371,8 @@
             const tbody = document.getElementById('detailsBody');
             tbody.innerHTML = '';
 
-            document.getElementById('instrumentIdDisplay').textContent = `${instrument.id_instrument} - ${instrument.instrument_description || ''}`;
+            currentInstrumentName = instrument.instrument_description || '';
+            document.getElementById('instrumentIdDisplay').textContent = `${instrument.id_instrument} - ${currentInstrumentName}`;
 
             // Sort keys if needed, or just iterate
             Object.keys(instrument).forEach(key => {
