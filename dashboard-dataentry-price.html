@@ -414,7 +414,7 @@
                 <label class="selector-label"
                     style="display: flex; align-items: center; gap: 10px; cursor: pointer; margin-bottom: 0;">
                     <input type="checkbox" id="db-toggle" style="width: 18px; height: 18px;">
-                    <span>Shared Database</span>
+                    <span id="sharedDbLabel">Shared Database</span>
                 </label>
             </div>
 
@@ -431,19 +431,19 @@
     <script>
         const priceConfig = {
             mapping: {
-                "date_start": { "label": "Date", "mapped_name": "date_start" },
-                "value": { "label": "Price", "mapped_name": "value" },
-                "id": { "label": "Ticker", "mapped_name": "id" },
-                "field": { "label": "Type", "mapped_name": "field" }
+                "id_instrument": { "label": "id_instrument", "mapped_name": "id_instrument" },
+                "date_start": { "label": "int.date_start", "mapped_name": "date_start" },
+                "field": { "label": "int.price_type", "mapped_name": "field" },
+                "value": { "label": "int.price", "mapped_name": "value" }
             },
             mandatory: {
-                "required": ["date_start", "id", "field", "value"],
+                "required": ["id_instrument", "date_start", "field", "value"],
                 "optional": []
             },
             format: {
-                "id": { "type": "string" },
-                "date_start": { "type": "date", "format": "YYYY-MM-DD" },
-                "field": { "type": "string" },
+                "id_instrument": { "type": "string", "format": "FE_Instrument" },
+                "date_start": { "type": "date", "format": "FE_Date" },
+                "field": { "type": "string", "format": "FE_PriceType" },
                 "value": { "type": "string", "regex": "^[0-9]*[.,]?[0-9]*" }
             }
         };
@@ -518,12 +518,13 @@
 
         function applyTranslations() {
             document.getElementById('pageTitle').textContent = getTranslation('sel.dataentry.price') || 'Price Data Entry';
-            document.getElementById('pageSubtitle').textContent = getTranslation('int.dataentry.subtitle') || 'Price Data Entry';
+            document.getElementById('pageSubtitle').textContent = getTranslation('int.dataentry_price.subtitle') || 'Price Data Entry';
             document.getElementById('closeText').textContent = getTranslation('int.close') || 'Chiudi';
             document.getElementById('webSearchLabel').textContent = getTranslation('int.websearch') || 'Web Search / URL:';
             document.getElementById('btnWebSearch').textContent = getTranslation('int.confirm') || 'Conferma';
-            document.getElementById('valueTypeLabel').textContent = getTranslation('instrument_type') || 'Tipo Valore:';
+            document.getElementById('valueTypeLabel').textContent = getTranslation('int.price_type') || 'Tipo Valore:';
             document.getElementById('userLabel').textContent = getTranslation('int.user.label') || 'Utente:';
+            document.getElementById('sharedDbLabel').textContent = getTranslation('int.shareddatabase') || 'Shared Database';
         }
 
         async function updateHeaderWithUserInfo() {
@@ -566,11 +567,10 @@
 
         async function executeWebSearch() {
             const url = document.getElementById('search-url').value;
-            const idInstrument = document.getElementById('field_id') ? document.getElementById('field_id').value : '';
+            const idInstrument = document.getElementById('field_id_instrument') ? document.getElementById('field_id_instrument').value : '';
             const typePrice = document.getElementById('field_field').value;
 
             if (!url) { alert("Please enter a URL first"); return; }
-            if (!idInstrument) { alert("Please enter a Ticker/ISIN first"); return; }
 
             // Visual feedback
             const btn = document.querySelector('.web-search-box .btn-primary');
@@ -604,16 +604,12 @@
                         // Trigger blur to run validation if any
                         valueField.dispatchEvent(new Event('blur'));
                     }
-                    // Optionally still open the URL if user wants to check
-                    window.open(url, '_blank');
                 } else {
                     alert("Analysis failed: " + (result.msg || "No value found"));
-                    window.open(url, '_blank');
                 }
             } catch (err) {
                 console.error("Web search error:", err);
                 alert("Error: " + err.message);
-                window.open(url, '_blank');
             } finally {
                 btn.disabled = false;
                 btn.innerHTML = originalHtml;
@@ -647,7 +643,7 @@
 
         function populateFromImport(data) {
             const mapping = {
-                'id': data.id || data.ticker || data.symbol || '',
+                'id_instrument': data.id_instrument || data.id || data.ticker || data.symbol || '',
                 'date_start': data.date_start || data.date || '',
                 'value': data.value || data.price || ''
             };
@@ -713,14 +709,14 @@
                 const fieldConfig = priceConfig.mapping[fieldName];
                 const formatConfig = priceConfig.format[fieldName];
                 const isRequired = priceConfig.mandatory.required.includes(fieldName);
-                const label = getTranslation(fieldName) || fieldConfig.label;
+                const label = getTranslation(fieldName) || getTranslation(fieldConfig.label);
                 html += `<div class="form-group ${isRequired ? 'required' : ''}">
                     <label for="field_${fieldName}" class="form-label">${label}${isRequired ? '<span class="required-mark">*</span>' : ''}</label>`;
-                if (fieldName === 'id') {
+                if (fieldName === 'id_instrument') {
                     html += `<input type="text" name="${fieldName}" id="field_${fieldName}" value="${currentInstrumentId || ''}" ${isRequired ? 'required' : ''} class="form-input">`;
-                } else if (formatConfig && formatConfig.type === 'date') {
+                } else if (formatConfig && formatConfig.format === 'FE_Date') {
                     html += `<div class="input-group">
-                        <input type="text" name="${fieldName}" id="field_${fieldName}" ${isRequired ? 'required' : ''} placeholder="${formatConfig.format}" class="form-input">
+                        <input type="text" name="${fieldName}" id="field_${fieldName}" ${isRequired ? 'required' : ''} placeholder="YYYY-MM-DD" class="form-input">
                         <button type="button" class="btn btn-secondary btn-sm" onclick="document.getElementById('field_${fieldName}').value = formatCurrentDate()"><i class="fas fa-calendar-day"></i></button>
                     </div>`;
                 } else {
