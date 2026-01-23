@@ -101,6 +101,14 @@
             color: var(--text-main);
         }
 
+        .web-search-box {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #f9f9f9;
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+        }
+
         .instrument-selector {
             background: var(--card-bg);
             padding: 25px;
@@ -245,6 +253,18 @@
             border-top: 1px solid var(--border-color);
         }
 
+        .bottom-controls {
+            margin-top: 30px;
+            padding: 20px;
+            background: #f9f9f9;
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 20px;
+        }
+
         .loading {
             text-align: center;
             padding: 40px;
@@ -300,7 +320,6 @@
             }
         }
 
-        /* Mobile Responsive */
         @media (max-width: 640px) {
             .form-grid {
                 grid-template-columns: 1fr;
@@ -310,6 +329,11 @@
                 flex-direction: column;
                 gap: 15px;
                 text-align: center;
+            }
+
+            .bottom-controls {
+                flex-direction: column;
+                align-items: flex-start;
             }
         }
     </style>
@@ -334,46 +358,8 @@
             <i class="fa fa-check-circle"></i> <span id="successText">Dati salvati con successo!</span>
         </div>
 
-        <div class="top-controls"
-            style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 30px;">
-            <div id="instrument-selector" class="instrument-selector" style="margin-bottom: 0;">
-                <label for="instrument-type-select" class="selector-label">
-                    <i class="fa fa-list"></i> <span id="selectorLabel">Select Instrument Type:</span>
-                </label>
-                <select id="instrument-type-select" class="selector-select">
-                    <option value="">-- Seleziona --</option>
-                    <option value="STOCK">Azioni (STOCK)</option>
-                    <option value="BOND">Obbligazioni (BOND)</option>
-                    <option value="ETF">ETF</option>
-                    <option value="FUND">Fondi (FUND)</option>
-                    <option value="CRYPTO">Criptovalute (CRYPTO)</option>
-                </select>
-            </div>
-
-            <div class="extra-controls"
-                style="padding: 20px; background: #f9f9f9; border: 1px solid #ddd; border-radius: 8px;">
-                <div class="db-selector" style="margin-bottom: 15px;">
-                    <label class="selector-label"
-                        style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
-                        <input type="checkbox" id="db-toggle" style="width: 18px; height: 18px;">
-                        <span>Shared Database</span>
-                    </label>
-                    <small style="color: #666; display: block; margin-top: 5px;">Seleziona per salvare nel database
-                        condiviso</small>
-                </div>
-
-                <div class="import-controls" style="display: flex; gap: 10px;">
-                    <button class="btn btn-secondary btn-sm" onclick="triggerFileUpload()" style="flex: 1;">
-                        <i class="fa fa-file-import"></i> Importa JSON/CSV
-                    </button>
-                    <input type="file" id="file-import-input" accept=".json,.csv" style="display: none;"
-                        onchange="handleFileImport(event)">
-                </div>
-            </div>
-        </div>
-
-        <div class="web-search-box"
-            style="margin-bottom: 30px; padding: 20px; background: #f9f9f9; border: 1px solid #ddd; border-radius: 8px;">
+        <!-- URL / Web Search at the top -->
+        <div class="web-search-box">
             <label for="search-url" class="selector-label">
                 <i class="fa fa-globe"></i> <span id="webSearchLabel">Web Search / URL:</span>
             </label>
@@ -385,75 +371,123 @@
             </div>
         </div>
 
+        <!-- Value Type Selector -->
+        <div id="value-type-container" class="instrument-selector">
+            <label for="value-type-select" class="selector-label">
+                <i class="fa fa-tag"></i> <span id="valueTypeLabel">Tipo Valore:</span>
+            </label>
+            <select id="value-type-select" class="selector-select">
+                <!-- Populated dynamically -->
+            </select>
+        </div>
+
+        <!-- Data Entry Values container -->
         <div id="form-container">
-            <div class="loading">
-                <div class="spinner"></div>
-                <p id="loadingText">Seleziona un tipo di strumento per iniziare...</p>
+            <!-- Form generated here -->
+        </div>
+
+        <!-- Bottom controls: DB choice and Import -->
+        <div class="bottom-controls">
+            <div class="db-selector">
+                <label class="selector-label"
+                    style="display: flex; align-items: center; gap: 10px; cursor: pointer; margin-bottom: 0;">
+                    <input type="checkbox" id="db-toggle" style="width: 18px; height: 18px;">
+                    <span>Shared Database</span>
+                </label>
+            </div>
+
+            <div class="import-controls">
+                <button class="btn btn-secondary btn-sm" onclick="triggerFileUpload()">
+                    <i class="fa fa-file-import"></i> Importa JSON/CSV
+                </button>
+                <input type="file" id="file-import-input" accept=".json,.csv" style="display: none;"
+                    onchange="handleFileImport(event)">
             </div>
         </div>
     </div>
 
     <script>
-        // Configurazione dati da file JSON - Schema: id, date_start, field, value
+        // Configurazione dati da file JSON - Schema: id, date_start, value
+        // field viene ora gestito dal selettore "Value Type"
         const priceConfig = {
             mapping: {
                 "id": { "label": "Ticker", "mapped_name": "id" },
                 "date_start": { "label": "Date", "mapped_name": "date_start" },
-                "field": { "label": "Type", "mapped_name": "field" },
                 "value": { "label": "Price", "mapped_name": "value" }
             },
             mandatory: {
-                "required": ["id", "date_start", "field", "value"],
+                "required": ["id", "date_start", "value"],
                 "optional": []
             },
             format: {
                 "id": { "type": "string" },
                 "date_start": { "type": "date", "format": "YYYY-MM-DD" },
-                "field": { "type": "string" }, // Es: close, high, low
                 "value": { "type": "string", "regex": "^[0-9]*[.,]?[0-9]*" }
             }
         };
 
         let urlParams = {};
         let credentials = { username: '', token: '', language: 'it_IT' };
-        let currentInstrumentType = null;
         let currentInstrumentId = null;
+        let translations = {};
+        let domine = {};
         const API_URL = 'https://feweb-tunnel.fe-web.eu';
 
-        // Translations bridge
-        let translations = {};
+        async function loadAllData() {
+            getURLParams();
+            await loadTranslations(credentials.language);
+            await loadDomine();
+            populateValueTypeSelector();
+            generatePriceForm();
+        }
+
         async function loadTranslations(langCode) {
             try {
                 const response = await fetch(`lang/${langCode}.json`);
                 if (!response.ok) return;
                 translations = await response.json();
                 applyTranslations();
-            } catch (error) {
-                console.error("Error loading translations:", error);
-            }
+            } catch (error) { console.error("Error loading translations:", error); }
         }
 
-        function getTranslation(key) {
-            return translations[key] || key;
+        async function loadDomine() {
+            try {
+                const response = await fetch(`lang/domine.json`);
+                if (!response.ok) return;
+                domine = await response.json();
+            } catch (error) { console.error("Error loading domine:", error); }
         }
+
+        function getTranslation(key) { return translations[key] || key; }
 
         function applyTranslations() {
             document.getElementById('pageTitle').textContent = getTranslation('sel.dataentry.price') || 'Price Data Entry';
             document.getElementById('pageSubtitle').textContent = getTranslation('int.dataentry.subtitle') || 'Price Data Entry';
             document.getElementById('closeText').textContent = getTranslation('int.close') || 'Chiudi';
-            document.getElementById('selectorLabel').textContent = getTranslation('int.select.instrument.type') || 'Select Instrument Type:';
             document.getElementById('webSearchLabel').textContent = getTranslation('int.websearch') || 'Web Search / URL:';
             document.getElementById('btnWebSearch').textContent = getTranslation('int.websearch') || 'Search';
-            document.getElementById('loadingText').textContent = getTranslation('int.select.instrument.first') || 'Select an instrument type to start...';
+            document.getElementById('valueTypeLabel').textContent = getTranslation('instrument_type') || 'Tipo Valore:';
         }
 
-        // Recupera parametri URL
+        function populateValueTypeSelector() {
+            const selector = document.getElementById('value-type-select');
+            const types = domine["dashboard-dataentry-instrument-type"] || [];
+
+            selector.innerHTML = '';
+            types.forEach(typeKey => {
+                const option = document.createElement('option');
+                // Extract value from dom.instrument_type:VALUE
+                const value = typeKey.split(':').pop();
+                option.value = value;
+                option.textContent = getTranslation(typeKey);
+                selector.appendChild(option);
+            });
+        }
+
         function getURLParams() {
             const params = new URLSearchParams(window.location.search);
             urlParams = {};
-            for (const [key, value] of params.entries()) {
-                urlParams[key] = value;
-            }
+            for (const [key, value] of params.entries()) { urlParams[key] = value; }
 
             credentials = {
                 username: urlParams.username || localStorage.getItem('username') || 'demo_user',
@@ -463,44 +497,25 @@
 
             currentInstrumentId = urlParams.id_instrument || '';
             document.getElementById('usernameDisplay').textContent = credentials.username;
-
-            if (urlParams.url) {
-                document.getElementById('search-url').value = urlParams.url;
-            }
-
-            loadTranslations(credentials.language);
+            if (urlParams.url) { document.getElementById('search-url').value = urlParams.url; }
         }
 
         function executeWebSearch() {
             const url = document.getElementById('search-url').value;
-            if (url) {
-                window.open(url, '_blank');
-            } else {
-                alert("Please enter a URL first");
-            }
+            if (url) { window.open(url, '_blank'); } else { alert("Please enter a URL first"); }
         }
 
-        function triggerFileUpload() {
-            document.getElementById('file-import-input').click();
-        }
+        function triggerFileUpload() { document.getElementById('file-import-input').click(); }
 
         function handleFileImport(event) {
             const file = event.target.files[0];
             if (!file) return;
-
             const reader = new FileReader();
             reader.onload = function (e) {
                 const content = e.target.result;
                 if (file.name.endsWith('.json')) {
-                    try {
-                        const data = JSON.parse(content);
-                        populateFromImport(data);
-                    } catch (err) {
-                        alert("Invalid JSON file");
-                    }
-                } else if (file.name.endsWith('.csv')) {
-                    parseCSV(content);
-                }
+                    try { const data = JSON.parse(content); populateFromImport(data); } catch (err) { alert("Invalid JSON file"); }
+                } else if (file.name.endsWith('.csv')) { parseCSV(content); }
             };
             reader.readAsText(file);
         }
@@ -510,11 +525,8 @@
             if (lines.length < 2) return;
             const headers = lines[0].split(',').map(h => h.trim());
             const firstData = lines[1].split(',').map(v => v.trim());
-
             const obj = {};
-            headers.forEach((h, i) => {
-                obj[h] = firstData[i];
-            });
+            headers.forEach((h, i) => { obj[h] = firstData[i]; });
             populateFromImport(obj);
         }
 
@@ -522,17 +534,13 @@
             const mapping = {
                 'id': data.id || data.ticker || data.symbol || '',
                 'date_start': data.date_start || data.date || '',
-                'field': data.field || data.type || 'close',
                 'value': data.value || data.price || ''
             };
-
             Object.keys(mapping).forEach(key => {
                 const input = document.getElementById(`field_${key}`);
-                if (input) {
-                    input.value = mapping[key];
-                }
+                if (input) input.value = mapping[key];
             });
-            alert("Data imported into the form. Please review and save.");
+            if (data.field) { document.getElementById('value-type-select').value = data.field; }
         }
 
         function formatCurrentDate() {
@@ -546,12 +554,8 @@
         function validateField(fieldName, value) {
             const formatConfig = priceConfig.format[fieldName];
             const isRequired = priceConfig.mandatory.required.includes(fieldName);
-
-            if (isRequired && !value) {
-                return { valid: false, message: getTranslation('int.field.required') || 'Campo obbligatorio' };
-            }
+            if (isRequired && !value) return { valid: false, message: getTranslation('int.field.required') || 'Campo obbligatorio' };
             if (!value) return { valid: true, message: '' };
-
             if (formatConfig) {
                 if (formatConfig.type === 'date') {
                     const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
@@ -604,10 +608,6 @@
                         <input type="text" name="${fieldName}" id="field_${fieldName}" ${isRequired ? 'required' : ''} placeholder="${formatConfig.format}" class="form-input">
                         <button type="button" class="btn btn-secondary btn-sm" onclick="document.getElementById('field_${fieldName}').value = formatCurrentDate()"><i class="fas fa-calendar-day"></i></button>
                     </div>`;
-                } else if (fieldName === 'field') {
-                    html += `<select name="${fieldName}" id="field_${fieldName}" class="form-select">
-                        <option value="close">Close</option><option value="high">High</option><option value="low">Low</option><option value="open">Open</option><option value="adjClose">Adj Close</option>
-                    </select>`;
                 } else {
                     html += `<input type="text" name="${fieldName}" id="field_${fieldName}" ${isRequired ? 'required' : ''} class="form-input">`;
                 }
@@ -656,6 +656,9 @@
         async function savePrice(data) {
             const dbToggle = document.getElementById('db-toggle');
             data.db_type = dbToggle.checked ? 'shared' : 'local';
+            // Aggregazione automatica del campo "field" dal selettore Value Type
+            data.field = document.getElementById('value-type-select').value;
+
             try {
                 const payload = {
                     username: credentials.username,
@@ -675,24 +678,12 @@
                     successMsg.classList.add('show');
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                     setTimeout(() => successMsg.classList.remove('show'), 3000);
-                    document.getElementById('price-form').reset();
+                    // document.getElementById('price-form').reset(); // Keep if user wants to enter multiple?
                 } else alert("Error: " + (result.msg || "Unknown error"));
             } catch (err) { alert("Error: " + err.message); }
         }
 
-        function loadInstrumentForm(instrumentType) {
-            if (!instrumentType) {
-                document.getElementById('form-container').innerHTML = `<div class="loading"><div class="spinner"></div><p id="loadingText">Seleziona uno strumento...</p></div>`;
-                return;
-            }
-            currentInstrumentType = instrumentType;
-            generatePriceForm();
-        }
-
-        document.addEventListener('DOMContentLoaded', () => {
-            getURLParams();
-            document.getElementById('instrument-type-select').addEventListener('change', (e) => loadInstrumentForm(e.target.value));
-        });
+        document.addEventListener('DOMContentLoaded', loadAllData);
     </script>
 </body>
 
