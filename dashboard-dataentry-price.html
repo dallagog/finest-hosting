@@ -371,7 +371,12 @@
                 style="font-size: 1.5rem; font-weight: 700; color: #000; text-transform: uppercase; letter-spacing: 2px;">
                 Price Entry</h1>
         </div>
-        <div class="logout-container">
+        <div class="logout-container" style="display: flex; align-items: center; justify-content: flex-end; gap: 15px;">
+            <button class="btn btn-secondary btn-sm" onclick="triggerFileUpload()">
+                <i class="fa fa-file-import"></i> <span id="btnImportText">Importa JSON/CSV</span>
+            </button>
+            <input type="file" id="file-import-input" accept=".json,.csv" style="display: none;"
+                onchange="handleFileImport(event)">
             <a href="dashboard-main.html" class="logout-btn">
                 <i class="fa fa-times-circle"></i> <span id="closeText">Chiudi</span>
             </a>
@@ -423,17 +428,9 @@
             <div class="db-selector">
                 <label class="selector-label"
                     style="display: flex; align-items: center; gap: 10px; cursor: pointer; margin-bottom: 0;">
-                    <input type="checkbox" id="db-toggle" style="width: 18px; height: 18px;">
+                    <input type="checkbox" id="db-toggle" style="width: 18px; height: 18px;" checked>
                     <span id="sharedDbLabel">Shared Database</span>
                 </label>
-            </div>
-
-            <div class="import-controls">
-                <button class="btn btn-secondary btn-sm" onclick="triggerFileUpload()">
-                    <i class="fa fa-file-import"></i> Importa JSON/CSV
-                </button>
-                <input type="file" id="file-import-input" accept=".json,.csv" style="display: none;"
-                    onchange="handleFileImport(event)">
             </div>
         </div>
     </div>
@@ -443,17 +440,19 @@
             mapping: {
                 "date_start": { "label": "int.date_start", "mapped_name": "date_start" },
                 "field": { "label": "int.price_type", "mapped_name": "field" },
-                "value": { "label": "int.price", "mapped_name": "value" }
+                "value": { "label": "int.price", "mapped_name": "value" },
+                "provider": { "label": "provider", "mapped_name": "provider" }
             },
             mandatory: {
-                "required": ["id_instrument", "date_start", "field", "value"],
-                "optional": []
+                "required": ["date_start", "field", "value"],
+                "optional": ["provider"]
             },
             format: {
                 "id_instrument": { "type": "string", "format": "FE_Instrument" },
                 "date_start": { "type": "date", "format": "FE_Date" },
                 "field": { "type": "string", "format": "FE_PriceType" },
-                "value": { "type": "string", "regex": "^[0-9]*[.,]?[0-9]*" }
+                "value": { "type": "string", "regex": "^[0-9]*[.,]?[0-9]*" },
+                "provider": { "type": "string" }
             }
         };
 
@@ -537,6 +536,7 @@
             document.getElementById('userLabel').textContent = getTranslation('int.user.label') || 'Utente:';
             document.getElementById('sharedDbLabel').textContent = getTranslation('int.sharedatabase') || 'Shared Database';
             document.getElementById('instrumentIdLabel').textContent = getTranslation('id_instrument') || 'Strumento:';
+            document.getElementById('btnImportText').textContent = getTranslation('int.import') || 'Importa';
         }
 
         async function updateHeaderWithUserInfo() {
@@ -618,10 +618,20 @@
                 const result = await response.json();
                 if (result.status === 'ok' && result.value) {
                     const valueField = document.getElementById('field_value');
+                    const dateField = document.getElementById('field_date_start');
+                    const providerField = document.getElementById('field_provider');
+
                     if (valueField) {
                         valueField.value = result.value;
-                        // Trigger blur to run validation if any
                         valueField.dispatchEvent(new Event('blur'));
+                    }
+                    if (dateField && result.date_start) {
+                        dateField.value = result.date_start;
+                        dateField.dispatchEvent(new Event('blur'));
+                    }
+                    if (providerField && result.provider) {
+                        providerField.value = result.provider;
+                        providerField.dispatchEvent(new Event('blur'));
                     }
                 } else {
                     alert("Analysis failed: " + (result.msg || "No value found"));
@@ -664,7 +674,8 @@
             const mapping = {
                 'id_instrument': data.id_instrument || data.id || data.ticker || data.symbol || '',
                 'date_start': data.date_start || data.date || '',
-                'value': data.value || data.price || ''
+                'value': data.value || data.price || '',
+                'provider': data.provider || ''
             };
             Object.keys(mapping).forEach(key => {
                 const input = document.getElementById(`field_${key}`);
