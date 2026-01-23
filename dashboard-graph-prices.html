@@ -97,6 +97,33 @@
             color: #000;
         }
 
+        .header-title-input {
+            background: transparent;
+            border: none;
+            border-bottom: 2px solid transparent;
+            font-family: inherit;
+            font-size: 1.5rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: #000;
+            text-align: center;
+            width: 100%;
+            outline: none;
+            transition: border-bottom 0.3s;
+        }
+
+        .header-title-input:focus {
+            border-bottom: 2px solid #000;
+        }
+
+        .header-title-input::placeholder {
+            color: #ccc;
+            text-transform: none;
+            letter-spacing: normal;
+            font-weight: 400;
+        }
+
         .header-right {
             display: flex;
             gap: 15px;
@@ -388,7 +415,7 @@
         </div>
 
         <div class="header-center">
-            <h1 id="page-title">Trend Analysis</h1>
+            <input type="text" id="page-title-input" class="header-title-input" placeholder="Titolo Grafico">
         </div>
 
         <div class="header-right">
@@ -548,6 +575,14 @@
         }
 
         // Variabili globali
+        const urlParams = new URLSearchParams(window.location.search);
+        const username = urlParams.get('username') || '';
+        const token = urlParams.get('token');
+        const language = urlParams.get('language') || 'it_IT';
+        const idInstrument = urlParams.get('id_instrument');
+        const idAccount = urlParams.get('id_account');
+        const initialTitle = urlParams.get('title');
+
         const API_URL = "https://feweb-tunnel.fe-web.eu";
 
         // Colori per i diversi dataset
@@ -591,7 +626,12 @@
             updateUserInfoUI();
 
             // Update labels
-            document.getElementById('page-title').textContent = getTranslation('int.detail.prices') || "Price Analysis";
+            const pageTitleInput = document.getElementById('page-title-input');
+            if (pageTitleInput) {
+                pageTitleInput.value = initialTitle || getTranslation('int.detail.prices') || "Price Analysis";
+                pageTitleInput.placeholder = getTranslation('int.title.request') || "Inserisci Titolo";
+            }
+
             const btnConfirm = document.getElementById('btn-confirm');
             if (btnConfirm) btnConfirm.textContent = getTranslation('int.conferma') || 'Conferma';
             document.getElementById('close-btn').textContent = getTranslation('int.close') || 'Close';
@@ -736,8 +776,10 @@
                 gradient.addColorStop(0, color.bg);
                 gradient.addColorStop(1, color.bg.replace('0.4', '0.05'));
 
+                const titleValue = document.getElementById('page-title-input')?.value || getTranslation('int.detail.prices') || 'Price';
+
                 datasets.push({
-                    label: getTranslation('int.detail.prices') || 'Price',
+                    label: titleValue,
                     data: alignedData,
                     borderColor: color.border,
                     backgroundColor: gradient,
@@ -815,7 +857,7 @@
             const aggregated = {};
 
             data.forEach(item => {
-                if (!item.date_start || !item[metric]) return;
+                if (!item.date_start || item[metric] === undefined || item[metric] === null) return;
 
                 const date = new Date(item.date_start);
                 let key;

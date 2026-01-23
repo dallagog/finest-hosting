@@ -1394,7 +1394,13 @@
                         const link = document.createElement('a');
                         const translatedDesc = getTranslation(item.description);
                         link.textContent = translatedDesc !== item.description ? translatedDesc : item.description;
-                        link.href = item.html || '#';
+                        if (item.html) {
+                            link.href = item.html;
+                        } else {
+                            link.href = 'javascript:void(0)';
+                            // If it's a parent container, maybe we want to keep the pointer but "do nothing"
+                            // link.style.cursor = 'default'; 
+                        }
                         li.appendChild(link);
 
                         if (subUl) {
