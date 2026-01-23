@@ -117,6 +117,15 @@
             border-bottom: 2px solid #000;
         }
 
+        .instrument-subtitle {
+            font-size: 0.9rem;
+            color: #666;
+            margin-top: 5px;
+            font-weight: 500;
+            letter-spacing: 1px;
+            text-align: center;
+        }
+
         .header-title-input::placeholder {
             color: #ccc;
             text-transform: none;
@@ -165,22 +174,36 @@
             color: #000;
         }
 
+        .confirm-btn {
+            padding: 8px 20px;
+            background: #000;
+            color: #fff;
+            border: 1px solid #000;
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: inherit;
+            transition: all 0.3s;
+        }
+
+        .confirm-btn:hover {
+            background: #333;
+        }
+
         .close-button {
             padding: 8px 15px;
-            background: #000;
-            border: 1px solid #000;
+            background: #dc3545;
+            border: 1px solid #dc3545;
             color: #fff;
             font-family: inherit;
             border-radius: 4px;
             cursor: pointer;
-            /* text-transform: uppercase; */
             font-size: 0.9rem;
-            transition: background 0.3s;
+            transition: all 0.3s;
         }
 
         .close-button:hover {
-            background: #333;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+            background: #c82333;
+            border-color: #bd2130;
         }
 
         .chart-wrapper {
@@ -416,6 +439,7 @@
 
         <div class="header-center">
             <input type="text" id="page-title-input" class="header-title-input" placeholder="Titolo Grafico">
+            <div id="instrument-name-display" class="instrument-subtitle"></div>
         </div>
 
         <div class="header-right">
@@ -431,20 +455,7 @@
                     font-family: inherit;
                 }
 
-                .action-btn {
-                    padding: 8px 20px;
-                    background: #000;
-                    color: #fff;
-                    border: 1px solid #000;
-                    border-radius: 4px;
-                    cursor: pointer;
-                    font-family: inherit;
-                    transition: all 0.3s;
-                }
-
-                .action-btn:hover {
-                    background: #333;
-                }
+                /* The .action-btn is now .confirm-btn, and its styles are defined globally */
             </style>
 
             <div class="control-group">
@@ -456,7 +467,7 @@
                 <input type="date" id="end-date" class="date-input">
             </div>
 
-            <button class="action-btn" onclick="loadPrices()" id="btn-confirm">Carica</button>
+            <button class="confirm-btn" onclick="loadPrices()" id="btn-confirm">Carica</button>
 
             <button class="close-button" onclick="closeWindow()" id="close-btn">Close</button>
         </div>
@@ -582,6 +593,7 @@
         const idInstrument = urlParams.get('id_instrument');
         const idAccount = urlParams.get('id_account');
         const initialTitle = urlParams.get('title');
+        const instrumentNameFromUrl = urlParams.get('instrument_name');
 
         const API_URL = "https://feweb-tunnel.fe-web.eu";
 
@@ -632,8 +644,14 @@
                 pageTitleInput.placeholder = getTranslation('int.title.request') || "Inserisci Titolo";
             }
 
+            const instrumentNameDisplay = document.getElementById('instrument-name-display');
+            if (instrumentNameDisplay) {
+                instrumentNameDisplay.textContent = instrumentNameFromUrl || idInstrument || '';
+            }
+
             const btnConfirm = document.getElementById('btn-confirm');
-            if (btnConfirm) btnConfirm.textContent = getTranslation('int.conferma') || 'Conferma';
+            if (btnConfirm) btnConfirm.textContent = getTranslation('int.detail.prices') || 'Prices';
+
             document.getElementById('close-btn').textContent = getTranslation('int.close') || 'Close';
 
             if (document.getElementById('label-start-date')) document.getElementById('label-start-date').textContent = (getTranslation('int.date.start') || 'Start') + ':';
@@ -660,6 +678,7 @@
                     language: language,
                     instrument: {
                         id_instrument: idInstrument,
+                        id_account: idAccount,
                         date_start: startDate,
                         date_end: endDate
                     }
@@ -802,6 +821,20 @@
                         maxRotation: 45, minRotation: 45
                     },
                     grid: { color: 'rgba(0, 0, 0, 0.05)' }
+                },
+                y: {
+                    beginAtZero: false,
+                    ticks: {
+                        color: '#1a1a1a',
+                        font: { family: '"Times New Roman", Times, serif', size: 11 },
+                        callback: function (value) {
+                            return value.toLocaleString(language === 'it_IT' ? 'it-IT' : 'en-US', {
+                                minimumFractionDigits: 2,
+                                maximumFractionDigits: 4
+                            });
+                        }
+                    },
+                    grid: { color: 'rgba(0, 0, 0, 0.05)' }
                 }
             };
 
@@ -847,7 +880,24 @@
         function parseValue(value) {
             if (typeof value === 'number') return value;
             if (typeof value === 'string') {
-                const cleanValue = value.replace(/%|:EUR|:USD|:GBP|:CHF/g, '').trim();
+                // Remove currency and percentage symbols
+                let cleanValue = value.replace(/%|:EUR|:USD|:GBP|:CHF/g, '').trim();
+                // Handle potential thousands separator if the string contains a comma but no more than one dot? 
+                // Or if it's Italian format (1.234,56). 
+                // Simple heuristic: if there's a comma, it might be the decimal separator or thousands.
+                // The user says "i valori sono in price_mkt numerici con separatore decimali ."
+                // So if it's already a float it's fine. If it's a string from another source, we handle it.
+                if (cleanValue.includes(',') && !cleanValue.includes('.')) {
+                    cleanValue = cleanValue.replace(',', '.');
+                } else if (cleanValue.includes(',') && cleanValue.includes('.')) {
+                    // It has both. If comma is after dot, comma is decimal.
+                    if (cleanValue.indexOf(',') > cleanValue.indexOf('.')) {
+                        cleanValue = cleanValue.replace(/\./g, '').replace(',', '.');
+                    } else {
+                        // Dot is after comma, so dot is decimal.
+                        cleanValue = cleanValue.replace(/,/g, '');
+                    }
+                }
                 return parseFloat(cleanValue) || 0;
             }
             return 0;
@@ -896,21 +946,34 @@
                 aggregated[key].count++;
 
                 if (!aggregated[key].instruments[instrument]) {
-                    aggregated[key].instruments[instrument] = 0;
+                    aggregated[key].instruments[instrument] = { sum: 0, count: 0 };
                 }
-                aggregated[key].instruments[instrument] += val;
+                aggregated[key].instruments[instrument].sum += val;
+                aggregated[key].instruments[instrument].count++;
             });
 
             const sorted = Object.keys(aggregated).sort((a, b) => {
                 return aggregated[a].date - aggregated[b].date;
             });
 
-            return sorted.map(key => ({
-                label: key,
-                value: aggregated[key].sum,
-                instruments: aggregated[key].instruments,
-                date: aggregated[key].date
-            }));
+            return sorted.map(key => {
+                const item = aggregated[key];
+                const avgValue = item.count > 0 ? item.sum / item.count : 0;
+
+                const instrumentAvgs = {};
+                for (let instr in item.instruments) {
+                    instrumentAvgs[instr] = item.instruments[instr].count > 0
+                        ? item.instruments[instr].sum / item.instruments[instr].count
+                        : 0;
+                }
+
+                return {
+                    label: key,
+                    value: avgValue,
+                    instruments: instrumentAvgs,
+                    date: item.date
+                };
+            });
         }
 
         window.onload = init;
