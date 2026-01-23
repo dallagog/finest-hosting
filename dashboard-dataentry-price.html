@@ -6,7 +6,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title id="pageTitle">Price Data Entry</title>
     <!-- Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+        crossorigin="anonymous">
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&display=swap" rel="stylesheet">
     <style>
@@ -384,6 +385,15 @@
             <i class="fa fa-check-circle"></i> <span id="successText">Dati salvati con successo!</span>
         </div>
 
+        <div id="instrument-id-container" class="instrument-selector" style="margin-bottom: 30px;">
+            <label for="field_id_instrument" class="selector-label">
+                <i class="fa fa-fingerprint"></i> <span id="instrumentIdLabel">Strumento:</span>
+            </label>
+            <input type="text" id="field_id_instrument" name="id_instrument" class="form-input"
+                placeholder="Ticker / ISIN" style="height: 48px;">
+            <span class="error-message" id="error_id_instrument"></span>
+        </div>
+
         <div class="web-search-box">
             <label for="search-url" class="selector-label">
                 <i class="fa fa-globe"></i> <span id="webSearchLabel">Web Search / URL:</span>
@@ -431,7 +441,6 @@
     <script>
         const priceConfig = {
             mapping: {
-                "id_instrument": { "label": "id_instrument", "mapped_name": "id_instrument" },
                 "date_start": { "label": "int.date_start", "mapped_name": "date_start" },
                 "field": { "label": "int.price_type", "mapped_name": "field" },
                 "value": { "label": "int.price", "mapped_name": "value" }
@@ -463,6 +472,8 @@
             await loadDomine();
             await updateHeaderWithUserInfo();
             populateValueTypeSelector();
+            const idInput = document.getElementById('field_id_instrument');
+            if (idInput) idInput.value = currentInstrumentId || '';
             generatePriceForm();
         }
 
@@ -524,7 +535,8 @@
             document.getElementById('btnWebSearch').textContent = getTranslation('int.confirm') || 'Conferma';
             document.getElementById('valueTypeLabel').textContent = getTranslation('int.price_type') || 'Tipo Valore:';
             document.getElementById('userLabel').textContent = getTranslation('int.user.label') || 'Utente:';
-            document.getElementById('sharedDbLabel').textContent = getTranslation('int.shareddatabase') || 'Shared Database';
+            document.getElementById('sharedDbLabel').textContent = getTranslation('int.sharedatabase') || 'Shared Database';
+            document.getElementById('instrumentIdLabel').textContent = getTranslation('id_instrument') || 'Strumento:';
         }
 
         async function updateHeaderWithUserInfo() {
@@ -567,10 +579,17 @@
 
         async function executeWebSearch() {
             const url = document.getElementById('search-url').value;
-            const idInstrument = document.getElementById('field_id_instrument') ? document.getElementById('field_id_instrument').value : '';
+            const idInstrument = document.getElementById('field_id_instrument').value.trim();
             const typePrice = document.getElementById('field_field').value;
 
             if (!url) { alert("Please enter a URL first"); return; }
+            if (!idInstrument) {
+                showFieldError('id_instrument', getTranslation('int.field.required') || 'Campo obbligatorio');
+                alert("Please enter a Ticker/ISIN first");
+                return;
+            } else {
+                clearFieldError('id_instrument');
+            }
 
             // Visual feedback
             const btn = document.querySelector('.web-search-box .btn-primary');
@@ -739,7 +758,14 @@
                 clearAllErrors();
                 let isValid = true;
                 const formData = {};
+                const idInput = document.getElementById('field_id_instrument');
+                const idValue = idInput ? idInput.value.trim() : '';
+                const idValidation = validateField('id_instrument', idValue);
+                if (!idValidation.valid) { showFieldError('id_instrument', idValidation.message); isValid = false; }
+                else formData['id_instrument'] = idValue;
+
                 priceConfig.mandatory.required.forEach(fieldName => {
+                    if (fieldName === 'id_instrument') return;
                     const input = document.getElementById(`field_${fieldName}`);
                     const value = input ? input.value.trim() : '';
                     const validation = validateField(fieldName, value);
@@ -750,13 +776,23 @@
             });
             form.addEventListener('blur', (e) => {
                 if (e.target.classList.contains('form-input') || e.target.classList.contains('form-select')) {
-                    const fieldName = e.target.name;
+                    const fieldName = e.target.name || e.target.id.replace('field_', '');
                     const value = e.target.value.trim();
                     const validation = validateField(fieldName, value);
                     if (!validation.valid) showFieldError(fieldName, validation.message);
                     else clearFieldError(fieldName);
                 }
             }, true);
+
+            const mainIdInput = document.getElementById('field_id_instrument');
+            if (mainIdInput) {
+                mainIdInput.addEventListener('blur', () => {
+                    const val = mainIdInput.value.trim();
+                    const validation = validateField('id_instrument', val);
+                    if (!validation.valid) showFieldError('id_instrument', validation.message);
+                    else clearFieldError('id_instrument');
+                });
+            }
             document.getElementById('reset-btn').addEventListener('click', () => { form.reset(); clearAllErrors(); });
         }
 
@@ -764,6 +800,9 @@
             const dbToggle = document.getElementById('db-toggle');
             data.db_type = dbToggle.checked ? 'shared' : 'local';
             data.field = document.getElementById('field_field').value;
+            if (!data.id_instrument) {
+                data.id_instrument = document.getElementById('field_id_instrument').value.trim();
+            }
             try {
                 const payload = {
                     username: credentials.username,
