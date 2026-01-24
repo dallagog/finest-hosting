@@ -395,11 +395,13 @@
                     username: urlParams.username,
                     token: urlParams.token,
                     language: urlParams.language,
-                    instrument_data: JSON.stringify({
+                    instrument: JSON.stringify({
                         id_instrument: idInstrument,
                         url: url
                     })
                 };
+
+                console.log("Sending payload to /downloadinstrument:", payload);
 
                 const response = await fetch(`${API_URL}/downloadinstrument`, {
                     method: 'POST',
@@ -407,15 +409,24 @@
                     body: JSON.stringify(payload)
                 });
 
+                console.log("Response status:", response.status);
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error("Server error response:", errorText);
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
                 const result = await response.json();
+                console.log("Search result:", result);
 
                 if (result.status === 'ok') {
                     showStatus("Dati scaricati con successo!", "success");
 
                     if (window.opener && !window.opener.closed) {
                         try {
-                            // Try to map fields directly in the opener's dynamic form
                             const data = result.data || {};
+                            console.log("Pushing data to opener:", data);
                             Object.keys(data).forEach(key => {
                                 const input = window.opener.document.querySelector(`[name="${key}"]`);
                                 if (input) {
@@ -426,6 +437,7 @@
                         } catch (e) { console.warn("Could not push update to opener window:", e); }
                     }
                 } else {
+                    console.warn("Analysis result NOT OK:", result);
                     showStatus("Errore nell'analisi: " + (result.msg || "Errore sconosciuto"), "error");
                 }
             } catch (err) {
