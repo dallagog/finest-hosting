@@ -188,6 +188,16 @@
             font-size: 0.9rem;
         }
 
+        .btn-remove {
+            color: var(--error-color) !important;
+            border-color: var(--error-color) !important;
+            background: white !important;
+        }
+
+        .btn-remove:hover {
+            background: #fee2e2 !important;
+        }
+
         .status-message {
             padding: 15px;
             border-radius: 8px;
@@ -240,6 +250,56 @@
                 transform: rotate(360deg);
             }
         }
+
+        .results-panel {
+            background: var(--glass-bg);
+            padding: 25px;
+            border-radius: 12px;
+            margin-top: 30px;
+            border: 1px solid var(--border-color);
+            box-shadow: var(--shadow-sm);
+            display: none;
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        .results-panel.show {
+            display: block;
+        }
+
+        .results-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eee;
+            color: var(--primary-color);
+            text-transform: uppercase;
+        }
+
+        .results-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 15px;
+        }
+
+        .result-item {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .result-label {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: #888;
+            text-transform: uppercase;
+        }
+
+        .result-value {
+            font-size: 0.95rem;
+            font-weight: 500;
+            color: #222;
+        }
     </style>
 </head>
 
@@ -279,18 +339,56 @@
         </div>
 
         <div class="web-search-box">
-            <label for="search-url" class="selector-label">
+            <label class="selector-label">
                 <i class="fa fa-globe"></i> <span id="webSearchLabel">Web Search / URL:</span>
             </label>
-            <div class="input-group">
-                <input type="text" id="search-url" class="form-input" placeholder="https://..." value=""
-                    style="height: 48px;">
+            <div id="url-inputs-container">
+                <div class="input-group" style="margin-bottom: 10px;">
+                    <input type="text" class="form-input url-input" placeholder="https://..." style="height: 48px;">
+                    <button class="btn btn-secondary" onclick="addUrlInput()"
+                        style="height: 48px; width: 48px; padding: 0;">
+                        <i class="fa fa-plus"></i>
+                    </button>
+                </div>
+            </div>
+            <div style="margin-top: 20px;">
                 <button class="btn btn-primary" onclick="executeInstrumentSearch()" id="btnConfirm"
-                    style="height: 48px;">
+                    style="height: 48px; width: 100%;">
                     <i class="fa fa-search"></i> <span id="btnConfirmText">Conferma</span>
                 </button>
             </div>
             <div id="statusMessage" class="status-message"></div>
+        </div>
+
+        <div id="resultsPanel" class="results-panel">
+            <h3 class="results-title" id="resultsTitle">Dati Estratti</h3>
+            <div class="results-grid" id="resultsGrid">
+                <!-- Spazio per i dati: isin, provider, market, descr, ecc. -->
+                <div class="result-item" id="res_isin_container">
+                    <span class="result-label">ISIN:</span>
+                    <span class="result-value" id="res_code_isin">-</span>
+                </div>
+                <div class="result-item" id="res_provider_container">
+                    <span class="result-label" id="resLabelProvider">Provider:</span>
+                    <span class="result-value" id="res_provider">-</span>
+                </div>
+                <div class="result-item" id="res_market_container">
+                    <span class="result-label" id="resLabelMarket">Market:</span>
+                    <span class="result-value" id="res_code_market">-</span>
+                </div>
+                <div class="result-item" id="res_description_container">
+                    <span class="result-label" id="resLabelDesc">Descrizione:</span>
+                    <span class="result-value" id="res_instrument_description">-</span>
+                </div>
+                <div class="result-item" id="res_qmin_container">
+                    <span class="result-label" id="resLabelQMin">Quantità Minima:</span>
+                    <span class="result-value" id="res_quantity_minimum">-</span>
+                </div>
+                <div class="result-item" id="res_sector_container">
+                    <span class="result-label" id="resLabelSector">Settore:</span>
+                    <span class="result-value" id="res_sector">-</span>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -359,6 +457,12 @@
             document.getElementById('userLabel').textContent = getTranslation('int.user.label') || 'Utente:';
             document.getElementById('instrumentIdLabel').textContent = getTranslation('id_instrument') || 'Strumento:';
             document.getElementById('pageSubtitle').textContent = getTranslation('int.dataentry_price.subtitle') || 'Web Search / URL Analysis';
+            document.getElementById('resultsTitle').textContent = getTranslation('int.details') || 'Dati Estratti';
+            document.getElementById('resLabelProvider').textContent = getTranslation('provider') || 'Provider:';
+            document.getElementById('resLabelMarket').textContent = getTranslation('code_market') || 'Market:';
+            document.getElementById('resLabelDesc').textContent = getTranslation('instrument_description') || 'Descrizione:';
+            document.getElementById('resLabelQMin').textContent = getTranslation('quantity_minimum') || 'Quantità Minima:';
+            document.getElementById('resLabelSector').textContent = getTranslation('sector') || 'Settore:';
         }
 
         function updateHeader() {
@@ -373,14 +477,15 @@
         }
 
         async function executeInstrumentSearch() {
-            const url = document.getElementById('search-url').value.trim();
+            const urlInputs = document.querySelectorAll('.url-input');
+            const urls = Array.from(urlInputs).map(i => i.value.trim()).filter(u => u !== '');
             const idInstrument = document.getElementById('field_id_instrument').value.trim();
             const statusEl = document.getElementById('statusMessage');
             const btn = document.getElementById('btnConfirm');
             const btnText = document.getElementById('btnConfirmText');
 
-            if (!url) {
-                showStatus("Please enter a URL first", "error");
+            if (urls.length === 0) {
+                showStatus("Please enter at least one URL", "error");
                 return;
             }
 
@@ -397,7 +502,7 @@
                     language: urlParams.language,
                     instrument: JSON.stringify({
                         id_instrument: idInstrument,
-                        url: url
+                        url: urls.join(',')
                     })
                 };
 
@@ -423,9 +528,12 @@
                 if (result.status === 'ok') {
                     showStatus("Dati scaricati con successo!", "success");
 
+                    // Visualizza i dati estratti nel pannello
+                    const data = result.data || {};
+                    displayResults(data);
+
                     if (window.opener && !window.opener.closed) {
                         try {
-                            const data = result.data || {};
                             console.log("Pushing data to opener:", data);
                             Object.keys(data).forEach(key => {
                                 const input = window.opener.document.querySelector(`[name="${key}"]`);
@@ -439,6 +547,7 @@
                 } else {
                     console.warn("Analysis result NOT OK:", result);
                     showStatus("Errore nell'analisi: " + (result.msg || "Errore sconosciuto"), "error");
+                    document.getElementById('resultsPanel').classList.remove('show');
                 }
             } catch (err) {
                 console.error("Web search error:", err);
@@ -454,6 +563,48 @@
             statusEl.textContent = text;
             statusEl.className = 'status-message ' + (type === 'success' ? 'status-success' : 'status-error');
             statusEl.style.display = 'block';
+        }
+
+        function addUrlInput() {
+            const container = document.getElementById('url-inputs-container');
+            const div = document.createElement('div');
+            div.className = 'input-group';
+            div.style.marginBottom = '10px';
+            div.style.animation = 'fadeIn 0.3s ease-out';
+            div.innerHTML = `
+                <input type="text" class="form-input url-input" placeholder="https://..." style="height: 48px;">
+                <button class="btn btn-secondary btn-remove" onclick="removeUrlInput(this)" title="Rimuovi URL" style="height: 48px; width: 48px; padding: 0;">
+                    <i class="fa fa-minus"></i>
+                </button>
+            `;
+            container.appendChild(div);
+        }
+
+        function removeUrlInput(btn) {
+            const group = btn.closest('.input-group');
+            if (group) group.remove();
+        }
+
+        function displayResults(data) {
+            const panel = document.getElementById('resultsPanel');
+            const fields = [
+                'code_isin', 'provider', 'code_market',
+                'instrument_description', 'quantity_minimum', 'sector'
+            ];
+
+            fields.forEach(field => {
+                const el = document.getElementById(`res_${field}`);
+                if (el) {
+                    el.textContent = data[field] || '-';
+                    // Opzionale: nascondi se vuoto
+                    const container = document.getElementById(`res_${field}_container`);
+                    if (container) {
+                        container.style.display = data[field] ? 'flex' : 'none';
+                    }
+                }
+            });
+
+            panel.classList.add('show');
         }
 
         init();
