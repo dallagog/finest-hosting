@@ -673,7 +673,13 @@
                             const sectorValue = credentials.account_sector || credentials.filter;
                             if (sectorValue) {
                                 console.log(`Pre-popolamento sector: ${sectorValue}`);
-                                select.value = sectorValue;
+                                // Usa setTimeout per assicurarti che le opzioni siano popolate
+                                setTimeout(() => {
+                                    select.value = sectorValue;
+                                    // Forza un evento change per assicurare che il valore sia registrato
+                                    select.dispatchEvent(new Event('change', { bubbles: true }));
+                                    console.log(`Sector value impostato a: ${select.value}`);
+                                }, 100);
                             }
                         }
                     } else if (select && fieldName === 'id_registry') {
@@ -696,9 +702,25 @@
             e.preventDefault();
             const formData = {};
             const inputs = this.querySelectorAll('input, select');
-            inputs.forEach(i => { if (i.id) formData[i.id] = i.value; });
+            inputs.forEach(i => {
+                if (i.id && i.value) { // Aggiungi solo campi con valore
+                    formData[i.id] = i.value;
+                }
+            });
+
+            // Assicurati che account_sector sia incluso anche se pre-popolato
+            if (!formData.account_sector && credentials.account_sector) {
+                formData.account_sector = credentials.account_sector;
+                console.log('Account sector aggiunto dalle credenziali:', credentials.account_sector);
+            }
 
             console.log("Console: Invio dati account:", formData);
+
+            // Validazione minima
+            if (!formData.id_account) {
+                showMessage('Inserisci almeno il codice account', 'error');
+                return;
+            }
 
             try {
                 showLoading(true);
@@ -715,6 +737,8 @@
                 const data = await response.json();
                 showLoading(false);
 
+                console.log('Risposta API putaccount:', data);
+
                 if (data.status === 'ok') {
                     showMessage(getTranslation('int.success.save'), 'success');
                     setTimeout(() => window.close(), 2000);
@@ -724,12 +748,13 @@
             } catch (error) {
                 console.error('Error saving:', error);
                 showLoading(false);
+                showMessage('Errore di connessione', 'error');
             }
         });
 
         // ========== APP START ==========
         window.addEventListener('load', async () => {
-            console.log("Console: Avvio applicazione...");
+            console.log("Console: Avvio applicazione dashboard-account.html...");
             if (!checkAuthentication()) return;
 
             await initializeLanguages();
