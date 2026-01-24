@@ -601,6 +601,12 @@
             if (!dataStr) return;
 
             const data = JSON.parse(dataStr);
+            // Include manually edited id_instrument
+            const idInstrument = document.getElementById('field_id_instrument').value.trim();
+            if (idInstrument) {
+                data['id_instrument'] = idInstrument;
+            }
+
             console.log("Taking data to opener:", data);
 
             if (window.opener && !window.opener.closed) {
@@ -612,8 +618,8 @@
                             input.dispatchEvent(new Event('blur'));
                         }
                     });
-                    // Optional: Close window after taking data
-                    // window.close();
+                    // Close window after taking data
+                    window.close();
                 } catch (e) {
                     console.error("Error pushing data to opener:", e);
                     alert("Errore nel riportare i dati alla maschera principale.");
