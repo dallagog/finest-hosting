@@ -363,31 +363,7 @@
         <div id="resultsPanel" class="results-panel">
             <h3 class="results-title" id="resultsTitle">Dati Estratti</h3>
             <div class="results-grid" id="resultsGrid">
-                <!-- Spazio per i dati: isin, provider, market, descr, ecc. -->
-                <div class="result-item" id="res_isin_container">
-                    <span class="result-label">ISIN:</span>
-                    <span class="result-value" id="res_code_isin">-</span>
-                </div>
-                <div class="result-item" id="res_provider_container">
-                    <span class="result-label" id="resLabelProvider">Provider:</span>
-                    <span class="result-value" id="res_provider">-</span>
-                </div>
-                <div class="result-item" id="res_market_container">
-                    <span class="result-label" id="resLabelMarket">Market:</span>
-                    <span class="result-value" id="res_code_market">-</span>
-                </div>
-                <div class="result-item" id="res_description_container">
-                    <span class="result-label" id="resLabelDesc">Descrizione:</span>
-                    <span class="result-value" id="res_instrument_description">-</span>
-                </div>
-                <div class="result-item" id="res_qmin_container">
-                    <span class="result-label" id="resLabelQMin">Quantità Minima:</span>
-                    <span class="result-value" id="res_quantity_minimum">-</span>
-                </div>
-                <div class="result-item" id="res_sector_container">
-                    <span class="result-label" id="resLabelSector">Settore:</span>
-                    <span class="result-value" id="res_sector">-</span>
-                </div>
+                <!-- I dati verranno caricati dinamicamente qui -->
             </div>
         </div>
     </div>
@@ -458,11 +434,6 @@
             document.getElementById('instrumentIdLabel').textContent = getTranslation('id_instrument') || 'Strumento:';
             document.getElementById('pageSubtitle').textContent = getTranslation('int.dataentry_price.subtitle') || 'Web Search / URL Analysis';
             document.getElementById('resultsTitle').textContent = getTranslation('int.details') || 'Dati Estratti';
-            document.getElementById('resLabelProvider').textContent = getTranslation('provider') || 'Provider:';
-            document.getElementById('resLabelMarket').textContent = getTranslation('code_market') || 'Market:';
-            document.getElementById('resLabelDesc').textContent = getTranslation('instrument_description') || 'Descrizione:';
-            document.getElementById('resLabelQMin').textContent = getTranslation('quantity_minimum') || 'Quantità Minima:';
-            document.getElementById('resLabelSector').textContent = getTranslation('sector') || 'Settore:';
         }
 
         function updateHeader() {
@@ -587,24 +558,29 @@
 
         function displayResults(data) {
             const panel = document.getElementById('resultsPanel');
-            const fields = [
-                'code_isin', 'provider', 'code_market',
-                'instrument_description', 'quantity_minimum', 'sector'
-            ];
+            const grid = document.getElementById('resultsGrid');
+            grid.innerHTML = ''; // Pulisci i risultati precedenti
 
-            fields.forEach(field => {
-                const el = document.getElementById(`res_${field}`);
-                if (el) {
-                    el.textContent = data[field] || '-';
-                    // Opzionale: nascondi se vuoto
-                    const container = document.getElementById(`res_${field}_container`);
-                    if (container) {
-                        container.style.display = data[field] ? 'flex' : 'none';
-                    }
-                }
+            Object.keys(data).forEach(key => {
+                const value = data[key];
+                if (value === undefined || value === null || value === '') return;
+
+                const label = getTranslation(key) || key.replace(/_/g, ' ').toUpperCase();
+
+                const item = document.createElement('div');
+                item.className = 'result-item';
+                item.innerHTML = `
+                    <span class="result-label">${label}:</span>
+                    <span class="result-value">${value}</span>
+                `;
+                grid.appendChild(item);
             });
 
-            panel.classList.add('show');
+            if (Object.keys(data).length > 0) {
+                panel.classList.add('show');
+            } else {
+                panel.classList.remove('show');
+            }
         }
 
         init();
