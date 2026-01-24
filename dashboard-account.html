@@ -347,7 +347,8 @@
                 username: params.get('username') || localStorage.getItem('username') || '',
                 token: params.get('token') || localStorage.getItem('token') || '',
                 language: params.get('language') || localStorage.getItem('language') || 'it_IT',
-                filter: params.get('filter') || localStorage.getItem('filter') || ''
+                filter: params.get('filter') || localStorage.getItem('filter') || '',
+                account_sector: params.get('account_sector') || ''
             };
         }
 
@@ -666,6 +667,15 @@
                                 select.appendChild(opt);
                             }
                         });
+
+                        // Pre-popolamento
+                        if (fieldName === 'account_sector') {
+                            const sectorValue = credentials.account_sector || credentials.filter;
+                            if (sectorValue) {
+                                console.log(`Pre-popolamento sector: ${sectorValue}`);
+                                select.value = sectorValue;
+                            }
+                        }
                     } else if (select && fieldName === 'id_registry') {
                         select.options[0].textContent = getTranslation('int.select.registry');
                     }

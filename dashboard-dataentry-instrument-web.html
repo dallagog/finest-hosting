@@ -601,24 +601,34 @@
             if (!dataStr) return;
 
             const data = JSON.parse(dataStr);
-            // Include manually edited id_instrument
             const idInstrument = document.getElementById('field_id_instrument').value.trim();
-            if (idInstrument) {
-                data['id_instrument'] = idInstrument;
-            }
 
             console.log("Taking data to opener:", data);
 
             if (window.opener && !window.opener.closed) {
                 try {
+                    // Try to populate extracted fields
                     Object.keys(data).forEach(key => {
-                        const input = window.opener.document.querySelector(`[name="${key}"]`);
+                        let input = window.opener.document.querySelector(`[name="${key}"]`);
                         if (input) {
                             input.value = data[key];
                             input.dispatchEvent(new Event('blur'));
                         }
                     });
-                    // Close window after taking data
+
+                    // Special handling for the ID/Ticker/ISIN
+                    if (idInstrument) {
+                        // Try different possible names for the main instrument ID field
+                        ['id', 'id_instrument', 'code_isin'].forEach(targetName => {
+                            const input = window.opener.document.querySelector(`[name="${targetName}"]`);
+                            if (input) {
+                                input.value = idInstrument;
+                                input.dispatchEvent(new Event('blur'));
+                                console.log(`Populated primary field: ${targetName}`);
+                            }
+                        });
+                    }
+
                     window.close();
                 } catch (e) {
                     console.error("Error pushing data to opener:", e);
