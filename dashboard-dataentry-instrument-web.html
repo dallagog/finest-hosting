@@ -271,12 +271,11 @@
         <p class="subtitle" id="pageSubtitle">Web Search / URL Analysis</p>
 
         <div id="instrument-display" class="instrument-selector" style="margin-bottom: 30px;">
-            <label class="selector-label">
+            <label for="field_id_instrument" class="selector-label">
                 <i class="fa fa-fingerprint"></i> <span id="instrumentIdLabel">Strumento:</span>
             </label>
-            <div id="currentIdDisplay" style="font-size: 1.2rem; font-weight: bold; color: var(--primary-color);">
-                -
-            </div>
+            <input type="text" id="field_id_instrument" class="form-input" placeholder="Ticker / ISIN"
+                style="height: 48px; font-weight: bold; color: var(--primary-color);">
         </div>
 
         <div class="web-search-box">
@@ -309,7 +308,7 @@
             applyTranslations();
 
             if (urlParams.id_instrument) {
-                document.getElementById('currentIdDisplay').textContent = urlParams.id_instrument;
+                document.getElementById('field_id_instrument').value = urlParams.id_instrument;
             }
         }
 
@@ -375,7 +374,7 @@
 
         async function executeInstrumentSearch() {
             const url = document.getElementById('search-url').value.trim();
-            const idInstrument = urlParams.id_instrument || '';
+            const idInstrument = document.getElementById('field_id_instrument').value.trim();
             const statusEl = document.getElementById('statusMessage');
             const btn = document.getElementById('btnConfirm');
             const btnText = document.getElementById('btnConfirmText');
