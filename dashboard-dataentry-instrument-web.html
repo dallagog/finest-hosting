@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="it">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title id="pageTitle">Instrument Web Search</title>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+        crossorigin="anonymous">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #f5f5f0;
+            --neon-cyan: #000000;
+            --neon-blue: #333333;
+            --glass-bg: #ffffff;
+            --text-color: #333333;
+            --border-color: #000000;
+            --primary-color: #2563eb;
+            --primary-hover: #1d4ed8;
+            --secondary-color: #64748b;
+            --secondary-hover: #475569;
+            --success-color: #10b981;
+            --error-color: #ef4444;
+            --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+            --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Orbitron', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.5;
+            padding: 20px;
+        }
+
+        .header-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: var(--glass-bg);
+            border: 1px solid var(--border-color);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+        }
+
+        .user-info-left {
+            flex: 1;
+            text-align: left;
+            font-size: 14px;
+            color: var(--neon-cyan);
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .user-info-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .flag-icon {
+            font-size: 18px;
+        }
+
+        .logout-container {
+            flex: 1;
+            text-align: right;
+        }
+
+        .logout-btn {
+            padding: 8px 16px;
+            background: #000;
+            border: 1px solid #000;
+            color: #fff;
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: inherit;
+            transition: all 0.3s;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9rem;
+        }
+
+        .logout-btn:hover {
+            background: #333;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        .subtitle {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 25px;
+            color: var(--text-color);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .web-search-box {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: var(--glass-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            box-shadow: var(--shadow-md);
+        }
+
+        .instrument-selector {
+            background: var(--glass-bg);
+            padding: 25px;
+            border-radius: 12px;
+            margin-bottom: 25px;
+            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--border-color);
+        }
+
+        .selector-label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 12px;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 10px;
+        }
+
+        .form-input {
+            flex: 1;
+            padding: 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 1rem;
+            font-family: inherit;
+            outline: none;
+            transition: all 0.2s;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 1px solid transparent;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            justify-content: center;
+            font-family: inherit;
+        }
+
+        .btn-primary {
+            background: #000;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #333;
+        }
+
+        .btn-sm {
+            padding: 8px 16px;
+            font-size: 0.9rem;
+        }
+
+        .status-message {
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            display: none;
+            text-align: center;
+            font-weight: bold;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        .status-error {
+            background-color: #fee2e2;
+            color: #b91c1c;
+            border: 1px solid #fecaca;
+        }
+
+        .status-success {
+            background-color: #ecfdf5;
+            color: #065f46;
+            border: 1px solid #a7f3d0;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-top: 2px solid #fff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="header-bar">
+        <div class="user-info-left" id="userInfo">
+            <div class="user-info-row">
+                <strong id="userLabel">Utente:</strong>
+                <span id="usernameDisplay">-</span>
+            </div>
+            <div class="user-info-row">
+                <span class="flag-icon" id="languageFlag"></span>
+                <span id="languageDisplay">-</span>
+            </div>
+        </div>
+        <div style="flex: 1; text-align: center;">
+            <h1 id="pageHeading"
+                style="font-size: 1.5rem; font-weight: 700; color: #000; text-transform: uppercase; letter-spacing: 2px;">
+                Instrument Search</h1>
+        </div>
+        <div class="logout-container">
+            <button class="logout-btn" onclick="window.close()">
+                <i class="fa fa-times-circle"></i> <span id="closeText">Chiudi</span>
+            </button>
+        </div>
+    </div>
+
+    <div class="container">
+        <p class="subtitle" id="pageSubtitle">Web Search / URL Analysis</p>
+
+        <div id="instrument-display" class="instrument-selector" style="margin-bottom: 30px;">
+            <label class="selector-label">
+                <i class="fa fa-fingerprint"></i> <span id="instrumentIdLabel">Strumento:</span>
+            </label>
+            <div id="currentIdDisplay" style="font-size: 1.2rem; font-weight: bold; color: var(--primary-color);">
+                -
+            </div>
+        </div>
+
+        <div class="web-search-box">
+            <label for="search-url" class="selector-label">
+                <i class="fa fa-globe"></i> <span id="webSearchLabel">Web Search / URL:</span>
+            </label>
+            <div class="input-group">
+                <input type="text" id="search-url" class="form-input" placeholder="https://..." value=""
+                    style="height: 48px;">
+                <button class="btn btn-primary" onclick="executeInstrumentSearch()" id="btnConfirm"
+                    style="height: 48px;">
+                    <i class="fa fa-search"></i> <span id="btnConfirmText">Conferma</span>
+                </button>
+            </div>
+            <div id="statusMessage" class="status-message"></div>
+        </div>
+    </div>
+
+    <script>
+        let urlParams = {};
+        let translations = {};
+        let availableLanguages = [];
+        const API_URL = 'https://feweb-tunnel.fe-web.eu';
+
+        async function init() {
+            getURLParams();
+            await initializeLanguages();
+            await loadTranslations(urlParams.language || 'it_IT');
+            updateHeader();
+            applyTranslations();
+
+            if (urlParams.id_instrument) {
+                document.getElementById('currentIdDisplay').textContent = urlParams.id_instrument;
+            }
+        }
+
+        function getURLParams() {
+            const params = new URLSearchParams(window.location.search);
+            for (const [key, value] of params.entries()) {
+                urlParams[key] = value;
+            }
+        }
+
+        async function loadTranslations(langCode) {
+            try {
+                const response = await fetch(`lang/${langCode}.json`);
+                if (!response.ok) return;
+                translations = await response.json();
+            } catch (error) { console.error("Error loading translations:", error); }
+        }
+
+        async function initializeLanguages() {
+            try {
+                const response = await fetch('lang/manifest.json');
+                const data = await response.json();
+                const langCodes = data.languages || [];
+
+                for (const langCode of langCodes) {
+                    const resp = await fetch(`lang/${langCode}.json`);
+                    if (resp.ok) {
+                        const d = await resp.json();
+                        availableLanguages.push({
+                            code: langCode,
+                            name: d['int.language.description'] || langCode,
+                            flag: d['img.language.flag'] || ''
+                        });
+                    }
+                }
+            } catch (e) { console.error('Error loading manifest:', e); }
+        }
+
+        function getTranslation(key) { return translations[key] || key; }
+
+        function applyTranslations() {
+            document.title = getTranslation('intwebsearch') || 'Instrument Web Search';
+            document.getElementById('pageHeading').textContent = getTranslation('intwebsearch') || 'Instrument Web Search';
+            const closeText = getTranslation('int.close') || 'Chiudi';
+            document.getElementById('closeText').textContent = closeText;
+            document.getElementById('webSearchLabel').textContent = getTranslation('int.websearch') || 'Web Search / URL:';
+            document.getElementById('btnConfirmText').textContent = getTranslation('int.confirm') || 'Conferma';
+            document.getElementById('userLabel').textContent = getTranslation('int.user.label') || 'Utente:';
+            document.getElementById('instrumentIdLabel').textContent = getTranslation('id_instrument') || 'Strumento:';
+            document.getElementById('pageSubtitle').textContent = getTranslation('int.dataentry_price.subtitle') || 'Web Search / URL Analysis';
+        }
+
+        function updateHeader() {
+            const userLanguage = urlParams.language || 'it_IT';
+            document.getElementById('usernameDisplay').textContent = urlParams.username || '-';
+
+            const langData = availableLanguages.find(l => l.code === userLanguage);
+            if (langData) {
+                document.getElementById('languageFlag').textContent = langData.flag;
+                document.getElementById('languageDisplay').textContent = langData.name;
+            }
+        }
+
+        async function executeInstrumentSearch() {
+            const url = document.getElementById('search-url').value.trim();
+            const idInstrument = urlParams.id_instrument || '';
+            const statusEl = document.getElementById('statusMessage');
+            const btn = document.getElementById('btnConfirm');
+            const btnText = document.getElementById('btnConfirmText');
+
+            if (!url) {
+                showStatus("Please enter a URL first", "error");
+                return;
+            }
+
+            // Visual feedback
+            btn.disabled = true;
+            const originalText = btnText.textContent;
+            btnText.innerHTML = '<div class="spinner"></div> ' + (getTranslation('int.inprogress') || 'Elaborazione...');
+            statusEl.style.display = 'none';
+
+            try {
+                const payload = {
+                    username: urlParams.username,
+                    token: urlParams.token,
+                    language: urlParams.language,
+                    instrument_data: JSON.stringify({
+                        id_instrument: idInstrument,
+                        url: url
+                    })
+                };
+
+                const response = await fetch(`${API_URL}/downloadinstrument`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await response.json();
+
+                if (result.status === 'ok') {
+                    showStatus("Dati scaricati con successo!", "success");
+
+                    if (window.opener && !window.opener.closed) {
+                        try {
+                            // Try to map fields directly in the opener's dynamic form
+                            const data = result.data || {};
+                            Object.keys(data).forEach(key => {
+                                const input = window.opener.document.querySelector(`[name="${key}"]`);
+                                if (input) {
+                                    input.value = data[key];
+                                    input.dispatchEvent(new Event('blur'));
+                                }
+                            });
+                        } catch (e) { console.warn("Could not push update to opener window:", e); }
+                    }
+                } else {
+                    showStatus("Errore nell'analisi: " + (result.msg || "Errore sconosciuto"), "error");
+                }
+            } catch (err) {
+                console.error("Web search error:", err);
+                showStatus("Errore di connessione: " + err.message, "error");
+            } finally {
+                btn.disabled = false;
+                btnText.textContent = originalText;
+            }
+        }
+
+        function showStatus(text, type) {
+            const statusEl = document.getElementById('statusMessage');
+            statusEl.textContent = text;
+            statusEl.className = 'status-message ' + (type === 'success' ? 'status-success' : 'status-error');
+            statusEl.style.display = 'block';
+        }
+
+        init();
+    </script>
+</body>
+
+</html>
