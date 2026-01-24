@@ -391,7 +391,10 @@
                 id="pageTitle">Instrument
                 Data Entry</span> <span id="sectorTitle"
                 style="font-size: 0.6em; opacity: 0.8; margin-left: 10px; color: var(--neon-cyan);"></span></h1>
-        <div style="flex: 1; display: flex; justify-content: flex-end;">
+        <div style="flex: 1; display: flex; justify-content: flex-end; gap: 10px;">
+            <button class="btn btn-secondary btn-sm" id="btnWebSearchHeader" onclick="openWebSearch()">
+                <i class="fa fa-globe"></i> <span id="btnWebSearchText">Ricerca Web</span>
+            </button>
             <button class="close-btn" onclick="window.close()">
                 <i class="fa fa-times"></i> <span id="closeText">Chiudi</span>
             </button>
@@ -688,6 +691,7 @@
             document.getElementById('loadingText').textContent = getTranslation('ins.loading.data') || 'Inizializzazione sistema...';
             document.getElementById('successText').textContent = getTranslation('ins.success.save') || 'Dati salvati con successo!';
             document.getElementById('closeText').textContent = getTranslation('ins.close') || 'Chiudi';
+            document.getElementById('btnWebSearchText').textContent = getTranslation('intwebsearch') || 'Ricerca Web';
             document.getElementById('selectorLabel').textContent = getTranslation('ins.select.instrument.type') || 'Seleziona tipo strumento:';
 
             const sector = urlParams.account_sector;
@@ -701,6 +705,28 @@
             } else {
                 document.getElementById('sectorTitle').textContent = '';
             }
+        }
+
+        function openWebSearch() {
+            const params = new URLSearchParams();
+            if (credentials.username) params.set('username', credentials.username);
+            if (credentials.token) params.set('token', credentials.token);
+            if (credentials.language) params.set('language', credentials.language);
+
+            // Cerca di recuperare id_instrument dal form
+            let idInstrument = '';
+            const idInput = document.querySelector('[name="id_instrument"]');
+            if (idInput) {
+                idInstrument = idInput.value.trim();
+            } else if (urlParams.id_instrument) {
+                idInstrument = urlParams.id_instrument;
+            }
+
+            if (idInstrument) {
+                params.set('id_instrument', idInstrument);
+            }
+
+            window.open(`dashboard-dataentry-instrument-web.html?${params.toString()}`, '_blank');
         }
 
         // Popola il selettore instrument_type
