@@ -274,6 +274,9 @@
             border-bottom: 1px solid #eee;
             color: var(--primary-color);
             text-transform: uppercase;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
 
         .results-grid {
@@ -361,7 +364,13 @@
         </div>
 
         <div id="resultsPanel" class="results-panel">
-            <h3 class="results-title" id="resultsTitle">Dati Estratti</h3>
+            <h3 class="results-title">
+                <span id="resultsTitle">Dati Estratti</span>
+                <button class="btn btn-primary btn-sm" id="btnTake" onclick="takeData()"
+                    style="padding: 5px 12px; font-size: 0.8rem;">
+                    <i class="fa fa-arrow-right-to-bracket"></i> <span id="btnTakeText">Prendi</span>
+                </button>
+            </h3>
             <div class="results-grid" id="resultsGrid">
                 <!-- I dati verranno caricati dinamicamente qui -->
             </div>
@@ -434,6 +443,7 @@
             document.getElementById('instrumentIdLabel').textContent = getTranslation('id_instrument') || 'Strumento:';
             document.getElementById('pageSubtitle').textContent = getTranslation('int.dataentry_price.subtitle') || 'Web Search / URL Analysis';
             document.getElementById('resultsTitle').textContent = getTranslation('int.details') || 'Dati Estratti';
+            document.getElementById('btnTakeText').textContent = getTranslation('int.take') || 'Prendi';
         }
 
         function updateHeader() {
@@ -578,8 +588,38 @@
 
             if (Object.keys(data).length > 0) {
                 panel.classList.add('show');
+                // Store data for takeData function
+                panel.dataset.extractedData = JSON.stringify(data);
             } else {
                 panel.classList.remove('show');
+            }
+        }
+
+        function takeData() {
+            const panel = document.getElementById('resultsPanel');
+            const dataStr = panel.dataset.extractedData;
+            if (!dataStr) return;
+
+            const data = JSON.parse(dataStr);
+            console.log("Taking data to opener:", data);
+
+            if (window.opener && !window.opener.closed) {
+                try {
+                    Object.keys(data).forEach(key => {
+                        const input = window.opener.document.querySelector(`[name="${key}"]`);
+                        if (input) {
+                            input.value = data[key];
+                            input.dispatchEvent(new Event('blur'));
+                        }
+                    });
+                    // Optional: Close window after taking data
+                    // window.close();
+                } catch (e) {
+                    console.error("Error pushing data to opener:", e);
+                    alert("Errore nel riportare i dati alla maschera principale.");
+                }
+            } else {
+                alert("La maschera principale non è più disponibile.");
             }
         }
 
