@@ -445,6 +445,12 @@
                     </button>
                 </div>
             </div>
+            <div style="margin-top: 20px;">
+                <button type="button" class="btn btn-primary" onclick="executeWebSearch()" id="btnConfirm"
+                    style="height: 48px; width: 100%;">
+                    <i class="fa fa-search"></i> <span id="btnConfirmText">Conferma</span>
+                </button>
+            </div>
             <div id="statusMessage" class="status-message"></div>
         </div>
 
@@ -572,6 +578,7 @@
             document.getElementById('instrumentIdLabel').textContent = getTranslation('id_instrument') || 'Strumento:';
             document.getElementById('btnImportText').textContent = getTranslation('int.import') || 'Importa';
             document.getElementById('btnSearchTickerLabel').textContent = getTranslation('int.confirm') || 'Cerca';
+            document.getElementById('btnConfirmText').textContent = getTranslation('int.confirm') || 'Conferma';
         }
 
         async function updateHeaderWithUserInfo() {
@@ -735,21 +742,21 @@
             const typePrice = document.getElementById('field_field').value;
 
             if (urls.length === 0) {
-                alert("Please enter at least one URL");
+                showStatus("Per favore inserisci almeno un URL", "error");
                 return;
             }
             if (!idInstrument) {
                 showFieldError('id_instrument', getTranslation('int.field.required') || 'Campo obbligatorio');
-                alert("Please enter a Ticker/ISIN first");
+                showStatus("Per favore inserisci un Ticker/ISIN prima", "error");
                 return;
             } else {
                 clearFieldError('id_instrument');
             }
 
-            const btn = document.querySelector('.web-search-box .btn-primary');
+            const btn = document.getElementById('btnConfirm');
             const originalHtml = btn.innerHTML;
             btn.disabled = true;
-            btn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> ' + (getTranslation('int.inprogress') || 'Elaborazione...');
+            btn.innerHTML = '<div class="spinner" style="width:15px; height:15px; border-top-color: #fff;"></div> ' + (getTranslation('int.inprogress') || 'Elaborazione...');
 
             try {
                 const payload = {
@@ -770,32 +777,42 @@
                 });
 
                 const result = await response.json();
-                if (result.status === 'ok' && result.value) {
-                    const valueField = document.getElementById('field_value');
-                    const dateField = document.getElementById('field_date_start');
-                    const providerField = document.getElementById('field_provider');
-
-                    if (valueField) {
-                        valueField.value = result.value;
-                        valueField.dispatchEvent(new Event('blur'));
-                    }
-                    if (dateField && result.date_start) {
-                        dateField.value = result.date_start;
-                        dateField.dispatchEvent(new Event('blur'));
-                    }
-                    if (providerField && result.provider) {
-                        providerField.value = result.provider;
-                        providerField.dispatchEvent(new Event('blur'));
-                    }
+                if (result.status === 'ok') {
+                    showStatus("Dati estratti con successo!", "success");
+                    populatePriceFormWithData(result);
                 } else {
-                    alert("Analysis failed: " + (result.msg || "No value found"));
+                    showStatus("Errore nell'analisi: " + (result.msg || "Errore sconosciuto"), "error");
                 }
             } catch (err) {
                 console.error("Web search error:", err);
-                alert("Error: " + err.message);
+                showStatus("Errore di connessione: " + err.message, "error");
             } finally {
                 btn.disabled = false;
                 btn.innerHTML = originalHtml;
+            }
+        }
+
+        function populatePriceFormWithData(data) {
+            if (data.value) {
+                const valueField = document.getElementById('field_value');
+                if (valueField) {
+                    valueField.value = data.value;
+                    valueField.dispatchEvent(new Event('blur'));
+                }
+            }
+            if (data.date_start) {
+                const dateField = document.getElementById('field_date_start');
+                if (dateField) {
+                    dateField.value = data.date_start;
+                    dateField.dispatchEvent(new Event('blur'));
+                }
+            }
+            if (data.provider) {
+                const providerField = document.getElementById('field_provider');
+                if (providerField) {
+                    providerField.value = data.provider;
+                    providerField.dispatchEvent(new Event('blur'));
+                }
             }
         }
 
