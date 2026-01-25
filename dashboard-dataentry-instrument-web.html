@@ -338,8 +338,8 @@
             <div class="input-group">
                 <input type="text" id="field_id_instrument" class="form-input" placeholder="Ticker / ISIN"
                     style="height: 48px; font-weight: bold; color: var(--primary-color);">
-                <button class="btn btn-primary" onclick="searchTickerOnWeb()" id="btnSearchTicker" title="Cerca URL">
-                    <i class="fa fa-search"></i>
+                <button class="btn btn-primary" onclick="searchTickerOnWeb()" id="btnSearchTicker">
+                    <i class="fa fa-search"></i>&nbsp;<span id="btnSearchTickerLabel">Cerca</span>
                 </button>
             </div>
         </div>
@@ -441,6 +441,7 @@
             document.getElementById('closeText').textContent = closeText;
             document.getElementById('webSearchLabel').textContent = getTranslation('int.websearch') || 'Web Search / URL:';
             document.getElementById('btnConfirmText').textContent = getTranslation('int.confirm') || 'Conferma';
+            document.getElementById('btnSearchTickerLabel').textContent = getTranslation('int.confirm') || 'Confirm';
             document.getElementById('userLabel').textContent = getTranslation('int.user.label') || 'Utente:';
             document.getElementById('instrumentIdLabel').textContent = getTranslation('id_instrument') || 'Strumento:';
             document.getElementById('pageSubtitle').textContent = getTranslation('int.dataentry_price.subtitle') || 'Web Search / URL Analysis';
@@ -460,102 +461,99 @@
         }
 
         /**
-         * Esegue la ricerca su DuckDuckGo (versione HTML) e filtra per siti finanziari.
-         * Nota: In un browser standard, questa fetch potrebbe fallire per CORS a meno che 
-         * l'ambiente non sia configurato per permetterlo o passi attraverso un proxy.
+         * Chiamata a DuckDuckGo senza API e filtro risultati finanziari.
          */
         async function searchTickerOnWeb() {
             const ticker = document.getElementById('field_id_instrument').value.trim();
-            const btn = document.getElementById('btnSearchTicker');
-
             if (!ticker) {
-                showStatus("Inserire un ticker o ISIN per la ricerca", "error");
+                showStatus("Inserire un ticker o ISIN", "error");
                 return;
             }
 
-            const originalHtml = btn.innerHTML;
+            const btn = document.getElementById('btnSearchTicker');
+            const originalContent = btn.innerHTML;
             btn.disabled = true;
-            btn.innerHTML = '<div class="spinner" style="width:16px; height:16px;"></div>';
+            btn.innerHTML = '<div class="spinner" style="width:15px; height:15px; border-top-color: #fff;"></div>';
 
             try {
-                // Cerchiamo il ticker aggiungendo keyword finanziarie per migliorare il filtro lato DDG
-                const query = encodeURIComponent(`${ticker} stock price finance isin`);
-                const searchUrl = `https://html.duckduckgo.com/html/?q=${query}`;
+                // Chiamata alla versione HTML di DuckDuckGo come richiesto
+                const res = await fetch(`https://duckduckgo.com/html/?q=${encodeURIComponent(ticker)}`);
+                const html = await res.text();
 
-                // Lista domini finanziari per il filtraggio
-                const financialDomains = [
-                    'bloomberg.com', 'reuters.com', 'morningstar.com', 'investing.com',
-                    'marketwatch.com', 'ft.com', 'finance.yahoo.com', 'borsaitaliana.it',
-                    'nasdaq.com', 'wsj.com', 'teleborsa.it', 'quandl.com'
-                ];
-
-                const response = await fetch(searchUrl);
-                if (!response.ok) throw new Error("Errore nel recupero dati da DuckDuckGo");
-
-                const html = await response.text();
+                // Utilizzo DOMParser (alternativa browser a cheerio)
                 const parser = new DOMParser();
                 const doc = parser.parseFromString(html, "text/html");
 
-                // Estraiamo i link dai risultati DDG Lite/HTML
-                const resultLinks = Array.from(doc.querySelectorAll('.result__url'))
-                    .map(el => el.textContent.trim())
-                    .filter(url => {
-                        const lowUrl = url.toLowerCase();
-                        return financialDomains.some(domain => lowUrl.includes(domain));
-                    });
+                const results = [];
+                const financialKeywords = [
+                    'borsaitaliana', 'investing', 'morningstar', 'bloomberg', 'reuters',
+                    'marketwatch', 'yahoo', 'finance', 'isin', 'stock', 'ticker',
+                    'marketscreener', 'ft.com', 'nasdaq', 'teleborsa'
+                ];
 
-                // Rimuoviamo duplicati e prendiamo i primi 5
-                const uniqueUrls = [...new Set(resultLinks)].slice(0, 5);
+                const links = doc.querySelectorAll('a.result__a');
 
-                if (uniqueUrls.length === 0) {
-                    showStatus("Nessun URL finanziario specifico trovato", "error");
-                    return;
+                links.forEach(el => {
+                    let url = el.getAttribute('href');
+                    const title = el.textContent.toLowerCase();
+
+                    // Estrazione URL reale da redirect DuckDuckGo se necessario
+                    if (url && url.includes('uddg=')) {
+                        const parts = url.split('uddg=');
+                        if (parts.length > 1) {
+                            url = decodeURIComponent(parts[1].split('&')[0]);
+                        }
+                    }
+
+                    if (url && (url.startsWith('http') || url.startsWith('www'))) {
+                        // Filtro inerente agli strumenti finanziari
+                        const isFinancial = financialKeywords.some(key =>
+                            url.toLowerCase().includes(key) || title.includes(key)
+                        );
+
+                        if (isFinancial) {
+                            results.push(url);
+                        }
+                    }
+                });
+
+                if (results.length > 0) {
+                    populateUrlInputsFromSearch(results);
+                    showStatus(`${results.length} URL finanziari trovati`, "success");
+                } else {
+                    showStatus("Nessun URL finanziario rilevante trovato", "error");
                 }
 
-                // Popoliamo gli input
-                populateUrlInputs(uniqueUrls);
-                showStatus(`Trovati ${uniqueUrls.length} URL rilevanti`, "success");
-
             } catch (err) {
-                console.error("DDG Search Error:", err);
-                showStatus("Errore nella ricerca (CORS o Connessione)", "error");
+                console.error("Search error:", err);
+                showStatus("Errore ricerca (CORS o Connessione)", "error");
             } finally {
                 btn.disabled = false;
-                btn.innerHTML = originalHtml;
+                btn.innerHTML = originalContent;
             }
         }
 
-        function populateUrlInputs(urls) {
+        function populateUrlInputsFromSearch(urls) {
             const container = document.getElementById('url-inputs-container');
-            const currentInputs = container.querySelectorAll('.url-input');
+            const firstInput = container.querySelector('.url-input');
 
-            // Se il primo è vuoto, lo usiamo
-            let inputIdx = 0;
-            if (currentInputs.length > 0 && currentInputs[0].value.trim() === "") {
-                currentInputs[0].value = urls[0].startsWith('http') ? urls[0] : 'https://' + urls[0];
-                inputIdx = 1;
+            // Se il primo input è vuoto, lo puliamo per evitare righe vuote iniziali
+            if (container.querySelectorAll('.input-group').length === 1 && !firstInput.value.trim()) {
+                container.innerHTML = '';
             }
 
-            // Aggiungiamo gli altri
-            for (let i = inputIdx; i < urls.length; i++) {
-                const url = urls[i].startsWith('http') ? urls[i] : 'https://' + urls[i];
-                addUrlInputWithValue(url);
-            }
-        }
-
-        function addUrlInputWithValue(value) {
-            const container = document.getElementById('url-inputs-container');
-            const div = document.createElement('div');
-            div.className = 'input-group';
-            div.style.marginBottom = '10px';
-            div.style.animation = 'fadeIn 0.3s ease-out';
-            div.innerHTML = `
-                <input type="text" class="form-input url-input" value="${value}" placeholder="https://..." style="height: 48px;">
-                <button class="btn btn-secondary btn-remove" onclick="removeUrlInput(this)" title="Rimuovi URL" style="height: 48px; width: 48px; padding: 0;">
-                    <i class="fa fa-minus"></i>
-                </button>
-            `;
-            container.appendChild(div);
+            urls.forEach(url => {
+                const div = document.createElement('div');
+                div.className = 'input-group';
+                div.style.marginBottom = '10px';
+                div.innerHTML = `
+                    <input type="text" class="form-input url-input" value="${url}" placeholder="https://..." style="height: 48px;">
+                    <button class="btn btn-secondary btn-remove" onclick="removeUrlInput(this)" style="height: 48px; width: 48px; padding: 0;">
+                        <i class="fa fa-minus"></i>
+                    </button>
+                `;
+                container.appendChild(div);
+            });
         }
 
         async function executeInstrumentSearch() {
@@ -602,7 +600,6 @@
                     displayResults(result.data || {});
                 } else {
                     showStatus("Errore nell'analisi: " + (result.msg || "Errore sconosciuto"), "error");
-                    document.getElementById('resultsPanel').classList.remove('show');
                 }
             } catch (err) {
                 console.error("Web search error:", err);
