@@ -239,6 +239,11 @@
             background: #333;
         }
 
+        .btn-primary:disabled {
+            background: #999;
+            cursor: not-allowed;
+        }
+
         .btn-secondary {
             background: white;
             color: #000;
@@ -318,6 +323,28 @@
             display: flex;
         }
 
+        .status-message {
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            display: none;
+            text-align: center;
+            font-weight: bold;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        .status-error {
+            background-color: #fee2e2;
+            color: #b91c1c;
+            border: 1px solid #fecaca;
+        }
+
+        .status-success {
+            background-color: #ecfdf5;
+            color: #065f46;
+            border: 1px solid #a7f3d0;
+        }
+
         @keyframes fadeIn {
             from {
                 opacity: 0;
@@ -394,21 +421,31 @@
             <label for="field_id_instrument" class="selector-label">
                 <i class="fa fa-fingerprint"></i> <span id="instrumentIdLabel">Strumento:</span>
             </label>
-            <input type="text" id="field_id_instrument" name="id_instrument" class="form-input"
-                placeholder="Ticker / ISIN" style="height: 48px;">
+            <div class="input-group">
+                <input type="text" id="field_id_instrument" name="id_instrument" class="form-input"
+                    placeholder="Ticker / ISIN" style="height: 48px;">
+                <button type="button" class="btn btn-primary btn-sm" onclick="searchTickerOnWeb()" id="btnSearchTicker"
+                    style="height: 48px;">
+                    <i class="fa fa-search"></i>&nbsp;<span id="btnSearchTickerLabel">Cerca</span>
+                </button>
+            </div>
             <span class="error-message" id="error_id_instrument"></span>
         </div>
 
         <div class="web-search-box">
-            <label for="search-url" class="selector-label">
+            <label class="selector-label">
                 <i class="fa fa-globe"></i> <span id="webSearchLabel">Web Search / URL:</span>
             </label>
-            <div class="input-group">
-                <input type="text" id="search-url" class="form-input" placeholder="https://..." style="height: 40px;">
-                <button class="btn btn-primary btn-sm" onclick="executeWebSearch()" style="height: 40px;">
-                    <i class="fa fa-search"></i> <span id="btnWebSearch">Search</span>
-                </button>
+            <div id="url-inputs-container">
+                <div class="input-group" style="margin-bottom: 10px;">
+                    <input type="text" class="form-input url-input" placeholder="https://..." style="height: 48px;">
+                    <button type="button" class="btn btn-secondary" onclick="addUrlInput()"
+                        style="height: 48px; width: 48px; padding: 0;">
+                        <i class="fa fa-plus"></i>
+                    </button>
+                </div>
             </div>
+            <div id="statusMessage" class="status-message"></div>
         </div>
 
         <div id="value-type-container" class="instrument-selector">
@@ -416,12 +453,10 @@
                 <i class="fa fa-tag"></i> <span id="valueTypeLabel">Tipo Valore:</span>
             </label>
             <select id="field_field" name="field" class="selector-select">
-                <!-- Populated dynamically -->
             </select>
         </div>
 
         <div id="form-container">
-            <!-- Form generated here -->
         </div>
 
         <div class="bottom-controls">
@@ -531,12 +566,12 @@
             document.getElementById('pageSubtitle').textContent = getTranslation('int.dataentry_price.subtitle') || 'Price Data Entry';
             document.getElementById('closeText').textContent = getTranslation('int.close') || 'Chiudi';
             document.getElementById('webSearchLabel').textContent = getTranslation('int.websearch') || 'Web Search / URL:';
-            document.getElementById('btnWebSearch').textContent = getTranslation('int.confirm') || 'Conferma';
             document.getElementById('valueTypeLabel').textContent = getTranslation('int.price_type') || 'Tipo Valore:';
             document.getElementById('userLabel').textContent = getTranslation('int.user.label') || 'Utente:';
             document.getElementById('sharedDbLabel').textContent = getTranslation('int.sharedatabase') || 'Shared Database';
             document.getElementById('instrumentIdLabel').textContent = getTranslation('id_instrument') || 'Strumento:';
             document.getElementById('btnImportText').textContent = getTranslation('int.import') || 'Importa';
+            document.getElementById('btnSearchTickerLabel').textContent = getTranslation('int.confirm') || 'Cerca';
         }
 
         async function updateHeaderWithUserInfo() {
@@ -574,15 +609,135 @@
                 language: urlParams.language || localStorage.getItem('language') || 'it_IT'
             };
             currentInstrumentId = urlParams.id_instrument || '';
-            if (urlParams.url) { document.getElementById('search-url').value = urlParams.url; }
+        }
+
+        async function searchTickerOnWeb() {
+            const ticker = document.getElementById('field_id_instrument').value.trim();
+            if (!ticker) {
+                showStatus("Inserire un ISIN o Ticker", "error");
+                return;
+            }
+
+            const btn = document.getElementById('btnSearchTicker');
+            const originalContent = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<div class="spinner" style="width:15px; height:15px; border-top-color: #000;"></div>';
+
+            try {
+                const ddgUrl = `https://duckduckgo.com/html/?q=${encodeURIComponent(ticker)}`;
+                const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(ddgUrl)}`;
+
+                const res = await fetch(proxyUrl);
+                if (!res.ok) throw new Error("Errore durante la ricerca.");
+
+                const data = await res.json();
+                const html = data.contents;
+
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, "text/html");
+
+                const results = [];
+                const financialKeywords = [
+                    'borsaitaliana', 'investing', 'morningstar', 'bloomberg', 'reuters',
+                    'marketwatch', 'yahoo', 'finance', 'isin', 'stock', 'ticker',
+                    'marketscreener', 'ft.com', 'nasdaq', 'teleborsa', 'tradingview',
+                    'finanzaonline', 'borsanomics'
+                ];
+
+                const links = doc.querySelectorAll('a.result__a');
+
+                links.forEach(el => {
+                    let url = el.getAttribute('href');
+                    const title = el.textContent;
+
+                    if (url && url.includes('uddg=')) {
+                        url = decodeURIComponent(url.split('uddg=')[1].split('&')[0]);
+                    }
+
+                    if (url && (url.startsWith('http') || url.startsWith('www'))) {
+                        const isFinancial = financialKeywords.some(key =>
+                            url.toLowerCase().includes(key) || title.toLowerCase().includes(key)
+                        );
+                        if (isFinancial) {
+                            results.push({ title: title.trim(), url: url });
+                        }
+                    }
+                });
+
+                if (results.length > 0) {
+                    populateUrlInputsFromSearch(results);
+                    showStatus(`${results.length} risultati trovati`, "success");
+                } else {
+                    showStatus("Nessun link finanziario rilevante trovato", "error");
+                }
+
+            } catch (err) {
+                console.error("Search error:", err);
+                showStatus("Errore ricerca: " + err.message, "error");
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalContent;
+            }
+        }
+
+        function populateUrlInputsFromSearch(results) {
+            const container = document.getElementById('url-inputs-container');
+            const existingInputs = container.querySelectorAll('.input-group');
+            if (existingInputs.length === 1 && !existingInputs[0].querySelector('.url-input').value.trim()) {
+                container.innerHTML = '';
+            }
+
+            results.forEach(res => {
+                const div = document.createElement('div');
+                div.className = 'input-group';
+                div.style.marginBottom = '10px';
+                div.innerHTML = `
+                    <input type="text" class="form-input url-input" value="${res.url}" title="${res.title}" placeholder="https://..." style="height: 48px;">
+                    <button type="button" class="btn btn-secondary" onclick="removeUrlInput(this)" style="height: 48px; width: 48px; padding: 0;">
+                        <i class="fa fa-minus"></i>
+                    </button>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function showStatus(text, type) {
+            const statusEl = document.getElementById('statusMessage');
+            statusEl.textContent = text;
+            statusEl.className = 'status-message ' + (type === 'success' ? 'status-success' : 'status-error');
+            statusEl.style.display = 'block';
+        }
+
+        function addUrlInput() {
+            const container = document.getElementById('url-inputs-container');
+            const div = document.createElement('div');
+            div.className = 'input-group';
+            div.style.marginBottom = '10px';
+            div.style.animation = 'fadeIn 0.3s ease-out';
+            div.innerHTML = `
+                <input type="text" class="form-input url-input" placeholder="https://..." style="height: 48px;">
+                <button type="button" class="btn btn-secondary" onclick="removeUrlInput(this)" style="height: 48px; width: 48px; padding: 0;">
+                    <i class="fa fa-minus"></i>
+                </button>
+            `;
+            container.appendChild(div);
+        }
+
+        function removeUrlInput(btn) {
+            const group = btn.closest('.input-group');
+            if (group) group.remove();
         }
 
         async function executeWebSearch() {
-            const url = document.getElementById('search-url').value;
+            const urlInputs = document.querySelectorAll('.url-input');
+            const urls = Array.from(urlInputs).map(i => i.value.trim()).filter(u => u !== '');
             const idInstrument = document.getElementById('field_id_instrument').value.trim();
             const typePrice = document.getElementById('field_field').value;
 
-            if (!url) { alert("Please enter a URL first"); return; }
+            if (urls.length === 0) {
+                alert("Please enter at least one URL");
+                return;
+            }
             if (!idInstrument) {
                 showFieldError('id_instrument', getTranslation('int.field.required') || 'Campo obbligatorio');
                 alert("Please enter a Ticker/ISIN first");
@@ -591,7 +746,6 @@
                 clearFieldError('id_instrument');
             }
 
-            // Visual feedback
             const btn = document.querySelector('.web-search-box .btn-primary');
             const originalHtml = btn.innerHTML;
             btn.disabled = true;
@@ -605,7 +759,7 @@
                     price: JSON.stringify({
                         id_instrument: idInstrument,
                         type_price: typePrice,
-                        url: url
+                        url: urls.join(',')
                     })
                 };
 
@@ -733,7 +887,6 @@
             const container = document.getElementById('form-container');
             let html = '<form id="price-form" class="dataentry-form"><div class="form-grid">';
             fields.forEach(fieldName => {
-                // Skips 'field' because it's handled by a specialized selector at the top
                 if (fieldName === 'field') return;
 
                 const fieldConfig = priceConfig.mapping[fieldName];
