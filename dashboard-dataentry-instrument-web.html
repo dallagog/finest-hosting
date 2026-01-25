@@ -5,10 +5,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title id="pageTitle">Instrument Web Search</title>
-    <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
         crossorigin="anonymous">
-    <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -337,8 +335,13 @@
             <label for="field_id_instrument" class="selector-label">
                 <i class="fa fa-fingerprint"></i> <span id="instrumentIdLabel">Strumento:</span>
             </label>
-            <input type="text" id="field_id_instrument" class="form-input" placeholder="Ticker / ISIN"
-                style="height: 48px; font-weight: bold; color: var(--primary-color);">
+            <div class="input-group">
+                <input type="text" id="field_id_instrument" class="form-input" placeholder="Ticker / ISIN"
+                    style="height: 48px; font-weight: bold; color: var(--primary-color);">
+                <button class="btn btn-primary" onclick="searchTickerOnWeb()" id="btnSearchTicker" title="Cerca URL">
+                    <i class="fa fa-search"></i>
+                </button>
+            </div>
         </div>
 
         <div class="web-search-box">
@@ -372,7 +375,6 @@
                 </button>
             </h3>
             <div class="results-grid" id="resultsGrid">
-                <!-- I dati verranno caricati dinamicamente qui -->
             </div>
         </div>
     </div>
@@ -457,6 +459,105 @@
             }
         }
 
+        /**
+         * Esegue la ricerca su DuckDuckGo (versione HTML) e filtra per siti finanziari.
+         * Nota: In un browser standard, questa fetch potrebbe fallire per CORS a meno che 
+         * l'ambiente non sia configurato per permetterlo o passi attraverso un proxy.
+         */
+        async function searchTickerOnWeb() {
+            const ticker = document.getElementById('field_id_instrument').value.trim();
+            const btn = document.getElementById('btnSearchTicker');
+
+            if (!ticker) {
+                showStatus("Inserire un ticker o ISIN per la ricerca", "error");
+                return;
+            }
+
+            const originalHtml = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<div class="spinner" style="width:16px; height:16px;"></div>';
+
+            try {
+                // Cerchiamo il ticker aggiungendo keyword finanziarie per migliorare il filtro lato DDG
+                const query = encodeURIComponent(`${ticker} stock price finance isin`);
+                const searchUrl = `https://html.duckduckgo.com/html/?q=${query}`;
+
+                // Lista domini finanziari per il filtraggio
+                const financialDomains = [
+                    'bloomberg.com', 'reuters.com', 'morningstar.com', 'investing.com',
+                    'marketwatch.com', 'ft.com', 'finance.yahoo.com', 'borsaitaliana.it',
+                    'nasdaq.com', 'wsj.com', 'teleborsa.it', 'quandl.com'
+                ];
+
+                const response = await fetch(searchUrl);
+                if (!response.ok) throw new Error("Errore nel recupero dati da DuckDuckGo");
+
+                const html = await response.text();
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, "text/html");
+
+                // Estraiamo i link dai risultati DDG Lite/HTML
+                const resultLinks = Array.from(doc.querySelectorAll('.result__url'))
+                    .map(el => el.textContent.trim())
+                    .filter(url => {
+                        const lowUrl = url.toLowerCase();
+                        return financialDomains.some(domain => lowUrl.includes(domain));
+                    });
+
+                // Rimuoviamo duplicati e prendiamo i primi 5
+                const uniqueUrls = [...new Set(resultLinks)].slice(0, 5);
+
+                if (uniqueUrls.length === 0) {
+                    showStatus("Nessun URL finanziario specifico trovato", "error");
+                    return;
+                }
+
+                // Popoliamo gli input
+                populateUrlInputs(uniqueUrls);
+                showStatus(`Trovati ${uniqueUrls.length} URL rilevanti`, "success");
+
+            } catch (err) {
+                console.error("DDG Search Error:", err);
+                showStatus("Errore nella ricerca (CORS o Connessione)", "error");
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalHtml;
+            }
+        }
+
+        function populateUrlInputs(urls) {
+            const container = document.getElementById('url-inputs-container');
+            const currentInputs = container.querySelectorAll('.url-input');
+
+            // Se il primo è vuoto, lo usiamo
+            let inputIdx = 0;
+            if (currentInputs.length > 0 && currentInputs[0].value.trim() === "") {
+                currentInputs[0].value = urls[0].startsWith('http') ? urls[0] : 'https://' + urls[0];
+                inputIdx = 1;
+            }
+
+            // Aggiungiamo gli altri
+            for (let i = inputIdx; i < urls.length; i++) {
+                const url = urls[i].startsWith('http') ? urls[i] : 'https://' + urls[i];
+                addUrlInputWithValue(url);
+            }
+        }
+
+        function addUrlInputWithValue(value) {
+            const container = document.getElementById('url-inputs-container');
+            const div = document.createElement('div');
+            div.className = 'input-group';
+            div.style.marginBottom = '10px';
+            div.style.animation = 'fadeIn 0.3s ease-out';
+            div.innerHTML = `
+                <input type="text" class="form-input url-input" value="${value}" placeholder="https://..." style="height: 48px;">
+                <button class="btn btn-secondary btn-remove" onclick="removeUrlInput(this)" title="Rimuovi URL" style="height: 48px; width: 48px; padding: 0;">
+                    <i class="fa fa-minus"></i>
+                </button>
+            `;
+            container.appendChild(div);
+        }
+
         async function executeInstrumentSearch() {
             const urlInputs = document.querySelectorAll('.url-input');
             const urls = Array.from(urlInputs).map(i => i.value.trim()).filter(u => u !== '');
@@ -470,7 +571,6 @@
                 return;
             }
 
-            // Visual feedback
             btn.disabled = true;
             const originalText = btnText.textContent;
             btnText.innerHTML = '<div class="spinner"></div> ' + (getTranslation('int.inprogress') || 'Elaborazione...');
@@ -487,46 +587,20 @@
                     })
                 };
 
-                console.log("Sending payload to /downloadinstrument:", payload);
-
                 const response = await fetch(`${API_URL}/downloadinstrument`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
                 });
 
-                console.log("Response status:", response.status);
-
-                if (!response.ok) {
-                    const errorText = await response.text();
-                    console.error("Server error response:", errorText);
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
 
                 const result = await response.json();
-                console.log("Search result:", result);
 
                 if (result.status === 'ok') {
                     showStatus("Dati scaricati con successo!", "success");
-
-                    // Visualizza i dati estratti nel pannello
-                    const data = result.data || {};
-                    displayResults(data);
-
-                    if (window.opener && !window.opener.closed) {
-                        try {
-                            console.log("Pushing data to opener:", data);
-                            Object.keys(data).forEach(key => {
-                                const input = window.opener.document.querySelector(`[name="${key}"]`);
-                                if (input) {
-                                    input.value = data[key];
-                                    input.dispatchEvent(new Event('blur'));
-                                }
-                            });
-                        } catch (e) { console.warn("Could not push update to opener window:", e); }
-                    }
+                    displayResults(result.data || {});
                 } else {
-                    console.warn("Analysis result NOT OK:", result);
                     showStatus("Errore nell'analisi: " + (result.msg || "Errore sconosciuto"), "error");
                     document.getElementById('resultsPanel').classList.remove('show');
                 }
@@ -569,7 +643,7 @@
         function displayResults(data) {
             const panel = document.getElementById('resultsPanel');
             const grid = document.getElementById('resultsGrid');
-            grid.innerHTML = ''; // Pulisci i risultati precedenti
+            grid.innerHTML = '';
 
             Object.keys(data).forEach(key => {
                 const value = data[key];
@@ -588,7 +662,6 @@
 
             if (Object.keys(data).length > 0) {
                 panel.classList.add('show');
-                // Store data for takeData function
                 panel.dataset.extractedData = JSON.stringify(data);
             } else {
                 panel.classList.remove('show');
@@ -603,11 +676,8 @@
             const data = JSON.parse(dataStr);
             const idInstrument = document.getElementById('field_id_instrument').value.trim();
 
-            console.log("Taking data to opener:", data);
-
             if (window.opener && !window.opener.closed) {
                 try {
-                    // Try to populate extracted fields
                     Object.keys(data).forEach(key => {
                         let input = window.opener.document.querySelector(`[name="${key}"]`);
                         if (input) {
@@ -616,19 +686,15 @@
                         }
                     });
 
-                    // Special handling for the ID/Ticker/ISIN
                     if (idInstrument) {
-                        // Try different possible names for the main instrument ID field
                         ['id', 'id_instrument', 'code_isin'].forEach(targetName => {
                             const input = window.opener.document.querySelector(`[name="${targetName}"]`);
                             if (input) {
                                 input.value = idInstrument;
                                 input.dispatchEvent(new Event('blur'));
-                                console.log(`Populated primary field: ${targetName}`);
                             }
                         });
                     }
-
                     window.close();
                 } catch (e) {
                     console.error("Error pushing data to opener:", e);
