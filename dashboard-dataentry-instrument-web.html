@@ -687,41 +687,68 @@
         }
 
         function displayResults(data) {
+            console.log('=== displayResults chiamata ===');
+            console.log('Data ricevuta:', data);
+
             const panel = document.getElementById('resultsPanel');
             const container = document.getElementById('resultsTableContainer');
             container.innerHTML = '';
 
-            // Check if data has the structure {field: {value, provider}}
-            const hasStructuredData = Object.values(data).some(v =>
-                v && typeof v === 'object' && ('value' in v || 'provider' in v)
-            );
+            // Helper function to parse Python dict string to JS object
+            function parsePythonDict(str) {
+                if (typeof str !== 'string') return null;
+                try {
+                    // Replace single quotes with double quotes for JSON parsing
+                    const jsonStr = str.replace(/'/g, '"');
+                    return JSON.parse(jsonStr);
+                } catch (e) {
+                    console.warn('Failed to parse:', str, e);
+                    return null;
+                }
+            }
 
-            if (hasStructuredData) {
-                // Create table for structured data
-                const table = document.createElement('table');
-                table.className = 'data-table';
-                table.innerHTML = `
-                    <thead>
-                        <tr>
-                            <th>Campo</th>
-                            <th>Valore</th>
-                            <th>Provider</th>
-                        </tr>
-                    </thead>
-                    <tbody id="dataTableBody"></tbody>
-                `;
-                container.appendChild(table);
+            // Create table for structured data
+            const table = document.createElement('table');
+            table.className = 'data-table';
+            table.innerHTML = `
+                <thead>
+                    <tr>
+                        <th>Campo</th>
+                        <th>Valore</th>
+                        <th>Provider</th>
+                    </tr>
+                </thead>
+                <tbody id="dataTableBody"></tbody>
+            `;
+            container.appendChild(table);
 
-                const tbody = table.querySelector('#dataTableBody');
+            const tbody = table.querySelector('#dataTableBody');
+            let rowCount = 0;
 
-                Object.keys(data).forEach(key => {
-                    const item = data[key];
-                    if (!item || typeof item !== 'object') return;
+            // Store parsed data for takeData function
+            const parsedData = {};
 
-                    const value = item.value !== undefined ? item.value : '';
-                    const provider = item.provider || '-';
+            Object.keys(data).forEach(key => {
+                const rawValue = data[key];
 
-                    if (value === '' || value === null) return;
+                // Skip empty id_instrument
+                if (key === 'id_instrument' && (!rawValue || rawValue === '')) {
+                    console.log(`Saltato "${key}" - vuoto`);
+                    return;
+                }
+
+                // Try to parse as Python dict string
+                const parsed = parsePythonDict(rawValue);
+
+                if (parsed && parsed.value !== undefined) {
+                    // Structured data with value and provider
+                    const value = parsed.value;
+                    const provider = parsed.provider || '-';
+
+                    if (value === '' || value === null) {
+                        console.log(`Saltato "${key}" - valore vuoto`);
+                        return;
+                    }
 
                     const label = getTranslation(key) || key.replace(/_/g, ' ');
 
@@ -732,35 +759,42 @@
                         <td class="field-provider">${provider}</td>
                     `;
                     tbody.appendChild(row);
-                });
-            } else {
-                // Fallback to grid display for simple key-value data
-                const grid = document.createElement('div');
-                grid.className = 'results-grid';
+                    rowCount++;
 
-                Object.keys(data).forEach(key => {
-                    const value = data[key];
-                    if (value === undefined || value === null || value === '') return;
+                    // Store only the value for takeData
+                    parsedData[key] = value;
+                    console.log(`✓ Aggiunta riga: ${label} = ${value} (${provider})`);
+                } else if (rawValue && rawValue !== '') {
+                    // Simple string value (fallback)
+                    const label = getTranslation(key) || key.replace(/_/g, ' ');
 
-                    const label = getTranslation(key) || key.replace(/_/g, ' ').toUpperCase();
-
-                    const item = document.createElement('div');
-                    item.className = 'result-item';
-                    item.innerHTML = `
-                        <span class="result-label">${label}:</span>
-                        <span class="result-value">${value}</span>
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td class="field-name">${label}</td>
+                        <td class="field-value">${rawValue}</td>
+                        <td class="field-provider">-</td>
                     `;
-                    grid.appendChild(item);
-                });
-                container.appendChild(grid);
-            }
+                    tbody.appendChild(row);
+                    rowCount++;
 
-            if (Object.keys(data).length > 0) {
+                    parsedData[key] = rawValue;
+                    console.log(`✓ Aggiunta riga (simple): ${label} = ${rawValue}`);
+                }
+            });
+
+            console.log(`Totale righe aggiunte: ${rowCount}`);
+            console.log('Parsed data for takeData:', parsedData);
+
+            if (rowCount > 0) {
                 panel.classList.add('show');
-                panel.dataset.extractedData = JSON.stringify(data);
+                // Store parsed values (not raw strings) for takeData
+                panel.dataset.extractedData = JSON.stringify(parsedData);
+                console.log('Panel mostrato con', rowCount, 'righe');
             } else {
                 panel.classList.remove('show');
+                console.log('Panel nascosto - nessun dato');
             }
+            console.log('=== Fine displayResults ===');
         }
 
         function takeData() {
@@ -771,24 +805,20 @@
             const data = JSON.parse(dataStr);
             const idInstrument = document.getElementById('field_id_instrument').value.trim();
 
-            // Extract values from structured data {field: {value, provider}}
-            const valuesToSend = {};
-            Object.keys(data).forEach(key => {
-                const item = data[key];
-                if (item && typeof item === 'object' && 'value' in item) {
-                    valuesToSend[key] = item.value;
-                } else {
-                    valuesToSend[key] = item;
-                }
-            });
+            console.log('=== takeData chiamata ===');
+            console.log('Data da riportare:', data);
 
             if (window.opener && !window.opener.closed) {
                 try {
-                    Object.keys(valuesToSend).forEach(key => {
+                    // Data is already parsed (values only, not {value, provider})
+                    Object.keys(data).forEach(key => {
                         let input = window.opener.document.querySelector(`[name="${key}"]`);
                         if (input) {
-                            input.value = valuesToSend[key];
+                            input.value = data[key];
                             input.dispatchEvent(new Event('blur'));
+                            console.log(`✓ Riportato ${key} = ${data[key]}`);
+                        } else {
+                            console.log(`✗ Campo "${key}" non trovato nella finestra principale`);
                         }
                     });
 
@@ -798,9 +828,11 @@
                             if (input) {
                                 input.value = idInstrument;
                                 input.dispatchEvent(new Event('blur'));
+                                console.log(`✓ Riportato ${targetName} = ${idInstrument}`);
                             }
                         });
                     }
+                    console.log('=== Dati riportati con successo ===');
                     window.close();
                 } catch (e) {
                     console.error("Error pushing data to opener:", e);
