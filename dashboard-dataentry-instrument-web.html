@@ -301,6 +301,48 @@
             font-weight: 500;
             color: #222;
         }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+
+        .data-table th {
+            background: #f8f9fa;
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+            border-bottom: 2px solid #dee2e6;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            color: #495057;
+        }
+
+        .data-table td {
+            padding: 10px 12px;
+            border-bottom: 1px solid #e9ecef;
+            font-size: 0.9rem;
+        }
+
+        .data-table tr:hover {
+            background: #f8f9fa;
+        }
+
+        .field-name {
+            font-weight: 600;
+            color: #495057;
+        }
+
+        .field-value {
+            color: #212529;
+        }
+
+        .field-provider {
+            color: #6c757d;
+            font-size: 0.85rem;
+            font-style: italic;
+        }
     </style>
 </head>
 
@@ -374,8 +416,7 @@
                     <i class="fa fa-arrow-right-to-bracket"></i> <span id="btnTakeText">Prendi</span>
                 </button>
             </h3>
-            <div class="results-grid" id="resultsGrid">
-            </div>
+            <div id="resultsTableContainer"></div>
         </div>
     </div>
 
@@ -491,9 +532,9 @@
 
                 const results = [];
                 const financialKeywords = [
-                    'borsaitaliana', 'investing', 'morningstar', 'bloomberg', 'reuters',
-                    'marketwatch', 'yahoo', 'finance', 'isin', 'stock', 'ticker',
-                    'marketscreener', 'ft.com', 'nasdaq', 'teleborsa'
+                    'borsaitaliana', 'morningstar', 'bloomberg', 'reuters',
+                    'marketwatch', 'isin', 'stock', 'ticker',
+                    'marketscreener', 'nasdaq', 'teleborsa'
                 ];
 
                 const links = doc.querySelectorAll('a.result__a');
@@ -638,23 +679,72 @@
 
         function displayResults(data) {
             const panel = document.getElementById('resultsPanel');
-            const grid = document.getElementById('resultsGrid');
-            grid.innerHTML = '';
+            const container = document.getElementById('resultsTableContainer');
+            container.innerHTML = '';
 
-            Object.keys(data).forEach(key => {
-                const value = data[key];
-                if (value === undefined || value === null || value === '') return;
+            // Check if data has the structure {field: {value, provider}}
+            const hasStructuredData = Object.values(data).some(v =>
+                v && typeof v === 'object' && ('value' in v || 'provider' in v)
+            );
 
-                const label = getTranslation(key) || key.replace(/_/g, ' ').toUpperCase();
-
-                const item = document.createElement('div');
-                item.className = 'result-item';
-                item.innerHTML = `
-                    <span class="result-label">${label}:</span>
-                    <span class="result-value">${value}</span>
+            if (hasStructuredData) {
+                // Create table for structured data
+                const table = document.createElement('table');
+                table.className = 'data-table';
+                table.innerHTML = `
+                    <thead>
+                        <tr>
+                            <th>Campo</th>
+                            <th>Valore</th>
+                            <th>Provider</th>
+                        </tr>
+                    </thead>
+                    <tbody id="dataTableBody"></tbody>
                 `;
-                grid.appendChild(item);
-            });
+                container.appendChild(table);
+
+                const tbody = table.querySelector('#dataTableBody');
+
+                Object.keys(data).forEach(key => {
+                    const item = data[key];
+                    if (!item || typeof item !== 'object') return;
+
+                    const value = item.value !== undefined ? item.value : '';
+                    const provider = item.provider || '-';
+
+                    if (value === '' || value === null) return;
+
+                    const label = getTranslation(key) || key.replace(/_/g, ' ');
+
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td class="field-name">${label}</td>
+                        <td class="field-value">${value}</td>
+                        <td class="field-provider">${provider}</td>
+                    `;
+                    tbody.appendChild(row);
+                });
+            } else {
+                // Fallback to grid display for simple key-value data
+                const grid = document.createElement('div');
+                grid.className = 'results-grid';
+
+                Object.keys(data).forEach(key => {
+                    const value = data[key];
+                    if (value === undefined || value === null || value === '') return;
+
+                    const label = getTranslation(key) || key.replace(/_/g, ' ').toUpperCase();
+
+                    const item = document.createElement('div');
+                    item.className = 'result-item';
+                    item.innerHTML = `
+                        <span class="result-label">${label}:</span>
+                        <span class="result-value">${value}</span>
+                    `;
+                    grid.appendChild(item);
+                });
+                container.appendChild(grid);
+            }
 
             if (Object.keys(data).length > 0) {
                 panel.classList.add('show');
@@ -672,12 +762,23 @@
             const data = JSON.parse(dataStr);
             const idInstrument = document.getElementById('field_id_instrument').value.trim();
 
+            // Extract values from structured data {field: {value, provider}}
+            const valuesToSend = {};
+            Object.keys(data).forEach(key => {
+                const item = data[key];
+                if (item && typeof item === 'object' && 'value' in item) {
+                    valuesToSend[key] = item.value;
+                } else {
+                    valuesToSend[key] = item;
+                }
+            });
+
             if (window.opener && !window.opener.closed) {
                 try {
-                    Object.keys(data).forEach(key => {
+                    Object.keys(valuesToSend).forEach(key => {
                         let input = window.opener.document.querySelector(`[name="${key}"]`);
                         if (input) {
-                            input.value = data[key];
+                            input.value = valuesToSend[key];
                             input.dispatchEvent(new Event('blur'));
                         }
                     });
