@@ -339,6 +339,21 @@
         .update-btn.loading .spinner {
             display: block;
         }
+
+        /* Differential Rendering Highlight */
+        @keyframes highlightChange {
+            0% {
+                background-color: rgba(255, 255, 0, 0.5);
+            }
+
+            100% {
+                background-color: transparent;
+            }
+        }
+
+        .cell-changed {
+            animation: highlightChange 2s ease-out;
+        }
     </style>
 </head>
 
@@ -424,6 +439,7 @@
         let sortColumn = null;
         let sortAscending = true;
         let isHistoricalActive = false;
+        let lastRenderedData = {}; // For differential rendering <!-- id: lastRenderedData -->
 
         // ========== UTILITY FUNCTIONS ==========
         function showMessage(text, type = 'loading') {
@@ -612,9 +628,11 @@
                     }
 
                     renderTable();
+                    console.log('--- fine loadPortfolio ---');
                     showMessage('Portfolio caricato', 'success');
                 } else {
-                    throw new Error('Portfolio error');
+                    console.error('Portfolio error response:', data);
+                    throw new Error('Portfolio error: ' + (data.msg || 'Unknown error'));
                 }
             } catch (error) {
                 console.error('Error loading portfolio:', error);
@@ -657,47 +675,90 @@
             }
 
             displayData.forEach(item => {
-                const tr = document.createElement('tr');
+                const ticker = item.Ticker || item.id_instrument || 'unknown';
+                let tr = document.getElementById(`row-${ticker}`);
+                const isNewRow = !tr;
+
+                if (isNewRow) {
+                    tr = document.createElement('tr');
+                    tr.id = `row-${ticker}`;
+                }
 
                 tableColumns.forEach((col, index) => {
-                    const td = document.createElement('td');
+                    let td = isNewRow ? document.createElement('td') : tr.cells[index];
                     let val = item[col];
+                    let displayVal = '';
 
                     if (index === 0) {
-                        const span = document.createElement('span');
-                        span.textContent = val !== undefined ? val : '';
-                        span.style.cursor = 'pointer';
-                        span.style.color = '#000';
-                        span.style.textDecoration = 'underline';
-                        span.onclick = (e) => {
-                            e.stopPropagation();
-                            const code = item.id_instrument || item.Ticker || val;
-                            openInstrumentDetails(code);
-                        };
-                        td.appendChild(span);
+                        displayVal = val !== undefined ? val : '';
                     } else if (val !== undefined) {
                         const colDescription = getTranslation(col) || col;
                         const isPercentageCol = colDescription.includes('%');
 
                         if (typeof val === 'number') {
                             if (isPercentageCol && Math.abs(val) > 5000) {
-                                td.textContent = '--';
+                                displayVal = '--';
                             } else {
-                                td.textContent = val.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                                displayVal = val.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
                             }
-                            td.style.textAlign = 'right';
                         } else {
-                            td.textContent = val;
+                            displayVal = val;
                         }
-                    } else {
-                        td.textContent = '';
                     }
-                    tr.appendChild(td);
+
+                    // Differential update
+                    const prevVal = lastRenderedData[ticker] ? lastRenderedData[ticker][col] : undefined;
+                    const normalizedPrev = prevVal !== undefined ? (typeof prevVal === 'number' ? prevVal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : prevVal) : null;
+
+                    if (isNewRow) {
+                        if (index === 0) {
+                            const span = document.createElement('span');
+                            span.textContent = displayVal;
+                            span.style.cursor = 'pointer';
+                            span.style.color = '#000';
+                            span.style.textDecoration = 'underline';
+                            span.onclick = (e) => {
+                                e.stopPropagation();
+                                const code = item.id_instrument || item.Ticker || val;
+                                openInstrumentDetails(code);
+                            };
+                            td.appendChild(span);
+                        } else {
+                            td.textContent = displayVal;
+                            if (typeof val === 'number') td.style.textAlign = 'right';
+                        }
+                        tr.appendChild(td);
+                    } else {
+                        if (displayVal !== td.textContent && normalizedPrev !== displayVal) {
+                            if (index === 0) {
+                                td.querySelector('span').textContent = displayVal;
+                            } else {
+                                td.textContent = displayVal;
+                            }
+                            td.classList.remove('cell-changed');
+                            void td.offsetWidth; // Trigger reflow
+                            td.classList.add('cell-changed');
+                            console.log(`[Diff] Updated ${ticker}.${col}: ${normalizedPrev} -> ${displayVal}`);
+                        }
+                    }
                 });
 
+                if (isNewRow) tbody.appendChild(tr);
 
+                // Track state
+                if (!lastRenderedData[ticker]) lastRenderedData[ticker] = {};
+                lastRenderedData[ticker] = JSON.parse(JSON.stringify(item));
+            });
 
-                tbody.appendChild(tr);
+            // Remove rows that are no longer in displayData
+            const currentTickers = displayData.map(i => i.Ticker || i.id_instrument || 'unknown');
+            Array.from(tbody.rows).forEach(row => {
+                const rowTicker = row.id.replace('row-', '');
+                if (!currentTickers.includes(rowTicker)) {
+                    console.log(`[Diff] Removing row: ${rowTicker}`);
+                    row.remove();
+                    delete lastRenderedData[rowTicker];
+                }
             });
         }
 
@@ -880,11 +941,15 @@
 
         // Online Update via WebSocket
         function runUpdateOnline() {
+            console.log('--- runUpdateOnline init ---');
             const btn = document.getElementById('updateBtn');
             const btnText = document.getElementById('updateBtnText');
             const username = credentials.username;
 
-            if (!username) return;
+            if (!username) {
+                console.error('Username missing in credentials');
+                return;
+            }
 
             // Prepare UI
             btn.disabled = true;
@@ -893,7 +958,16 @@
             btnText.textContent = getTranslation('int.inprogress') || 'Attesa...';
 
             const wsUrl = API_URL.replace('https', 'wss') + `/ws/getportfolioonline/${username}`;
-            const ws = new WebSocket(wsUrl);
+            console.log('WS Connection URL:', wsUrl);
+
+            let ws;
+            try {
+                ws = new WebSocket(wsUrl);
+            } catch (err) {
+                console.error('Failed to create WebSocket instance:', err);
+                finishUpdate(false, 'Errore creazione WS');
+                return;
+            }
 
             // Get current timestamp in YYYY-MM-DD HH:mm:ss
             const now = new Date();
@@ -905,38 +979,46 @@
                 String(now.getSeconds()).padStart(2, '0');
 
             ws.onopen = () => {
-                console.log("WebSocket connected. Sending date_request:", date_request);
+                console.log("WebSocket connection established (onopen).");
+                console.log("Sending payload:", { date_request: date_request });
                 ws.send(JSON.stringify({ date_request: date_request }));
             };
 
             ws.onmessage = (event) => {
-                const data = JSON.parse(event.data);
-                console.log("WebSocket message:", data);
-                if (data.ready) {
-                    ws.close();
-                    finishUpdate(true);
-                } else if (data.error) {
-                    console.error("WebSocket error message:", data.error);
-                    ws.close();
-                    finishUpdate(false, data.error);
+                console.log("WebSocket message received:", event.data);
+                try {
+                    const data = JSON.parse(event.data);
+                    if (data.ready) {
+                        console.log("Server signaled READY. Closing WS.");
+                        ws.close();
+                        finishUpdate(true);
+                    } else if (data.error) {
+                        console.error("Server signaled ERROR:", data.error);
+                        ws.close();
+                        finishUpdate(false, data.error);
+                    }
+                } catch (pe) {
+                    console.error("Error parsing WS message:", pe);
                 }
             };
 
             ws.onerror = (error) => {
-                console.error("WebSocket error:", error);
+                console.error("WebSocket error observed (onerror):", error);
                 finishUpdate(false, "Errore connessione");
             };
 
-            ws.onclose = () => {
-                console.log("WebSocket closed");
+            ws.onclose = (event) => {
+                console.log("WebSocket connection closed (onclose). Code:", event.code, "Reason:", event.reason);
             };
 
             function finishUpdate(success, errorMsg) {
+                console.log('--- finishUpdate --- success:', success, 'errorMsg:', errorMsg);
                 btn.disabled = false;
                 btn.classList.remove('loading');
                 btnText.textContent = originalText;
 
                 if (success) {
+                    console.log('Refreshing portfolio data...');
                     loadPortfolio(); // Refresh the whole portfolio
                 } else {
                     alert(getTranslation('int.failed.update') || ("Aggiornamento fallito: " + (errorMsg || "")));
