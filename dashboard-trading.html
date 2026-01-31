@@ -488,7 +488,7 @@
             document.getElementById('userLabel').textContent = getTranslation('int.user.label');
             document.getElementById('portfolioTitle').textContent = getTranslation('int.portfolio');
             document.getElementById('closeText').textContent = getTranslation('int.close');
-            document.getElementById('updateBtnText').textContent = getTranslation('int.update') || 'Conferma';
+            document.getElementById('updateBtnText').textContent = getTranslation('int.update') || '';
         }
 
         async function loadLanguageManifest() {
@@ -945,11 +945,12 @@
             const btn = document.getElementById('updateBtn');
             const btnText = document.getElementById('updateBtnText');
             const username = credentials.username;
-
             if (!username) {
-                console.error('Username missing in credentials');
+                console.error('Username missing in credentials. Current credentials:', credentials);
+                alert('Errore: username mancante');
                 return;
             }
+            console.log('Username found:', username);
 
             // Prepare UI
             btn.disabled = true;
