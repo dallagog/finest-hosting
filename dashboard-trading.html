@@ -319,15 +319,7 @@
             <h2 style="font-size: 18px; font-weight: 600; color: #000; margin-bottom: 15px;" id="portfolioTitle">
                 Portafoglio</h2>
 
-            <!-- Control Buttons -->
-            <div style="display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap;">
-                <button id="historicalBtn" onclick="toggleHistorical()">
-                    <i class="fa fa-history"></i> <span id="historicalText">Storico</span>
-                </button>
-                <button id="operationsBtn" onclick="openTradeOperations()">
-                    <i class="fa fa-list"></i> <span id="operationsText">Operazioni</span>
-                </button>
-            </div>
+
 
             <div id="portfolio-table-container">
                 <table id="portfolio-table" class="data-table">
@@ -502,7 +494,7 @@
                     filter: ''
                 };
 
-                const response = await fetch(`${API_URL}/getportfolio`, {
+                const response = await fetch(`${API_URL}/getportfolio_online`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
@@ -591,11 +583,7 @@
                 thead.appendChild(th);
             });
 
-            // Add Actions column header
-            const actionsHeader = document.createElement('th');
-            actionsHeader.textContent = getTranslation('int.actions') || 'Azioni';
-            actionsHeader.style.textAlign = 'center';
-            thead.appendChild(actionsHeader);
+
 
             // Data Rows
             let displayData = portfolioData;
@@ -650,32 +638,7 @@
                     tr.appendChild(td);
                 });
 
-                // Add Actions column
-                const actionsTd = document.createElement('td');
-                actionsTd.style.textAlign = 'center';
-                const actionsDiv = document.createElement('div');
-                actionsDiv.className = 'trade-actions';
 
-                const buyBtn = document.createElement('button');
-                buyBtn.className = 'trade-btn buy';
-                buyBtn.innerHTML = '<i class="fa fa-arrow-up"></i> ' + (getTranslation('int.buy') || 'Acquista');
-                buyBtn.onclick = (e) => {
-                    e.stopPropagation();
-                    openTrade(item, 'buy');
-                };
-
-                const sellBtn = document.createElement('button');
-                sellBtn.className = 'trade-btn sell';
-                sellBtn.innerHTML = '<i class="fa fa-arrow-down"></i> ' + (getTranslation('int.sell') || 'Vendi');
-                sellBtn.onclick = (e) => {
-                    e.stopPropagation();
-                    openTrade(item, 'sell');
-                };
-
-                actionsDiv.appendChild(buyBtn);
-                actionsDiv.appendChild(sellBtn);
-                actionsTd.appendChild(actionsDiv);
-                tr.appendChild(actionsTd);
 
                 tbody.appendChild(tr);
             });
