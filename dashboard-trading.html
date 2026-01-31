@@ -1063,15 +1063,13 @@
                             console.log("Portfolio changed! Updating UI...");
                             lastPortfolioHash = newHash;
                             processAndRenderPortfolio(data.portfolio, data.classification);
-                            ws.close();
-                            finishUpdate(true, null, true); // Success, No Error, SKIP redundant load
+                            // Do not close, continue monitoring for more updates
                         } else {
                             console.log("Portfolio hash unchanged. Still waiting...");
                         }
                     } else if (data.error) {
                         console.error("Server signaled ERROR:", data.error);
-                        ws.close();
-                        finishUpdate(false, data.error);
+                        ws.close(1008, data.error); // 1008 = Policy Violation / App Error
                     }
                 } catch (pe) {
                     console.error("Error parsing WS message:", pe);
@@ -1085,6 +1083,13 @@
 
             ws.onclose = (event) => {
                 console.log("WebSocket connection closed (onclose). Code:", event.code, "Reason:", event.reason);
+                if (event.code === 1000 || event.code === 1005) {
+                    // Normal closure or no status
+                    finishUpdate(true, null, true);
+                } else {
+                    // Abnormal closure
+                    finishUpdate(false, event.reason || "Monitoraggio terminato");
+                }
             };
 
             function finishUpdate(success, errorMsg, skipRefresh = false) {
