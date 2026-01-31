@@ -444,7 +444,20 @@
         let sortColumn = null;
         let sortAscending = true;
         let isHistoricalActive = false;
-        let lastRenderedData = {}; // For differential rendering <!-- id: lastRenderedData -->
+        let lastPortfolioHash = '';
+        let lastRenderedData = {}; // TRACKS PREVIOUS STATE FOR DIFF RENDERING
+        let lastRenderedColumns = []; // TRACKS COLUMN STRUCTURE
+
+        // ========== UTILITY FUNCTIONS ==========
+        async function computeHash(obj) {
+            if (!obj) return '';
+            const str = JSON.stringify(obj);
+            const msgUint8 = new TextEncoder().encode(str);
+            const hashBuffer = await crypto.subtle.digest('SHA-256', msgUint8);
+            const hashArray = Array.from(new Uint8Array(hashBuffer));
+            const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+            return hashHex;
+        }
 
         // ========== UTILITY FUNCTIONS ==========
         function showMessage(text, type = 'loading') {
@@ -582,57 +595,14 @@
                 const data = await response.json();
 
                 if (data.status === 'ok') {
-                    console.log('Portfolio data:', data.portfolio);
+                    console.log('Portfolio data received via HTTP');
 
-                    // Parse Portfolio
-                    portfolioData = [];
-                    const rawPortfolio = data.portfolio || {};
+                    // Update hash for comparison
+                    lastPortfolioHash = await computeHash(data.portfolio);
+                    console.log('Initial Portfolio Hash:', lastPortfolioHash);
 
-                    const parsePortfolioItem = (symbol, details) => {
-                        const flatItem = { Ticker: symbol };
-                        if (details && typeof details === 'object') {
-                            Object.keys(details).forEach(key => {
-                                // Prevent overwriting Ticker which is key/symbol
-                                if (key === 'Ticker') return;
+                    processAndRenderPortfolio(data.portfolio, data.classification);
 
-                                let val = details[key];
-                                if (typeof val === 'string' && val.trim() !== '') {
-                                    const numberRegex = /^-?\d+(\.\d+)?$/;
-                                    if (numberRegex.test(val)) {
-                                        flatItem[key] = parseFloat(val);
-                                    } else {
-                                        flatItem[key] = val;
-                                    }
-                                } else {
-                                    flatItem[key] = val;
-                                }
-                            });
-                        }
-                        return flatItem;
-                    };
-
-                    if (Array.isArray(rawPortfolio)) {
-                        rawPortfolio.forEach(entry => {
-                            if (Array.isArray(entry) && entry.length === 2) {
-                                portfolioData.push(parsePortfolioItem(entry[0], entry[1]));
-                            }
-                        });
-                    } else if (typeof rawPortfolio === 'object' && rawPortfolio !== null) {
-                        Object.keys(rawPortfolio).forEach(symbol => {
-                            portfolioData.push(parsePortfolioItem(symbol, rawPortfolio[symbol]));
-                        });
-                    }
-
-                    if (portfolioData.length > 0) {
-                        const allKeys = new Set();
-                        portfolioData.forEach(item => {
-                            Object.keys(item).forEach(k => allKeys.add(k));
-                        });
-                        const keys = Array.from(allKeys);
-                        tableColumns = keys.filter(k => k !== 'Ticker');
-                    }
-
-                    renderTable();
                     console.log('--- fine loadPortfolio ---');
                     showMessage('Portfolio caricato', 'success');
                 } else {
@@ -645,23 +615,94 @@
             }
         }
 
+        function processAndRenderPortfolio(rawPortfolio, classification) {
+            console.log('Processing and rendering portfolio...');
+            portfolioData = [];
+
+            const parsePortfolioItem = (symbol, details) => {
+                const flatItem = { Ticker: symbol };
+                if (details && typeof details === 'object') {
+                    Object.keys(details).forEach(key => {
+                        // Prevent overwriting Ticker which is key/symbol
+                        if (key === 'Ticker') return;
+
+                        let val = details[key];
+                        if (typeof val === 'string' && val.trim() !== '') {
+                            const numberRegex = /^-?\d+(\.\d+)?$/;
+                            if (numberRegex.test(val)) {
+                                flatItem[key] = parseFloat(val);
+                            } else {
+                                flatItem[key] = val;
+                            }
+                        } else {
+                            flatItem[key] = val;
+                        }
+                    });
+                }
+                return flatItem;
+            };
+
+            if (Array.isArray(rawPortfolio)) {
+                rawPortfolio.forEach(entry => {
+                    if (Array.isArray(entry) && entry.length === 2) {
+                        portfolioData.push(parsePortfolioItem(entry[0], entry[1]));
+                    }
+                });
+            } else if (typeof rawPortfolio === 'object' && rawPortfolio !== null) {
+                Object.keys(rawPortfolio).forEach(symbol => {
+                    portfolioData.push(parsePortfolioItem(symbol, rawPortfolio[symbol]));
+                });
+            }
+
+            if (portfolioData.length > 0) {
+                const allKeys = new Set();
+                portfolioData.forEach(item => {
+                    Object.keys(item).forEach(k => allKeys.add(k));
+                });
+                const keys = Array.from(allKeys);
+                tableColumns = keys.filter(k => k !== 'Ticker');
+            }
+
+            renderTable();
+        }
+
         function renderTable() {
             const thead = document.getElementById('portfolio-header-row');
             const tbody = document.getElementById('portfolio-body');
-            thead.innerHTML = '';
-            tbody.innerHTML = '';
 
-            // Headers
-            tableColumns.forEach(col => {
-                const th = document.createElement('th');
-                th.textContent = getTranslation(col) || col;
-                th.style.cursor = 'pointer';
-                th.onclick = () => sortTable(col);
-                if (sortColumn === col) {
-                    th.classList.add(sortAscending ? 'sort-asc' : 'sort-desc');
-                }
-                thead.appendChild(th);
-            });
+            // Check if column structure changed
+            const currentColsHash = JSON.stringify(tableColumns);
+            const prevColsHash = JSON.stringify(lastRenderedColumns);
+            const columnsChanged = currentColsHash !== prevColsHash;
+
+            if (columnsChanged) {
+                console.log('[Render] Columns changed, full rebuild');
+                thead.innerHTML = '';
+                tbody.innerHTML = '';
+                lastRenderedColumns = [...tableColumns];
+                lastRenderedData = {}; // Reset data tracking on structural change
+
+                // Headers
+                tableColumns.forEach(col => {
+                    const th = document.createElement('th');
+                    th.textContent = getTranslation(col) || col;
+                    th.style.cursor = 'pointer';
+                    th.onclick = () => sortTable(col);
+                    if (sortColumn === col) {
+                        th.classList.add(sortAscending ? 'sort-asc' : 'sort-desc');
+                    }
+                    thead.appendChild(th);
+                });
+            } else {
+                // Update header classes for sorting
+                Array.from(thead.cells).forEach((th, index) => {
+                    const col = tableColumns[index];
+                    th.classList.remove('sort-asc', 'sort-desc');
+                    if (sortColumn === col) {
+                        th.classList.add(sortAscending ? 'sort-asc' : 'sort-desc');
+                    }
+                });
+            }
 
 
 
@@ -1005,29 +1046,28 @@
                 return;
             }
 
-            // Get current timestamp in YYYY-MM-DD HH:mm:ss
-            const now = new Date();
-            const date_request = now.getFullYear() + '-' +
-                String(now.getMonth() + 1).padStart(2, '0') + '-' +
-                String(now.getDate()).padStart(2, '0') + ' ' +
-                String(now.getHours()).padStart(2, '0') + ':' +
-                String(now.getMinutes()).padStart(2, '0') + ':' +
-                String(now.getSeconds()).padStart(2, '0');
-
             ws.onopen = () => {
                 console.log("WebSocket connection established (onopen).");
-                console.log("Sending payload:", { date_request: date_request });
-                ws.send(JSON.stringify({ date_request: date_request }));
+                // No payload needed as per new server logic
             };
 
-            ws.onmessage = (event) => {
-                console.log("WebSocket message received:", event.data);
+            ws.onmessage = async (event) => {
+                console.log("WebSocket message received.");
                 try {
                     const data = JSON.parse(event.data);
-                    if (data.ready) {
-                        console.log("Server signaled READY. Closing WS.");
-                        ws.close();
-                        finishUpdate(true);
+                    if (data.status === 'ok') {
+                        const newHash = await computeHash(data.portfolio);
+                        console.log("Current hash:", lastPortfolioHash, "New hash:", newHash);
+
+                        if (newHash !== lastPortfolioHash) {
+                            console.log("Portfolio changed! Updating UI...");
+                            lastPortfolioHash = newHash;
+                            processAndRenderPortfolio(data.portfolio, data.classification);
+                            ws.close();
+                            finishUpdate(true, null, true); // Success, No Error, SKIP redundant load
+                        } else {
+                            console.log("Portfolio hash unchanged. Still waiting...");
+                        }
                     } else if (data.error) {
                         console.error("Server signaled ERROR:", data.error);
                         ws.close();
@@ -1047,15 +1087,20 @@
                 console.log("WebSocket connection closed (onclose). Code:", event.code, "Reason:", event.reason);
             };
 
-            function finishUpdate(success, errorMsg) {
-                console.log('--- finishUpdate --- success:', success, 'errorMsg:', errorMsg);
+            function finishUpdate(success, errorMsg, skipRefresh = false) {
+                console.log('--- finishUpdate --- success:', success, 'errorMsg:', errorMsg, 'skipRefresh:', skipRefresh);
                 btn.disabled = false;
                 btn.classList.remove('loading');
                 btnText.textContent = originalText;
 
                 if (success) {
-                    console.log('Refreshing portfolio data...');
-                    loadPortfolio(); // Refresh the whole portfolio
+                    if (!skipRefresh) {
+                        console.log('Refreshing portfolio data via HTTP...');
+                        loadPortfolio();
+                    } else {
+                        console.log('Data already updated via WebSocket, skipping redundant fetch.');
+                        showMessage(getTranslation('int.success.update') || 'Aggiornamento completato', 'success');
+                    }
                 } else {
                     alert(getTranslation('int.failed.update') || ("Aggiornamento fallito: " + (errorMsg || "")));
                 }
