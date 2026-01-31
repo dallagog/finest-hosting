@@ -287,6 +287,58 @@
             margin-top: 20px;
             text-align: center;
         }
+
+        /* Update Button & Spinner */
+        .update-btn {
+            padding: 8px 16px;
+            background: #000;
+            border: 1px solid #000;
+            color: #fff;
+            font-family: inherit;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .update-btn:hover:not(:disabled) {
+            background: #333;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .update-btn:disabled {
+            background: #666;
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+
+        .spinner {
+            width: 14px;
+            height: 14px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-top: 2px solid #fff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            display: none;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .update-btn.loading .spinner {
+            display: block;
+        }
     </style>
 </head>
 
@@ -316,8 +368,14 @@
         <div id="message" class="message"></div>
 
         <div class="content-section">
-            <h2 style="font-size: 18px; font-weight: 600; color: #000; margin-bottom: 15px;" id="portfolioTitle">
-                Portafoglio</h2>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <h2 style="font-size: 18px; font-weight: 600; color: #000; margin: 0;" id="portfolioTitle">Portafoglio
+                </h2>
+                <button id="updateBtn" class="update-btn" onclick="runUpdateOnline()">
+                    <div class="spinner"></div>
+                    <i class="fa fa-sync-alt"></i> <span id="updateBtnText">Conferma</span>
+                </button>
+            </div>
 
 
 
@@ -414,8 +472,7 @@
             document.getElementById('userLabel').textContent = getTranslation('int.user.label');
             document.getElementById('portfolioTitle').textContent = getTranslation('int.portfolio');
             document.getElementById('closeText').textContent = getTranslation('int.close');
-            document.getElementById('historicalText').textContent = getTranslation('int.historical');
-            document.getElementById('operationsText').textContent = getTranslation('int.operation');
+            document.getElementById('updateBtnText').textContent = getTranslation('int.update') || 'Conferma';
         }
 
         async function loadLanguageManifest() {
@@ -819,6 +876,72 @@
             });
 
             window.open(`dashboard-dataentry-trade.html?${params.toString()}`, '_blank');
+        }
+
+        // Online Update via WebSocket
+        function runUpdateOnline() {
+            const btn = document.getElementById('updateBtn');
+            const btnText = document.getElementById('updateBtnText');
+            const username = credentials.username;
+
+            if (!username) return;
+
+            // Prepare UI
+            btn.disabled = true;
+            btn.classList.add('loading');
+            const originalText = btnText.textContent;
+            btnText.textContent = getTranslation('int.inprogress') || 'Attesa...';
+
+            const wsUrl = API_URL.replace('https', 'wss') + `/ws/getportfolioonline/${username}`;
+            const ws = new WebSocket(wsUrl);
+
+            // Get current timestamp in YYYY-MM-DD HH:mm:ss
+            const now = new Date();
+            const date_request = now.getFullYear() + '-' +
+                String(now.getMonth() + 1).padStart(2, '0') + '-' +
+                String(now.getDate()).padStart(2, '0') + ' ' +
+                String(now.getHours()).padStart(2, '0') + ':' +
+                String(now.getMinutes()).padStart(2, '0') + ':' +
+                String(now.getSeconds()).padStart(2, '0');
+
+            ws.onopen = () => {
+                console.log("WebSocket connected. Sending date_request:", date_request);
+                ws.send(JSON.stringify({ date_request: date_request }));
+            };
+
+            ws.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                console.log("WebSocket message:", data);
+                if (data.ready) {
+                    ws.close();
+                    finishUpdate(true);
+                } else if (data.error) {
+                    console.error("WebSocket error message:", data.error);
+                    ws.close();
+                    finishUpdate(false, data.error);
+                }
+            };
+
+            ws.onerror = (error) => {
+                console.error("WebSocket error:", error);
+                finishUpdate(false, "Errore connessione");
+            };
+
+            ws.onclose = () => {
+                console.log("WebSocket closed");
+            };
+
+            function finishUpdate(success, errorMsg) {
+                btn.disabled = false;
+                btn.classList.remove('loading');
+                btnText.textContent = originalText;
+
+                if (success) {
+                    loadPortfolio(); // Refresh the whole portfolio
+                } else {
+                    alert(getTranslation('int.failed.update') || ("Aggiornamento fallito: " + (errorMsg || "")));
+                }
+            }
         }
 
         // ========== INITIALIZATION ==========
