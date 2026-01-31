@@ -940,7 +940,7 @@
         }
 
         // Online Update via WebSocket
-        function runUpdateOnline() {
+        async function runUpdateOnline() {
             console.log('--- runUpdateOnline init ---');
             const btn = document.getElementById('updateBtn');
             const btnText = document.getElementById('updateBtnText');
@@ -958,15 +958,45 @@
             const originalText = btnText.textContent;
             btnText.textContent = getTranslation('int.inprogress') || 'Attesa...';
 
-            const wsUrl = API_URL.replace('https', 'wss') + `/ws/getportfolioonline/${username}`;
-            console.log('WS Connection URL:', wsUrl);
-
-            let ws;
             try {
+                // 1. Trigger the evaluation by calling /putfilter
+                // First get the current filter
+                console.log('Fetching current filter to trigger update...');
+                const getFilterResp = await fetch(`${API_URL}/getfilter`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        username: credentials.username,
+                        token: credentials.token,
+                        language: credentials.language
+                    })
+                });
+                const filterData = await getFilterResp.json();
+                if (filterData.status !== 'ok') throw new Error('Failed to get filter: ' + filterData.msg);
+
+                console.log('Triggering evaluation via /putfilter...');
+                const putFilterResp = await fetch(`${API_URL}/putfilter`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        username: credentials.username,
+                        token: credentials.token,
+                        language: credentials.language,
+                        filter: JSON.stringify(filterData.filter)
+                    })
+                });
+                const putResult = await putFilterResp.json();
+                if (putResult.status !== 'ok') throw new Error('Failed to trigger update: ' + putResult.msg);
+                console.log('/putfilter success, starting WebSocket...');
+
+                // 2. Start WebSocket connection
+                const wsUrl = API_URL.replace('https', 'wss') + `/ws/getportfolioonline/${username}`;
+                console.log('WS Connection URL:', wsUrl);
+
                 ws = new WebSocket(wsUrl);
             } catch (err) {
-                console.error('Failed to create WebSocket instance:', err);
-                finishUpdate(false, 'Errore creazione WS');
+                console.error('Failed to initiate update process:', err);
+                finishUpdate(false, err.message);
                 return;
             }
 
