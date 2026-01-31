@@ -298,33 +298,7 @@
             font-weight: bold;
         }
 
-        /* PDF Viewer */
-        .pdf-viewer {
-            margin-top: 20px;
-            border: 1px solid #000;
-            border-radius: 8px;
-            overflow: hidden;
-            background: #fff;
-            display: none;
-            height: 800px;
-        }
 
-        .pdf-header {
-            background: #eee;
-            padding: 15px;
-            border-bottom: 1px solid #ccc;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            color: #333;
-            font-family: sans-serif;
-        }
-
-        .pdf-content {
-            width: 100%;
-            height: 100%;
-            border: none;
-        }
 
         /* Messages */
         .message {
@@ -863,15 +837,7 @@
                 </div>
             </div>
 
-            <div class="pdf-viewer" id="pdfViewer">
-                <div class="pdf-header">
-                    <h3 id="pdfViewerTitle">Report PDF - template.pdf</h3>
-                    <button onclick="downloadPDF()">
-                        <i class="fa fa-download"></i> <span id="downloadPdfText">Download PDF</span>
-                    </button>
-                </div>
-                <iframe id="pdfFrame" class="pdf-content"></iframe>
-            </div>
+
         </div>
     </div>
 
@@ -2325,69 +2291,26 @@
         }
 
         // ========== PDF ==========
-        async function loadPDF() {
-            try {
-                showMessage(getTranslation('int.loading.pdf') || 'Caricamento PDF...', 'loading');
-                const payload = {
-                    username: credentials.username || "",
-                    token: credentials.token || "",
-                    language: credentials.language || "",
-                    filter: credentials.filter || "",
-                    code: ""
-                };
-                const response = await fetch(`${API_URL}/getreport`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-                if (!response.ok) throw new Error('HTTP ' + response.status);
-                const data = await response.json();
-                if (!data || data.status !== 'ok' || !data.pdf_data) throw new Error('PDF non disponibile');
-                displayPDF(data.pdf_data);
-            } catch (error) {
-                showMessage((getTranslation('int.error.loading.pdf') || 'Errore') + ': ' + error.message, 'error');
+        function loadPDF() {
+            const params = new URLSearchParams();
+            params.set('username', credentials.username || '');
+            params.set('token', credentials.token || '');
+            params.set('language', credentials.language || '');
+            params.set('filter', credentials.filter || '');
+
+            // Get currency
+            let c = localStorage.getItem('currency') || 'EUR';
+            const currencyDisplay = document.getElementById('currencyDisplay');
+            if (currencyDisplay && currencyDisplay.textContent && currencyDisplay.textContent !== '-') {
+                const parts = currencyDisplay.textContent.split(' ');
+                c = parts.length > 1 ? parts[1] : parts[0];
             }
+            params.set('currency', c);
+
+            window.open(`dashboard-report.html?${params.toString()}`, '_blank');
         }
 
-        function displayPDF(pdfBase64Data) {
-            try {
-                pdfBase64 = pdfBase64Data;
-                const byteCharacters = atob(pdfBase64);
-                const byteNumbers = new Array(byteCharacters.length);
-                for (let i = 0; i < byteCharacters.length; i++) byteNumbers[i] = byteCharacters.charCodeAt(i);
-                const byteArray = new Uint8Array(byteNumbers);
-                const pdfBlob = new Blob([byteArray], { type: 'application/pdf' });
-                const pdfUrl = URL.createObjectURL(pdfBlob);
-                const pdfFrame = document.getElementById('pdfFrame');
-                pdfFrame.src = pdfUrl;
-                pdfFrame.onload = () => showMessage(getTranslation('int.pdf.loaded') || 'PDF caricato', 'success');
-                document.getElementById('pdfViewer').style.display = 'block';
-                document.getElementById('pdfViewer').scrollIntoView({ behavior: 'smooth' });
-            } catch (error) {
-                console.error('displayPDF error', error);
-            }
-        }
 
-        function downloadPDF() {
-            if (!pdfBase64) return;
-            try {
-                const byteCharacters = atob(pdfBase64);
-                const byteNumbers = new Array(byteCharacters.length);
-                for (let i = 0; i < byteCharacters.length; i++) byteNumbers[i] = byteCharacters.charCodeAt(i);
-                const byteArray = new Uint8Array(byteNumbers);
-                const pdfBlob = new Blob([byteArray], { type: 'application/pdf' });
-                const url = URL.createObjectURL(pdfBlob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = 'template.pdf';
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                URL.revokeObjectURL(url);
-            } catch (error) {
-                console.error('downloadPDF error', error);
-            }
-        }
 
         function openTrendGraph() {
             const u = credentials.username || localStorage.getItem('username');
