@@ -1038,8 +1038,10 @@
                 console.log('/putfilter success, starting WebSocket...');
 
                 // 2. Start WebSocket connection
-                const wsUrl = API_URL.replace('https', 'wss') + `/ws/getportfolioonline/${username}/${credentials.currency}`;
-                console.log('WS Connection URL:', wsUrl);
+                const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+                const wsUrl = `${wsProtocol}//feweb-tunnel.fe-web.eu/ws/getportfolioonline/${credentials.username}`;
+                console.log('WebSocket connecting to:', wsUrl);
+
 
                 ws = new WebSocket(wsUrl);
             } catch (err) {
