@@ -7,6 +7,8 @@
     <title>Financial Estimates 0.1 alfa</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <link rel="icon" type="image/png" href="images/icon-finest.png">
+    <!-- JSZip for file compression -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&display=swap');
 
@@ -420,6 +422,12 @@
                     style="margin-bottom: 0;">
                     <i class="fa fa-globe"></i> <span id="btnWebSearchText">Ricerca Web</span>
                 </button>
+                <button id="btn-import" class="btn btn-secondary" onclick="triggerFileUpload()" disabled
+                    style="margin-bottom: 0;">
+                    <i class="fa fa-file-import"></i> <span id="btnImportText">Importa</span>
+                </button>
+                <input type="file" id="file-import-input" accept=".json,.csv" style="display: none;"
+                    onchange="handleFileImport(event)">
             </div>
         </div>
 
@@ -732,6 +740,122 @@
             }
 
             window.open(`dashboard-dataentry-instrument-web.html?${params.toString()}`, '_blank');
+        }
+
+        function updateImportButtonState() {
+            const instrumentType = document.getElementById('instrument-type-select').value.trim();
+            const importBtn = document.getElementById('btn-import');
+            if (importBtn) {
+                importBtn.disabled = !instrumentType;
+            }
+        }
+
+        function triggerFileUpload() {
+            document.getElementById('file-import-input').click();
+        }
+
+        async function handleFileImport(event) {
+            console.log('[handleFileImport] Function called');
+            const file = event.target.files[0];
+            if (!file) {
+                console.log('[handleFileImport] No file selected');
+                return;
+            }
+            console.log('[handleFileImport] File selected:', file.name, 'Size:', file.size, 'Type:', file.type);
+
+            // Validate instrument type field
+            const instrumentType = document.getElementById('instrument-type-select').value.trim();
+            console.log('[handleFileImport] Instrument type value:', instrumentType);
+            if (!instrumentType) {
+                console.error('[handleFileImport] Instrument type is empty, aborting');
+                alert('Selezionare un tipo di strumento prima di importare il file');
+                return;
+            }
+
+            // Create filename in format instrument:{type}.zip
+            const filename = `instrument:${instrumentType}`;
+            console.log('[handleFileImport] Filename to use:', filename + '.zip');
+
+            try {
+                // Create zip file using JSZip
+                console.log('[handleFileImport] Creating zip file...');
+                const zip = new JSZip();
+
+                // Read the original file content
+                const fileContent = await file.arrayBuffer();
+                console.log('[handleFileImport] File content read, size:', fileContent.byteLength);
+
+                // Add file to zip with original filename
+                zip.file(file.name, fileContent);
+                console.log('[handleFileImport] File added to zip:', file.name);
+
+                // Generate zip blob
+                const zipBlob = await zip.generateAsync({ type: 'blob' });
+                console.log('[handleFileImport] Zip blob generated, size:', zipBlob.size);
+
+                // Upload file to server via /importall
+                console.log('[handleFileImport] Preparing FormData for /importall...');
+                const formData = new FormData();
+                formData.append('username', credentials.username);
+                formData.append('token', credentials.token);
+                formData.append('language', credentials.language);
+                formData.append('file', zipBlob, filename + '.zip');
+                formData.append('recreate', 'false');
+                formData.append('ticker', instrumentType);
+                formData.append('filename', filename);
+
+                console.log('[handleFileImport] FormData prepared:');
+                console.log('  - username:', credentials.username);
+                console.log('  - token:', credentials.token ? '***' : 'empty');
+                console.log('  - language:', credentials.language);
+                console.log('  - file:', filename + '.zip', 'size:', zipBlob.size);
+                console.log('  - ticker:', instrumentType);
+                console.log('  - filename:', filename);
+
+                const apiUrl = `${API_URL}/importall`;
+                console.log('[handleFileImport] Calling API:', apiUrl);
+
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                console.log('[handleFileImport] Response received, status:', response.status, response.statusText);
+
+                const result = await response.json();
+                console.log('[handleFileImport] Response JSON:', result);
+
+                if (result.status === 'ok') {
+                    console.log('[handleFileImport] Upload successful!');
+                    alert(result.msg || 'File caricato con successo sul server');
+                } else {
+                    console.error('[handleFileImport] Upload failed:', result.msg);
+                    alert('Errore caricamento: ' + (result.msg || 'Errore sconosciuto'));
+                }
+            } catch (err) {
+                console.error('[handleFileImport] Upload error:', err);
+                console.error('[handleFileImport] Error stack:', err.stack);
+                alert('Errore di connessione durante il caricamento: ' + err.message);
+            }
+
+            // Continue with local file reading for form population if needed
+            console.log('[handleFileImport] Reading file for form population...');
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                console.log('[handleFileImport] File read complete');
+                const content = e.target.result;
+                if (file.name.endsWith('.json')) {
+                    try {
+                        const data = JSON.parse(content);
+                        console.log('[handleFileImport] JSON parsed successfully:', data);
+                        // TODO: populate form with data if needed
+                    } catch (err) {
+                        console.error('[handleFileImport] JSON parse error:', err);
+                    }
+                }
+            };
+            reader.readAsText(file);
+            console.log('[handleFileImport] File reader started');
         }
 
         // Popola il selettore instrument_type
@@ -1389,10 +1513,12 @@
 
                     if (hasTypes) {
                         document.getElementById('instrument-selector').style.display = 'block';
+                        updateImportButtonState(); // Set initial import button state
 
                         // Listener per il selettore
                         document.getElementById('instrument-type-select').addEventListener('change', (e) => {
                             const selectedType = e.target.value;
+                            updateImportButtonState(); // Enable/disable import button
                             if (selectedType) {
                                 loadInstrumentForm(selectedType);
                             } else {
