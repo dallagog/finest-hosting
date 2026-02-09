@@ -10,6 +10,8 @@
         crossorigin="anonymous">
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <!-- JSZip for file compression -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <style>
         :root {
             --bg-color: #f5f5f0;
@@ -833,62 +835,111 @@
         function triggerFileUpload() { document.getElementById('file-import-input').click(); }
 
         async function handleFileImport(event) {
+            console.log('[handleFileImport] Function called');
             const file = event.target.files[0];
-            if (!file) return;
+            if (!file) {
+                console.log('[handleFileImport] No file selected');
+                return;
+            }
+            console.log('[handleFileImport] File selected:', file.name, 'Size:', file.size, 'Type:', file.type);
 
             // Validate ticker field
             const ticker = document.getElementById('field_id_instrument').value.trim();
+            console.log('[handleFileImport] Ticker value:', ticker);
             if (!ticker) {
+                console.error('[handleFileImport] Ticker is empty, aborting');
                 showStatus('Inserire un ticker/ISIN prima di importare il file', 'error');
                 return;
             }
 
-            // Create filename with ticker and timestamp
-            const now = new Date();
-            const timestamp = now.getFullYear() + '_' +
-                String(now.getMonth() + 1).padStart(2, '0') + '_' +
-                String(now.getDate()).padStart(2, '0') + '_' +
-                String(now.getHours()).padStart(2, '0') + '_' +
-                String(now.getMinutes()).padStart(2, '0') + '_' +
-                String(now.getSeconds()).padStart(2, '0');
-            const filename = `${ticker}_${timestamp}`;
+            // Create filename in format price:{ticker}.zip
+            const filename = `price:${ticker}`;
+            console.log('[handleFileImport] Filename to use:', filename + '.zip');
 
-            // Upload file to server via /importall
             try {
+                // Create zip file using JSZip
+                console.log('[handleFileImport] Creating zip file...');
+                const zip = new JSZip();
+
+                // Read the original file content
+                const fileContent = await file.arrayBuffer();
+                console.log('[handleFileImport] File content read, size:', fileContent.byteLength);
+
+                // Add file to zip with original filename
+                zip.file(file.name, fileContent);
+                console.log('[handleFileImport] File added to zip:', file.name);
+
+                // Generate zip blob
+                const zipBlob = await zip.generateAsync({ type: 'blob' });
+                console.log('[handleFileImport] Zip blob generated, size:', zipBlob.size);
+
+                // Upload file to server via /importall
+                console.log('[handleFileImport] Preparing FormData for /importall...');
                 const formData = new FormData();
                 formData.append('username', credentials.username);
                 formData.append('token', credentials.token);
                 formData.append('language', credentials.language);
-                formData.append('file', file);
+                formData.append('file', zipBlob, filename + '.zip');
                 formData.append('recreate', 'false');
                 formData.append('ticker', ticker);
                 formData.append('filename', filename);
 
-                const response = await fetch(`${API_URL}/importall`, {
+                console.log('[handleFileImport] FormData prepared:');
+                console.log('  - username:', credentials.username);
+                console.log('  - token:', credentials.token ? '***' : 'empty');
+                console.log('  - language:', credentials.language);
+                console.log('  - file:', filename + '.zip', 'size:', zipBlob.size);
+                console.log('  - ticker:', ticker);
+                console.log('  - filename:', filename);
+
+                const apiUrl = `${API_URL}/importall`;
+                console.log('[handleFileImport] Calling API:', apiUrl);
+
+                const response = await fetch(apiUrl, {
                     method: 'POST',
                     body: formData
                 });
 
+                console.log('[handleFileImport] Response received, status:', response.status, response.statusText);
+
                 const result = await response.json();
+                console.log('[handleFileImport] Response JSON:', result);
+
                 if (result.status === 'ok') {
+                    console.log('[handleFileImport] Upload successful!');
                     showStatus(result.msg || 'File caricato con successo sul server', 'success');
                 } else {
+                    console.error('[handleFileImport] Upload failed:', result.msg);
                     showStatus('Errore caricamento: ' + (result.msg || 'Errore sconosciuto'), 'error');
                 }
             } catch (err) {
-                console.error('Upload error:', err);
+                console.error('[handleFileImport] Upload error:', err);
+                console.error('[handleFileImport] Error stack:', err.stack);
                 showStatus('Errore di connessione durante il caricamento: ' + err.message, 'error');
             }
 
             // Continue with local file reading for form population
+            console.log('[handleFileImport] Reading file for form population...');
             const reader = new FileReader();
             reader.onload = function (e) {
+                console.log('[handleFileImport] File read complete');
                 const content = e.target.result;
                 if (file.name.endsWith('.json')) {
-                    try { const data = JSON.parse(content); populateFromImport(data); } catch (err) { alert("Invalid JSON file"); }
-                } else if (file.name.endsWith('.csv')) { parseCSV(content); }
+                    try {
+                        const data = JSON.parse(content);
+                        console.log('[handleFileImport] JSON parsed successfully:', data);
+                        populateFromImport(data);
+                    } catch (err) {
+                        console.error('[handleFileImport] JSON parse error:', err);
+                        alert("Invalid JSON file");
+                    }
+                } else if (file.name.endsWith('.csv')) {
+                    console.log('[handleFileImport] Parsing CSV...');
+                    parseCSV(content);
+                }
             };
             reader.readAsText(file);
+            console.log('[handleFileImport] File reader started');
         }
 
         function parseCSV(content) {
