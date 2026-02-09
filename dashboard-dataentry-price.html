@@ -399,9 +399,6 @@
                 Price Entry</h1>
         </div>
         <div class="logout-container" style="display: flex; align-items: center; justify-content: flex-end; gap: 15px;">
-            <button class="btn btn-secondary btn-sm" onclick="triggerFileUpload()">
-                <i class="fa fa-file-import"></i> <span id="btnImportText">Importa JSON/CSV</span>
-            </button>
             <input type="file" id="file-import-input" accept=".json,.csv" style="display: none;"
                 onchange="handleFileImport(event)">
             <a href="dashboard-main.html" class="logout-btn">
@@ -427,6 +424,10 @@
                 <button type="button" class="btn btn-primary btn-sm" onclick="searchTickerOnWeb()" id="btnSearchTicker"
                     style="height: 48px;">
                     <i class="fa fa-search"></i>&nbsp;<span id="btnSearchTickerLabel">Cerca</span>
+                </button>
+                <button id="btn-import" type="button" class="btn btn-secondary btn-sm" onclick="triggerFileUpload()"
+                    disabled style="height: 48px;">
+                    <i class="fa fa-file-import"></i>&nbsp;<span id="btnImportText">Importa</span>
                 </button>
             </div>
             <span class="error-message" id="error_id_instrument"></span>
@@ -513,7 +514,12 @@
             await updateHeaderWithUserInfo();
             populateValueTypeSelector();
             const idInput = document.getElementById('field_id_instrument');
-            if (idInput) idInput.value = currentInstrumentId || '';
+            if (idInput) {
+                idInput.value = currentInstrumentId || '';
+                // Add event listener to enable/disable import button
+                idInput.addEventListener('input', updateImportButtonState);
+                updateImportButtonState(); // Initial state
+            }
             generatePriceForm();
         }
 
@@ -816,11 +822,65 @@
             }
         }
 
+        function updateImportButtonState() {
+            const ticker = document.getElementById('field_id_instrument').value.trim();
+            const importBtn = document.getElementById('btn-import');
+            if (importBtn) {
+                importBtn.disabled = !ticker;
+            }
+        }
+
         function triggerFileUpload() { document.getElementById('file-import-input').click(); }
 
-        function handleFileImport(event) {
+        async function handleFileImport(event) {
             const file = event.target.files[0];
             if (!file) return;
+
+            // Validate ticker field
+            const ticker = document.getElementById('field_id_instrument').value.trim();
+            if (!ticker) {
+                showStatus('Inserire un ticker/ISIN prima di importare il file', 'error');
+                return;
+            }
+
+            // Create filename with ticker and timestamp
+            const now = new Date();
+            const timestamp = now.getFullYear() + '_' +
+                String(now.getMonth() + 1).padStart(2, '0') + '_' +
+                String(now.getDate()).padStart(2, '0') + '_' +
+                String(now.getHours()).padStart(2, '0') + '_' +
+                String(now.getMinutes()).padStart(2, '0') + '_' +
+                String(now.getSeconds()).padStart(2, '0');
+            const filename = `${ticker}_${timestamp}`;
+
+            // Upload file to server via /importall
+            try {
+                const formData = new FormData();
+                formData.append('username', credentials.username);
+                formData.append('token', credentials.token);
+                formData.append('language', credentials.language);
+                formData.append('file', file);
+                formData.append('recreate', 'false');
+                formData.append('ticker', ticker);
+                formData.append('filename', filename);
+
+                const response = await fetch(`${API_URL}/importall`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+                if (result.status === 'ok') {
+                    showStatus(result.msg || 'File caricato con successo sul server', 'success');
+                } else {
+                    showStatus('Errore caricamento: ' + (result.msg || 'Errore sconosciuto'), 'error');
+                }
+            } catch (err) {
+                console.error('Upload error:', err);
+                showStatus('Errore di connessione durante il caricamento: ' + err.message, 'error');
+            }
+
+            // Continue with local file reading for form population
             const reader = new FileReader();
             reader.onload = function (e) {
                 const content = e.target.result;
