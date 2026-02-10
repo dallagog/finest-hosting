@@ -574,7 +574,7 @@
         }
 
         // ========== PORTFOLIO DATA ==========
-        async function loadPortfolio() {
+        async function loadPortfolio(render = true) {
             try {
                 showMessage('Caricamento portfolio...', 'loading');
 
@@ -602,10 +602,13 @@
                     lastPortfolioHash = await computeHash(data.portfolio);
                     console.log('Initial Portfolio Hash:', lastPortfolioHash);
 
-                    processAndRenderPortfolio(data.portfolio, data.classification);
+                    if (render) {
+                        processAndRenderPortfolio(data.portfolio, data.classification);
+                    }
 
                     console.log('--- fine loadPortfolio ---');
                     showMessage('Portfolio caricato', 'success');
+                    return data;
                 } else {
                     console.error('Portfolio error response:', data);
                     throw new Error('Portfolio error: ' + (data.msg || 'Unknown error'));
@@ -613,6 +616,7 @@
             } catch (error) {
                 console.error('Error loading portfolio:', error);
                 showMessage('Errore nel caricamento del portfolio: ' + error.message, 'error');
+                return null;
             }
         }
 
@@ -661,7 +665,7 @@
                     Object.keys(item).forEach(k => allKeys.add(k));
                 });
                 const keys = Array.from(allKeys);
-                tableColumns = keys.filter(k => k !== 'Ticker');
+                tableColumns = keys.filter(k => k !== 'Ticker' && k !== 'divisor_price');
             }
 
             renderTable();
@@ -1119,11 +1123,19 @@
         // ========== INITIALIZATION ==========
         window.addEventListener('load', async () => {
             if (getCredentialsFromURL()) {
+                // Start portfolio fetch immediately (without internal rendering)
+                const portfolioPromise = loadPortfolio(false);
+
                 await initializeLanguages();
                 await loadTranslations(credentials.language);
                 await loadCurrencies(credentials.language);
                 updateUserInfo();
-                await loadPortfolio();
+
+                // Wait for portfolio data and then render
+                const data = await portfolioPromise;
+                if (data && data.status === 'ok') {
+                    processAndRenderPortfolio(data.portfolio, data.classification);
+                }
             }
         });
     </script>
