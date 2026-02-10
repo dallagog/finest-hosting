@@ -476,16 +476,24 @@
         // ========== AUTHENTICATION ==========
         function getCredentialsFromURL() {
             const params = new URLSearchParams(window.location.search);
-            credentials.username = params.get('username') || '';
-            credentials.token = params.get('token') || '';
-            credentials.language = params.get('language') || 'it_IT';
+            const u = params.get('username') || '';
+            const t = params.get('token') || '';
+            const l = params.get('language') || 'it_IT';
+
+            console.log('getCredentialsFromURL params:', { username: u, token: t, language: l });
+
+            credentials.username = u;
+            credentials.token = t;
+            credentials.language = l;
 
             if (!credentials.username || !credentials.token) {
+                console.error('Missing credentials');
                 showMessage('Credenziali mancanti', 'error');
                 return false;
             }
 
             document.getElementById('usernameDisplay').textContent = credentials.username;
+            console.log('Credentials set successfully');
             return true;
         }
 
@@ -586,6 +594,9 @@
                     filter: ''
                 };
 
+                console.log('--- Calling /getportfolioonline ---');
+                console.log('Payload:', payload);
+
                 const response = await fetch(`${API_URL}/getportfolioonline`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -596,7 +607,7 @@
                 const data = await response.json();
 
                 if (data.status === 'ok') {
-                    console.log('Portfolio data received via HTTP');
+                    console.log('Portfolio data received via HTTP:', data);
 
                     // Update hash for comparison
                     lastPortfolioHash = await computeHash(data.portfolio);
@@ -1122,8 +1133,12 @@
 
         // ========== INITIALIZATION ==========
         window.addEventListener('load', async () => {
+            console.log('--- Window Load Event Fired ---');
             if (getCredentialsFromURL()) {
+                console.log('Credentials obtained, starting initialization...');
+
                 // Start portfolio fetch immediately (without internal rendering)
+                console.log('Starting immediate loadPortfolio(false)...');
                 const portfolioPromise = loadPortfolio(false);
 
                 await initializeLanguages();
@@ -1132,10 +1147,16 @@
                 updateUserInfo();
 
                 // Wait for portfolio data and then render
+                console.log('Waiting for portfolio data...');
                 const data = await portfolioPromise;
                 if (data && data.status === 'ok') {
+                    console.log('Portfolio data ready, rendering...');
                     processAndRenderPortfolio(data.portfolio, data.classification);
+                } else {
+                    console.error('Portfolio data failed or invalid', data);
                 }
+            } else {
+                console.error('getCredentialsFromURL returned false');
             }
         });
     </script>
