@@ -666,6 +666,68 @@
             await loadPrices();
         }
 
+        const forzaArrowsPlugin = {
+            id: 'forzaArrows',
+            afterDatasetsDraw(chart, args, options) {
+                const { ctx } = chart;
+                ctx.save();
+
+                chart.data.datasets.forEach((dataset, datasetIndex) => {
+                    const meta = chart.getDatasetMeta(datasetIndex);
+                    if (meta.hidden) return;
+
+                    dataset.data.forEach((value, index) => {
+                        const forza = dataset.forzaValues ? dataset.forzaValues[index] : null;
+                        if (forza === null || forza === 0) return;
+
+                        const xPos = meta.data[index].x;
+                        const yPos = meta.data[index].y;
+
+                        const arrowSize = 10;
+                        const offset = 20;
+
+                        ctx.beginPath();
+                        ctx.lineWidth = 2;
+
+                        if (forza > 0) {
+                            ctx.strokeStyle = 'green';
+                            ctx.fillStyle = 'green';
+                            ctx.moveTo(xPos, yPos - offset);
+                            ctx.lineTo(xPos, yPos - offset - arrowSize);
+                            ctx.stroke();
+
+                            ctx.beginPath();
+                            ctx.moveTo(xPos, yPos - offset - arrowSize);
+                            ctx.lineTo(xPos - 5, yPos - offset - arrowSize + 5);
+                            ctx.lineTo(xPos + 5, yPos - offset - arrowSize + 5);
+                            ctx.fill();
+
+                            ctx.font = 'bold 10px Arial';
+                            ctx.textAlign = 'center';
+                            ctx.fillText(forza.toFixed(1), xPos, yPos - offset - arrowSize - 5);
+                        } else {
+                            ctx.strokeStyle = 'red';
+                            ctx.fillStyle = 'red';
+                            ctx.moveTo(xPos, yPos + offset);
+                            ctx.lineTo(xPos, yPos + offset + arrowSize);
+                            ctx.stroke();
+
+                            ctx.beginPath();
+                            ctx.moveTo(xPos, yPos + offset + arrowSize);
+                            ctx.lineTo(xPos - 5, yPos + offset + arrowSize - 5);
+                            ctx.lineTo(xPos + 5, yPos + offset + arrowSize - 5);
+                            ctx.fill();
+
+                            ctx.font = 'bold 10px Arial';
+                            ctx.textAlign = 'center';
+                            ctx.fillText(forza.toFixed(1), xPos, yPos + offset + arrowSize + 12);
+                        }
+                    });
+                });
+                ctx.restore();
+            }
+        };
+
         async function loadPrices() {
             document.getElementById('loading').style.display = 'flex';
             const startDate = document.getElementById('start-date').value;
@@ -783,9 +845,13 @@
 
             selectedMetrics.forEach((metric, index) => {
                 const aggregatedData = metricDataMap.get(metric);
-                const alignedData = allLabels.map(label => {
+                const alignedData = [];
+                const forzaValues = [];
+
+                allLabels.forEach(label => {
                     const item = aggregatedData.find(d => d.label === label);
-                    return item ? item.value : null;
+                    alignedData.push(item ? item.value : null);
+                    forzaValues.push(item ? item.forza : null);
                 });
 
                 // Colors hardcoded for single dataset
@@ -800,6 +866,7 @@
                 datasets.push({
                     label: titleValue,
                     data: alignedData,
+                    forzaValues: forzaValues,
                     borderColor: color.border,
                     backgroundColor: gradient,
                     borderWidth: 2,
@@ -843,6 +910,7 @@
                     labels: allLabels,
                     datasets: datasets
                 },
+                plugins: [forzaArrowsPlugin],
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
@@ -931,6 +999,7 @@
                 }
 
                 const val = parseValue(item[metric]);
+                const forzaVal = item.forza !== undefined && item.forza !== null ? parseValue(item.forza) : null;
                 const instrument = item.id_instrument || 'Unknown';
 
                 if (!aggregated[key]) {
@@ -938,11 +1007,18 @@
                         sum: 0,
                         count: 0,
                         date: date,
-                        instruments: {}
+                        instruments: {},
+                        forzaSum: 0,
+                        forzaCount: 0
                     };
                 }
                 aggregated[key].sum += val;
                 aggregated[key].count++;
+
+                if (forzaVal !== null) {
+                    aggregated[key].forzaSum += forzaVal;
+                    aggregated[key].forzaCount++;
+                }
 
                 if (!aggregated[key].instruments[instrument]) {
                     aggregated[key].instruments[instrument] = { sum: 0, count: 0 };
@@ -958,6 +1034,7 @@
             return sorted.map(key => {
                 const item = aggregated[key];
                 const avgValue = item.count > 0 ? item.sum / item.count : 0;
+                const avgForza = item.forzaCount > 0 ? item.forzaSum / item.forzaCount : null;
 
                 const instrumentAvgs = {};
                 for (let instr in item.instruments) {
@@ -969,6 +1046,7 @@
                 return {
                     label: key,
                     value: avgValue,
+                    forza: avgForza,
                     instruments: instrumentAvgs,
                     date: item.date
                 };
