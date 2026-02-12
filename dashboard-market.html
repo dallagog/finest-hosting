@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="it">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Financial Estimates - Market Dashboard</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <script src="js/dashboard-shared.js"></script>
+    <link rel="icon" type="image/png" href="images/icon-finest.png">
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&display=swap');
+
+        :root {
+            --bg-color: #f5f5f0;
+            --neon-cyan: #000000;
+            --neon-blue: #333333;
+            --glass-bg: #ffffff;
+            --text-color: #333333;
+            --border-color: #000000;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Orbitron', sans-serif;
+            background-color: var(--bg-color);
+            padding: 20px;
+            color: var(--text-color);
+            min-height: 100vh;
+        }
+
+        .main-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        /* Header */
+        .header-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: var(--glass-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+        }
+
+        .user-info-left {
+            flex: 1;
+            text-align: left;
+            font-size: 14px;
+            color: var(--neon-cyan);
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .user-info-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        h1 {
+            flex: 1;
+            text-align: center;
+            margin: 0;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: #000;
+            font-size: 1.5em;
+        }
+
+        .logout-container {
+            flex: 1;
+            text-align: right;
+        }
+
+        .logout-btn {
+            padding: 8px 16px;
+            background: #000;
+            border: 1px solid #000;
+            color: #fff;
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: inherit;
+            transition: all 0.3s;
+        }
+
+        /* Content */
+        .collapsible-container {
+            background: var(--glass-bg);
+            border: 1px solid #ddd;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+        }
+
+        .filter-group {
+            margin-bottom: 15px;
+        }
+
+        .filter-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .filter-group input {
+            width: 100%;
+            padding: 10px;
+            background: #fff;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-family: inherit;
+        }
+
+        button {
+            padding: 10px 20px;
+            background: #000;
+            border: 1px solid #000;
+            color: #fff;
+            font-family: inherit;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+
+        button:hover {
+            background: #333;
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        .data-table th,
+        .data-table td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+
+        .data-table th {
+            background: #f0f0f0;
+            font-weight: 600;
+        }
+
+        .data-table tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+
+        .message {
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 4px;
+            display: none;
+        }
+
+        .message.error {
+            background: #fee;
+            color: #c00;
+            border: 1px solid #c00;
+            display: block;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="main-container">
+        <div class="header-bar">
+            <div class="user-info-left">
+                <div class="user-info-row">
+                    <strong id="userLabel">Utente:</strong>
+                    <span id="usernameDisplay">-</span>
+                </div>
+                <div class="user-info-row">
+                    <span id="currencyDisplay">-</span>
+                </div>
+            </div>
+            <h1>Market Dashboard</h1>
+            <div class="logout-container">
+                <button class="logout-btn" onclick="logout()">Logout</button>
+            </div>
+        </div>
+
+        <div id="message" class="message"></div>
+
+        <div class="collapsible-container">
+            <div style="display: flex; gap: 15px; align-items: flex-end;">
+                <div class="filter-group" style="flex: 1;">
+                    <label>Data iniziale:</label>
+                    <input type="date" id="date-start">
+                </div>
+                <div class="filter-group" style="flex: 1;">
+                    <label>Data finale:</label>
+                    <input type="date" id="date-end">
+                </div>
+                <div class="filter-group">
+                    <button onclick="fetchMarketData()">Applica</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="collapsible-container">
+            <div id="table-container">
+                <p>Nessun dato caricato.</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL_FEWEB = 'http://127.0.0.1:8000'; // Port of app_feweb
+        const API_URL_MARKET = 'http://127.0.0.1:8004'; // Port of app_market
+
+        let credentials = {
+            username: localStorage.getItem('username'),
+            token: localStorage.getItem('token'),
+            currency: localStorage.getItem('currency') || 'EUR'
+        };
+
+        async function init() {
+            if (!credentials.username) {
+                window.location.href = 'index.html';
+                return;
+            }
+
+            document.getElementById('usernameDisplay').textContent = credentials.username;
+            document.getElementById('currencyDisplay').textContent = credentials.currency;
+
+            await loadDefaultsFromFilter();
+            fetchMarketData();
+        }
+
+        async function loadDefaultsFromFilter() {
+            try {
+                const response = await fetch(`${API_URL_FEWEB}/getfilter`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        username: credentials.username,
+                        token: credentials.token,
+                        language: 'it_IT'
+                    })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    let filter = data.filter;
+                    if (typeof filter === 'string') filter = JSON.parse(filter);
+
+                    const f = filter.Filter || {};
+                    if (f.date_start) document.getElementById('date-start').value = f.date_start;
+                    if (f.date_end) document.getElementById('date-end').value = f.date_end;
+                }
+            } catch (err) {
+                console.error("Error loading filter.json", err);
+            }
+        }
+
+        async function fetchMarketData() {
+            const date_start = document.getElementById('date-start').value;
+            const date_end = document.getElementById('date-end').value;
+
+            if (!date_start || !date_end) {
+                return;
+            }
+
+            const msgDiv = document.getElementById('message');
+            msgDiv.style.display = 'none';
+
+            try {
+                const response = await fetch(`${API_URL_MARKET}/getmarket`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        username: credentials.username,
+                        token: credentials.token,
+                        currency: credentials.currency,
+                        date_start: date_start,
+                        date_end: date_end
+                    })
+                });
+
+                const result = await response.json();
+                if (result.status === 'ok') {
+                    renderTable(result.data);
+                } else {
+                    msgDiv.textContent = result.msg || "Errore nel caricamento dati";
+                    msgDiv.className = "message error";
+                }
+            } catch (err) {
+                console.error("Error fetching market data", err);
+                msgDiv.textContent = "Errore di connessione al servizio market";
+                msgDiv.className = "message error";
+            }
+        }
+
+        function renderTable(data) {
+            const container = document.getElementById('table-container');
+            if (!data || data.length === 0) {
+                container.innerHTML = '<p>Nessun dato trovato per il periodo selezionato.</p>';
+                return;
+            }
+
+            let html = '<table class="data-table"><thead><tr>';
+            html += '<th>Strumento</th><th>Data</th><th>Valore (Forza)</th>';
+            html += '</tr></thead><tbody>';
+
+            data.forEach(row => {
+                html += `<tr>
+                    <td>${row.id_instrument}</td>
+                    <td>${row.date_start}</td>
+                    <td>${row.value}</td>
+                </tr>`;
+            });
+
+            html += '</tbody></table>';
+            container.innerHTML = html;
+        }
+
+        function logout() {
+            localStorage.clear();
+            window.location.href = 'index.html';
+        }
+
+        window.onload = init;
+    </script>
+</body>
+
+</html>
