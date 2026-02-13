@@ -321,6 +321,7 @@
         const urlCurrency = urlParams.get('currency');
         const userCurrency = urlCurrency || localStorage.getItem('currency') || 'EUR';
 
+
         const API_URL = "https://feweb-tunnel.fe-web.eu";
         let trendDataRaw = [];
         let chartInstance = null;
@@ -535,16 +536,16 @@
             const prices = [];
             const forces = [];
 
-            // FILTRO: Non aggiungere i dati se il prezzo è 0
+            // All'interno di renderChart in dashboard-graph-prices.html
             trendDataRaw.forEach(item => {
                 const val = parseValue(item[priceField]);
-                if (val !== 0) { // <--- Salta i valori a zero
+                // Consideriamo validi solo i prezzi maggiori di zero
+                if (val > 0) {
                     labels.push(item.date_start || item.date);
                     prices.push(val);
                     forces.push(item[forceField] !== undefined ? parseValue(item[forceField]) : 0);
                 }
             });
-
             const color = { bg: 'rgba(75, 192, 192, 0.4)', border: 'rgba(75, 192, 192, 1)' };
             const gradient = ctx.createLinearGradient(0, 0, 0, 400);
             gradient.addColorStop(0, color.bg);

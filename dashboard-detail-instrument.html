@@ -194,18 +194,19 @@
             <h2 id="instrumentIdDisplay" style="text-align: center; margin-bottom: 20px;"></h2>
             <table id="detailsTable">
                 <tbody id="detailsBody">
-                    <!-- Rows injected here -->
                 </tbody>
             </table>
         </div>
     </div>
 
     <script>
+        // ========== GLOBALS ==========
         let credentials = { username: '', token: '', language: '' };
         let availableLanguages = [];
         let translations = {};
         let currentInstrumentId = null;
         let currentInstrumentName = '';
+        let currentInstrumentCurrency = 'EUR'; // Dichiarata per evitare ReferenceError
 
         // ========== SETUP & UTIL ==========
         function getURLParams() {
@@ -221,12 +222,12 @@
             };
         }
 
+        /**
+         * Apre il grafico dei prezzi passando la valuta specifica del titolo
+         */
         function openPricesGraph() {
             if (!currentInstrumentId) return;
-            // Recuperiamo la valuta dai dati caricati (es. instrument.currency)
-            // Se non disponibile direttamente, puoi estrarla dall'oggetto caricato nel renderDetails
-            const instCurrency = currentInstrumentCurrency || 'EUR';
-            const url = `dashboard-graph-prices.html?username=${credentials.username}&token=${credentials.token}&language=${credentials.language}&id_instrument=${currentInstrumentId}&instrument_name=${encodeURIComponent(currentInstrumentName)}&currency=${instCurrency}`;
+            const url = `dashboard-graph-prices.html?username=${credentials.username}&token=${credentials.token}&language=${credentials.language}&id_instrument=${currentInstrumentId}&instrument_name=${encodeURIComponent(currentInstrumentName)}&currency=${currentInstrumentCurrency}`;
             window.open(url, '_blank', 'width=1200,height=800');
         }
 
@@ -301,7 +302,8 @@
                 }
             }
 
-            document.getElementById('currencyDisplay').textContent = 'EUR';
+            // Inizialmente mostriamo EUR, verrà aggiornato dal renderDetails se diverso
+            document.getElementById('currencyDisplay').textContent = currentInstrumentCurrency;
             document.getElementById('userLabel').textContent = getTranslation('int.user.label') || 'Utente:';
             document.getElementById('closeText').textContent = getTranslation('int.close') || 'Chiudi';
             document.getElementById('pageTitle').textContent = getTranslation('int.instrument.details') || 'Instrument Details';
@@ -374,10 +376,14 @@
             const tbody = document.getElementById('detailsBody');
             tbody.innerHTML = '';
 
+            // Aggiorniamo le variabili globali con i dati reali del titolo
             currentInstrumentName = instrument.instrument_description || '';
+            currentInstrumentCurrency = instrument.currency || 'EUR';
+
+            // Aggiorniamo la UI della valuta nella testata
+            document.getElementById('currencyDisplay').textContent = currentInstrumentCurrency;
             document.getElementById('instrumentIdDisplay').textContent = `${instrument.id_instrument} - ${currentInstrumentName}`;
 
-            // Sort keys if needed, or just iterate
             Object.keys(instrument).forEach(key => {
                 const tr = document.createElement('tr');
                 const th = document.createElement('th');
@@ -400,8 +406,8 @@
         (async function init() {
             const params = getURLParams();
             try {
-                await loadTranslations(credentials.language); // Load basic translations
-                await updateUserInfo(); // Render header
+                await loadTranslations(credentials.language);
+                await updateUserInfo();
                 await loadData(params.id_instrument);
             } catch (e) {
                 console.error("Init failed", e);
