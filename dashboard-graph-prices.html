@@ -321,7 +321,6 @@
         const urlCurrency = urlParams.get('currency');
         const userCurrency = urlCurrency || localStorage.getItem('currency') || 'EUR';
 
-
         const API_URL = "https://feweb-tunnel.fe-web.eu";
         let trendDataRaw = [];
         let chartInstance = null;
@@ -398,7 +397,6 @@
             }
         }
 
-        // --- MODIFICA NELL'INIT PER RICEVERE LA VALUTA ---
         async function init() {
             document.getElementById('username-display').textContent = username;
             if (!username || !token) {
@@ -415,19 +413,15 @@
             await Promise.all([initializeLanguages(), loadTranslations(language), loadCurrencies(language)]);
             updateUserInfoUI();
 
-            // Priorità alla valuta passata dall'URL (quella dello strumento)
-            const displayCurrency = urlCurrency || userCurrency;
-            document.getElementById('currencyDisplay').textContent = displayCurrency;
-
             document.getElementById('page-title-input').value = initialTitle || getTranslation('int.detail.prices') || "";
             document.getElementById('btn-confirm').textContent = getTranslation('int.detail.prices') || 'Carica';
             document.getElementById('close-btn').textContent = getTranslation('int.close') || 'Close';
-
             if (document.getElementById('label-start-date')) document.getElementById('label-start-date').textContent = (getTranslation('int.date.start') || 'Start') + ':';
             if (document.getElementById('label-end-date')) document.getElementById('label-end-date').textContent = (getTranslation('int.date.end') || 'End') + ':';
 
             await loadPrices();
         }
+
         const forceArrowsPlugin = {
             id: 'forceArrows',
             afterDatasetsDraw(chart) {
@@ -518,16 +512,14 @@
             return 0;
         }
 
-        // --- MODIFICA RENDERCHART PER FILTRARE GLI ZERI ---
         function renderChart() {
             const ctx = document.getElementById('chartCanvas').getContext('2d');
             if (chartInstance) chartInstance.destroy();
 
             if (trendDataRaw.length === 0) return;
 
-            // Visualizzazione: Nome Strumento + Valuta specifica del titolo (urlCurrency)
-            const instrumentCurrency = urlCurrency || userCurrency;
-            document.getElementById('instrument-name-display').textContent = `${instrumentNameFromUrl || idInstrument} - ${instrumentCurrency}`;
+            // Visualizzazione Divisa accanto al nome strumento
+            document.getElementById('instrument-name-display').textContent = `${instrumentNameFromUrl || idInstrument} - ${userCurrency}`;
 
             const priceField = Object.keys(trendDataRaw[0]).find(k => k.startsWith('price@')) || 'price_mkt';
             const forceField = `forza@${userCurrency}`;
@@ -536,14 +528,11 @@
             const prices = [];
             const forces = [];
 
-            // FILTRO: Non aggiungere i dati se il prezzo è 0
+            // VISUALIZZAZIONE DIRETTA SENZA AGGREGAZIONI
             trendDataRaw.forEach(item => {
-                const val = parseValue(item[priceField]);
-                if (val !== 0) { // <--- Salta i valori a zero
-                    labels.push(item.date_start || item.date);
-                    prices.push(val);
-                    forces.push(item[forceField] !== undefined ? parseValue(item[forceField]) : 0);
-                }
+                labels.push(item.date_start || item.date);
+                prices.push(parseValue(item[priceField]));
+                forces.push(item[forceField] !== undefined ? parseValue(item[forceField]) : 0);
             });
 
             const color = { bg: 'rgba(75, 192, 192, 0.4)', border: 'rgba(75, 192, 192, 1)' };
@@ -575,8 +564,9 @@
                         tooltip: {
                             callbacks: {
                                 label: function (context) {
-                                    let label = `Prezzo: ${context.parsed.y.toLocaleString(undefined, { minimumFractionDigits: 2 })} ${instrumentCurrency}`;
+                                    let label = `Prezzo: ${context.parsed.y.toLocaleString(undefined, { minimumFractionDigits: 2 })}`;
                                     const force = context.dataset.forceValues[context.dataIndex];
+                                    // Visualizza forza nel tooltip solo se != 0
                                     if (force !== 0 && force !== null) {
                                         label += ` | Forza: ${Math.abs(force).toFixed(2)}`;
                                     }
@@ -586,67 +576,14 @@
                         }
                     },
                     scales: {
-                        y: {
-                            ticks: {
-                                callback: v => v.toLocaleString(undefined, { minimumFractionDigits: 2 }) + ' ' + instrumentCurrency
-                            }
-                        }
+                        y: { ticks: { callback: v => v.toLocaleString(undefined, { minimumFractionDigits: 2 }) } }
                     }
                 }
             });
         }
+
         window.onload = init;
     </script>
-</body>
-
-</html>al !== null) {
-aggregated[key].forceSum += forceVal;
-aggregated[key].forceCount++;
-}
-
-// Aggregate patterns (take max score for each pattern)
-Object.keys(patterns).forEach(patternName => {
-if (!aggregated[key].patterns[patternName] || patterns[patternName] > aggregated[key].patterns[patternName]) {
-aggregated[key].patterns[patternName] = patterns[patternName];
-}
-});
-
-if (!aggregated[key].instruments[instrument]) {
-aggregated[key].instruments[instrument] = { sum: 0, count: 0 };
-}
-aggregated[key].instruments[instrument].sum += val;
-aggregated[key].instruments[instrument].count++;
-});
-
-const sorted = Object.keys(aggregated).sort((a, b) => {
-return aggregated[a].date - aggregated[b].date;
-});
-
-return sorted.map(key => {
-const item = aggregated[key];
-const avgValue = item.count > 0 ? item.sum / item.count : 0;
-const avgForce = item.forceCount > 0 ? item.forceSum / item.forceCount : null;
-
-const instrumentAvgs = {};
-for (let instr in item.instruments) {
-instrumentAvgs[instr] = item.instruments[instr].count > 0
-? item.instruments[instr].sum / item.instruments[instr].count
-: 0;
-}
-
-return {
-label: key,
-value: avgValue,
-force: avgForce,
-patterns: item.patterns, // Include patterns
-instruments: instrumentAvgs,
-date: item.date
-};
-});
-}
-
-window.onload = init;
-</script>
 </body>
 
 </html>
