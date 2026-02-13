@@ -206,29 +206,6 @@
             border-color: #bd2130;
         }
 
-        .data-type-label {
-            display: inline-flex;
-            align-items: center;
-            gap: 5px;
-            cursor: pointer;
-            padding: 5px 8px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            background: #f9f9f9;
-            font-size: 0.8rem;
-            transition: all 0.2s;
-            user-select: none;
-        }
-
-        .data-type-label:hover {
-            background: #f0f0f0;
-            border-color: #999;
-        }
-
-        .data-type-label input:checked {
-            accent-color: #000;
-        }
-
         .chart-wrapper {
             flex: 1;
             position: relative;
@@ -272,7 +249,8 @@
             border: 3px solid #000;
             border-top: 3px solid transparent;
             border-radius: 50%;
-            animation: spin 0.8s linear infinite;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
         }
 
         @keyframes spin {
@@ -287,21 +265,153 @@
 
         #loadingText {
             color: #fff;
-            margin-top: 20px;
             font-size: 1.2rem;
+            letter-spacing: 1px;
         }
 
-        #data-types-group {
+        .info-text {
+            font-size: 0.7rem;
+            color: #666;
+            font-style: italic;
+            margin-top: 3px;
+        }
+
+        /* Nuovi stili per il selettore metriche con checkbox */
+        .metrics-selector-container {
+            position: relative;
+            display: inline-block;
+        }
+
+        .metrics-dropdown-btn {
+            padding: 8px 15px;
+            background: #fff;
+            border: 1px solid #ccc;
+            color: #000;
+            font-family: inherit;
+            border-radius: 4px;
+            cursor: pointer;
+            min-width: 180px;
+            text-align: left;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .metrics-dropdown-btn:hover {
+            border-color: #000;
+        }
+
+        .metrics-dropdown-content {
+            display: none;
+            position: absolute;
+            background-color: #fff;
+            min-width: 220px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+            border: 1px solid #000;
+            border-radius: 4px;
+            top: 100%;
+            left: 0;
+            max-height: 300px;
+            overflow-y: auto;
+            padding: 10px 0;
+        }
+
+        .metrics-dropdown-content.show {
+            display: block;
+        }
+
+        .metric-checkbox-item {
+            display: flex;
+            align-items: center;
+            padding: 5px 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .metric-checkbox-item:last-child {
+            border-bottom: none;
+        }
+
+        .metric-checkbox-item input[type="checkbox"] {
+            margin-right: 10px;
+            accent-color: var(--neon-cyan);
+            cursor: pointer;
+        }
+
+        .metric-checkbox-item label {
+            cursor: pointer;
+            color: var(--text-color);
+            font-size: 0.8rem;
+            flex-grow: 1;
+        }
+
+        .metric-checkbox-item:hover label {
+            color: var(--neon-cyan);
+        }
+
+        .metric-checkbox-actions {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid rgba(0, 243, 255, 0.2);
+        }
+
+        .metric-action-btn {
+            padding: 5px 10px;
+            background: rgba(0, 102, 255, 0.1);
+            border: 1px solid var(--neon-blue);
+            color: var(--neon-blue);
+            font-family: 'Orbitron', sans-serif;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 0.7rem;
+            transition: all 0.3s;
+        }
+
+        .metric-action-btn:hover {
+            background: rgba(0, 102, 255, 0.2);
+            box-shadow: 0 0 8px rgba(0, 102, 255, 0.5);
+        }
+
+        .metric-action-btn.clear {
+            background: rgba(255, 0, 85, 0.1);
+            border: 1px solid var(--neon-red);
+            color: var(--neon-red);
+        }
+
+        .metric-action-btn.clear:hover {
+            background: rgba(255, 0, 85, 0.2);
+            box-shadow: 0 0 8px rgba(255, 0, 85, 0.5);
+        }
+
+        /* Stili per il selettore tipo grafico */
+        .chart-type-selector {
             display: flex;
             align-items: center;
             gap: 10px;
         }
 
-        #data-types-checkboxes {
-            display: flex;
-            gap: 8px;
-            flex-wrap: wrap;
-            max-width: 400px;
+        .chart-type-btn {
+            padding: 8px 15px;
+            background: var(--button-bg);
+            border: 1px solid var(--neon-cyan);
+            color: var(--neon-cyan);
+            font-family: 'Orbitron', sans-serif;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: all 0.3s;
+        }
+
+        .chart-type-btn.active {
+            background: rgba(0, 243, 255, 0.2);
+            box-shadow: 0 0 10px var(--neon-cyan);
+            font-weight: bold;
+        }
+
+        .chart-type-btn:hover:not(.active) {
+            background: rgba(0, 243, 255, 0.15);
         }
     </style>
 </head>
@@ -333,23 +443,32 @@
         </div>
 
         <div class="header-right">
+            <style>
+                .control-group {
+                    margin-right: 15px;
+                }
+
+                .date-input {
+                    padding: 8px;
+                    border: 1px solid #ccc;
+                    border-radius: 4px;
+                    font-family: inherit;
+                }
+
+                /* The .action-btn is now .confirm-btn, and its styles are defined globally */
+            </style>
+
             <div class="control-group">
                 <label for="start-date" id="label-start-date">Start:</label>
-                <input type="date" id="start-date"
-                    style="padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-family: inherit;">
+                <input type="date" id="start-date" class="date-input">
             </div>
             <div class="control-group">
                 <label for="end-date" id="label-end-date">End:</label>
-                <input type="date" id="end-date"
-                    style="padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-family: inherit;">
-            </div>
-
-            <div class="control-group" id="data-types-group" style="display:none;">
-                <label>Tipo Dati:</label>
-                <div id="data-types-checkboxes"></div>
+                <input type="date" id="end-date" class="date-input">
             </div>
 
             <button class="confirm-btn" onclick="loadPrices()" id="btn-confirm">Carica</button>
+
             <button class="close-button" onclick="closeWindow()" id="close-btn">Close</button>
         </div>
     </div>
@@ -361,25 +480,12 @@
     </div>
 
     <script>
-        // VARIABILI GLOBALI
+        // --- TRANSLATION SYSTEM (Dynamic) ---
+        // --- TRANSLATION SYSTEM (Dynamic) ---
         let translations = {};
         let availableLanguages = [];
         let currencies = [];
-        let chartInstance = null;
-        let trendDataRaw = [];
 
-        const urlParams = new URLSearchParams(window.location.search);
-        const username = urlParams.get('username') || '';
-        const token = urlParams.get('token');
-        const language = urlParams.get('language') || 'it_IT';
-        const idInstrument = urlParams.get('id_instrument');
-        const idAccount = urlParams.get('id_account');
-        const initialTitle = urlParams.get('title');
-        const instrumentNameFromUrl = urlParams.get('instrument_name');
-
-        const API_URL = "https://feweb-tunnel.fe-web.eu";
-
-        // FUNZIONI DI TRADUZIONE
         async function loadLanguageManifest() {
             try {
                 const response = await fetch('lang/manifest.json');
@@ -419,7 +525,7 @@
                 }
                 currencies = await response.json();
             } catch (error) {
-                console.error('Error loading currencies:', error);
+                console.error('❌ Error loading currencies:', error);
                 currencies = [];
             }
         }
@@ -435,6 +541,8 @@
                 }
                 if (response.ok) {
                     translations = await response.json();
+                } else {
+                    console.warn("Translation file not found:", langCode);
                 }
             } catch (error) {
                 console.error("Error loading translations:", error);
@@ -446,6 +554,7 @@
         }
 
         function updateUserInfoUI() {
+            // Language
             if (availableLanguages.length > 0) {
                 const langData = availableLanguages.find(l => l.code === language);
                 if (langData) {
@@ -455,9 +564,11 @@
                 }
             }
 
+            // Currency
             const urlCurrency = urlParams.get('currency');
             let userCurrency = urlCurrency || localStorage.getItem('currency');
 
+            // If we have currencies loaded, try to find flag
             if (userCurrency && currencies.length > 0) {
                 const currData = currencies.find(c => c.currency === userCurrency);
                 if (currData && currData['img.currency.flag']) {
@@ -474,7 +585,87 @@
             window.close();
         }
 
-        // PLUGIN CHART.JS PER LE FRECCE DI FORZA
+        // Variabili globali
+        const urlParams = new URLSearchParams(window.location.search);
+        const username = urlParams.get('username') || '';
+        const token = urlParams.get('token');
+        const language = urlParams.get('language') || 'it_IT';
+        const idInstrument = urlParams.get('id_instrument');
+        const idAccount = urlParams.get('id_account');
+        const initialTitle = urlParams.get('title');
+        const instrumentNameFromUrl = urlParams.get('instrument_name');
+
+        const API_URL = "https://feweb-tunnel.fe-web.eu";
+
+        // Colori per i diversi dataset
+        const datasetColors = [
+            { border: '#00f3ff', bg: 'rgba(0, 243, 255, 0.4)' },      // cyan
+            { border: '#aa00ff', bg: 'rgba(170, 0, 255, 0.4)' },      // purple
+            { border: '#00ff88', bg: 'rgba(0, 255, 136, 0.4)' },      // green
+            { border: '#ff8800', bg: 'rgba(255, 136, 0, 0.4)' },      // orange
+            { border: '#ff0055', bg: 'rgba(255, 0, 85, 0.4)' },       // red
+            { border: '#0066ff', bg: 'rgba(0, 102, 255, 0.4)' },      // blue
+            { border: '#ffff00', bg: 'rgba(255, 255, 0, 0.4)' },      // yellow
+            { border: '#ff00ff', bg: 'rgba(255, 0, 255, 0.4)' }       // magenta
+        ];
+
+        let trendDataRaw = [];
+        let chartInstance = null;
+
+        async function init() {
+            document.getElementById('username-display').textContent = username;
+
+            if (!username || !token) {
+                document.getElementById('loadingText').textContent = "Access Denied";
+                return;
+            }
+
+            // Set default dates: Today and 1 Year ago
+            const today = new Date();
+            const oneYearAgo = new Date();
+            oneYearAgo.setFullYear(today.getFullYear() - 1);
+
+            document.getElementById('end-date').value = today.toISOString().split('T')[0];
+            document.getElementById('start-date').value = oneYearAgo.toISOString().split('T')[0];
+
+            // Load translations first
+            await Promise.all([
+                initializeLanguages(),
+                loadTranslations(language),
+                loadCurrencies(language)
+            ]);
+
+            updateUserInfoUI();
+
+            // Update labels
+            const pageTitleInput = document.getElementById('page-title-input');
+            if (pageTitleInput) {
+                pageTitleInput.value = initialTitle || getTranslation('int.detail.prices') || "Price Analysis";
+                pageTitleInput.placeholder = getTranslation('int.title.request') || "Inserisci Titolo";
+            }
+
+            const instrumentNameDisplay = document.getElementById('instrument-name-display');
+            if (instrumentNameDisplay) {
+                instrumentNameDisplay.textContent = instrumentNameFromUrl || idInstrument || '';
+            }
+
+            const btnConfirm = document.getElementById('btn-confirm');
+            if (btnConfirm) btnConfirm.textContent = getTranslation('int.detail.prices') || 'Prices';
+
+            document.getElementById('close-btn').textContent = getTranslation('int.close') || 'Close';
+
+            if (document.getElementById('label-start-date')) document.getElementById('label-start-date').textContent = (getTranslation('int.date.start') || 'Start') + ':';
+            if (document.getElementById('label-end-date')) document.getElementById('label-end-date').textContent = (getTranslation('int.date.end') || 'End') + ':';
+
+            if (!idInstrument) {
+                alert("No Instrument ID provided");
+                return;
+            }
+
+            // Load Prices automatically
+            await loadPrices();
+        }
+
         const forceArrowsPlugin = {
             id: 'forceArrows',
             afterDatasetsDraw(chart, args, options) {
@@ -489,24 +680,11 @@
                         const force = dataset.forceValues ? dataset.forceValues[index] : null;
                         if (force === null || force === 0) return;
 
-                        // DEBUG: Stampa i valori di forza
-                        if (index === 0 || index === 1) {
-                            console.log(`Force valore [${index}]:`, force, 'tipo:', typeof force);
-                        }
-
                         const xPos = meta.data[index].x;
                         const yPos = meta.data[index].y;
 
-                        const scale = dataset.forceScale;
-                        let arrowSize = 10;
-                        let offset = 20;
-
-                        // Scala la freccia in base alla forza e alla scala
-                        if (scale && scale.range > 0) {
-                            const normalizedForce = Math.abs((force - scale.min) / scale.range);
-                            arrowSize = 8 + (normalizedForce * 12);
-                            offset = 15 + (normalizedForce * 15);
-                        }
+                        const arrowSize = 10;
+                        const offset = 20;
 
                         ctx.beginPath();
                         ctx.lineWidth = 2;
@@ -526,9 +704,8 @@
 
                             ctx.font = 'bold 10px Arial';
                             ctx.textAlign = 'center';
-                            ctx.fillStyle = 'green';
-                            ctx.fillText(parseFloat(force).toFixed(2), xPos, yPos - offset - arrowSize - 10);
-                        } else if (force < 0) {
+                            ctx.fillText(force.toFixed(1), xPos, yPos - offset - arrowSize - 5);
+                        } else {
                             ctx.strokeStyle = 'red';
                             ctx.fillStyle = 'red';
                             ctx.moveTo(xPos, yPos + offset);
@@ -543,374 +720,14 @@
 
                             ctx.font = 'bold 10px Arial';
                             ctx.textAlign = 'center';
-                            ctx.fillStyle = 'red';
-                            ctx.fillText(parseFloat(force).toFixed(2), xPos, yPos + offset + arrowSize + 15);
+                            ctx.fillText(force, xPos, yPos + offset + arrowSize + 12);
                         }
                     });
                 });
-
                 ctx.restore();
             }
         };
 
-        // FUNZIONE PER POPOLARE I CHECKBOX DEI TIPI DI DATO
-        function populateDataTypeCheckboxes() {
-            const dataTypes = new Set(trendDataRaw.map(item => item.data_type || 'default'));
-            const dataTypesArray = Array.from(dataTypes).sort();
-
-            const container = document.getElementById('data-types-checkboxes');
-            const group = document.getElementById('data-types-group');
-
-            if (dataTypesArray.length === 0) {
-                group.style.display = 'none';
-                return;
-            }
-
-            if (dataTypesArray.length > 1) {
-                group.style.display = 'flex';
-            }
-
-            container.innerHTML = '';
-
-            dataTypesArray.forEach(dataType => {
-                const checkboxId = `data-type-${dataType}`;
-                const label = document.createElement('label');
-                label.className = 'data-type-label';
-                label.htmlFor = checkboxId;
-
-                const checkbox = document.createElement('input');
-                checkbox.type = 'checkbox';
-                checkbox.id = checkboxId;
-                checkbox.name = 'data-type-checkbox';
-                checkbox.value = dataType;
-                checkbox.checked = true;
-                checkbox.onchange = renderChart;
-
-                const span = document.createElement('span');
-                span.textContent = dataType;
-
-                label.appendChild(checkbox);
-                label.appendChild(span);
-                container.appendChild(label);
-            });
-
-            console.log(`%c✓ Checkbox data types inizializzati: ${dataTypesArray.length} tipi trovati`, 'color: #00aa00; font-weight: bold;');
-        }
-
-        // FUNZIONE PRINCIPALE PER RENDERIZZARE IL GRAFICO
-        function renderChart() {
-            const ctx = document.getElementById('chartCanvas').getContext('2d');
-            if (chartInstance) chartInstance.destroy();
-
-            // === CONSOLE LOG COMPLETO DEI DATI ===
-            console.log('%c=== DATI PRICES.JSON ===', 'color: #0066cc; font-weight: bold; font-size: 14px;');
-            console.log('%cDataset completo:', 'color: #0066cc; font-weight: bold;', trendDataRaw);
-            console.log('%cNumero di records:', 'color: #0066cc; font-weight: bold;', trendDataRaw.length);
-
-            if (trendDataRaw.length > 0) {
-                console.log('%cPrimo record (esempio):', 'color: #0066cc; font-weight: bold;', trendDataRaw[0]);
-                console.log('%cCampi disponibili:', 'color: #0066cc; font-weight: bold;', Object.keys(trendDataRaw[0]));
-
-                const dataTypes = new Set(trendDataRaw.map(item => item.data_type || 'default'));
-                console.log('%cTipi di dati trovati:', 'color: #00aa00; font-weight: bold;', Array.from(dataTypes));
-            }
-
-            // CONFIGURAZIONE
-            const selectedMetrics = ['price_mkt'];
-            const selectedPeriod = 'daily';
-            let chartType = 'line';
-
-            if (trendDataRaw.length > 0) {
-                if (!trendDataRaw[0].hasOwnProperty('price_mkt')) {
-                    const fallback = Object.keys(trendDataRaw[0]).find(k =>
-                        !['date', 'date_start', 'date_end', 'id_instrument', 'data_type'].includes(k) &&
-                        typeof trendDataRaw[0][k] === 'number'
-                    );
-                    if (fallback) selectedMetrics[0] = fallback;
-                }
-            }
-
-            // FILTRO PER TIPO DI DATO
-            const selectedDataTypes = Array.from(document.querySelectorAll('input[name="data-type-checkbox"]:checked')).map(cb => cb.value);
-            console.log('%cTipi di dati selezionati:', 'color: #cc6600; font-weight: bold;', selectedDataTypes);
-
-            let filteredData = trendDataRaw;
-            if (selectedDataTypes.length > 0) {
-                filteredData = trendDataRaw.filter(item => {
-                    const dataType = item.data_type || 'default';
-                    return selectedDataTypes.includes(dataType);
-                });
-                console.log(`%cDati filtrati: ${filteredData.length} su ${trendDataRaw.length} records`, 'color: #cc6600; font-weight: bold;');
-            }
-
-            if (selectedMetrics.length === 0 || filteredData.length === 0) {
-                chartInstance = new Chart(ctx, {
-                    type: chartType,
-                    data: { labels: [], datasets: [] },
-                    options: { responsive: true, maintainAspectRatio: false }
-                });
-                return;
-            }
-
-            const datasets = [];
-            const metricDataMap = new Map();
-            const allLabelsSet = new Set();
-
-            selectedMetrics.forEach(metric => {
-                const aggregatedData = aggregateByPeriod(filteredData, metric, selectedPeriod);
-                metricDataMap.set(metric, aggregatedData);
-                aggregatedData.forEach(item => allLabelsSet.add(item.label));
-            });
-
-            const allLabels = Array.from(allLabelsSet).sort((a, b) => {
-                let dateA = null, dateB = null;
-
-                for (let [m, data] of metricDataMap) {
-                    const itemA = data.find(i => i.label === a);
-                    if (itemA) {
-                        dateA = itemA.date;
-                        break;
-                    }
-                }
-
-                for (let [m, data] of metricDataMap) {
-                    const itemB = data.find(i => i.label === b);
-                    if (itemB) {
-                        dateB = itemB.date;
-                        break;
-                    }
-                }
-
-                if (!dateA || !dateB) return 0;
-                return dateA - dateB;
-            });
-
-            // === CALCOLO DELLA SCALA DELLA FORZA ===
-            const forceScales = {};
-
-            selectedMetrics.forEach(metric => {
-                const aggregatedData = metricDataMap.get(metric);
-                const alignedData = [];
-                const forceValues = [];
-
-                allLabels.forEach(label => {
-                    const item = aggregatedData.find(d => d.label === label);
-                    alignedData.push(item ? item.value : null);
-                    // Usa il valore di forza direttamente senza ulteriore aggregazione
-                    forceValues.push(item ? item.force : null);
-                });
-
-                const validForces = forceValues.filter(f => f !== null && f !== undefined);
-                if (validForces.length > 0) {
-                    // Debug: stampa i valori di forza grezzi
-                    console.log(`%cValori di forza GREZZI per "${metric}":`, 'color: #ff00ff; font-weight: bold;', validForces);
-
-                    forceScales[metric] = {
-                        min: Math.min(...validForces),
-                        max: Math.max(...validForces),
-                        range: Math.max(...validForces) - Math.min(...validForces),
-                        avg: validForces.reduce((a, b) => a + b) / validForces.length,
-                        count: validForces.length
-                    };
-                    console.log(`%cScala FORZA per "${metric}":`, 'color: #00aa00; font-weight: bold;', forceScales[metric]);
-                } else {
-                    console.warn(`%c⚠ Nessun valore di forza trovato per "${metric}"`, 'color: #ff6600; font-weight: bold;');
-                }
-
-                const color = { bg: 'rgba(75, 192, 192, 0.4)', border: 'rgba(75, 192, 192, 1)' };
-                const gradient = ctx.createLinearGradient(0, 0, 0, 400);
-                gradient.addColorStop(0, color.bg);
-                gradient.addColorStop(1, color.bg.replace('0.4', '0.05'));
-
-                const titleValue = document.getElementById('page-title-input')?.value || 'Price';
-
-                datasets.push({
-                    label: titleValue,
-                    data: alignedData,
-                    forceValues: forceValues,
-                    forceScale: forceScales[metric],
-                    borderColor: color.border,
-                    backgroundColor: gradient,
-                    borderWidth: 2,
-                    pointBackgroundColor: color.border,
-                    pointBorderColor: '#fff',
-                    pointHoverBackgroundColor: '#fff',
-                    pointHoverBorderColor: color.border,
-                    fill: true,
-                    tension: 0.4,
-                    spanGaps: true
-                });
-            });
-
-            const scales = {
-                x: {
-                    ticks: {
-                        color: '#1a1a1a',
-                        font: { family: '"Times New Roman", Times, serif', size: 11 },
-                        maxRotation: 45,
-                        minRotation: 45
-                    },
-                    grid: { color: 'rgba(0, 0, 0, 0.05)' }
-                },
-                y: {
-                    beginAtZero: false,
-                    ticks: {
-                        color: '#1a1a1a',
-                        font: { family: '"Times New Roman", Times, serif', size: 11 },
-                        callback: function (value) {
-                            return value.toLocaleString(language === 'it_IT' ? 'it-IT' : 'en-US', {
-                                minimumFractionDigits: 2,
-                                maximumFractionDigits: 4
-                            });
-                        }
-                    },
-                    grid: { color: 'rgba(0, 0, 0, 0.05)' }
-                }
-            };
-
-            chartInstance = new Chart(ctx, {
-                type: chartType,
-                data: {
-                    labels: allLabels,
-                    datasets: datasets
-                },
-                plugins: [forceArrowsPlugin],
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            display: true,
-                            labels: { font: { family: '"Times New Roman", Times, serif' } }
-                        },
-                        tooltip: {
-                            mode: 'index',
-                            intersect: false,
-                            backgroundColor: 'rgba(255, 255, 255, 0.9)',
-                            titleColor: '#000',
-                            bodyColor: '#000',
-                            borderColor: '#ccc',
-                            borderWidth: 1,
-                            titleFont: { family: '"Times New Roman", Times, serif', size: 14 },
-                            bodyFont: { family: '"Times New Roman", Times, serif', size: 13 },
-                            callbacks: {
-                                afterLabel: function (context) {
-                                    const dataset = context.dataset;
-                                    const forceValue = dataset.forceValues ? dataset.forceValues[context.dataIndex] : null;
-                                    if (forceValue !== null && forceValue !== undefined) {
-                                        const scale = dataset.forceScale;
-                                        if (scale && scale.range > 0) {
-                                            const normalized = ((forceValue - scale.min) / scale.range * 100).toFixed(1);
-                                            return `Forza: ${forceValue.toFixed(4)} (${normalized}%)`;
-                                        }
-                                        return `Forza: ${forceValue.toFixed(4)}`;
-                                    }
-                                    return '';
-                                }
-                            }
-                        }
-                    },
-                    scales: scales,
-                    interaction: { mode: 'nearest', axis: 'x', intersect: false }
-                }
-            });
-        }
-
-        // FUNZIONE PER AGGREGARE I DATI PER PERIODO
-        function aggregateByPeriod(data, metric, period) {
-            const aggregated = {};
-
-            data.forEach(item => {
-                if (!item.date_start || item[metric] === undefined || item[metric] === null) return;
-
-                const date = new Date(item.date_start);
-                let key;
-
-                switch (period) {
-                    case 'monthly':
-                        key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-                        break;
-                    case 'quarterly':
-                        const quarter = Math.floor(date.getMonth() / 3) + 1;
-                        key = `${date.getFullYear()}-Q${quarter}`;
-                        break;
-                    case 'semesterly':
-                        const semester = date.getMonth() < 6 ? 'S1' : 'S2';
-                        key = `${date.getFullYear()}-${semester}`;
-                        break;
-                    case 'yearly':
-                        key = `${date.getFullYear()}`;
-                        break;
-                    default:
-                        key = item.date_start;
-                }
-
-                const val = parseValue(item[metric]);
-                const forceVal = item.force !== undefined && item.force !== null ? parseValue(item.force) : null;
-
-                if (!aggregated[key]) {
-                    aggregated[key] = {
-                        sum: 0,
-                        count: 0,
-                        date: date,
-                        forceSum: 0,
-                        forceCount: 0,
-                        forceValues: []  // Aggiungi array per tracciare i valori
-                    };
-                }
-
-                aggregated[key].sum += val;
-                aggregated[key].count++;
-
-                if (forceVal !== null) {
-                    aggregated[key].forceSum += forceVal;
-                    aggregated[key].forceCount++;
-                    aggregated[key].forceValues.push(forceVal);  // Traccia tutti i valori
-                }
-            });
-
-            const sorted = Object.keys(aggregated).sort((a, b) => aggregated[a].date - aggregated[b].date);
-
-            return sorted.map(key => {
-                const item = aggregated[key];
-                const avgValue = item.count > 0 ? item.sum / item.count : 0;
-                // IMPORTANTE: Usa la MEDIA dei valori di forza, non la somma
-                const avgForce = item.forceCount > 0 ? item.forceSum / item.forceCount : null;
-
-                // Debug: stampa i valori aggregati
-                if (item.forceValues.length > 0) {
-                    console.log(`%cAggregazione [${key}]: forza grezza=${item.forceValues.join(', ')}, media=${avgForce}`, 'color: #0099ff;');
-                }
-
-                return {
-                    label: key,
-                    value: avgValue,
-                    force: avgForce,
-                    date: item.date
-                };
-            });
-        }
-
-        // FUNZIONE PER PARSARE I VALORI
-        function parseValue(value) {
-            if (typeof value === 'number') return value;
-            if (typeof value === 'string') {
-                let cleanValue = value.replace(/%|:EUR|:USD|:GBP|:CHF/g, '').trim();
-                if (cleanValue.includes(',') && !cleanValue.includes('.')) {
-                    cleanValue = cleanValue.replace(',', '.');
-                } else if (cleanValue.includes(',') && cleanValue.includes('.')) {
-                    if (cleanValue.indexOf(',') > cleanValue.indexOf('.')) {
-                        cleanValue = cleanValue.replace(/\./g, '').replace(',', '.');
-                    } else {
-                        cleanValue = cleanValue.replace(/,/g, '');
-                    }
-                }
-                return parseFloat(cleanValue) || 0;
-            }
-            return 0;
-        }
-
-        // FUNZIONE PER CARICARE I PREZZI
         async function loadPrices() {
             document.getElementById('loading').style.display = 'flex';
             const startDate = document.getElementById('start-date').value;
@@ -948,67 +765,296 @@
 
                 trendDataRaw = rawData;
 
+                // Sort by date
                 trendDataRaw.sort((a, b) => {
                     const d1 = a.date || a.date_start;
                     const d2 = b.date || b.date_start;
                     return new Date(d1) - new Date(d2);
                 });
 
+                // Ensure date_start is present
                 trendDataRaw.forEach(item => {
                     if (!item.date_start && item.date) item.date_start = item.date;
                 });
 
                 renderChart();
-                populateDataTypeCheckboxes();
                 document.getElementById('loading').style.display = 'none';
 
             } catch (error) {
                 console.error(error);
-                document.getElementById('loadingText').textContent = "Error loading data: " + error.message;
+                document.getElementById('loadingText').textContent = "Error loading data " + error.message;
                 alert("Error loading prices: " + error.message);
                 document.getElementById('loading').style.display = 'none';
             }
         }
 
-        // INIZIALIZZAZIONE
-        async function init() {
-            await initializeLanguages();
-            await loadTranslations(language);
-            await loadCurrencies(language);
+        function renderChart() {
+            const ctx = document.getElementById('chartCanvas').getContext('2d');
+            if (chartInstance) chartInstance.destroy();
 
-            updateUserInfoUI();
+            // Hardcoded for prices
+            const selectedMetrics = ['price_mkt'];
+            const selectedPeriod = 'daily';
+            let chartType = 'line'; // Default to line for prices
 
-            document.getElementById('user-label-text').textContent = getTranslation('int.user') || 'User';
-            document.getElementById('username-display').textContent = username;
-            document.getElementById('btn-confirm').textContent = getTranslation('int.confirm') || 'Carica';
-            document.getElementById('close-btn').textContent = getTranslation('int.close') || 'Close';
-
-            if (document.getElementById('label-start-date')) {
-                document.getElementById('label-start-date').textContent = (getTranslation('int.date.start') || 'Start') + ':';
-            }
-            if (document.getElementById('label-end-date')) {
-                document.getElementById('label-end-date').textContent = (getTranslation('int.date.end') || 'End') + ':';
-            }
-
-            if (initialTitle) {
-                document.getElementById('page-title-input').value = initialTitle;
+            // Check if price_mkt exists, otherwise try fallback
+            if (trendDataRaw.length > 0) {
+                if (!trendDataRaw[0].hasOwnProperty('price_mkt')) {
+                    // Try to find a valid numeric key if price_mkt is missing
+                    const fallback = Object.keys(trendDataRaw[0]).find(k =>
+                        !['date', 'date_start', 'date_end', 'id_instrument'].includes(k) && typeof trendDataRaw[0][k] === 'number'
+                    );
+                    if (fallback) selectedMetrics[0] = fallback;
+                }
             }
 
-            if (instrumentNameFromUrl) {
-                document.getElementById('instrument-name-display').textContent = instrumentNameFromUrl;
-            }
-
-            if (!idInstrument) {
-                alert("No Instrument ID provided");
+            if (selectedMetrics.length === 0 || trendDataRaw.length === 0) {
+                // Empty chart logic
+                chartInstance = new Chart(ctx, {
+                    type: chartType,
+                    data: { labels: [], datasets: [] },
+                    options: { responsive: true, maintainAspectRatio: false }
+                });
                 return;
             }
 
-            await loadPrices();
+            const datasets = [];
+            const allLabelsSet = new Set();
+            const metricDataMap = new Map();
+
+            selectedMetrics.forEach((metric) => {
+                const aggregatedData = aggregateByPeriod(trendDataRaw, metric, selectedPeriod);
+                metricDataMap.set(metric, aggregatedData);
+                aggregatedData.forEach(item => allLabelsSet.add(item.label));
+            });
+
+            const allLabels = Array.from(allLabelsSet).sort((a, b) => {
+                let dateA = null;
+                let dateB = null;
+                for (let [m, data] of metricDataMap) {
+                    const itemA = data.find(i => i.label === a);
+                    if (itemA) { dateA = itemA.date; break; }
+                }
+                for (let [m, data] of metricDataMap) {
+                    const itemB = data.find(i => i.label === b);
+                    if (itemB) { dateB = itemB.date; break; }
+                }
+                if (!dateA || !dateB) return 0;
+                return dateA - dateB;
+            });
+
+            selectedMetrics.forEach((metric, index) => {
+                const aggregatedData = metricDataMap.get(metric);
+                const alignedData = [];
+                const forceValues = [];
+
+                allLabels.forEach(label => {
+                    const item = aggregatedData.find(d => d.label === label);
+                    alignedData.push(item ? item.value : null);
+                    forceValues.push(item ? item.force : null);
+                });
+
+                // Colors hardcoded for single dataset
+                const color = { bg: 'rgba(75, 192, 192, 0.4)', border: 'rgba(75, 192, 192, 1)' };
+
+                const gradient = ctx.createLinearGradient(0, 0, 0, 400);
+                gradient.addColorStop(0, color.bg);
+                gradient.addColorStop(1, color.bg.replace('0.4', '0.05'));
+
+                const titleValue = document.getElementById('page-title-input')?.value || getTranslation('int.confirm') || 'Price';
+
+                datasets.push({
+                    label: titleValue,
+                    data: alignedData,
+                    forceValues: forceValues,
+                    borderColor: color.border,
+                    backgroundColor: gradient,
+                    borderWidth: 2,
+                    pointBackgroundColor: color.border,
+                    pointBorderColor: '#fff',
+                    pointHoverBackgroundColor: '#fff',
+                    pointHoverBorderColor: color.border,
+                    fill: true,
+                    tension: 0.4,
+                    spanGaps: true
+                });
+            });
+            const scales = {
+                x: {
+                    ticks: {
+                        color: '#1a1a1a',
+                        font: { family: '"Times New Roman", Times, serif', size: 11 },
+                        maxRotation: 45, minRotation: 45
+                    },
+                    grid: { color: 'rgba(0, 0, 0, 0.05)' }
+                },
+                y: {
+                    beginAtZero: false,
+                    ticks: {
+                        color: '#1a1a1a',
+                        font: { family: '"Times New Roman", Times, serif', size: 11 },
+                        callback: function (value) {
+                            return value.toLocaleString(language === 'it_IT' ? 'it-IT' : 'en-US', {
+                                minimumFractionDigits: 2,
+                                maximumFractionDigits: 4
+                            });
+                        }
+                    },
+                    grid: { color: 'rgba(0, 0, 0, 0.05)' }
+                }
+            };
+
+            chartInstance = new Chart(ctx, {
+                type: chartType,
+                data: {
+                    labels: allLabels,
+                    datasets: datasets
+                },
+                plugins: [forceArrowsPlugin],
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            labels: {
+                                font: { family: '"Times New Roman", Times, serif' }
+                            }
+                        },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false,
+                            backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                            titleColor: '#000',
+                            bodyColor: '#000',
+                            borderColor: '#ccc',
+                            borderWidth: 1,
+                            titleFont: { family: '"Times New Roman", Times, serif', size: 14 },
+                            bodyFont: { family: '"Times New Roman", Times, serif', size: 13 }
+                        }
+                    },
+                    scales: scales,
+                    interaction: {
+                        mode: 'nearest',
+                        axis: 'x',
+                        intersect: false
+                    }
+                }
+            });
+        }
+
+
+        function parseValue(value) {
+            if (typeof value === 'number') return value;
+            if (typeof value === 'string') {
+                // Remove currency and percentage symbols
+                let cleanValue = value.replace(/%|:EUR|:USD|:GBP|:CHF/g, '').trim();
+                // Handle potential thousands separator if the string contains a comma but no more than one dot? 
+                // Or if it's Italian format (1.234,56). 
+                // Simple heuristic: if there's a comma, it might be the decimal separator or thousands.
+                // The user says "i valori sono in price_mkt numerici con separatore decimali ."
+                // So if it's already a float it's fine. If it's a string from another source, we handle it.
+                if (cleanValue.includes(',') && !cleanValue.includes('.')) {
+                    cleanValue = cleanValue.replace(',', '.');
+                } else if (cleanValue.includes(',') && cleanValue.includes('.')) {
+                    // It has both. If comma is after dot, comma is decimal.
+                    if (cleanValue.indexOf(',') > cleanValue.indexOf('.')) {
+                        cleanValue = cleanValue.replace(/\./g, '').replace(',', '.');
+                    } else {
+                        // Dot is after comma, so dot is decimal.
+                        cleanValue = cleanValue.replace(/,/g, '');
+                    }
+                }
+                return parseFloat(cleanValue) || 0;
+            }
+            return 0;
+        }
+
+        function aggregateByPeriod(data, metric, period) {
+            const aggregated = {};
+
+            data.forEach(item => {
+                if (!item.date_start || item[metric] === undefined || item[metric] === null) return;
+
+                const date = new Date(item.date_start);
+                let key;
+
+                switch (period) {
+                    case 'monthly':
+                        key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+                        break;
+                    case 'quarterly':
+                        const quarter = Math.floor(date.getMonth() / 3) + 1;
+                        key = `${date.getFullYear()}-Q${quarter}`;
+                        break;
+                    case 'semesterly':
+                        const semester = date.getMonth() < 6 ? 'S1' : 'S2';
+                        key = `${date.getFullYear()}-${semester}`;
+                        break;
+                    case 'yearly':
+                        key = `${date.getFullYear()}`;
+                        break;
+                    default: // daily
+                        key = item.date_start;
+                }
+
+                const val = parseValue(item[metric]);
+                const forceVal = item.force !== undefined && item.force !== null ? parseValue(item.force) : null;
+                const instrument = item.id_instrument || 'Unknown';
+
+                if (!aggregated[key]) {
+                    aggregated[key] = {
+                        sum: 0,
+                        count: 0,
+                        date: date,
+                        instruments: {},
+                        forceSum: 0,
+                        forceCount: 0
+                    };
+                }
+                aggregated[key].sum += val;
+                aggregated[key].count++;
+
+                if (forceVal !== null) {
+                    aggregated[key].forceSum += forceVal;
+                    aggregated[key].forceCount++;
+                }
+
+                if (!aggregated[key].instruments[instrument]) {
+                    aggregated[key].instruments[instrument] = { sum: 0, count: 0 };
+                }
+                aggregated[key].instruments[instrument].sum += val;
+                aggregated[key].instruments[instrument].count++;
+            });
+
+            const sorted = Object.keys(aggregated).sort((a, b) => {
+                return aggregated[a].date - aggregated[b].date;
+            });
+
+            return sorted.map(key => {
+                const item = aggregated[key];
+                const avgValue = item.count > 0 ? item.sum / item.count : 0;
+                const avgForce = item.forceCount > 0 ? item.forceSum / item.forceCount : null;
+
+                const instrumentAvgs = {};
+                for (let instr in item.instruments) {
+                    instrumentAvgs[instr] = item.instruments[instr].count > 0
+                        ? item.instruments[instr].sum / item.instruments[instr].count
+                        : 0;
+                }
+
+                return {
+                    label: key,
+                    value: avgValue,
+                    force: avgForce,
+                    instruments: instrumentAvgs,
+                    date: item.date
+                };
+            });
         }
 
         window.onload = init;
     </script>
-
 </body>
 
 </html>
