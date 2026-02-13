@@ -434,9 +434,6 @@
                         const force = dataset.forceValues ? dataset.forceValues[index] : null;
                         if (force === null || force === 0) return;
 
-                        // Debug in console per tracciare i valori forza
-                        console.log(`[FORCE DRAW] Index: ${index}, Value: ${force}`);
-
                         const { x, y } = meta.data[index];
                         const isPos = force > 0;
                         const color = isPos ? 'green' : 'red';
@@ -459,6 +456,7 @@
                             ctx.fill();
                             ctx.font = 'bold 10px Orbitron';
                             ctx.textAlign = 'center';
+                            ctx.fillStyle = color;
                             ctx.fillText(Math.abs(force).toFixed(2), x, y - offset - arrowSize - 5);
                         } else {
                             ctx.moveTo(x, y + offset);
@@ -471,6 +469,7 @@
                             ctx.fill();
                             ctx.font = 'bold 10px Orbitron';
                             ctx.textAlign = 'center';
+                            ctx.fillStyle = color;
                             ctx.fillText(Math.abs(force).toFixed(2), x, y + offset + arrowSize + 12);
                         }
                     });
@@ -483,49 +482,66 @@
             id: 'patternVerticalLines',
 
             afterDatasetsDraw(chart) {
-
                 const ctx = chart.ctx;
                 const xScale = chart.scales.x;
                 const yScale = chart.scales.y;
+                const chartArea = chart.chartArea;
 
                 ctx.save();
 
                 chart.data.datasets.forEach((dataset, datasetIndex) => {
-
                     if (!dataset.patternValues) return;
 
                     const meta = chart.getDatasetMeta(datasetIndex);
                     if (!meta || meta.hidden) return;
 
                     meta.data.forEach((point, index) => {
-
                         const patternObj = dataset.patternValues[index];
                         if (!patternObj) return;
 
                         const x = point.x;
 
-                        // === LINEA VERTICALE VIOLA TRATTEGGIATA ===
+                        // Disegna linea verticale viola tratteggiata
                         ctx.beginPath();
                         ctx.setLineDash([6, 6]);
-                        ctx.strokeStyle = 'purple';
-                        ctx.lineWidth = 1.5;
-
-                        ctx.moveTo(x, yScale.top);
-                        ctx.lineTo(x, yScale.bottom);
+                        ctx.strokeStyle = '#800080'; // Viola
+                        ctx.lineWidth = 2;
+                        ctx.moveTo(x, chartArea.top);
+                        ctx.lineTo(x, chartArea.bottom);
                         ctx.stroke();
+                        ctx.setLineDash([]); // Resetta il tratteggio
 
-                        ctx.setLineDash([]);
+                        // Prepara il testo del pattern
+                        const descriptions = Object.values(patternObj).join(' • ');
 
-                        // === TESTO PATTERN SOPRA ===
-                        const descriptions = Object.keys(patternObj)
-                            .map(key => patternObj[key])
-                            .join(" | ");
-
-                        ctx.fillStyle = 'purple';
-                        ctx.font = 'bold 11px Arial';
+                        // Posiziona il testo SOPRA l'area del grafico
+                        ctx.font = 'bold 11px Orbitron';
+                        ctx.fillStyle = '#800080';
                         ctx.textAlign = 'center';
-                        ctx.fillText(descriptions, x, yScale.top - 5);
+                        ctx.textBaseline = 'bottom';
 
+                        // Calcola posizione testo (appena sopra l'area del grafico)
+                        const textY = chartArea.top - 8;
+
+                        // Aggiungi sfondo bianco semitrasparente per leggibilità
+                        ctx.save();
+                        ctx.shadowColor = 'white';
+                        ctx.shadowBlur = 4;
+                        ctx.shadowOffsetX = 0;
+                        ctx.shadowOffsetY = 0;
+                        ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+                        const textWidth = ctx.measureText(descriptions).width;
+                        ctx.fillRect(x - textWidth / 2 - 3, textY - 12, textWidth + 6, 16);
+                        ctx.restore();
+
+                        // Disegna il testo
+                        ctx.fillStyle = '#800080';
+                        ctx.fillText(descriptions, x, textY);
+
+                        // Aggiungi anche l'etichetta "PATTERN" sotto il titolo se c'è spazio
+                        ctx.font = 'bold 8px Orbitron';
+                        ctx.fillStyle = '#800080';
+                        ctx.fillText('🔮 PATTERN', x, chartArea.top + 15);
                     });
                 });
 
@@ -567,7 +583,6 @@
         }
 
         function renderChart() {
-
             const ctx = document.getElementById('chartCanvas').getContext('2d');
 
             if (chartInstance) {
@@ -598,7 +613,6 @@
             const patternValues = [];
 
             trendDataRaw.forEach(item => {
-
                 const priceParsed = parseValue(item[priceField]);
 
                 // ❗ Se prezzo = 0 salta completamente il punto
@@ -620,12 +634,15 @@
 
                 patternFields.forEach(field => {
                     if (item[field] !== undefined && item[field] !== null && item[field] !== "") {
-                        patternObj[field] = item[field];
+                        // Rimuovi il prefisso pattern@ per un display più pulito
+                        const cleanKey = field.replace('pattern@', '');
+                        patternObj[cleanKey] = item[field];
                     }
                 });
 
                 patternValues.push(Object.keys(patternObj).length ? patternObj : null);
             });
+
             const gradient = ctx.createLinearGradient(0, 0, 0, 400);
             gradient.addColorStop(0, 'rgba(75,192,192,0.4)');
             gradient.addColorStop(1, 'rgba(75,192,192,0.05)');
@@ -644,7 +661,20 @@
                         borderWidth: 2,
                         tension: 0.1,
                         fill: true,
-                        pointRadius: 3
+                        pointRadius: 3,
+                        pointBackgroundColor: function (context) {
+                            const index = context.dataIndex;
+                            return patternValues[index] ? '#800080' : 'rgba(75,192,192,1)';
+                        },
+                        pointBorderColor: function (context) {
+                            const index = context.dataIndex;
+                            return patternValues[index] ? '#ffffff' : '#ffffff';
+                        },
+                        pointBorderWidth: 1,
+                        pointRadius: function (context) {
+                            const index = context.dataIndex;
+                            return patternValues[index] ? 6 : 3;
+                        }
                     }]
                 },
                 plugins: [forceArrowsPlugin, patternVerticalLinesPlugin],
@@ -658,22 +688,17 @@
                     plugins: {
                         tooltip: {
                             callbacks: {
-
                                 title: function (context) {
                                     return `Data: ${context[0].label}`;
                                 },
-
                                 label: function (context) {
-                                    // Mostra solo il prezzo qui
                                     if (context.parsed.y === null) return '';
-
                                     return `Prezzo: ${context.parsed.y.toLocaleString(undefined, {
-                                        minimumFractionDigits: 2
-                                    })}`;
+                                        minimumFractionDigits: 2,
+                                        maximumFractionDigits: 2
+                                    })} ${userCurrency}`;
                                 },
-
                                 afterBody: function (context) {
-
                                     const index = context[0].dataIndex;
                                     const dataset = context[0].dataset;
                                     const lines = [];
@@ -681,20 +706,39 @@
                                     // Forza
                                     const force = dataset.forceValues?.[index];
                                     if (force && force !== 0) {
-                                        lines.push(`Forza: ${Math.abs(force).toFixed(2)}`);
+                                        const direction = force > 0 ? '▲' : '▼';
+                                        lines.push(`Forza: ${direction} ${Math.abs(force).toFixed(2)}`);
                                     }
 
                                     // Pattern
                                     const patternObj = dataset.patternValues?.[index];
-
                                     if (patternObj) {
+                                        lines.push('--- PATTERN ---');
                                         Object.keys(patternObj).forEach(key => {
-                                            const cleanName = key.replace('pattern@', '');
-                                            lines.push(`Pattern ${cleanName}: ${patternObj[key]}`);
+                                            lines.push(`  ${key}: ${patternObj[key]}`);
                                         });
                                     }
 
                                     return lines;
+                                }
+                            }
+                        },
+                        legend: {
+                            display: true,
+                            labels: {
+                                generateLabels: function (chart) {
+                                    const labels = Chart.defaults.plugins.legend.labels.generateLabels(chart);
+                                    // Aggiungi un'etichetta personalizzata per i pattern
+                                    labels.push({
+                                        text: '🔮 Punti con Pattern',
+                                        fillStyle: '#800080',
+                                        strokeStyle: '#800080',
+                                        lineWidth: 0,
+                                        hidden: false,
+                                        index: labels.length,
+                                        pointStyle: 'circle'
+                                    });
+                                    return labels;
                                 }
                             }
                         }
@@ -704,7 +748,8 @@
                             ticks: {
                                 callback: function (value) {
                                     return value.toLocaleString(undefined, {
-                                        minimumFractionDigits: 2
+                                        minimumFractionDigits: 2,
+                                        maximumFractionDigits: 2
                                     });
                                 }
                             }
