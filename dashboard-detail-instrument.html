@@ -172,8 +172,6 @@
             <div class="user-info-row">
                 <span class="flag-icon" id="languageFlag"></span>
                 <span id="languageDisplay">-</span>
-                <span style="margin: 0 5px;">|</span>
-                <span id="currencyDisplay">-</span>
             </div>
         </div>
         <h1 id="pageTitle">Instrument Details</h1>
@@ -206,7 +204,7 @@
         let translations = {};
         let currentInstrumentId = null;
         let currentInstrumentName = '';
-        let currentInstrumentCurrency = ''; // VALUTA SPECIFICA TITOLO
+        let currentInstrumentCurrency = ''; // Aggiornato dinamicamente
 
         // ========== SETUP & UTIL ==========
         function getURLParams() {
@@ -224,7 +222,7 @@
 
         function openPricesGraph() {
             if (!currentInstrumentId) return;
-            // PASSA LA VALUTA ESTRATTA DALL'ANAGRAFICA
+            // Passiamo la valuta specifica del titolo estratta dall'anagrafica
             const url = `dashboard-graph-prices.html?username=${credentials.username}&token=${credentials.token}&language=${credentials.language}&id_instrument=${currentInstrumentId}&instrument_name=${encodeURIComponent(currentInstrumentName)}&currency=${currentInstrumentCurrency}`;
             window.open(url, '_blank', 'width=1200,height=800');
         }
@@ -377,9 +375,8 @@
             tbody.innerHTML = '';
 
             currentInstrumentName = instrument.instrument_description || '';
-            // ESTRAZIONE DIVISA
+            // Recupero la divisa dal campo dello strumento
             currentInstrumentCurrency = instrument.currency || 'EUR';
-            document.getElementById('currencyDisplay').textContent = currentInstrumentCurrency;
 
             document.getElementById('instrumentIdDisplay').textContent = `${instrument.id_instrument} - ${currentInstrumentName}`;
 

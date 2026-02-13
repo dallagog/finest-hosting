@@ -64,6 +64,12 @@
             gap: 5px;
         }
 
+        .user-info-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
         .instrument-name {
             flex: 2;
             text-align: center;
@@ -104,6 +110,15 @@
         .btn:hover {
             background-color: var(--button-hover);
             transform: translateY(-1px);
+        }
+
+        .btn-confirm {
+            background-color: #000;
+            color: #fff;
+        }
+
+        .btn-confirm:hover {
+            background-color: #333;
         }
 
         .btn-close {
@@ -166,10 +181,14 @@
 
     <div class="header-bar">
         <div class="user-info-left">
-            <div><strong id="username-display">-</strong></div>
-            <div>
+            <div class="user-info-row">
+                <strong id="userLabel">Utente:</strong>
+                <span id="username-display">-</span>
+            </div>
+            <div class="user-info-row">
                 <span id="languageFlag"></span>
-                <span id="languageDisplay">-</span> |
+                <span id="languageDisplay">-</span>
+                <span style="margin: 0 5px;">|</span>
                 <span id="currencyDisplay">-</span>
             </div>
         </div>
@@ -179,13 +198,13 @@
             <input type="date" id="start-date">
             <label id="label-end-date" style="font-size:12px;">Al:</label>
             <input type="date" id="end-date">
-            <button class="btn" id="btn-confirm" onclick="loadPrices()">Aggiorna</button>
+            <button class="btn btn-confirm" id="btn-confirm" onclick="loadPrices()">Aggiorna</button>
             <button class="btn btn-close" id="close-btn" onclick="window.close()">Chiudi</button>
         </div>
     </div>
 
     <div class="settings-bar">
-        <label style="font-weight:bold;">Titolo Grafico:</label>
+        <label id="label-chart-title" style="font-weight:bold;">Titolo Grafico:</label>
         <input type="text" id="page-title-input" oninput="updateChartTitle()">
     </div>
 
@@ -197,6 +216,7 @@
     </div>
 
     <script>
+        // ========== GLOBALS ==========
         const params = new URLSearchParams(window.location.search);
         const username = params.get('username');
         const token = params.get('token');
@@ -204,36 +224,54 @@
         const language = params.get('language') || 'it_IT';
         const initialTitle = params.get('title');
         const instrumentNameFromUrl = params.get('instrument_name');
-        const urlCurrency = params.get('currency'); // VALUTA DAL CHIAMANTE
+        const instrumentCurrency = params.get('currency') || 'EUR';
 
         let chartInstance = null;
         let trendDataRaw = [];
         let translations = {};
-        let userCurrency = 'EUR';
+        let userCurrency = 'EUR'; // Fallback
 
+        // ========== INIT ==========
         async function init() {
-            document.getElementById('username-display').textContent = username;
+            document.getElementById('username-display').textContent = username || '-';
+
             if (!username || !token) {
                 document.getElementById('loadingText').textContent = "Access Denied";
                 return;
             }
 
+            // Date setup
             const today = new Date();
             const oneYearAgo = new Date();
             oneYearAgo.setFullYear(today.getFullYear() - 1);
             document.getElementById('end-date').value = today.toISOString().split('T')[0];
             document.getElementById('start-date').value = oneYearAgo.toISOString().split('T')[0];
 
-            await Promise.all([initializeLanguages(), loadTranslations(language), loadCurrencies(language)]);
-            updateUserInfoUI();
+            // UI & Translations
+            if (typeof loadCurrencies === 'function') await loadCurrencies(language);
+            if (typeof loadTranslations === 'function') {
+                await loadTranslations(language);
+                updateUIWithTranslations();
+            }
 
-            // Priorità alla valuta passata dall'URL
-            const displayCurrency = urlCurrency || userCurrency;
-            document.getElementById('currencyDisplay').textContent = displayCurrency;
-
-            document.getElementById('page-title-input').value = initialTitle || getTranslation('int.detail.prices') || "";
+            document.getElementById('currencyDisplay').textContent = instrumentCurrency;
+            document.getElementById('page-title-input').value = initialTitle || getTranslation('int.detail.prices') || "Prices";
 
             await loadPrices();
+        }
+
+        function getTranslation(key) {
+            return (typeof translations !== 'undefined' && translations[key]) ? translations[key] : key;
+        }
+
+        function updateUIWithTranslations() {
+            document.getElementById('userLabel').textContent = getTranslation('int.user.label') || 'Utente:';
+            document.getElementById('label-start-date').textContent = getTranslation('int.date.from') || 'Dal:';
+            document.getElementById('label-end-date').textContent = getTranslation('int.date.to') || 'Al:';
+            document.getElementById('btn-confirm').textContent = getTranslation('int.update') || 'Aggiorna';
+            document.getElementById('close-btn').textContent = getTranslation('int.close') || 'Chiudi';
+            document.getElementById('label-chart-title').textContent = getTranslation('int.chart.title') || 'Titolo Grafico:';
+            document.getElementById('loadingText').textContent = getTranslation('int.loading.data') || 'Caricamento dati...';
         }
 
         async function loadPrices() {
@@ -249,8 +287,8 @@
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        username,
-                        token,
+                        username: username,
+                        token: token,
                         id_instrument: idInstrument,
                         date_start: start,
                         date_end: end
@@ -262,11 +300,10 @@
                     trendDataRaw = data.prices || [];
                     renderChart();
                 } else {
-                    alert("Errore API: " + (data.msg || "Sconosciuto"));
+                    console.error("API Error:", data.msg);
                 }
             } catch (err) {
-                console.error(err);
-                alert("Errore di connessione durante il caricamento dei prezzi.");
+                console.error("Fetch Error:", err);
             } finally {
                 loader.style.display = 'none';
             }
@@ -282,7 +319,7 @@
         const forceArrowsPlugin = {
             id: 'forceArrows',
             afterDatasetsDraw(chart) {
-                const { ctx, scales: { x, y } } = chart;
+                const { ctx } = chart;
                 const dataset = chart.data.datasets[0];
                 const forceValues = dataset.forceValues;
 
@@ -299,10 +336,10 @@
 
                     if (val > 0) {
                         ctx.fillStyle = 'green';
-                        ctx.fillText('\uf062', point.x, point.y - 15); // Freccia Su
+                        ctx.fillText('\uf062', point.x, point.y - 15);
                     } else {
                         ctx.fillStyle = 'red';
-                        ctx.fillText('\uf063', point.x, point.y + 15); // Freccia Giù
+                        ctx.fillText('\uf063', point.x, point.y + 15);
                     }
                     ctx.restore();
                 });
@@ -314,25 +351,21 @@
             if (chartInstance) chartInstance.destroy();
             if (trendDataRaw.length === 0) return;
 
-            const displayCurrency = urlCurrency || userCurrency;
-            document.getElementById('instrument-name-display').textContent = `${instrumentNameFromUrl || idInstrument} - ${displayCurrency}`;
-
-            const priceField = Object.keys(trendDataRaw[0]).find(k => k.startsWith('price@')) || 'price_mkt';
-            const forceField = `forza@${userCurrency}`;
+            document.getElementById('instrument-name-display').textContent = `${instrumentNameFromUrl || idInstrument} - ${instrumentCurrency}`;
 
             const labels = [];
             const prices = [];
             const forces = [];
-            const patterns = []; // NUOVO ARRAY PER PATTERN
+            const patterns = [];
 
             trendDataRaw.forEach(item => {
-                const val = parseValue(item[priceField]);
-                // FILTRO: NON DISEGNARE I PUNTI CON VALORE A 0
+                const val = parseFloat(item.price_mkt || item.price || 0);
+                // FILTRO: Salta i punti con prezzo a 0
                 if (val !== 0) {
                     labels.push(item.date_start || item.date);
                     prices.push(val);
-                    forces.push(item[forceField] !== undefined ? parseValue(item[forceField]) : 0);
-                    patterns.push(item.pattern || ""); // RECUPERA PATTERN
+                    forces.push(item.force !== undefined ? parseFloat(item.force) : 0);
+                    patterns.push(item.pattern || "");
                 }
             });
 
@@ -349,7 +382,7 @@
                         label: document.getElementById('page-title-input').value,
                         data: prices,
                         forceValues: forces,
-                        patternValues: patterns, // PASSA PATTERN AL DATASET
+                        patternValues: patterns,
                         borderColor: color.border,
                         backgroundColor: gradient,
                         borderWidth: 2,
@@ -366,23 +399,18 @@
                         tooltip: {
                             callbacks: {
                                 label: function (context) {
-                                    const index = context.dataIndex;
+                                    const i = context.dataIndex;
                                     const ds = context.dataset;
-                                    let lines = [];
+                                    let lines = [`Prezzo: ${context.parsed.y.toLocaleString(undefined, { minimumFractionDigits: 2 })} ${instrumentCurrency}`];
 
-                                    // PREZZO CON VALUTA CORRETTA
-                                    lines.push(`Prezzo: ${context.parsed.y.toLocaleString(undefined, { minimumFractionDigits: 2 })} ${displayCurrency}`);
-
-                                    // FORZA (solo se != 0)
-                                    const force = ds.forceValues[index];
+                                    const force = ds.forceValues[i];
                                     if (force !== 0 && force !== null) {
                                         lines.push(`Forza: ${Math.abs(force).toFixed(2)}`);
                                     }
 
-                                    // PATTERN (se presente)
-                                    const pattern = ds.patternValues[index];
-                                    if (pattern && pattern.trim() !== "") {
-                                        lines.push(`Pattern: ${pattern}`);
+                                    const patt = ds.patternValues[i];
+                                    if (patt && patt.trim() !== "") {
+                                        lines.push(`Pattern: ${patt}`);
                                     }
 
                                     return lines;
@@ -393,7 +421,7 @@
                     scales: {
                         y: {
                             ticks: {
-                                callback: v => v.toLocaleString(undefined, { minimumFractionDigits: 2 }) + ' ' + displayCurrency
+                                callback: v => v.toLocaleString(undefined, { minimumFractionDigits: 2 }) + ' ' + instrumentCurrency
                             }
                         }
                     }
