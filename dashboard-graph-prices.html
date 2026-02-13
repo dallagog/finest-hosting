@@ -397,6 +397,7 @@
             }
         }
 
+        // --- MODIFICA NELL'INIT PER RICEVERE LA VALUTA ---
         async function init() {
             document.getElementById('username-display').textContent = username;
             if (!username || !token) {
@@ -413,15 +414,19 @@
             await Promise.all([initializeLanguages(), loadTranslations(language), loadCurrencies(language)]);
             updateUserInfoUI();
 
+            // Priorità alla valuta passata dall'URL (quella dello strumento)
+            const displayCurrency = urlCurrency || userCurrency;
+            document.getElementById('currencyDisplay').textContent = displayCurrency;
+
             document.getElementById('page-title-input').value = initialTitle || getTranslation('int.detail.prices') || "";
             document.getElementById('btn-confirm').textContent = getTranslation('int.detail.prices') || 'Carica';
             document.getElementById('close-btn').textContent = getTranslation('int.close') || 'Close';
+
             if (document.getElementById('label-start-date')) document.getElementById('label-start-date').textContent = (getTranslation('int.date.start') || 'Start') + ':';
             if (document.getElementById('label-end-date')) document.getElementById('label-end-date').textContent = (getTranslation('int.date.end') || 'End') + ':';
 
             await loadPrices();
         }
-
         const forceArrowsPlugin = {
             id: 'forceArrows',
             afterDatasetsDraw(chart) {
@@ -512,14 +517,16 @@
             return 0;
         }
 
+        // --- MODIFICA RENDERCHART PER FILTRARE GLI ZERI ---
         function renderChart() {
             const ctx = document.getElementById('chartCanvas').getContext('2d');
             if (chartInstance) chartInstance.destroy();
 
             if (trendDataRaw.length === 0) return;
 
-            // Visualizzazione Divisa accanto al nome strumento
-            document.getElementById('instrument-name-display').textContent = `${instrumentNameFromUrl || idInstrument} - ${userCurrency}`;
+            // Visualizzazione: Nome Strumento + Valuta specifica del titolo (urlCurrency)
+            const instrumentCurrency = urlCurrency || userCurrency;
+            document.getElementById('instrument-name-display').textContent = `${instrumentNameFromUrl || idInstrument} - ${instrumentCurrency}`;
 
             const priceField = Object.keys(trendDataRaw[0]).find(k => k.startsWith('price@')) || 'price_mkt';
             const forceField = `forza@${userCurrency}`;
@@ -528,11 +535,14 @@
             const prices = [];
             const forces = [];
 
-            // VISUALIZZAZIONE DIRETTA SENZA AGGREGAZIONI
+            // FILTRO: Non aggiungere i dati se il prezzo è 0
             trendDataRaw.forEach(item => {
-                labels.push(item.date_start || item.date);
-                prices.push(parseValue(item[priceField]));
-                forces.push(item[forceField] !== undefined ? parseValue(item[forceField]) : 0);
+                const val = parseValue(item[priceField]);
+                if (val !== 0) { // <--- Salta i valori a zero
+                    labels.push(item.date_start || item.date);
+                    prices.push(val);
+                    forces.push(item[forceField] !== undefined ? parseValue(item[forceField]) : 0);
+                }
             });
 
             const color = { bg: 'rgba(75, 192, 192, 0.4)', border: 'rgba(75, 192, 192, 1)' };
@@ -564,9 +574,8 @@
                         tooltip: {
                             callbacks: {
                                 label: function (context) {
-                                    let label = `Prezzo: ${context.parsed.y.toLocaleString(undefined, { minimumFractionDigits: 2 })}`;
+                                    let label = `Prezzo: ${context.parsed.y.toLocaleString(undefined, { minimumFractionDigits: 2 })} ${instrumentCurrency}`;
                                     const force = context.dataset.forceValues[context.dataIndex];
-                                    // Visualizza forza nel tooltip solo se != 0
                                     if (force !== 0 && force !== null) {
                                         label += ` | Forza: ${Math.abs(force).toFixed(2)}`;
                                     }
@@ -576,12 +585,15 @@
                         }
                     },
                     scales: {
-                        y: { ticks: { callback: v => v.toLocaleString(undefined, { minimumFractionDigits: 2 }) } }
+                        y: {
+                            ticks: {
+                                callback: v => v.toLocaleString(undefined, { minimumFractionDigits: 2 }) + ' ' + instrumentCurrency
+                            }
+                        }
                     }
                 }
             });
         }
-
         window.onload = init;
     </script>
 </body>

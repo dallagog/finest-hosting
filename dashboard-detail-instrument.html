@@ -223,7 +223,10 @@
 
         function openPricesGraph() {
             if (!currentInstrumentId) return;
-            const url = `dashboard-graph-prices.html?username=${credentials.username}&token=${credentials.token}&language=${credentials.language}&id_instrument=${currentInstrumentId}&instrument_name=${encodeURIComponent(currentInstrumentName)}`;
+            // Recuperiamo la valuta dai dati caricati (es. instrument.currency)
+            // Se non disponibile direttamente, puoi estrarla dall'oggetto caricato nel renderDetails
+            const instCurrency = currentInstrumentCurrency || 'EUR';
+            const url = `dashboard-graph-prices.html?username=${credentials.username}&token=${credentials.token}&language=${credentials.language}&id_instrument=${currentInstrumentId}&instrument_name=${encodeURIComponent(currentInstrumentName)}&currency=${instCurrency}`;
             window.open(url, '_blank', 'width=1200,height=800');
         }
 
