@@ -479,6 +479,60 @@
             }
         };
 
+        const patternVerticalLinesPlugin = {
+            id: 'patternVerticalLines',
+
+            afterDatasetsDraw(chart) {
+
+                const ctx = chart.ctx;
+                const xScale = chart.scales.x;
+                const yScale = chart.scales.y;
+
+                ctx.save();
+
+                chart.data.datasets.forEach((dataset, datasetIndex) => {
+
+                    if (!dataset.patternValues) return;
+
+                    const meta = chart.getDatasetMeta(datasetIndex);
+                    if (!meta || meta.hidden) return;
+
+                    meta.data.forEach((point, index) => {
+
+                        const patternObj = dataset.patternValues[index];
+                        if (!patternObj) return;
+
+                        const x = point.x;
+
+                        // === LINEA VERTICALE VIOLA TRATTEGGIATA ===
+                        ctx.beginPath();
+                        ctx.setLineDash([6, 6]);
+                        ctx.strokeStyle = 'purple';
+                        ctx.lineWidth = 1.5;
+
+                        ctx.moveTo(x, yScale.top);
+                        ctx.lineTo(x, yScale.bottom);
+                        ctx.stroke();
+
+                        ctx.setLineDash([]);
+
+                        // === TESTO PATTERN SOPRA ===
+                        const descriptions = Object.keys(patternObj)
+                            .map(key => patternObj[key])
+                            .join(" | ");
+
+                        ctx.fillStyle = 'purple';
+                        ctx.font = 'bold 11px Arial';
+                        ctx.textAlign = 'center';
+                        ctx.fillText(descriptions, x, yScale.top - 5);
+
+                    });
+                });
+
+                ctx.restore();
+            }
+        };
+
         async function loadPrices() {
             document.getElementById('loading').style.display = 'flex';
             const startDate = document.getElementById('start-date').value;
@@ -593,7 +647,7 @@
                         pointRadius: 3
                     }]
                 },
-                plugins: [forceArrowsPlugin],
+                plugins: [forceArrowsPlugin, patternVerticalLinesPlugin],
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
