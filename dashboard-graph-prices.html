@@ -545,11 +545,16 @@
 
             trendDataRaw.forEach(item => {
 
+                const priceParsed = parseValue(item[priceField]);
+
+                // ❗ Se prezzo = 0 salta completamente il punto
+                if (priceParsed === 0) {
+                    return;
+                }
+
                 labels.push(item.date_start || item.date);
+                prices.push(priceParsed);
 
-                prices.push(parseValue(item[priceField]));
-
-                // Forza sicura
                 const forceValue =
                     item[forceField] !== undefined && item[forceField] !== null
                         ? parseValue(item[forceField])
@@ -557,7 +562,6 @@
 
                 forces.push(forceValue);
 
-                // Pattern dinamici (nessun errore se non esistono)
                 const patternObj = {};
 
                 patternFields.forEach(field => {
@@ -568,7 +572,6 @@
 
                 patternValues.push(Object.keys(patternObj).length ? patternObj : null);
             });
-
             const gradient = ctx.createLinearGradient(0, 0, 0, 400);
             gradient.addColorStop(0, 'rgba(75,192,192,0.4)');
             gradient.addColorStop(1, 'rgba(75,192,192,0.05)');
@@ -607,38 +610,33 @@
                                 },
 
                                 label: function (context) {
+                                    // Mostra solo il prezzo qui
+                                    if (context.parsed.y === null) return '';
 
+                                    return `Prezzo: ${context.parsed.y.toLocaleString(undefined, {
+                                        minimumFractionDigits: 2
+                                    })}`;
+                                },
+
+                                afterBody: function (context) {
+
+                                    const index = context[0].dataIndex;
+                                    const dataset = context[0].dataset;
                                     const lines = [];
 
-                                    // Prezzo
-                                    lines.push(
-                                        `Prezzo: ${context.parsed.y.toLocaleString(undefined, {
-                                            minimumFractionDigits: 2
-                                        })}`
-                                    );
-
                                     // Forza
-                                    const force =
-                                        context.dataset.forceValues?.[context.dataIndex];
-
+                                    const force = dataset.forceValues?.[index];
                                     if (force && force !== 0) {
                                         lines.push(`Forza: ${Math.abs(force).toFixed(2)}`);
                                     }
 
                                     // Pattern
-                                    const patternObj =
-                                        context.dataset.patternValues?.[context.dataIndex];
+                                    const patternObj = dataset.patternValues?.[index];
 
                                     if (patternObj) {
-
                                         Object.keys(patternObj).forEach(key => {
-
-                                            const cleanName =
-                                                key.replace('pattern@', '');
-
-                                            lines.push(
-                                                `Pattern ${cleanName}: ${patternObj[key]}`
-                                            );
+                                            const cleanName = key.replace('pattern@', '');
+                                            lines.push(`Pattern ${cleanName}: ${patternObj[key]}`);
                                         });
                                     }
 
