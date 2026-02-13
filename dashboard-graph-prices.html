@@ -513,32 +513,65 @@
         }
 
         function renderChart() {
+
             const ctx = document.getElementById('chartCanvas').getContext('2d');
-            if (chartInstance) chartInstance.destroy();
 
-            if (trendDataRaw.length === 0) return;
+            if (chartInstance) {
+                chartInstance.destroy();
+                chartInstance = null;
+            }
 
-            // Visualizzazione Divisa accanto al nome strumento
-            document.getElementById('instrument-name-display').textContent = `${instrumentNameFromUrl || idInstrument} - ${userCurrency}`;
+            if (!trendDataRaw || trendDataRaw.length === 0) return;
 
-            const priceField = Object.keys(trendDataRaw[0]).find(k => k.startsWith('price@')) || 'price_mkt';
+            // Nome strumento
+            document.getElementById('instrument-name-display').textContent =
+                `${instrumentNameFromUrl || idInstrument} - ${userCurrency}`;
+
+            // Individua campi dinamici
+            const firstRow = trendDataRaw[0];
+
+            const priceField =
+                Object.keys(firstRow).find(k => k.startsWith('price@')) || 'price_mkt';
+
             const forceField = `forza@${userCurrency}`;
+
+            const patternFields =
+                Object.keys(firstRow).filter(k => k.startsWith('pattern@'));
 
             const labels = [];
             const prices = [];
             const forces = [];
+            const patternValues = [];
 
-            // VISUALIZZAZIONE DIRETTA SENZA AGGREGAZIONI
             trendDataRaw.forEach(item => {
+
                 labels.push(item.date_start || item.date);
+
                 prices.push(parseValue(item[priceField]));
-                forces.push(item[forceField] !== undefined ? parseValue(item[forceField]) : 0);
+
+                // Forza sicura
+                const forceValue =
+                    item[forceField] !== undefined && item[forceField] !== null
+                        ? parseValue(item[forceField])
+                        : 0;
+
+                forces.push(forceValue);
+
+                // Pattern dinamici (nessun errore se non esistono)
+                const patternObj = {};
+
+                patternFields.forEach(field => {
+                    if (item[field] !== undefined && item[field] !== null && item[field] !== "") {
+                        patternObj[field] = item[field];
+                    }
+                });
+
+                patternValues.push(Object.keys(patternObj).length ? patternObj : null);
             });
 
-            const color = { bg: 'rgba(75, 192, 192, 0.4)', border: 'rgba(75, 192, 192, 1)' };
             const gradient = ctx.createLinearGradient(0, 0, 0, 400);
-            gradient.addColorStop(0, color.bg);
-            gradient.addColorStop(1, 'rgba(75, 192, 192, 0.05)');
+            gradient.addColorStop(0, 'rgba(75,192,192,0.4)');
+            gradient.addColorStop(1, 'rgba(75,192,192,0.05)');
 
             chartInstance = new Chart(ctx, {
                 type: 'line',
@@ -548,7 +581,8 @@
                         label: document.getElementById('page-title-input').value,
                         data: prices,
                         forceValues: forces,
-                        borderColor: color.border,
+                        patternValues: patternValues,
+                        borderColor: 'rgba(75,192,192,1)',
                         backgroundColor: gradient,
                         borderWidth: 2,
                         tension: 0.1,
@@ -560,23 +594,69 @@
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
+                    interaction: {
+                        mode: 'index',
+                        intersect: false
+                    },
                     plugins: {
                         tooltip: {
                             callbacks: {
+
+                                title: function (context) {
+                                    return `Data: ${context[0].label}`;
+                                },
+
                                 label: function (context) {
-                                    let label = `Prezzo: ${context.parsed.y.toLocaleString(undefined, { minimumFractionDigits: 2 })}`;
-                                    const force = context.dataset.forceValues[context.dataIndex];
-                                    // Visualizza forza nel tooltip solo se != 0
-                                    if (force !== 0 && force !== null) {
-                                        label += ` | Forza: ${Math.abs(force).toFixed(2)}`;
+
+                                    const lines = [];
+
+                                    // Prezzo
+                                    lines.push(
+                                        `Prezzo: ${context.parsed.y.toLocaleString(undefined, {
+                                            minimumFractionDigits: 2
+                                        })}`
+                                    );
+
+                                    // Forza
+                                    const force =
+                                        context.dataset.forceValues?.[context.dataIndex];
+
+                                    if (force && force !== 0) {
+                                        lines.push(`Forza: ${Math.abs(force).toFixed(2)}`);
                                     }
-                                    return label;
+
+                                    // Pattern
+                                    const patternObj =
+                                        context.dataset.patternValues?.[context.dataIndex];
+
+                                    if (patternObj) {
+
+                                        Object.keys(patternObj).forEach(key => {
+
+                                            const cleanName =
+                                                key.replace('pattern@', '');
+
+                                            lines.push(
+                                                `Pattern ${cleanName}: ${patternObj[key]}`
+                                            );
+                                        });
+                                    }
+
+                                    return lines;
                                 }
                             }
                         }
                     },
                     scales: {
-                        y: { ticks: { callback: v => v.toLocaleString(undefined, { minimumFractionDigits: 2 }) } }
+                        y: {
+                            ticks: {
+                                callback: function (value) {
+                                    return value.toLocaleString(undefined, {
+                                        minimumFractionDigits: 2
+                                    });
+                                }
+                            }
+                        }
                     }
                 }
             });
