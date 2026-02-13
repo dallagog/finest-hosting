@@ -153,25 +153,11 @@
             white-space: nowrap;
         }
 
-        select {
-            padding: 8px 15px;
-            background: #fff;
+        .date-input {
+            padding: 8px;
             border: 1px solid #ccc;
-            color: #000;
-            font-family: inherit;
             border-radius: 4px;
-            cursor: pointer;
-            min-width: 150px;
-        }
-
-        select:focus {
-            outline: none;
-            border-color: #000;
-        }
-
-        select option {
-            background-color: #fff;
-            color: #000;
+            font-family: inherit;
         }
 
         .confirm-btn {
@@ -268,151 +254,6 @@
             font-size: 1.2rem;
             letter-spacing: 1px;
         }
-
-        .info-text {
-            font-size: 0.7rem;
-            color: #666;
-            font-style: italic;
-            margin-top: 3px;
-        }
-
-        /* Nuovi stili per il selettore metriche con checkbox */
-        .metrics-selector-container {
-            position: relative;
-            display: inline-block;
-        }
-
-        .metrics-dropdown-btn {
-            padding: 8px 15px;
-            background: #fff;
-            border: 1px solid #ccc;
-            color: #000;
-            font-family: inherit;
-            border-radius: 4px;
-            cursor: pointer;
-            min-width: 180px;
-            text-align: left;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .metrics-dropdown-btn:hover {
-            border-color: #000;
-        }
-
-        .metrics-dropdown-content {
-            display: none;
-            position: absolute;
-            background-color: #fff;
-            min-width: 220px;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-            z-index: 1000;
-            border: 1px solid #000;
-            border-radius: 4px;
-            top: 100%;
-            left: 0;
-            max-height: 300px;
-            overflow-y: auto;
-            padding: 10px 0;
-        }
-
-        .metrics-dropdown-content.show {
-            display: block;
-        }
-
-        .metric-checkbox-item {
-            display: flex;
-            align-items: center;
-            padding: 5px 0;
-            border-bottom: 1px solid #eee;
-        }
-
-        .metric-checkbox-item:last-child {
-            border-bottom: none;
-        }
-
-        .metric-checkbox-item input[type="checkbox"] {
-            margin-right: 10px;
-            accent-color: var(--neon-cyan);
-            cursor: pointer;
-        }
-
-        .metric-checkbox-item label {
-            cursor: pointer;
-            color: var(--text-color);
-            font-size: 0.8rem;
-            flex-grow: 1;
-        }
-
-        .metric-checkbox-item:hover label {
-            color: var(--neon-cyan);
-        }
-
-        .metric-checkbox-actions {
-            display: flex;
-            justify-content: space-between;
-            margin-top: 10px;
-            padding-top: 10px;
-            border-top: 1px solid rgba(0, 243, 255, 0.2);
-        }
-
-        .metric-action-btn {
-            padding: 5px 10px;
-            background: rgba(0, 102, 255, 0.1);
-            border: 1px solid var(--neon-blue);
-            color: var(--neon-blue);
-            font-family: 'Orbitron', sans-serif;
-            border-radius: 3px;
-            cursor: pointer;
-            font-size: 0.7rem;
-            transition: all 0.3s;
-        }
-
-        .metric-action-btn:hover {
-            background: rgba(0, 102, 255, 0.2);
-            box-shadow: 0 0 8px rgba(0, 102, 255, 0.5);
-        }
-
-        .metric-action-btn.clear {
-            background: rgba(255, 0, 85, 0.1);
-            border: 1px solid var(--neon-red);
-            color: var(--neon-red);
-        }
-
-        .metric-action-btn.clear:hover {
-            background: rgba(255, 0, 85, 0.2);
-            box-shadow: 0 0 8px rgba(255, 0, 85, 0.5);
-        }
-
-        /* Stili per il selettore tipo grafico */
-        .chart-type-selector {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .chart-type-btn {
-            padding: 8px 15px;
-            background: var(--button-bg);
-            border: 1px solid var(--neon-cyan);
-            color: var(--neon-cyan);
-            font-family: 'Orbitron', sans-serif;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 0.8rem;
-            transition: all 0.3s;
-        }
-
-        .chart-type-btn.active {
-            background: rgba(0, 243, 255, 0.2);
-            box-shadow: 0 0 10px var(--neon-cyan);
-            font-weight: bold;
-        }
-
-        .chart-type-btn:hover:not(.active) {
-            background: rgba(0, 243, 255, 0.15);
-        }
     </style>
 </head>
 
@@ -443,21 +284,6 @@
         </div>
 
         <div class="header-right">
-            <style>
-                .control-group {
-                    margin-right: 15px;
-                }
-
-                .date-input {
-                    padding: 8px;
-                    border: 1px solid #ccc;
-                    border-radius: 4px;
-                    font-family: inherit;
-                }
-
-                /* The .action-btn is now .confirm-btn, and its styles are defined globally */
-            </style>
-
             <div class="control-group">
                 <label for="start-date" id="label-start-date">Start:</label>
                 <input type="date" id="start-date" class="date-input">
@@ -468,8 +294,7 @@
             </div>
 
             <button class="confirm-btn" onclick="loadPrices()" id="btn-confirm">Carica</button>
-
-            <button class="close-button" onclick="closeWindow()" id="close-btn">Close</button>
+            <button class="close-button" onclick="window.close()" id="close-btn">Close</button>
         </div>
     </div>
 
@@ -480,11 +305,25 @@
     </div>
 
     <script>
-        // --- TRANSLATION SYSTEM (Dynamic) ---
-        // --- TRANSLATION SYSTEM (Dynamic) ---
+        // --- TRANSLATION SYSTEM ---
         let translations = {};
         let availableLanguages = [];
         let currencies = [];
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const username = urlParams.get('username') || '';
+        const token = urlParams.get('token');
+        const language = urlParams.get('language') || 'it_IT';
+        const idInstrument = urlParams.get('id_instrument');
+        const idAccount = urlParams.get('id_account');
+        const initialTitle = urlParams.get('title');
+        const instrumentNameFromUrl = urlParams.get('instrument_name');
+        const urlCurrency = urlParams.get('currency');
+        const userCurrency = urlCurrency || localStorage.getItem('currency') || 'EUR';
+
+        const API_URL = "https://feweb-tunnel.fe-web.eu";
+        let trendDataRaw = [];
+        let chartInstance = null;
 
         async function loadLanguageManifest() {
             try {
@@ -492,10 +331,7 @@
                 if (!response.ok) return [];
                 const manifest = await response.json();
                 return manifest.languages || [];
-            } catch (e) {
-                console.error(e);
-                return [];
-            }
+            } catch (e) { return []; }
         }
 
         async function initializeLanguages() {
@@ -524,10 +360,7 @@
                     return;
                 }
                 currencies = await response.json();
-            } catch (error) {
-                console.error('❌ Error loading currencies:', error);
-                currencies = [];
-            }
+            } catch (error) { currencies = []; }
         }
 
         async function loadTranslations(langCode) {
@@ -535,26 +368,15 @@
                 let response = await fetch(`lang/${langCode}.json`);
                 if (!response.ok) {
                     const simple = langCode.split('_')[0];
-                    if (simple && simple !== langCode) {
-                        response = await fetch(`lang/${simple}.json`);
-                    }
+                    if (simple && simple !== langCode) response = await fetch(`lang/${simple}.json`);
                 }
-                if (response.ok) {
-                    translations = await response.json();
-                } else {
-                    console.warn("Translation file not found:", langCode);
-                }
-            } catch (error) {
-                console.error("Error loading translations:", error);
-            }
+                if (response.ok) translations = await response.json();
+            } catch (error) { console.error(error); }
         }
 
-        function getTranslation(key) {
-            return translations[key] || key;
-        }
+        function getTranslation(key) { return translations[key] || key; }
 
         function updateUserInfoUI() {
-            // Language
             if (availableLanguages.length > 0) {
                 const langData = availableLanguages.find(l => l.code === language);
                 if (langData) {
@@ -563,12 +385,6 @@
                     document.getElementById('languageDisplay').textContent = langDesc !== 'int.language.description' ? langDesc : language;
                 }
             }
-
-            // Currency
-            const urlCurrency = urlParams.get('currency');
-            let userCurrency = urlCurrency || localStorage.getItem('currency');
-
-            // If we have currencies loaded, try to find flag
             if (userCurrency && currencies.length > 0) {
                 const currData = currencies.find(c => c.currency === userCurrency);
                 if (currData && currData['img.currency.flag']) {
@@ -581,150 +397,81 @@
             }
         }
 
-        function closeWindow() {
-            window.close();
-        }
-
-        // Variabili globali
-        const urlParams = new URLSearchParams(window.location.search);
-        const username = urlParams.get('username') || '';
-        const token = urlParams.get('token');
-        const language = urlParams.get('language') || 'it_IT';
-        const idInstrument = urlParams.get('id_instrument');
-        const idAccount = urlParams.get('id_account');
-        const initialTitle = urlParams.get('title');
-        const instrumentNameFromUrl = urlParams.get('instrument_name');
-
-        const API_URL = "https://feweb-tunnel.fe-web.eu";
-
-        // Colori per i diversi dataset
-        const datasetColors = [
-            { border: '#00f3ff', bg: 'rgba(0, 243, 255, 0.4)' },      // cyan
-            { border: '#aa00ff', bg: 'rgba(170, 0, 255, 0.4)' },      // purple
-            { border: '#00ff88', bg: 'rgba(0, 255, 136, 0.4)' },      // green
-            { border: '#ff8800', bg: 'rgba(255, 136, 0, 0.4)' },      // orange
-            { border: '#ff0055', bg: 'rgba(255, 0, 85, 0.4)' },       // red
-            { border: '#0066ff', bg: 'rgba(0, 102, 255, 0.4)' },      // blue
-            { border: '#ffff00', bg: 'rgba(255, 255, 0, 0.4)' },      // yellow
-            { border: '#ff00ff', bg: 'rgba(255, 0, 255, 0.4)' }       // magenta
-        ];
-
-        let trendDataRaw = [];
-        let chartInstance = null;
-
-        // Get currency from URL or localStorage
-        const urlCurrency = urlParams.get('currency');
-        const userCurrency = urlCurrency || localStorage.getItem('currency') || 'EUR';
-
         async function init() {
             document.getElementById('username-display').textContent = username;
-
             if (!username || !token) {
                 document.getElementById('loadingText').textContent = "Access Denied";
                 return;
             }
 
-            // Set default dates: Today and 1 Year ago
             const today = new Date();
             const oneYearAgo = new Date();
             oneYearAgo.setFullYear(today.getFullYear() - 1);
-
             document.getElementById('end-date').value = today.toISOString().split('T')[0];
             document.getElementById('start-date').value = oneYearAgo.toISOString().split('T')[0];
 
-            // Load translations first
-            await Promise.all([
-                initializeLanguages(),
-                loadTranslations(language),
-                loadCurrencies(language)
-            ]);
-
+            await Promise.all([initializeLanguages(), loadTranslations(language), loadCurrencies(language)]);
             updateUserInfoUI();
 
-            // Update labels
-            const pageTitleInput = document.getElementById('page-title-input');
-            if (pageTitleInput) {
-                pageTitleInput.value = initialTitle || getTranslation('int.detail.prices') || "";
-                pageTitleInput.placeholder = getTranslation('int.title.request') || "";
-            }
-
-            const instrumentNameDisplay = document.getElementById('instrument-name-display');
-            if (instrumentNameDisplay) {
-                instrumentNameDisplay.textContent = instrumentNameFromUrl || idInstrument || '';
-            }
-
-            const btnConfirm = document.getElementById('btn-confirm');
-            if (btnConfirm) btnConfirm.textContent = getTranslation('int.detail.prices') || '';
-
+            document.getElementById('page-title-input').value = initialTitle || getTranslation('int.detail.prices') || "";
+            document.getElementById('btn-confirm').textContent = getTranslation('int.detail.prices') || 'Carica';
             document.getElementById('close-btn').textContent = getTranslation('int.close') || 'Close';
-
             if (document.getElementById('label-start-date')) document.getElementById('label-start-date').textContent = (getTranslation('int.date.start') || 'Start') + ':';
             if (document.getElementById('label-end-date')) document.getElementById('label-end-date').textContent = (getTranslation('int.date.end') || 'End') + ':';
 
-            if (!idInstrument) {
-                alert("No Instrument ID provided");
-                return;
-            }
-
-            // Load Prices automatically
             await loadPrices();
         }
 
         const forceArrowsPlugin = {
             id: 'forceArrows',
-            afterDatasetsDraw(chart, args, options) {
+            afterDatasetsDraw(chart) {
                 const { ctx } = chart;
                 ctx.save();
-
                 chart.data.datasets.forEach((dataset, datasetIndex) => {
                     const meta = chart.getDatasetMeta(datasetIndex);
                     if (meta.hidden) return;
-
                     dataset.data.forEach((value, index) => {
                         const force = dataset.forceValues ? dataset.forceValues[index] : null;
                         if (force === null || force === 0) return;
 
-                        const xPos = meta.data[index].x;
-                        const yPos = meta.data[index].y;
+                        // Debug in console per tracciare i valori forza
+                        console.log(`[FORCE DRAW] Index: ${index}, Value: ${force}`);
 
-                        const arrowSize = 10;
+                        const { x, y } = meta.data[index];
+                        const isPos = force > 0;
+                        const color = isPos ? 'green' : 'red';
                         const offset = 20;
+                        const arrowSize = 10;
 
                         ctx.beginPath();
                         ctx.lineWidth = 2;
+                        ctx.strokeStyle = color;
+                        ctx.fillStyle = color;
 
-                        if (force > 0) {
-                            ctx.strokeStyle = 'green';
-                            ctx.fillStyle = 'green';
-                            ctx.moveTo(xPos, yPos - offset);
-                            ctx.lineTo(xPos, yPos - offset - arrowSize);
+                        if (isPos) {
+                            ctx.moveTo(x, y - offset);
+                            ctx.lineTo(x, y - offset - arrowSize);
                             ctx.stroke();
-
                             ctx.beginPath();
-                            ctx.moveTo(xPos, yPos - offset - arrowSize);
-                            ctx.lineTo(xPos - 5, yPos - offset - arrowSize + 5);
-                            ctx.lineTo(xPos + 5, yPos - offset - arrowSize + 5);
+                            ctx.moveTo(x, y - offset - arrowSize);
+                            ctx.lineTo(x - 5, y - offset - arrowSize + 5);
+                            ctx.lineTo(x + 5, y - offset - arrowSize + 5);
                             ctx.fill();
-
-                            ctx.font = 'bold 10px Arial';
+                            ctx.font = 'bold 10px Orbitron';
                             ctx.textAlign = 'center';
-                            ctx.fillText(force.toFixed(1), xPos, yPos - offset - arrowSize - 5);
+                            ctx.fillText(Math.abs(force).toFixed(2), x, y - offset - arrowSize - 5);
                         } else {
-                            ctx.strokeStyle = 'red';
-                            ctx.fillStyle = 'red';
-                            ctx.moveTo(xPos, yPos + offset);
-                            ctx.lineTo(xPos, yPos + offset + arrowSize);
+                            ctx.moveTo(x, y + offset);
+                            ctx.lineTo(x, y + offset + arrowSize);
                             ctx.stroke();
-
                             ctx.beginPath();
-                            ctx.moveTo(xPos, yPos + offset + arrowSize);
-                            ctx.lineTo(xPos - 5, yPos + offset + arrowSize - 5);
-                            ctx.lineTo(xPos + 5, yPos + offset + arrowSize - 5);
+                            ctx.moveTo(x, y + offset + arrowSize);
+                            ctx.lineTo(x - 5, y + offset + arrowSize - 5);
+                            ctx.lineTo(x + 5, y + offset + arrowSize - 5);
                             ctx.fill();
-
-                            ctx.font = 'bold 10px Arial';
+                            ctx.font = 'bold 10px Orbitron';
                             ctx.textAlign = 'center';
-                            ctx.fillText(force, xPos, yPos + offset + arrowSize + 12);
+                            ctx.fillText(Math.abs(force).toFixed(2), x, y + offset + arrowSize + 12);
                         }
                     });
                 });
@@ -738,389 +485,100 @@
             const endDate = document.getElementById('end-date').value;
 
             try {
-                const payload = {
-                    username: username,
-                    token: token,
-                    language: language,
-                    currency: userCurrency,
-                    instrument: {
-                        id_instrument: idInstrument,
-                        id_account: idAccount,
-                        date_start: startDate,
-                        date_end: endDate
-                    }
-                };
-
                 const response = await fetch(`${API_URL}/getprices`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
+                    body: JSON.stringify({
+                        username, token, language, currency: userCurrency,
+                        instrument: { id_instrument: idInstrument, id_account: idAccount, date_start: startDate, date_end: endDate }
+                    })
                 });
-
                 const data = await response.json();
-
-                let rawData = data;
-                if (data.status && data.prices) {
-                    rawData = data.prices;
-                } else if (Array.isArray(data)) {
-                    rawData = data;
-                } else if (data.status === 'ko') {
-                    throw new Error(data.msg || "Server returned KO");
-                }
-
-                trendDataRaw = rawData;
-
-                // Sort by date
-                trendDataRaw.sort((a, b) => {
-                    const d1 = a.date || a.date_start;
-                    const d2 = b.date || b.date_start;
-                    return new Date(d1) - new Date(d2);
-                });
-
-                // Ensure date_start is present
-                trendDataRaw.forEach(item => {
-                    if (!item.date_start && item.date) item.date_start = item.date;
-                });
+                trendDataRaw = data.prices || (Array.isArray(data) ? data : []);
+                trendDataRaw.sort((a, b) => new Date(a.date_start || a.date) - new Date(b.date_start || b.date));
 
                 renderChart();
                 document.getElementById('loading').style.display = 'none';
-
             } catch (error) {
                 console.error(error);
-                document.getElementById('loadingText').textContent = "Error loading data " + error.message;
-                alert("Error loading prices: " + error.message);
+                document.getElementById('loadingText').textContent = "Error loading data";
                 document.getElementById('loading').style.display = 'none';
             }
+        }
+
+        function parseValue(v) {
+            if (typeof v === 'number') return v;
+            if (typeof v === 'string') return parseFloat(v.replace(/[^0-9.-]/g, '')) || 0;
+            return 0;
         }
 
         function renderChart() {
             const ctx = document.getElementById('chartCanvas').getContext('2d');
             if (chartInstance) chartInstance.destroy();
 
-            // Dynamically detect price fields from API response
-            let priceField = null;
-            const selectedPeriod = 'daily';
-            let chartType = 'line'; // Default to line for prices
+            if (trendDataRaw.length === 0) return;
 
-            // Find price field (prefer price@close, then price@open, then any price@*)
-            if (trendDataRaw.length > 0) {
-                const firstItem = trendDataRaw[0];
+            // Visualizzazione Divisa accanto al nome strumento
+            document.getElementById('instrument-name-display').textContent = `${instrumentNameFromUrl || idInstrument} - ${userCurrency}`;
 
-                // Look for price@close first
-                if (firstItem.hasOwnProperty('price@close')) {
-                    priceField = 'price@close';
-                } else if (firstItem.hasOwnProperty('price@open')) {
-                    priceField = 'price@open';
-                } else {
-                    // Find any field starting with 'price@'
-                    const priceKeys = Object.keys(firstItem).filter(k => k.startsWith('price@'));
-                    if (priceKeys.length > 0) {
-                        priceField = priceKeys[0];
-                    } else {
-                        // Fallback to price_mkt or any numeric field
-                        priceField = firstItem.hasOwnProperty('price_mkt') ? 'price_mkt' :
-                            Object.keys(firstItem).find(k =>
-                                !['date', 'date_start', 'date_end', 'id_instrument'].includes(k) &&
-                                typeof firstItem[k] === 'number'
-                            );
-                    }
-                }
-            }
+            const priceField = Object.keys(trendDataRaw[0]).find(k => k.startsWith('price@')) || 'price_mkt';
+            const forceField = `forza@${userCurrency}`;
 
-            const selectedMetrics = priceField ? [priceField] : [];
+            const labels = [];
+            const prices = [];
+            const forces = [];
 
-            if (selectedMetrics.length === 0 || trendDataRaw.length === 0) {
-                // Empty chart logic
-                chartInstance = new Chart(ctx, {
-                    type: chartType,
-                    data: { labels: [], datasets: [] },
-                    options: { responsive: true, maintainAspectRatio: false }
-                });
-                return;
-            }
-
-            const datasets = [];
-            const allLabelsSet = new Set();
-            const metricDataMap = new Map();
-
-            selectedMetrics.forEach((metric) => {
-                const aggregatedData = aggregateByPeriod(trendDataRaw, metric, selectedPeriod, userCurrency);
-                metricDataMap.set(metric, aggregatedData);
-                aggregatedData.forEach(item => allLabelsSet.add(item.label));
+            // VISUALIZZAZIONE DIRETTA SENZA AGGREGAZIONI
+            trendDataRaw.forEach(item => {
+                labels.push(item.date_start || item.date);
+                prices.push(parseValue(item[priceField]));
+                forces.push(item[forceField] !== undefined ? parseValue(item[forceField]) : 0);
             });
 
-            const allLabels = Array.from(allLabelsSet).sort((a, b) => {
-                let dateA = null;
-                let dateB = null;
-                for (let [m, data] of metricDataMap) {
-                    const itemA = data.find(i => i.label === a);
-                    if (itemA) { dateA = itemA.date; break; }
-                }
-                for (let [m, data] of metricDataMap) {
-                    const itemB = data.find(i => i.label === b);
-                    if (itemB) { dateB = itemB.date; break; }
-                }
-                if (!dateA || !dateB) return 0;
-                return dateA - dateB;
-            });
-
-            selectedMetrics.forEach((metric, index) => {
-                const aggregatedData = metricDataMap.get(metric);
-                const alignedData = [];
-                const forceValues = [];
-                const patternData = []; // Store pattern info for each point
-
-                allLabels.forEach(label => {
-                    const item = aggregatedData.find(d => d.label === label);
-                    alignedData.push(item ? item.value : null);
-                    forceValues.push(item ? item.force : null);
-                    patternData.push(item ? item.patterns : {});
-                });
-
-                // Colors hardcoded for single dataset
-                const color = { bg: 'rgba(75, 192, 192, 0.4)', border: 'rgba(75, 192, 192, 1)' };
-
-                const gradient = ctx.createLinearGradient(0, 0, 0, 400);
-                gradient.addColorStop(0, color.bg);
-                gradient.addColorStop(1, color.bg.replace('0.4', '0.05'));
-
-                const titleValue = document.getElementById('page-title-input')?.value || getTranslation('int.confirm') || 'Price';
-
-                datasets.push({
-                    label: titleValue,
-                    data: alignedData,
-                    forceValues: forceValues,
-                    patternData: patternData, // Add pattern data
-                    borderColor: color.border,
-                    backgroundColor: gradient,
-                    borderWidth: 2,
-                    pointBackgroundColor: color.border,
-                    pointBorderColor: '#fff',
-                    pointHoverBackgroundColor: '#fff',
-                    pointHoverBorderColor: color.border,
-                    fill: true,
-                    tension: 0.4,
-                    spanGaps: true
-                });
-            });
-            const scales = {
-                x: {
-                    ticks: {
-                        color: '#1a1a1a',
-                        font: { family: '"Times New Roman", Times, serif', size: 11 },
-                        maxRotation: 45, minRotation: 45
-                    },
-                    grid: { color: 'rgba(0, 0, 0, 0.05)' }
-                },
-                y: {
-                    beginAtZero: false,
-                    ticks: {
-                        color: '#1a1a1a',
-                        font: { family: '"Times New Roman", Times, serif', size: 11 },
-                        callback: function (value) {
-                            return value.toLocaleString(language === 'it_IT' ? 'it-IT' : 'en-US', {
-                                minimumFractionDigits: 2,
-                                maximumFractionDigits: 4
-                            });
-                        }
-                    },
-                    grid: { color: 'rgba(0, 0, 0, 0.05)' }
-                }
-            };
+            const color = { bg: 'rgba(75, 192, 192, 0.4)', border: 'rgba(75, 192, 192, 1)' };
+            const gradient = ctx.createLinearGradient(0, 0, 0, 400);
+            gradient.addColorStop(0, color.bg);
+            gradient.addColorStop(1, 'rgba(75, 192, 192, 0.05)');
 
             chartInstance = new Chart(ctx, {
-                type: chartType,
+                type: 'line',
                 data: {
-                    labels: allLabels,
-                    datasets: datasets
+                    labels: labels,
+                    datasets: [{
+                        label: document.getElementById('page-title-input').value,
+                        data: prices,
+                        forceValues: forces,
+                        borderColor: color.border,
+                        backgroundColor: gradient,
+                        borderWidth: 2,
+                        tension: 0.1,
+                        fill: true,
+                        pointRadius: 3
+                    }]
                 },
                 plugins: [forceArrowsPlugin],
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
                     plugins: {
-                        legend: {
-                            display: true,
-                            labels: {
-                                font: { family: '"Times New Roman", Times, serif' }
-                            }
-                        },
                         tooltip: {
-                            mode: 'index',
-                            intersect: false,
-                            backgroundColor: 'rgba(255, 255, 255, 0.9)',
-                            titleColor: '#000',
-                            bodyColor: '#000',
-                            borderColor: '#ccc',
-                            borderWidth: 1,
-                            titleFont: { family: '"Times New Roman", Times, serif', size: 14 },
-                            bodyFont: { family: '"Times New Roman", Times, serif', size: 13 },
                             callbacks: {
-                                afterBody: function (context) {
-                                    const tooltipLines = [];
-                                    context.forEach(item => {
-                                        const dataset = item.dataset;
-                                        const dataIndex = item.dataIndex;
-
-                                        // Add force if available
-                                        if (dataset.forceValues && dataset.forceValues[dataIndex] !== null) {
-                                            const force = dataset.forceValues[dataIndex];
-                                            const forceLabel = force >= 0 ? `↑ Force: ${force.toFixed(2)}` : `↓ Force: ${Math.abs(force).toFixed(2)}`;
-                                            tooltipLines.push(forceLabel);
-                                        }
-
-                                        // Add patterns if available
-                                        if (dataset.patternData && dataset.patternData[dataIndex]) {
-                                            const patterns = dataset.patternData[dataIndex];
-                                            Object.keys(patterns).forEach(patternName => {
-                                                const score = patterns[patternName];
-                                                if (score > 0) {
-                                                    tooltipLines.push(`Pattern: ${patternName} (${score.toFixed(2)})`);
-                                                }
-                                            });
-                                        }
-                                    });
-                                    return tooltipLines;
+                                label: function (context) {
+                                    let label = `Prezzo: ${context.parsed.y.toLocaleString(undefined, { minimumFractionDigits: 2 })}`;
+                                    const force = context.dataset.forceValues[context.dataIndex];
+                                    // Visualizza forza nel tooltip solo se != 0
+                                    if (force !== 0 && force !== null) {
+                                        label += ` | Forza: ${Math.abs(force).toFixed(2)}`;
+                                    }
+                                    return label;
                                 }
                             }
                         }
                     },
-                    scales: scales,
-                    interaction: {
-                        mode: 'nearest',
-                        axis: 'x',
-                        intersect: false
+                    scales: {
+                        y: { ticks: { callback: v => v.toLocaleString(undefined, { minimumFractionDigits: 2 }) } }
                     }
                 }
-            });
-        }
-
-
-        function parseValue(value) {
-            if (typeof value === 'number') return value;
-            if (typeof value === 'string') {
-                // Remove currency and percentage symbols
-                let cleanValue = value.replace(/%|:EUR|:USD|:GBP|:CHF/g, '').trim();
-                // Handle potential thousands separator if the string contains a comma but no more than one dot? 
-                // Or if it's Italian format (1.234,56). 
-                // Simple heuristic: if there's a comma, it might be the decimal separator or thousands.
-                // The user says "i valori sono in price_mkt numerici con separatore decimali ."
-                // So if it's already a float it's fine. If it's a string from another source, we handle it.
-                if (cleanValue.includes(',') && !cleanValue.includes('.')) {
-                    cleanValue = cleanValue.replace(',', '.');
-                } else if (cleanValue.includes(',') && cleanValue.includes('.')) {
-                    // It has both. If comma is after dot, comma is decimal.
-                    if (cleanValue.indexOf(',') > cleanValue.indexOf('.')) {
-                        cleanValue = cleanValue.replace(/\./g, '').replace(',', '.');
-                    } else {
-                        // Dot is after comma, so dot is decimal.
-                        cleanValue = cleanValue.replace(/,/g, '');
-                    }
-                }
-                return parseFloat(cleanValue) || 0;
-            }
-            return 0;
-        }
-
-        function aggregateByPeriod(data, metric, period, currency = 'EUR') {
-            const aggregated = {};
-            const forceField = `forza@${currency}`;
-
-            data.forEach(item => {
-                if (!item.date_start || item[metric] === undefined || item[metric] === null) return;
-
-                const date = new Date(item.date_start);
-                let key;
-
-                switch (period) {
-                    case 'monthly':
-                        key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-                        break;
-                    case 'quarterly':
-                        const quarter = Math.floor(date.getMonth() / 3) + 1;
-                        key = `${date.getFullYear()}-Q${quarter}`;
-                        break;
-                    case 'semesterly':
-                        const semester = date.getMonth() < 6 ? 'S1' : 'S2';
-                        key = `${date.getFullYear()}-${semester}`;
-                        break;
-                    case 'yearly':
-                        key = `${date.getFullYear()}`;
-                        break;
-                    default: // daily
-                        key = item.date_start;
-                }
-
-                const val = parseValue(item[metric]);
-                const forceVal = item[forceField] !== undefined && item[forceField] !== null ? parseValue(item[forceField]) : null;
-                const instrument = item.id_instrument || 'Unknown';
-
-                // Extract pattern fields (pattern@*)
-                const patterns = {};
-                Object.keys(item).forEach(k => {
-                    if (k.startsWith('pattern@')) {
-                        const patternName = k.substring(8); // Remove 'pattern@' prefix
-                        patterns[patternName] = parseValue(item[k]);
-                    }
-                });
-
-                if (!aggregated[key]) {
-                    aggregated[key] = {
-                        sum: 0,
-                        count: 0,
-                        date: date,
-                        instruments: {},
-                        forceSum: 0,
-                        forceCount: 0,
-                        patterns: {} // Store patterns by name
-                    };
-                }
-                aggregated[key].sum += val;
-                aggregated[key].count++;
-
-                if (forceVal !== null) {
-                    aggregated[key].forceSum += forceVal;
-                    aggregated[key].forceCount++;
-                }
-
-                // Aggregate patterns (take max score for each pattern)
-                Object.keys(patterns).forEach(patternName => {
-                    if (!aggregated[key].patterns[patternName] || patterns[patternName] > aggregated[key].patterns[patternName]) {
-                        aggregated[key].patterns[patternName] = patterns[patternName];
-                    }
-                });
-
-                if (!aggregated[key].instruments[instrument]) {
-                    aggregated[key].instruments[instrument] = { sum: 0, count: 0 };
-                }
-                aggregated[key].instruments[instrument].sum += val;
-                aggregated[key].instruments[instrument].count++;
-            });
-
-            const sorted = Object.keys(aggregated).sort((a, b) => {
-                return aggregated[a].date - aggregated[b].date;
-            });
-
-            return sorted.map(key => {
-                const item = aggregated[key];
-                const avgValue = item.count > 0 ? item.sum / item.count : 0;
-                const avgForce = item.forceCount > 0 ? item.forceSum / item.forceCount : null;
-
-                const instrumentAvgs = {};
-                for (let instr in item.instruments) {
-                    instrumentAvgs[instr] = item.instruments[instr].count > 0
-                        ? item.instruments[instr].sum / item.instruments[instr].count
-                        : 0;
-                }
-
-                return {
-                    label: key,
-                    value: avgValue,
-                    force: avgForce,
-                    patterns: item.patterns, // Include patterns
-                    instruments: instrumentAvgs,
-                    date: item.date
-                };
             });
         }
 
