@@ -612,6 +612,10 @@
         let trendDataRaw = [];
         let chartInstance = null;
 
+        // Get currency from URL or localStorage
+        const urlCurrency = urlParams.get('currency');
+        const userCurrency = urlCurrency || localStorage.getItem('currency') || 'EUR';
+
         async function init() {
             document.getElementById('username-display').textContent = username;
 
@@ -640,8 +644,8 @@
             // Update labels
             const pageTitleInput = document.getElementById('page-title-input');
             if (pageTitleInput) {
-                pageTitleInput.value = initialTitle || getTranslation('int.detail.prices') || "Price Analysis";
-                pageTitleInput.placeholder = getTranslation('int.title.request') || "Inserisci Titolo";
+                pageTitleInput.value = initialTitle || getTranslation('int.detail.prices') || "";
+                pageTitleInput.placeholder = getTranslation('int.title.request') || "";
             }
 
             const instrumentNameDisplay = document.getElementById('instrument-name-display');
@@ -650,7 +654,7 @@
             }
 
             const btnConfirm = document.getElementById('btn-confirm');
-            if (btnConfirm) btnConfirm.textContent = getTranslation('int.detail.prices') || 'Prices';
+            if (btnConfirm) btnConfirm.textContent = getTranslation('int.detail.prices') || '';
 
             document.getElementById('close-btn').textContent = getTranslation('int.close') || 'Close';
 
@@ -738,6 +742,7 @@
                     username: username,
                     token: token,
                     language: language,
+                    currency: userCurrency,
                     instrument: {
                         id_instrument: idInstrument,
                         id_account: idAccount,
@@ -792,21 +797,37 @@
             const ctx = document.getElementById('chartCanvas').getContext('2d');
             if (chartInstance) chartInstance.destroy();
 
-            // Hardcoded for prices
-            const selectedMetrics = ['price_mkt'];
+            // Dynamically detect price fields from API response
+            let priceField = null;
             const selectedPeriod = 'daily';
             let chartType = 'line'; // Default to line for prices
 
-            // Check if price_mkt exists, otherwise try fallback
+            // Find price field (prefer price@close, then price@open, then any price@*)
             if (trendDataRaw.length > 0) {
-                if (!trendDataRaw[0].hasOwnProperty('price_mkt')) {
-                    // Try to find a valid numeric key if price_mkt is missing
-                    const fallback = Object.keys(trendDataRaw[0]).find(k =>
-                        !['date', 'date_start', 'date_end', 'id_instrument'].includes(k) && typeof trendDataRaw[0][k] === 'number'
-                    );
-                    if (fallback) selectedMetrics[0] = fallback;
+                const firstItem = trendDataRaw[0];
+
+                // Look for price@close first
+                if (firstItem.hasOwnProperty('price@close')) {
+                    priceField = 'price@close';
+                } else if (firstItem.hasOwnProperty('price@open')) {
+                    priceField = 'price@open';
+                } else {
+                    // Find any field starting with 'price@'
+                    const priceKeys = Object.keys(firstItem).filter(k => k.startsWith('price@'));
+                    if (priceKeys.length > 0) {
+                        priceField = priceKeys[0];
+                    } else {
+                        // Fallback to price_mkt or any numeric field
+                        priceField = firstItem.hasOwnProperty('price_mkt') ? 'price_mkt' :
+                            Object.keys(firstItem).find(k =>
+                                !['date', 'date_start', 'date_end', 'id_instrument'].includes(k) &&
+                                typeof firstItem[k] === 'number'
+                            );
+                    }
                 }
             }
+
+            const selectedMetrics = priceField ? [priceField] : [];
 
             if (selectedMetrics.length === 0 || trendDataRaw.length === 0) {
                 // Empty chart logic
@@ -823,7 +844,7 @@
             const metricDataMap = new Map();
 
             selectedMetrics.forEach((metric) => {
-                const aggregatedData = aggregateByPeriod(trendDataRaw, metric, selectedPeriod);
+                const aggregatedData = aggregateByPeriod(trendDataRaw, metric, selectedPeriod, userCurrency);
                 metricDataMap.set(metric, aggregatedData);
                 aggregatedData.forEach(item => allLabelsSet.add(item.label));
             });
@@ -847,11 +868,13 @@
                 const aggregatedData = metricDataMap.get(metric);
                 const alignedData = [];
                 const forceValues = [];
+                const patternData = []; // Store pattern info for each point
 
                 allLabels.forEach(label => {
                     const item = aggregatedData.find(d => d.label === label);
                     alignedData.push(item ? item.value : null);
                     forceValues.push(item ? item.force : null);
+                    patternData.push(item ? item.patterns : {});
                 });
 
                 // Colors hardcoded for single dataset
@@ -867,6 +890,7 @@
                     label: titleValue,
                     data: alignedData,
                     forceValues: forceValues,
+                    patternData: patternData, // Add pattern data
                     borderColor: color.border,
                     backgroundColor: gradient,
                     borderWidth: 2,
@@ -930,7 +954,35 @@
                             borderColor: '#ccc',
                             borderWidth: 1,
                             titleFont: { family: '"Times New Roman", Times, serif', size: 14 },
-                            bodyFont: { family: '"Times New Roman", Times, serif', size: 13 }
+                            bodyFont: { family: '"Times New Roman", Times, serif', size: 13 },
+                            callbacks: {
+                                afterBody: function (context) {
+                                    const tooltipLines = [];
+                                    context.forEach(item => {
+                                        const dataset = item.dataset;
+                                        const dataIndex = item.dataIndex;
+
+                                        // Add force if available
+                                        if (dataset.forceValues && dataset.forceValues[dataIndex] !== null) {
+                                            const force = dataset.forceValues[dataIndex];
+                                            const forceLabel = force >= 0 ? `↑ Force: ${force.toFixed(2)}` : `↓ Force: ${Math.abs(force).toFixed(2)}`;
+                                            tooltipLines.push(forceLabel);
+                                        }
+
+                                        // Add patterns if available
+                                        if (dataset.patternData && dataset.patternData[dataIndex]) {
+                                            const patterns = dataset.patternData[dataIndex];
+                                            Object.keys(patterns).forEach(patternName => {
+                                                const score = patterns[patternName];
+                                                if (score > 0) {
+                                                    tooltipLines.push(`Pattern: ${patternName} (${score.toFixed(2)})`);
+                                                }
+                                            });
+                                        }
+                                    });
+                                    return tooltipLines;
+                                }
+                            }
                         }
                     },
                     scales: scales,
@@ -970,8 +1022,9 @@
             return 0;
         }
 
-        function aggregateByPeriod(data, metric, period) {
+        function aggregateByPeriod(data, metric, period, currency = 'EUR') {
             const aggregated = {};
+            const forceField = `forza@${currency}`;
 
             data.forEach(item => {
                 if (!item.date_start || item[metric] === undefined || item[metric] === null) return;
@@ -999,8 +1052,17 @@
                 }
 
                 const val = parseValue(item[metric]);
-                const forceVal = item.force !== undefined && item.force !== null ? parseValue(item.force) : null;
+                const forceVal = item[forceField] !== undefined && item[forceField] !== null ? parseValue(item[forceField]) : null;
                 const instrument = item.id_instrument || 'Unknown';
+
+                // Extract pattern fields (pattern@*)
+                const patterns = {};
+                Object.keys(item).forEach(k => {
+                    if (k.startsWith('pattern@')) {
+                        const patternName = k.substring(8); // Remove 'pattern@' prefix
+                        patterns[patternName] = parseValue(item[k]);
+                    }
+                });
 
                 if (!aggregated[key]) {
                     aggregated[key] = {
@@ -1009,7 +1071,8 @@
                         date: date,
                         instruments: {},
                         forceSum: 0,
-                        forceCount: 0
+                        forceCount: 0,
+                        patterns: {} // Store patterns by name
                     };
                 }
                 aggregated[key].sum += val;
@@ -1019,6 +1082,13 @@
                     aggregated[key].forceSum += forceVal;
                     aggregated[key].forceCount++;
                 }
+
+                // Aggregate patterns (take max score for each pattern)
+                Object.keys(patterns).forEach(patternName => {
+                    if (!aggregated[key].patterns[patternName] || patterns[patternName] > aggregated[key].patterns[patternName]) {
+                        aggregated[key].patterns[patternName] = patterns[patternName];
+                    }
+                });
 
                 if (!aggregated[key].instruments[instrument]) {
                     aggregated[key].instruments[instrument] = { sum: 0, count: 0 };
@@ -1047,6 +1117,7 @@
                     label: key,
                     value: avgValue,
                     force: avgForce,
+                    patterns: item.patterns, // Include patterns
                     instruments: instrumentAvgs,
                     date: item.date
                 };
