@@ -206,6 +206,47 @@
             border-color: #bd2130;
         }
 
+        .data-type-checkbox {
+            margin: 0;
+            cursor: pointer;
+        }
+
+        .data-type-label {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            cursor: pointer;
+            padding: 5px 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            background: #f9f9f9;
+            font-size: 0.8rem;
+            transition: all 0.2s;
+            user-select: none;
+        }
+
+        .data-type-label:hover {
+            background: #f0f0f0;
+            border-color: #999;
+        }
+
+        .data-type-label input:checked {
+            accent-color: #000;
+        }
+
+        .data-type-label input:checked+span {
+            font-weight: bold;
+            color: #000;
+        }
+
+        .data-type-label input:checked~.scale-info {
+            display: inline;
+            margin-left: 5px;
+            font-size: 0.75rem;
+            color: #666;
+            font-style: italic;
+        }
+
         .chart-wrapper {
             flex: 1;
             position: relative;
@@ -465,6 +506,12 @@
             <div class="control-group">
                 <label for="end-date" id="label-end-date">End:</label>
                 <input type="date" id="end-date" class="date-input">
+            </div>
+
+            <div class="control-group" id="data-types-group" style="display:none;">
+                <label>Tipo Dati:</label>
+                <div id="data-types-checkboxes" style="display: flex; gap: 10px; flex-wrap: wrap; max-width: 300px;">
+                </div>
             </div>
 
             <button class="confirm-btn" onclick="loadPrices()" id="btn-confirm">Carica</button>
@@ -778,6 +825,7 @@
                 });
 
                 renderChart();
+                populateDataTypeCheckboxes();
                 document.getElementById('loading').style.display = 'none';
 
             } catch (error) {
@@ -788,160 +836,268 @@
             }
         }
 
-        function renderChart() {
-            const ctx = document.getElementById('chartCanvas').getContext('2d');
-            if (chartInstance) chartInstance.destroy();
+        function populateDataTypeCheckboxes() {
+            // Estrai i tipi di dati disponibili
+            const dataTypes = new Set(trendDataRaw.map(item => item.data_type || 'default'));
+            const dataTypesArray = Array.from(dataTypes).sort();
 
-            // Hardcoded for prices
-            const selectedMetrics = ['price_mkt'];
-            const selectedPeriod = 'daily';
-            let chartType = 'line'; // Default to line for prices
+            const container = document.getElementById('data-types-checkboxes');
+            const group = document.getElementById('data-types-group');
 
-            // Check if price_mkt exists, otherwise try fallback
-            if (trendDataRaw.length > 0) {
-                if (!trendDataRaw[0].hasOwnProperty('price_mkt')) {
-                    // Try to find a valid numeric key if price_mkt is missing
-                    const fallback = Object.keys(trendDataRaw[0]).find(k =>
-                        !['date', 'date_start', 'date_end', 'id_instrument'].includes(k) && typeof trendDataRaw[0][k] === 'number'
-                    );
-                    if (fallback) selectedMetrics[0] = fallback;
-                }
-            }
-
-            if (selectedMetrics.length === 0 || trendDataRaw.length === 0) {
-                // Empty chart logic
-                chartInstance = new Chart(ctx, {
-                    type: chartType,
-                    data: { labels: [], datasets: [] },
-                    options: { responsive: true, maintainAspectRatio: false }
-                });
+            if (dataTypesArray.length === 0) {
+                group.style.display = 'none';
                 return;
             }
 
-            const datasets = [];
-            const allLabelsSet = new Set();
-            const metricDataMap = new Map();
+            // Mostra il gruppo se ci sono dati
+            if (dataTypesArray.length > 1) {
+                group.style.display = 'flex';
+            }
 
-            selectedMetrics.forEach((metric) => {
-                const aggregatedData = aggregateByPeriod(trendDataRaw, metric, selectedPeriod);
-                metricDataMap.set(metric, aggregatedData);
-                aggregatedData.forEach(item => allLabelsSet.add(item.label));
+            // Svuota il container
+            container.innerHTML = '';
+
+            // Aggiungi i checkbox
+            dataTypesArray.forEach(dataType => {
+                const checkboxId = `data-type-${dataType}`;
+                const label = document.createElement('label');
+                label.className = 'data-type-label';
+                label.htmlFor = checkboxId;
+
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.id = checkboxId;
+                checkbox.name = 'data-type-checkbox';
+                checkbox.value = dataType;
+                checkbox.checked = true;
+                checkbox.className = 'data-type-checkbox';
+                checkbox.onchange = renderChart;
+
+                const span = document.createElement('span');
+                span.textContent = dataType;
+
+                label.appendChild(checkbox);
+                label.appendChild(span);
+                container.appendChild(label);
             });
 
-            const allLabels = Array.from(allLabelsSet).sort((a, b) => {
-                let dateA = null;
-                let dateB = null;
-                for (let [m, data] of metricDataMap) {
-                    const itemA = data.find(i => i.label === a);
-                    if (itemA) { dateA = itemA.date; break; }
-                }
-                for (let [m, data] of metricDataMap) {
-                    const itemB = data.find(i => i.label === b);
-                    if (itemB) { dateB = itemB.date; break; }
-                }
-                if (!dateA || !dateB) return 0;
-                return dateA - dateB;
+            console.log(`%c✓ Checkbox data types inizializzati: ${dataTypesArray.length} tipi trovati`, 'color: #00aa00; font-weight: bold;');
+        }
+        const ctx = document.getElementById('chartCanvas').getContext('2d');
+        if (chartInstance) chartInstance.destroy();
+
+        // === CONSOLE LOG DEI DATI PER DEBUG ===
+        console.log('%c=== DATI PRICES.JSON ===', 'color: #0066cc; font-weight: bold; font-size: 14px; text-shadow: 1px 1px 1px #ccc;');
+        console.log('%cDataset completo:', 'color: #0066cc; font-weight: bold;', trendDataRaw);
+        console.log('%cNumero di records:', 'color: #0066cc; font-weight: bold;', trendDataRaw.length);
+        if (trendDataRaw.length > 0) {
+            console.log('%cPrimo record (esempio):', 'color: #0066cc; font-weight: bold;', trendDataRaw[0]);
+            console.log('%cCampi disponibili:', 'color: #0066cc; font-weight: bold;', Object.keys(trendDataRaw[0]));
+
+            // Analizza i tipi di dati disponibili
+            const dataTypes = new Set(trendDataRaw.map(item => item.data_type || 'default'));
+            console.log('%cTipi di dati trovati:', 'color: #00aa00; font-weight: bold;', Array.from(dataTypes));
+        }
+
+        // Hardcoded for prices
+        const selectedMetrics = ['price_mkt'];
+        const selectedPeriod = 'daily';
+        let chartType = 'line'; // Default to line for prices
+
+        // Check if price_mkt exists, otherwise try fallback
+        if (trendDataRaw.length > 0) {
+            if (!trendDataRaw[0].hasOwnProperty('price_mkt')) {
+                // Try to find a valid numeric key if price_mkt is missing
+                const fallback = Object.keys(trendDataRaw[0]).find(k =>
+                    !['date', 'date_start', 'date_end', 'id_instrument', 'data_type'].includes(k) && typeof trendDataRaw[0][k] === 'number'
+                );
+                if (fallback) selectedMetrics[0] = fallback;
+            }
+        }
+
+        // Ottieni i dati filtrati per tipo
+        const selectedDataTypes = Array.from(document.querySelectorAll('input[name="data-type-checkbox"]:checked')).map(cb => cb.value);
+        console.log('%cTipi di dati selezionati:', 'color: #cc6600; font-weight: bold;', selectedDataTypes);
+
+        let filteredData = trendDataRaw;
+        if (selectedDataTypes.length > 0) {
+            filteredData = trendDataRaw.filter(item => {
+                const dataType = item.data_type || 'default';
+                return selectedDataTypes.includes(dataType);
             });
+            console.log(`%cDati filtrati: ${filteredData.length} su ${trendDataRaw.length} records`, 'color: #cc6600; font-weight: bold;');
+        }
 
-            selectedMetrics.forEach((metric, index) => {
-                const aggregatedData = metricDataMap.get(metric);
-                const alignedData = [];
-                const forceValues = [];
-
-                allLabels.forEach(label => {
-                    const item = aggregatedData.find(d => d.label === label);
-                    alignedData.push(item ? item.value : null);
-                    forceValues.push(item ? item.force : null);
-                });
-
-                // Colors hardcoded for single dataset
-                const color = { bg: 'rgba(75, 192, 192, 0.4)', border: 'rgba(75, 192, 192, 1)' };
-
-                const gradient = ctx.createLinearGradient(0, 0, 0, 400);
-                gradient.addColorStop(0, color.bg);
-                gradient.addColorStop(1, color.bg.replace('0.4', '0.05'));
-
-                const titleValue = document.getElementById('page-title-input')?.value || getTranslation('int.confirm') || 'Price';
-
-                datasets.push({
-                    label: titleValue,
-                    data: alignedData,
-                    forceValues: forceValues,
-                    borderColor: color.border,
-                    backgroundColor: gradient,
-                    borderWidth: 2,
-                    pointBackgroundColor: color.border,
-                    pointBorderColor: '#fff',
-                    pointHoverBackgroundColor: '#fff',
-                    pointHoverBorderColor: color.border,
-                    fill: true,
-                    tension: 0.4,
-                    spanGaps: true
-                });
-            });
-            const scales = {
-                x: {
-                    ticks: {
-                        color: '#1a1a1a',
-                        font: { family: '"Times New Roman", Times, serif', size: 11 },
-                        maxRotation: 45, minRotation: 45
-                    },
-                    grid: { color: 'rgba(0, 0, 0, 0.05)' }
-                },
-                y: {
-                    beginAtZero: false,
-                    ticks: {
-                        color: '#1a1a1a',
-                        font: { family: '"Times New Roman", Times, serif', size: 11 },
-                        callback: function (value) {
-                            return value.toLocaleString(language === 'it_IT' ? 'it-IT' : 'en-US', {
-                                minimumFractionDigits: 2,
-                                maximumFractionDigits: 4
-                            });
-                        }
-                    },
-                    grid: { color: 'rgba(0, 0, 0, 0.05)' }
-                }
-            };
-
+        if (selectedMetrics.length === 0 || filteredData.length === 0) {
+            // Empty chart logic
             chartInstance = new Chart(ctx, {
                 type: chartType,
-                data: {
-                    labels: allLabels,
-                    datasets: datasets
+                data: { labels: [], datasets: [] },
+                options: { responsive: true, maintainAspectRatio: false }
+            });
+            return;
+        }
+
+        const datasets = [];
+        const allLabelsSet = new Set();
+        const metricDataMap = new Map();
+
+        selectedMetrics.forEach((metric) => {
+            const aggregatedData = aggregateByPeriod(filteredData, metric, selectedPeriod);
+            metricDataMap.set(metric, aggregatedData);
+            aggregatedData.forEach(item => allLabelsSet.add(item.label));
+        });
+
+        const allLabels = Array.from(allLabelsSet).sort((a, b) => {
+            let dateA = null;
+            let dateB = null;
+            for (let [m, data] of metricDataMap) {
+                const itemA = data.find(i => i.label === a);
+                if (itemA) { dateA = itemA.date; break; }
+            }
+            for (let [m, data] of metricDataMap) {
+                const itemB = data.find(i => i.label === b);
+                if (itemB) { dateB = itemB.date; break; }
+            }
+            if (!dateA || !dateB) return 0;
+            return dateA - dateB;
+        });
+
+        // === CALCOLO DELLA SCALA DEI VALORI DI FORZA ===
+        const forceScales = {};
+
+        selectedMetrics.forEach((metric, index) => {
+            const aggregatedData = metricDataMap.get(metric);
+            const alignedData = [];
+            const forceValues = [];
+
+            allLabels.forEach(label => {
+                const item = aggregatedData.find(d => d.label === label);
+                alignedData.push(item ? item.value : null);
+                forceValues.push(item ? item.force : null);
+            });
+
+            // Calcola min, max, avg e range dei force values
+            const validForces = forceValues.filter(f => f !== null && f !== undefined);
+            if (validForces.length > 0) {
+                forceScales[metric] = {
+                    min: Math.min(...validForces),
+                    max: Math.max(...validForces),
+                    avg: validForces.reduce((a, b) => a + b) / validForces.length,
+                    count: validForces.length,
+                    range: Math.max(...validForces) - Math.min(...validForces)
+                };
+                console.log(`%cScala FORZA per "${metric}":`, 'color: #00aa00; font-weight: bold;', forceScales[metric]);
+                console.log(`   Min: ${forceScales[metric].min.toFixed(4)} | Max: ${forceScales[metric].max.toFixed(4)} | Range: ${forceScales[metric].range.toFixed(4)} | Avg: ${forceScales[metric].avg.toFixed(4)}`);
+            } else {
+                console.warn(`%c⚠ Nessun valore di forza trovato per "${metric}"`, 'color: #ff6600; font-weight: bold;');
+            }
+
+            // Colors hardcoded for single dataset
+            const color = { bg: 'rgba(75, 192, 192, 0.4)', border: 'rgba(75, 192, 192, 1)' };
+
+            const gradient = ctx.createLinearGradient(0, 0, 0, 400);
+            gradient.addColorStop(0, color.bg);
+            gradient.addColorStop(1, color.bg.replace('0.4', '0.05'));
+
+            const titleValue = document.getElementById('page-title-input')?.value || getTranslation('int.confirm') || 'Price';
+
+            datasets.push({
+                label: titleValue,
+                data: alignedData,
+                forceValues: forceValues,
+                forceScale: forceScales[metric],
+                borderColor: color.border,
+                backgroundColor: gradient,
+                borderWidth: 2,
+                pointBackgroundColor: color.border,
+                pointBorderColor: '#fff',
+                pointHoverBackgroundColor: '#fff',
+                pointHoverBorderColor: color.border,
+                fill: true,
+                tension: 0.4,
+                spanGaps: true
+            });
+        });
+
+        const scales = {
+            x: {
+                ticks: {
+                    color: '#1a1a1a',
+                    font: { family: '"Times New Roman", Times, serif', size: 11 },
+                    maxRotation: 45, minRotation: 45
                 },
-                plugins: [forceArrowsPlugin],
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            display: true,
-                            labels: {
-                                font: { family: '"Times New Roman", Times, serif' }
-                            }
-                        },
-                        tooltip: {
-                            mode: 'index',
-                            intersect: false,
-                            backgroundColor: 'rgba(255, 255, 255, 0.9)',
-                            titleColor: '#000',
-                            bodyColor: '#000',
-                            borderColor: '#ccc',
-                            borderWidth: 1,
-                            titleFont: { family: '"Times New Roman", Times, serif', size: 14 },
-                            bodyFont: { family: '"Times New Roman", Times, serif', size: 13 }
+                grid: { color: 'rgba(0, 0, 0, 0.05)' }
+            },
+            y: {
+                beginAtZero: false,
+                ticks: {
+                    color: '#1a1a1a',
+                    font: { family: '"Times New Roman", Times, serif', size: 11 },
+                    callback: function (value) {
+                        return value.toLocaleString(language === 'it_IT' ? 'it-IT' : 'en-US', {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 4
+                        });
+                    }
+                },
+                grid: { color: 'rgba(0, 0, 0, 0.05)' }
+            }
+        };
+
+        chartInstance = new Chart(ctx, {
+            type: chartType,
+            data: {
+                labels: allLabels,
+                datasets: datasets
+            },
+            plugins: [forceArrowsPlugin],
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: true,
+                        labels: {
+                            font: { family: '"Times New Roman", Times, serif' }
                         }
                     },
-                    scales: scales,
-                    interaction: {
-                        mode: 'nearest',
-                        axis: 'x',
-                        intersect: false
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false,
+                        backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                        titleColor: '#000',
+                        bodyColor: '#000',
+                        borderColor: '#ccc',
+                        borderWidth: 1,
+                        titleFont: { family: '"Times New Roman", Times, serif', size: 14 },
+                        bodyFont: { family: '"Times New Roman", Times, serif', size: 13 },
+                        callbacks: {
+                            afterLabel: function (context) {
+                                const dataset = context.dataset;
+                                const forceValue = dataset.forceValues ? dataset.forceValues[context.dataIndex] : null;
+                                if (forceValue !== null && forceValue !== undefined) {
+                                    const scale = dataset.forceScale;
+                                    if (scale) {
+                                        // Normalizza il valore tra 0 e 100 basato sulla scala
+                                        const normalized = ((forceValue - scale.min) / scale.range * 100).toFixed(1);
+                                        return `Forza: ${forceValue.toFixed(4)} (${normalized}%)`;
+                                    }
+                                    return `Forza: ${forceValue.toFixed(4)}`;
+                                }
+                                return '';
+                            }
+                        }
                     }
+                },
+                scales: scales,
+                interaction: {
+                    mode: 'nearest',
+                    axis: 'x',
+                    intersect: false
                 }
-            });
-        }
+            }
+        });
 
 
         function parseValue(value) {
