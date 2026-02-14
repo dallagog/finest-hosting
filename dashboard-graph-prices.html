@@ -318,8 +318,8 @@
         const idAccount = urlParams.get('id_account');
         const initialTitle = urlParams.get('title');
         const instrumentNameFromUrl = urlParams.get('instrument_name');
-        const urlCurrency = urlParams.get('currency');
-        const userCurrency = urlCurrency || localStorage.getItem('currency') || 'EUR';
+        // IMPORTANTE: Usa la divisa del titolo, non quella dell'utente
+        const instrumentCurrency = urlParams.get('instrument_currency') || 'EUR';
 
         const API_URL = "https://feweb-tunnel.fe-web.eu";
         let trendDataRaw = [];
@@ -385,16 +385,9 @@
                     document.getElementById('languageDisplay').textContent = langDesc !== 'int.language.description' ? langDesc : language;
                 }
             }
-            if (userCurrency && currencies.length > 0) {
-                const currData = currencies.find(c => c.currency === userCurrency);
-                if (currData && currData['img.currency.flag']) {
-                    document.getElementById('currencyDisplay').textContent = `${currData['img.currency.flag']} ${userCurrency}`;
-                } else {
-                    document.getElementById('currencyDisplay').textContent = userCurrency;
-                }
-            } else {
-                document.getElementById('currencyDisplay').textContent = userCurrency || 'EUR';
-            }
+
+            // Mostra la divisa del titolo nell'header
+            document.getElementById('currencyDisplay').textContent = instrumentCurrency;
         }
 
         async function init() {
@@ -503,8 +496,8 @@
                         // Disegna una linea verticale sottile viola
                         ctx.beginPath();
                         ctx.strokeStyle = '#800080'; // Viola
-                        ctx.lineWidth = 0.5;
-                        //ctx.setLineDash([4, 2]); // Linea tratteggiata sottile
+                        ctx.lineWidth = 1.5;
+                        ctx.setLineDash([4, 2]); // Linea tratteggiata sottile
 
                         ctx.moveTo(x, chartArea.top);
                         ctx.lineTo(x, chartArea.bottom);
@@ -526,8 +519,16 @@
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        username, token, language, currency: userCurrency,
-                        instrument: { id_instrument: idInstrument, id_account: idAccount, date_start: startDate, date_end: endDate }
+                        username,
+                        token,
+                        language,
+                        currency: instrumentCurrency, // USA LA DIVISA DEL TITOLO
+                        instrument: {
+                            id_instrument: idInstrument,
+                            id_account: idAccount,
+                            date_start: startDate,
+                            date_end: endDate
+                        }
                     })
                 });
                 const data = await response.json();
@@ -559,9 +560,9 @@
 
             if (!trendDataRaw || trendDataRaw.length === 0) return;
 
-            // Nome strumento
+            // Nome strumento con la divisa corretta
             document.getElementById('instrument-name-display').textContent =
-                `${instrumentNameFromUrl || idInstrument} - ${userCurrency}`;
+                `${instrumentNameFromUrl || idInstrument} - ${instrumentCurrency}`;
 
             // Individua campi dinamici
             const firstRow = trendDataRaw[0];
@@ -569,7 +570,8 @@
             const priceField =
                 Object.keys(firstRow).find(k => k.startsWith('price@')) || 'price_mkt';
 
-            const forceField = `forza@${userCurrency}`;
+            // Il campo forza è specifico per la divisa del titolo
+            const forceField = `forza@${instrumentCurrency}`;
 
             const patternFields =
                 Object.keys(firstRow).filter(k => k.startsWith('pattern@'));
@@ -658,7 +660,7 @@
                                     return `💰 Prezzo: ${context.parsed.y.toLocaleString(undefined, {
                                         minimumFractionDigits: 2,
                                         maximumFractionDigits: 2
-                                    })} ${userCurrency}`;
+                                    })} ${instrumentCurrency}`;
                                 },
                                 afterBody: function (context) {
                                     const index = context[0].dataIndex;
@@ -740,7 +742,7 @@
                                     return value.toLocaleString(undefined, {
                                         minimumFractionDigits: 2,
                                         maximumFractionDigits: 2
-                                    });
+                                    }) + ` ${instrumentCurrency}`;
                                 }
                             },
                             grid: {

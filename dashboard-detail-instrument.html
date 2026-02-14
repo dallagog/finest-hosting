@@ -174,23 +174,6 @@
             color: #000;
             margin-bottom: 5px;
         }
-
-        .instrument-currency {
-            display: inline-block;
-            background: #000;
-            color: #fff;
-            padding: 5px 15px;
-            border-radius: 20px;
-            font-size: 0.9em;
-            font-weight: 500;
-            letter-spacing: 1px;
-            margin-top: 5px;
-        }
-
-        .currency-icon {
-            margin-right: 5px;
-            font-size: 1.1em;
-        }
     </style>
 </head>
 
@@ -224,7 +207,6 @@
         <div id="content" style="display: none;">
             <div id="instrumentHeader" class="instrument-header">
                 <div id="instrumentIdDisplay" class="instrument-id"></div>
-                <div id="instrumentCurrencyDisplay" class="instrument-currency"></div>
             </div>
             <table id="detailsTable">
                 <tbody id="detailsBody">
@@ -240,32 +222,7 @@
         let translations = {};
         let currentInstrumentId = null;
         let currentInstrumentName = '';
-        let currentInstrumentCurrency = ''; // Aggiornato dinamicamente
-
-        // Mappa delle valute con icone
-        const currencyIcons = {
-            'EUR': '🇪🇺',
-            'USD': '🇺🇸',
-            'GBP': '🇬🇧',
-            'CHF': '🇨🇭',
-            'JPY': '🇯🇵',
-            'CAD': '🇨🇦',
-            'AUD': '🇦🇺',
-            'CNY': '🇨🇳',
-            'HKD': '🇭🇰',
-            'SGD': '🇸🇬',
-            'INR': '🇮🇳',
-            'BRL': '🇧🇷',
-            'RUB': '🇷🇺',
-            'ZAR': '🇿🇦',
-            'TRY': '🇹🇷',
-            'AED': '🇦🇪',
-            'MXN': '🇲🇽',
-            'PLN': '🇵🇱',
-            'SEK': '🇸🇪',
-            'NOK': '🇳🇴',
-            'DKK': '🇩🇰'
-        };
+        let currentInstrumentCurrency = ''; // Divisa del titolo
 
         // ========== SETUP & UTIL ==========
         function getURLParams() {
@@ -284,7 +241,7 @@
         function openPricesGraph() {
             if (!currentInstrumentId) return;
             // Passiamo la valuta specifica del titolo estratta dall'anagrafica
-            const url = `dashboard-graph-prices.html?username=${credentials.username}&token=${credentials.token}&language=${credentials.language}&id_instrument=${currentInstrumentId}&instrument_name=${encodeURIComponent(currentInstrumentName)}&currency=${currentInstrumentCurrency}`;
+            const url = `dashboard-graph-prices.html?username=${credentials.username}&token=${credentials.token}&language=${credentials.language}&id_instrument=${currentInstrumentId}&instrument_name=${encodeURIComponent(currentInstrumentName)}&instrument_currency=${currentInstrumentCurrency}`;
             window.open(url, '_blank', 'width=1200,height=800');
         }
 
@@ -439,13 +396,8 @@
             // Recupero la divisa dal campo dello strumento
             currentInstrumentCurrency = instrument.currency || 'EUR';
 
-            // Mostra ID strumento
+            // Mostra solo ID e nome strumento (senza divisa)
             document.getElementById('instrumentIdDisplay').textContent = `${instrument.id_instrument} - ${currentInstrumentName}`;
-
-            // Mostra divisa con icona
-            const currencyIcon = currencyIcons[currentInstrumentCurrency] || '💱';
-            const currencyDisplay = document.getElementById('instrumentCurrencyDisplay');
-            currencyDisplay.innerHTML = `<span class="currency-icon">${currencyIcon}</span> ${currentInstrumentCurrency} - ${getTranslation('int.currency') || 'Divisa'}`;
 
             // Ordine personalizzato per le chiavi (quelle più importanti in cima)
             const priorityKeys = [
@@ -506,7 +458,7 @@
 
                 // Formatta valori numerici se necessario
                 if (val !== null && val !== undefined) {
-                    if (typeof val === 'number' || (!isNaN(parseFloat(val)) && key.includes('price') || key.includes('value') || key.includes('return'))) {
+                    if (typeof val === 'number' || (!isNaN(parseFloat(val)) && (key.includes('price') || key.includes('value') || key.includes('return')))) {
                         const numVal = typeof val === 'number' ? val : parseFloat(val);
                         if (!isNaN(numVal)) {
                             if (key.includes('return')) {
