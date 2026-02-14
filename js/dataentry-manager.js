@@ -840,10 +840,10 @@ class SharedDataEntryRenderer {
                          </div>`;
                 break;
             case 'FE_Account':
-                const filterSector = (this.context.urlParams.account_sector || '').trim().toUpperCase();
+                const filterSector = (this.context.urlParams.account_sector || '').trim();
                 const filteredAccs = (this.context.availableAccounts || []).filter(acc => {
                     if (!filterSector) return true;
-                    return (acc.account_sector || '').trim().toUpperCase() === filterSector;
+                    return (acc.account_sector || '').trim() === filterSector;
                 });
                 const accOptions = filteredAccs.map(acc =>
                     `<option value="${acc.id_account}" ${acc.id_account == value ? 'selected' : ''}>${acc.id_account}</option>`
@@ -857,7 +857,7 @@ class SharedDataEntryRenderer {
                 // Use instruments loaded from /getinstruments API
                 const instOptions = Object.entries(this.context.availableInstruments || {}).map(([id, inst]) => {
                     const instId = inst.id || id;
-                    const isSelected = String(instId).toUpperCase() === String(value).toUpperCase();
+                    const isSelected = String(instId).trim() === String(value).trim();
                     return `<option value="${instId}" ${isSelected ? 'selected' : ''}>${instId} ${inst.instrument_description || ''}</option>`;
                 }).join('');
                 input = `<select name="${name}" id="${fieldId}" ${required ? 'required' : ''} class="form-select${fixedClass}" data-format="FE_Instrument">
@@ -868,7 +868,7 @@ class SharedDataEntryRenderer {
             case 'FE_Currency':
                 const currOptions = Object.entries(this.context.availableCurrenciesInstruments || {}).map(([id, curr]) => {
                     const currId = curr.id || id;
-                    const isSelected = String(currId).toUpperCase() === String(value).toUpperCase();
+                    const isSelected = String(currId).trim() === String(value).trim();
                     return `<option value="${currId}" ${isSelected ? 'selected' : ''}>${currId} ${curr.instrument_description || ''}</option>`;
                 }).join('');
                 input = `<select name="${name}" id="${fieldId}" ${required ? 'required' : ''} class="form-select${fixedClass}" data-format="FE_Currency">
@@ -889,7 +889,7 @@ class SharedDataEntryRenderer {
                         </select>`;
                 break;
             case 'FE_Event':
-                const eventSector = (this.context.urlParams.account_sector || '').trim().toUpperCase();
+                const eventSector = (this.context.urlParams.account_sector || '').trim();
                 console.log('[FE_Event] urlParams:', this.context.urlParams);
                 console.log('[FE_Event] account_sector from urlParams:', eventSector);
                 console.log('[FE_Event] eventManifest keys:', Object.keys(this.context.eventManifest || {}));
