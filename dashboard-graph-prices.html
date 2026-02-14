@@ -500,6 +500,7 @@
                         if (!patternObj) return;
 
                         const x = point.x;
+                        const y = point.y; // Ottieni il valore Y del punto
 
                         // Disegna linea verticale viola tratteggiata
                         ctx.beginPath();
@@ -514,39 +515,91 @@
                         // Prepara il testo del pattern
                         const descriptions = Object.values(patternObj).join(' • ');
 
-                        // Posiziona il testo SOPRA l'area del grafico
+                        // POSIZIONA IL TESTO LUNGO LA LINEA VERTICALE
+                        // Calcola la posizione Y in base al valore del punto
+                        // Vogliamo posizionare il testo appena SOPRA il punto
+                        const textY = y - 25; // 25 pixel sopra il punto
+
+                        // Assicurati che il testo rimanga nell'area del grafico
+                        const minY = chartArea.top + 20;
+                        const maxY = chartArea.bottom - 20;
+                        const finalY = Math.max(minY, Math.min(maxY, textY));
+
+                        // Disegna la linea verticale che collega il testo al punto
+                        ctx.beginPath();
+                        ctx.setLineDash([3, 3]);
+                        ctx.strokeStyle = '#800080';
+                        ctx.lineWidth = 1;
+                        ctx.moveTo(x, finalY + 8);
+                        ctx.lineTo(x, y - 5);
+                        ctx.stroke();
+                        ctx.setLineDash([]);
+
+                        // Sfondo bianco per il testo
+                        ctx.save();
+                        ctx.font = 'bold 11px Orbitron';
+                        const textWidth = ctx.measureText(descriptions).width;
+
+                        // Rettangolo di sfondo
+                        ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
+                        ctx.shadowColor = 'rgba(128, 0, 128, 0.3)';
+                        ctx.shadowBlur = 6;
+                        ctx.shadowOffsetX = 2;
+                        ctx.shadowOffsetY = 2;
+
+                        // Rettangolo con bordo arrotondato
+                        ctx.beginPath();
+                        ctx.roundRect(x - textWidth / 2 - 8, finalY - 12, textWidth + 16, 20, 8);
+                        ctx.fill();
+
+                        // Bordo viola
+                        ctx.shadowBlur = 0;
+                        ctx.strokeStyle = '#800080';
+                        ctx.lineWidth = 1.5;
+                        ctx.stroke();
+                        ctx.restore();
+
+                        // Testo principale
                         ctx.font = 'bold 11px Orbitron';
                         ctx.fillStyle = '#800080';
                         ctx.textAlign = 'center';
-                        ctx.textBaseline = 'bottom';
+                        ctx.textBaseline = 'middle';
+                        ctx.fillText(descriptions, x, finalY);
 
-                        // Calcola posizione testo (appena sopra l'area del grafico)
-                        const textY = chartArea.top - 8;
+                        // Piccolo indicatore "PATTERN" sul punto
+                        ctx.beginPath();
+                        ctx.arc(x, y, 8, 0, 2 * Math.PI);
+                        ctx.fillStyle = 'rgba(128, 0, 128, 0.2)';
+                        ctx.fill();
+                        ctx.strokeStyle = '#800080';
+                        ctx.lineWidth = 1.5;
+                        ctx.stroke();
 
-                        // Aggiungi sfondo bianco semitrasparente per leggibilità
-                        ctx.save();
-                        ctx.shadowColor = 'white';
-                        ctx.shadowBlur = 4;
-                        ctx.shadowOffsetX = 0;
-                        ctx.shadowOffsetY = 0;
-                        ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
-                        const textWidth = ctx.measureText(descriptions).width;
-                        ctx.fillRect(x - textWidth / 2 - 3, textY - 12, textWidth + 6, 16);
-                        ctx.restore();
-
-                        // Disegna il testo
+                        // Icona pattern sul punto
+                        ctx.font = '12px Arial';
                         ctx.fillStyle = '#800080';
-                        ctx.fillText(descriptions, x, textY);
-
-                        // Aggiungi anche l'etichetta "PATTERN" sotto il titolo se c'è spazio
-                        ctx.font = 'bold 8px Orbitron';
-                        ctx.fillStyle = '#800080';
-                        ctx.fillText('🔮 PATTERN', x, chartArea.top + 15);
+                        ctx.fillText('🔮', x - 6, y - 6);
                     });
                 });
 
                 ctx.restore();
             }
+        };
+
+        // Helper per rettangoli arrotondati
+        CanvasRenderingContext2D.prototype.roundRect = function (x, y, w, h, r) {
+            if (w < 2 * r) r = w / 2;
+            if (h < 2 * r) r = h / 2;
+            this.moveTo(x + r, y);
+            this.lineTo(x + w - r, y);
+            this.quadraticCurveTo(x + w, y, x + w, y + r);
+            this.lineTo(x + w, y + h - r);
+            this.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+            this.lineTo(x + r, y + h);
+            this.quadraticCurveTo(x, y + h, x, y + h - r);
+            this.lineTo(x, y + r);
+            this.quadraticCurveTo(x, y, x + r, y);
+            return this;
         };
 
         async function loadPrices() {
@@ -661,19 +714,22 @@
                         borderWidth: 2,
                         tension: 0.1,
                         fill: true,
-                        pointRadius: 3,
+                        pointRadius: function (context) {
+                            const index = context.dataIndex;
+                            return patternValues[index] ? 8 : 4;
+                        },
                         pointBackgroundColor: function (context) {
                             const index = context.dataIndex;
-                            return patternValues[index] ? '#800080' : 'rgba(75,192,192,1)';
+                            return patternValues[index] ? 'rgba(128, 0, 128, 0.8)' : 'rgba(75,192,192,1)';
                         },
                         pointBorderColor: function (context) {
                             const index = context.dataIndex;
                             return patternValues[index] ? '#ffffff' : '#ffffff';
                         },
-                        pointBorderWidth: 1,
-                        pointRadius: function (context) {
+                        pointBorderWidth: 2,
+                        pointHoverRadius: function (context) {
                             const index = context.dataIndex;
-                            return patternValues[index] ? 6 : 3;
+                            return patternValues[index] ? 12 : 8;
                         }
                     }]
                 },
@@ -713,9 +769,9 @@
                                     // Pattern
                                     const patternObj = dataset.patternValues?.[index];
                                     if (patternObj) {
-                                        lines.push('--- PATTERN ---');
+                                        lines.push('📊 PATTERN RILEVATI:');
                                         Object.keys(patternObj).forEach(key => {
-                                            lines.push(`  ${key}: ${patternObj[key]}`);
+                                            lines.push(`   • ${key}: ${patternObj[key]}`);
                                         });
                                     }
 
@@ -730,10 +786,10 @@
                                     const labels = Chart.defaults.plugins.legend.labels.generateLabels(chart);
                                     // Aggiungi un'etichetta personalizzata per i pattern
                                     labels.push({
-                                        text: '🔮 Punti con Pattern',
+                                        text: '🔮 Punti Pattern',
                                         fillStyle: '#800080',
                                         strokeStyle: '#800080',
-                                        lineWidth: 0,
+                                        lineWidth: 2,
                                         hidden: false,
                                         index: labels.length,
                                         pointStyle: 'circle'
