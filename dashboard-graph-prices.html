@@ -479,8 +479,8 @@
         };
 
         // Plugin per disegnare righe verticali viola nei giorni con pattern
-        const patternVerticalLinesPlugin = {
-            id: 'patternVerticalLines',
+        const patternLinesPlugin = {
+            id: 'patternLines',
             afterDatasetsDraw(chart) {
                 const { ctx, chartArea } = chart;
                 const dataset = chart.data.datasets[0];
@@ -504,22 +504,10 @@
                         ctx.beginPath();
                         ctx.strokeStyle = '#800080'; // Viola
                         ctx.lineWidth = 1.5;
-                        ctx.setLineDash([5, 3]); // Linea tratteggiata sottile
+                        ctx.setLineDash([4, 2]); // Linea tratteggiata sottile
 
                         ctx.moveTo(x, chartArea.top);
                         ctx.lineTo(x, chartArea.bottom);
-                        ctx.stroke();
-
-                        // Aggiungi un piccolo marker viola in alto
-                        ctx.setLineDash([]);
-                        ctx.fillStyle = '#800080';
-                        ctx.beginPath();
-                        ctx.arc(x, chartArea.top + 10, 4, 0, 2 * Math.PI);
-                        ctx.fill();
-
-                        // Aggiungi bordo bianco al marker
-                        ctx.strokeStyle = '#ffffff';
-                        ctx.lineWidth = 1;
                         ctx.stroke();
                     }
                 });
@@ -651,7 +639,7 @@
                         pointHoverRadius: 8
                     }]
                 },
-                plugins: [forceArrowsPlugin, patternVerticalLinesPlugin],
+                plugins: [forceArrowsPlugin, patternLinesPlugin],
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
@@ -687,7 +675,7 @@
                                     // Pattern (solo se presenti)
                                     const patternObj = dataset.patternValues?.[index];
                                     if (patternObj && Object.keys(patternObj).length > 0) {
-                                        lines.push('🔮 PATTERN:');
+                                        lines.push('🔍 PATTERN:');
                                         Object.entries(patternObj).forEach(([key, value]) => {
                                             const formattedKey = key
                                                 .replace(/_/g, ' ')
@@ -704,7 +692,7 @@
                                     const patternObj = dataset.patternValues?.[index];
 
                                     if (patternObj && Object.keys(patternObj).length > 0) {
-                                        return ['────────────────', '💜 Giorno con pattern'];
+                                        return ['────────────────', '📊 Giorno con pattern'];
                                     }
                                     return null;
                                 }
@@ -731,7 +719,7 @@
 
                                     // Aggiungi etichetta per i pattern
                                     labels.push({
-                                        text: '💜 Giorni con Pattern (linea viola)',
+                                        text: '📊 Giorni con Pattern (linea viola)',
                                         fillStyle: '#800080',
                                         strokeStyle: '#800080',
                                         lineWidth: 2,
