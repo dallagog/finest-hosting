@@ -544,6 +544,7 @@
 
         async function loadInstruments(instrumentType) {
             if (!credentials.username) return {};
+            console.log(`[DEBUG] Tentativo di chiamata /getinstruments per tipo: ${instrumentType}`); // LOG DI PARTENZA
 
             try {
                 const payload = {
@@ -553,8 +554,6 @@
                     instrument: { instrument_type: instrumentType }
                 };
 
-                console.log('Loading instruments for type:', instrumentType);
-
                 const response = await fetch(`${API_URL}/getinstruments`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -563,11 +562,13 @@
 
                 if (response.ok) {
                     const data = await response.json();
-                    console.log(`Instruments for ${instrumentType} loaded:`, Object.keys(data).length);
+                    console.log(`[DEBUG] /getinstruments ricevuti ${Object.keys(data).length} strumenti:`, data); // LOG RISPOSTA
                     return data;
+                } else {
+                    console.error(`[DEBUG] Errore /getinstruments: Status ${response.status}`);
                 }
             } catch (error) {
-                console.error(`Error loading instruments for ${instrumentType}:`, error);
+                console.error(`[DEBUG] Eccezione durante fetch /getinstruments:`, error);
             }
             return {};
         }
