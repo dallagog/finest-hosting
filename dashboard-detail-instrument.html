@@ -158,6 +158,39 @@
         td {
             color: #333;
         }
+
+        .instrument-header {
+            text-align: center;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #f8f8f8;
+            border-radius: 8px;
+            border: 1px solid #e0e0e0;
+        }
+
+        .instrument-id {
+            font-size: 1.3em;
+            font-weight: 700;
+            color: #000;
+            margin-bottom: 5px;
+        }
+
+        .instrument-currency {
+            display: inline-block;
+            background: #000;
+            color: #fff;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            font-weight: 500;
+            letter-spacing: 1px;
+            margin-top: 5px;
+        }
+
+        .currency-icon {
+            margin-right: 5px;
+            font-size: 1.1em;
+        }
     </style>
 </head>
 
@@ -189,7 +222,10 @@
         <div id="loading" class="loading">Loading details...</div>
         <div id="error" class="error-message" style="display: none;"></div>
         <div id="content" style="display: none;">
-            <h2 id="instrumentIdDisplay" style="text-align: center; margin-bottom: 20px;"></h2>
+            <div id="instrumentHeader" class="instrument-header">
+                <div id="instrumentIdDisplay" class="instrument-id"></div>
+                <div id="instrumentCurrencyDisplay" class="instrument-currency"></div>
+            </div>
             <table id="detailsTable">
                 <tbody id="detailsBody">
                 </tbody>
@@ -205,6 +241,31 @@
         let currentInstrumentId = null;
         let currentInstrumentName = '';
         let currentInstrumentCurrency = ''; // Aggiornato dinamicamente
+
+        // Mappa delle valute con icone
+        const currencyIcons = {
+            'EUR': '🇪🇺',
+            'USD': '🇺🇸',
+            'GBP': '🇬🇧',
+            'CHF': '🇨🇭',
+            'JPY': '🇯🇵',
+            'CAD': '🇨🇦',
+            'AUD': '🇦🇺',
+            'CNY': '🇨🇳',
+            'HKD': '🇭🇰',
+            'SGD': '🇸🇬',
+            'INR': '🇮🇳',
+            'BRL': '🇧🇷',
+            'RUB': '🇷🇺',
+            'ZAR': '🇿🇦',
+            'TRY': '🇹🇷',
+            'AED': '🇦🇪',
+            'MXN': '🇲🇽',
+            'PLN': '🇵🇱',
+            'SEK': '🇸🇪',
+            'NOK': '🇳🇴',
+            'DKK': '🇩🇰'
+        };
 
         // ========== SETUP & UTIL ==========
         function getURLParams() {
@@ -378,15 +439,88 @@
             // Recupero la divisa dal campo dello strumento
             currentInstrumentCurrency = instrument.currency || 'EUR';
 
+            // Mostra ID strumento
             document.getElementById('instrumentIdDisplay').textContent = `${instrument.id_instrument} - ${currentInstrumentName}`;
 
-            Object.keys(instrument).forEach(key => {
+            // Mostra divisa con icona
+            const currencyIcon = currencyIcons[currentInstrumentCurrency] || '💱';
+            const currencyDisplay = document.getElementById('instrumentCurrencyDisplay');
+            currencyDisplay.innerHTML = `<span class="currency-icon">${currencyIcon}</span> ${currentInstrumentCurrency} - ${getTranslation('int.currency') || 'Divisa'}`;
+
+            // Ordine personalizzato per le chiavi (quelle più importanti in cima)
+            const priorityKeys = [
+                'instrument_description',
+                'currency',
+                'id_portfolio',
+                'portfolio_description',
+                'id_asset',
+                'asset_description',
+                'id_category',
+                'category_description',
+                'id_sector',
+                'sector_description',
+                'id_geo',
+                'geo_description',
+                'cod_isin',
+                'price_mkt',
+                'price_book_value',
+                'quantity',
+                'value_market',
+                'value_book',
+                'ytd_return',
+                'total_return'
+            ];
+
+            // Ottieni tutte le chiavi e ordinale
+            const allKeys = Object.keys(instrument);
+            const sortedKeys = allKeys.sort((a, b) => {
+                const indexA = priorityKeys.indexOf(a);
+                const indexB = priorityKeys.indexOf(b);
+
+                // Se entrambe sono in priorityKeys, mantieni l'ordine di priorityKeys
+                if (indexA !== -1 && indexB !== -1) return indexA - indexB;
+                // Se solo A è in priorityKeys, A viene prima
+                if (indexA !== -1) return -1;
+                // Se solo B è in priorityKeys, B viene prima
+                if (indexB !== -1) return 1;
+                // Altrimenti ordine alfabetico
+                return a.localeCompare(b);
+            });
+
+            sortedKeys.forEach(key => {
                 const tr = document.createElement('tr');
                 const th = document.createElement('th');
-                th.textContent = getTranslation(key) || key;
+
+                // Traduci la chiave se disponibile
+                let translatedKey = getTranslation(key);
+                // Se la traduzione è uguale alla chiave, formatta il testo
+                if (translatedKey === key) {
+                    translatedKey = key
+                        .replace(/_/g, ' ')
+                        .replace(/\b\w/g, l => l.toUpperCase());
+                }
+                th.textContent = translatedKey;
 
                 const td = document.createElement('td');
-                const val = instrument[key];
+                let val = instrument[key];
+
+                // Formatta valori numerici se necessario
+                if (val !== null && val !== undefined) {
+                    if (typeof val === 'number' || (!isNaN(parseFloat(val)) && key.includes('price') || key.includes('value') || key.includes('return'))) {
+                        const numVal = typeof val === 'number' ? val : parseFloat(val);
+                        if (!isNaN(numVal)) {
+                            if (key.includes('return')) {
+                                val = numVal.toFixed(2) + '%';
+                            } else {
+                                val = numVal.toLocaleString(undefined, {
+                                    minimumFractionDigits: 2,
+                                    maximumFractionDigits: 4
+                                });
+                            }
+                        }
+                    }
+                }
+
                 td.textContent = (val !== null && val !== undefined) ? String(val) : '-';
 
                 tr.appendChild(th);
