@@ -478,6 +478,56 @@
             }
         };
 
+        // Plugin per disegnare righe verticali viola nei giorni con pattern
+        const patternVerticalLinesPlugin = {
+            id: 'patternVerticalLines',
+            afterDatasetsDraw(chart) {
+                const { ctx, chartArea } = chart;
+                const dataset = chart.data.datasets[0];
+
+                if (!dataset || !dataset.patternValues) return;
+
+                const meta = chart.getDatasetMeta(0);
+                if (!meta || meta.hidden) return;
+
+                ctx.save();
+
+                // Per ogni punto nel dataset
+                meta.data.forEach((point, index) => {
+                    const patternObj = dataset.patternValues[index];
+
+                    // Se questo punto ha un pattern
+                    if (patternObj && Object.keys(patternObj).length > 0) {
+                        const x = point.x;
+
+                        // Disegna una linea verticale sottile viola
+                        ctx.beginPath();
+                        ctx.strokeStyle = '#800080'; // Viola
+                        ctx.lineWidth = 1.5;
+                        ctx.setLineDash([5, 3]); // Linea tratteggiata sottile
+
+                        ctx.moveTo(x, chartArea.top);
+                        ctx.lineTo(x, chartArea.bottom);
+                        ctx.stroke();
+
+                        // Aggiungi un piccolo marker viola in alto
+                        ctx.setLineDash([]);
+                        ctx.fillStyle = '#800080';
+                        ctx.beginPath();
+                        ctx.arc(x, chartArea.top + 10, 4, 0, 2 * Math.PI);
+                        ctx.fill();
+
+                        // Aggiungi bordo bianco al marker
+                        ctx.strokeStyle = '#ffffff';
+                        ctx.lineWidth = 1;
+                        ctx.stroke();
+                    }
+                });
+
+                ctx.restore();
+            }
+        };
+
         async function loadPrices() {
             document.getElementById('loading').style.display = 'flex';
             const startDate = document.getElementById('start-date').value;
@@ -590,34 +640,18 @@
                         tension: 0.1,
                         fill: true,
 
-                        // Configurazione punti - viola per pattern, altrimenti normale
+                        // Configurazione punti - leggera evidenza per pattern
                         pointBackgroundColor: function (context) {
                             const index = context.dataIndex;
                             return patternValues[index] ? '#800080' : 'rgba(75,192,192,1)';
                         },
-                        pointBorderColor: function (context) {
-                            const index = context.dataIndex;
-                            return patternValues[index] ? '#ffffff' : '#ffffff';
-                        },
-                        pointBorderWidth: function (context) {
-                            const index = context.dataIndex;
-                            return patternValues[index] ? 2 : 1;
-                        },
-                        pointRadius: function (context) {
-                            const index = context.dataIndex;
-                            return patternValues[index] ? 8 : 4;
-                        },
-                        pointHoverRadius: function (context) {
-                            const index = context.dataIndex;
-                            return patternValues[index] ? 12 : 8;
-                        },
-                        pointStyle: function (context) {
-                            const index = context.dataIndex;
-                            return patternValues[index] ? 'circle' : 'circle';
-                        }
+                        pointBorderColor: '#ffffff',
+                        pointBorderWidth: 1,
+                        pointRadius: 4,
+                        pointHoverRadius: 8
                     }]
                 },
-                plugins: [forceArrowsPlugin],
+                plugins: [forceArrowsPlugin, patternVerticalLinesPlugin],
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
@@ -653,9 +687,8 @@
                                     // Pattern (solo se presenti)
                                     const patternObj = dataset.patternValues?.[index];
                                     if (patternObj && Object.keys(patternObj).length > 0) {
-                                        lines.push('🔮 PATTERN DETECTED:');
+                                        lines.push('🔮 PATTERN:');
                                         Object.entries(patternObj).forEach(([key, value]) => {
-                                            // Formatta il nome del pattern per renderlo più leggibile
                                             const formattedKey = key
                                                 .replace(/_/g, ' ')
                                                 .replace(/\b\w/g, l => l.toUpperCase());
@@ -671,7 +704,7 @@
                                     const patternObj = dataset.patternValues?.[index];
 
                                     if (patternObj && Object.keys(patternObj).length > 0) {
-                                        return ['────────────────', '💜 Punto con pattern'];
+                                        return ['────────────────', '💜 Giorno con pattern'];
                                     }
                                     return null;
                                 }
@@ -683,19 +716,7 @@
                             borderColor: '#800080',
                             borderWidth: 2,
                             padding: 12,
-                            cornerRadius: 8,
-                            titleFont: {
-                                size: 14,
-                                weight: 'bold'
-                            },
-                            bodyFont: {
-                                size: 13
-                            },
-                            footerFont: {
-                                size: 12,
-                                weight: 'bold',
-                                style: 'italic'
-                            }
+                            cornerRadius: 8
                         },
                         legend: {
                             display: true,
@@ -703,22 +724,20 @@
                                 generateLabels: function (chart) {
                                     const labels = Chart.defaults.plugins.legend.labels.generateLabels(chart);
 
-                                    // Modifica il colore del dataset nella legenda
                                     if (labels.length > 0) {
                                         labels[0].fillStyle = 'rgba(75,192,192,1)';
                                         labels[0].strokeStyle = 'rgba(75,192,192,1)';
                                     }
 
-                                    // Aggiungi un'etichetta per i pattern
+                                    // Aggiungi etichetta per i pattern
                                     labels.push({
-                                        text: '🔮 Punti con Pattern',
+                                        text: '💜 Giorni con Pattern (linea viola)',
                                         fillStyle: '#800080',
                                         strokeStyle: '#800080',
                                         lineWidth: 2,
                                         hidden: false,
                                         index: labels.length,
-                                        pointStyle: 'circle',
-                                        borderRadius: 10
+                                        pointStyle: 'line'
                                     });
 
                                     return labels;
@@ -748,17 +767,6 @@
                                 maxRotation: 45,
                                 minRotation: 45
                             }
-                        }
-                    },
-                    elements: {
-                        line: {
-                            borderJoinStyle: 'round'
-                        }
-                    },
-                    layout: {
-                        padding: {
-                            top: 20,
-                            bottom: 20
                         }
                     }
                 }
