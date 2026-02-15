@@ -214,14 +214,22 @@
         <div id="message" class="message"></div>
 
         <div class="collapsible-container">
-            <div style="display: flex; gap: 15px; align-items: flex-end;">
-                <div class="filter-group" style="flex: 1;">
+            <div style="display: flex; gap: 15px; align-items: flex-end; flex-wrap: wrap;">
+                <div class="filter-group" style="flex: 1; min-width: 150px;">
                     <label>Data iniziale:</label>
                     <input type="date" id="date-start">
                 </div>
-                <div class="filter-group" style="flex: 1;">
+                <div class="filter-group" style="flex: 1; min-width: 150px;">
                     <label>Data finale:</label>
                     <input type="date" id="date-end">
+                </div>
+                <div class="filter-group" style="flex: 1; min-width: 150px;">
+                    <label>Valore min:</label>
+                    <input type="number" id="value-min" placeholder="es. 0" step="0.01">
+                </div>
+                <div class="filter-group" style="flex: 1; min-width: 150px;">
+                    <label>Valore max:</label>
+                    <input type="number" id="value-max" placeholder="es. 100" step="0.01">
                 </div>
                 <div class="filter-group">
                     <button onclick="fetchMarketData()">Applica</button>
@@ -374,11 +382,50 @@
                 return;
             }
 
+            // Leggi i filtri di range
+            const valueMinInput = document.getElementById('value-min').value;
+            const valueMaxInput = document.getElementById('value-max').value;
+
+            const valueMin = valueMinInput !== '' ? parseFloat(valueMinInput) : null;
+            const valueMax = valueMaxInput !== '' ? parseFloat(valueMaxInput) : null;
+
+            // Filtra i dati
+            let filteredData = data.filter(row => {
+                const value = parseFloat(row.value);
+
+                // Se il valore non è un numero valido, scartalo
+                if (isNaN(value)) return false;
+
+                // Applica filtro minimo
+                if (valueMin !== null && value < valueMin) return false;
+
+                // Applica filtro massimo
+                if (valueMax !== null && value > valueMax) return false;
+
+                return true;
+            });
+
+            console.group('🔍 FILTER RESULTS');
+            console.log(`Total records: ${data.length}`);
+            console.log(`Filters applied:`, {
+                value_min: valueMin,
+                value_max: valueMax
+            });
+            console.log(`Filtered records: ${filteredData.length}`);
+            console.log('Filtered data:', filteredData);
+            console.groupEnd();
+
+            if (filteredData.length === 0) {
+                container.innerHTML = '<p>Nessun dato trovato con i filtri applicati.</p>';
+                showMessage(`Nessun record con valore tra ${valueMin || '-∞'} e ${valueMax || '+∞'}`, "warning");
+                return;
+            }
+
             let html = '<table class="data-table"><thead><tr>';
             html += '<th>Strumento</th><th>Data</th><th>Valore (Forza)</th>';
             html += '</tr></thead><tbody>';
 
-            data.forEach(row => {
+            filteredData.forEach(row => {
                 html += `<tr>
                     <td>${row.id_instrument}</td>
                     <td>${row.date_start}</td>
@@ -387,6 +434,8 @@
             });
 
             html += '</tbody></table>';
+            html = `<p style="color: #666; margin-bottom: 10px;">📊 Visualizzati <strong>${filteredData.length}</strong> di <strong>${data.length}</strong> record</p>` + html;
+
             container.innerHTML = html;
         }
 
