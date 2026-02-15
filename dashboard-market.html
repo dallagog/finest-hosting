@@ -40,7 +40,6 @@
             margin: 0 auto;
         }
 
-        /* Header */
         .header-bar {
             display: flex;
             justify-content: space-between;
@@ -54,7 +53,6 @@
 
         .user-info-left {
             flex: 1;
-            text-align: left;
             font-size: 14px;
             color: var(--neon-cyan);
             display: flex;
@@ -62,26 +60,13 @@
             gap: 5px;
         }
 
-        .user-info-row {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
         h1 {
             flex: 1;
             text-align: center;
-            margin: 0;
             font-weight: 700;
             text-transform: uppercase;
             letter-spacing: 2px;
-            color: #000;
             font-size: 1.5em;
-        }
-
-        .logout-container {
-            flex: 1;
-            text-align: right;
         }
 
         .logout-btn {
@@ -92,10 +77,8 @@
             border-radius: 4px;
             cursor: pointer;
             font-family: inherit;
-            transition: all 0.3s;
         }
 
-        /* Content */
         .collapsible-container {
             background: var(--glass-bg);
             border: 1px solid #ddd;
@@ -118,7 +101,6 @@
         .filter-group input {
             width: 100%;
             padding: 10px;
-            background: #fff;
             border: 1px solid #ccc;
             border-radius: 4px;
             font-family: inherit;
@@ -127,17 +109,11 @@
         button {
             padding: 10px 20px;
             background: #000;
-            border: 1px solid #000;
             color: #fff;
-            font-family: inherit;
+            border: none;
             border-radius: 4px;
             cursor: pointer;
             font-weight: bold;
-            transition: all 0.3s;
-        }
-
-        button:hover {
-            background: #333;
         }
 
         .data-table {
@@ -148,26 +124,21 @@
 
         .data-table th,
         .data-table td {
-            padding: 10px;
+            padding: 12px;
             text-align: left;
             border-bottom: 1px solid #eee;
         }
 
         .data-table th {
             background: #f0f0f0;
-            font-weight: 600;
-        }
-
-        .data-table tr:nth-child(even) {
-            background-color: #f9f9f9;
         }
 
         .message {
-            padding: 12px 15px;
-            margin-bottom: 15px;
+            padding: 15px;
+            margin-bottom: 20px;
             border-radius: 4px;
             display: none;
-            border-left: 4px solid;
+            border-left: 5px solid;
         }
 
         .message.error {
@@ -178,16 +149,9 @@
         }
 
         .message.warning {
-            background: #ffeaa7;
+            background: #fff3cd;
             color: #856404;
             border-color: #ffc107;
-            display: block;
-        }
-
-        .message.success {
-            background: #d4edda;
-            color: #155724;
-            border-color: #28a745;
             display: block;
         }
     </style>
@@ -197,13 +161,8 @@
     <div class="main-container">
         <div class="header-bar">
             <div class="user-info-left">
-                <div class="user-info-row">
-                    <strong id="userLabel">Utente:</strong>
-                    <span id="usernameDisplay">-</span>
-                </div>
-                <div class="user-info-row">
-                    <span id="currencyDisplay">-</span>
-                </div>
+                <div><strong>Utente:</strong> <span id="usernameDisplay">-</span></div>
+                <div><strong>Valuta:</strong> <span id="currencyDisplay">-</span></div>
             </div>
             <h1>Market Dashboard</h1>
             <div class="logout-container">
@@ -225,41 +184,30 @@
                 </div>
                 <div class="filter-group" style="flex: 1; min-width: 150px;">
                     <label>Valore min:</label>
-                    <input type="number" id="value-min" placeholder="es. 0" step="0.01">
+                    <input type="number" id="value-min" step="0.01">
                 </div>
                 <div class="filter-group" style="flex: 1; min-width: 150px;">
                     <label>Valore max:</label>
-                    <input type="number" id="value-max" placeholder="es. 100" step="0.01">
+                    <input type="number" id="value-max" step="0.01">
                 </div>
                 <div class="filter-group">
-                    <button onclick="fetchMarketData()">Applica</button>
+                    <button onclick="fetchMarketData()">Aggiorna Dati</button>
                 </div>
             </div>
         </div>
 
         <div class="collapsible-container">
             <div id="table-container">
-                <p>Nessun dato caricato.</p>
+                <p>In attesa di caricamento...</p>
             </div>
         </div>
     </div>
 
     <script>
-        // Configurazione URL servizi
-        const isDevelopment = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+        // URL Servizio configurato correttamente come da DNS
+        const API_URL_MARKET = "https://market-tunnel.fe-web.eu";
 
-        let API_URL_MARKET;
-
-        // Production: accesso via proxy Nginx
-        // Usa la stessa domain e path /api/
-        const currentProtocol = window.location.protocol;
-        const currentHost = window.location.host;
-        API_URL_MARKET = "https://market-tunnel.fe-web.eu";
-
-        console.log(`🌍 Environment: ${isDevelopment ? 'DEVELOPMENT' : 'PRODUCTION'}`);
-        console.log(`📡 Market API: ${API_URL_MARKET}`);
-
-        let credentials = {
+        const credentials = {
             username: localStorage.getItem('username'),
             token: localStorage.getItem('token'),
             currency: localStorage.getItem('currency') || 'EUR'
@@ -270,45 +218,28 @@
                 window.location.href = 'index.html';
                 return;
             }
-
             document.getElementById('usernameDisplay').textContent = credentials.username;
             document.getElementById('currencyDisplay').textContent = credentials.currency;
 
             setDefaultDates();
-            fetchMarketData();
-        }
-
-        function getDefaultDates() {
-            const today = new Date();
-            const firstDayLastMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
-
-            const formatDate = (date) => date.toISOString().split('T')[0];
-
-            return {
-                date_start: formatDate(firstDayLastMonth),
-                date_end: formatDate(today)
-            };
+            await fetchMarketData();
         }
 
         function setDefaultDates() {
-            const defaults = getDefaultDates();
-            document.getElementById('date-start').value = defaults.date_start;
-            document.getElementById('date-end').value = defaults.date_end;
+            const today = new Date();
+            const lastMonth = new Date(today.getFullYear(), today.getMonth() - 1, today.getDate());
+
+            document.getElementById('date-start').value = lastMonth.toISOString().split('T')[0];
+            document.getElementById('date-end').value = today.toISOString().split('T')[0];
         }
 
         async function fetchMarketData() {
             const date_start = document.getElementById('date-start').value;
             const date_end = document.getElementById('date-end').value;
-
-            if (!date_start || !date_end) {
-                showMessage("Selezionare entrambe le date", "error");
-                return;
-            }
-
             const msgDiv = document.getElementById('message');
             msgDiv.style.display = 'none';
 
-            const requestPayload = {
+            const payload = {
                 username: credentials.username,
                 token: credentials.token,
                 currency: credentials.currency,
@@ -316,47 +247,60 @@
                 date_end: date_end
             };
 
-            console.group('📤 REQUEST: /getmarket');
-            console.log('URL:', `${API_URL_MARKET}/getmarket`);
-            console.log('Method: POST');
-            console.log('Headers:', { 'Content-Type': 'application/json' });
-            console.log('Payload:', requestPayload);
-            console.groupEnd();
-
             try {
                 const response = await fetch(`${API_URL_MARKET}/getmarket`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(requestPayload)
-                });
-
-                console.group('📥 RESPONSE: /getmarket');
-                console.log('Status:', response.status, response.statusText);
-                console.log('Headers:', {
-                    'Content-Type': response.headers.get('Content-Type'),
-                    'Access-Control-Allow-Origin': response.headers.get('Access-Control-Allow-Origin')
+                    body: JSON.stringify(payload)
                 });
 
                 const result = await response.json();
-                console.log('Payload:', result);
-                console.groupEnd();
 
                 if (result.status === 'ok') {
-                    console.log(`✅ Success! Loaded ${result.data.length} records`);
                     renderTable(result.data);
                 } else {
-                    showMessage(result.msg || "Errore nel caricamento dati", "error");
-                    console.error('❌ Error:', result.msg);
+                    showMessage(result.msg || "Errore API", "error");
                 }
             } catch (err) {
-                console.group('❌ ERROR: /getmarket');
-                console.error('Error type:', err.name);
-                console.error('Error message:', err.message);
-                console.error('Full error:', err);
-                console.groupEnd();
-
-                showMessage("Errore di connessione al servizio market. Verificare che il servizio sia disponibile.", "error");
+                console.error("Fetch Error:", err);
+                showMessage(
+                    "Impossibile raggiungere il server market-tunnel. Verificare la connessione o i record DNS.",
+                    "error"
+                );
             }
+        }
+
+        function renderTable(data) {
+            const container = document.getElementById('table-container');
+            const vMin = parseFloat(document.getElementById('value-min').value);
+            const vMax = parseFloat(document.getElementById('value-max').value);
+
+            let filtered = data.filter(row => {
+                const val = parseFloat(row.value);
+                if (isNaN(val)) return false;
+                if (!isNaN(vMin) && val < vMin) return false;
+                if (!isNaN(vMax) && val > vMax) return false;
+                return true;
+            });
+
+            if (filtered.length === 0) {
+                container.innerHTML = '<p>Nessun dato corrispondente ai filtri.</p>';
+                return;
+            }
+
+            let html = `<p style="margin-bottom:10px">Record trovati: <strong>${filtered.length}</strong></p>`;
+            html += '<table class="data-table"><thead><tr><th>Strumento</th><th>Data</th><th>Valore</th><th>Tipo</th></tr></thead><tbody>';
+
+            filtered.forEach(row => {
+                html += `<tr>
+                    <td>${row.id_instrument}</td>
+                    <td>${row.date_start}</td>
+                    <td>${row.value}</td>
+                    <td>${row.field}</td>
+                </tr>`;
+            });
+            html += '</tbody></table>';
+            container.innerHTML = html;
         }
 
         function showMessage(text, type) {
@@ -364,70 +308,6 @@
             msgDiv.textContent = text;
             msgDiv.className = `message ${type}`;
             msgDiv.style.display = 'block';
-        }
-
-        function renderTable(data) {
-            const container = document.getElementById('table-container');
-            if (!data || data.length === 0) {
-                container.innerHTML = '<p>Nessun dato trovato per il periodo selezionato.</p>';
-                return;
-            }
-
-            // Leggi i filtri di range
-            const valueMinInput = document.getElementById('value-min').value;
-            const valueMaxInput = document.getElementById('value-max').value;
-
-            const valueMin = valueMinInput !== '' ? parseFloat(valueMinInput) : null;
-            const valueMax = valueMaxInput !== '' ? parseFloat(valueMaxInput) : null;
-
-            // Filtra i dati
-            let filteredData = data.filter(row => {
-                const value = parseFloat(row.value);
-
-                // Se il valore non è un numero valido, scartalo
-                if (isNaN(value)) return false;
-
-                // Applica filtro minimo
-                if (valueMin !== null && value < valueMin) return false;
-
-                // Applica filtro massimo
-                if (valueMax !== null && value > valueMax) return false;
-
-                return true;
-            });
-
-            console.group('🔍 FILTER RESULTS');
-            console.log(`Total records: ${data.length}`);
-            console.log(`Filters applied:`, {
-                value_min: valueMin,
-                value_max: valueMax
-            });
-            console.log(`Filtered records: ${filteredData.length}`);
-            console.log('Filtered data:', filteredData);
-            console.groupEnd();
-
-            if (filteredData.length === 0) {
-                container.innerHTML = '<p>Nessun dato trovato con i filtri applicati.</p>';
-                showMessage(`Nessun record con valore tra ${valueMin || '-∞'} e ${valueMax || '+∞'}`, "warning");
-                return;
-            }
-
-            let html = '<table class="data-table"><thead><tr>';
-            html += '<th>Strumento</th><th>Data</th><th>Valore (Forza)</th>';
-            html += '</tr></thead><tbody>';
-
-            filteredData.forEach(row => {
-                html += `<tr>
-                    <td>${row.id_instrument}</td>
-                    <td>${row.date_start}</td>
-                    <td>${row.value}</td>
-                </tr>`;
-            });
-
-            html += '</tbody></table>';
-            html = `<p style="color: #666; margin-bottom: 10px;">📊 Visualizzati <strong>${filteredData.length}</strong> di <strong>${data.length}</strong> record</p>` + html;
-
-            container.innerHTML = html;
         }
 
         function logout() {
