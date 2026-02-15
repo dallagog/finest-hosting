@@ -2485,11 +2485,16 @@
             if (!showHistorical) {
                 displayData = displayData.filter(item => {
                     const quantity = item.quantity;
-                    //if (!quantity) return true;
-                    const quantityStr = String(quantity);
-                    const colonIndex = quantityStr.indexOf(':');
-                    const numericValue = colonIndex > 0 ? parseFloat(quantityStr.substring(0, colonIndex)) : parseFloat(quantityStr);
-                    return numericValue !== 0;
+                    // Se quantity non è definito, escludere
+                    if (quantity === undefined || quantity === null || quantity === '') return false;
+
+                    // Convertire a numero
+                    const numValue = parseFloat(String(quantity));
+                    // Se il numero è 0 (incluso 0.0), escludere
+                    if (isNaN(numValue) || numValue === 0) return false;
+
+                    // Altrimenti includere
+                    return true;
                 });
             }
 
@@ -3053,11 +3058,9 @@
         });
 
         // ========== AUTO REFRESH ON WINDOW FOCUS ==========
-        // Quando l'utente ritorna dalla finestra del rapporto, refresh il selettore
-        window.addEventListener('focus', () => {
-            console.log('Window focus detected - Refreshing filter selector');
-            loadFilter();
-        });
+        // Nota: Rimosso il refresh automatico di loadFilter() su focus
+        // I rapporti selezionati vengono mantenuti fino a rielaborazione esplicita
+        // Solo in caso di "Applica Filtri" vengono modificati i rapporti selezionati
 
     </script>
 </body>
