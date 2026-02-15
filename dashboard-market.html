@@ -237,25 +237,28 @@
     </div>
 
     <script>
-        // Auto-detect environment and set correct API URLs
+        // Configurazione URL servizi
         const isDevelopment = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
 
         let API_URL_FEWEB;
         let API_URL_MARKET;
 
         if (isDevelopment) {
-            // Development: localhost
+            // Development: accesso locale diretto
             API_URL_FEWEB = 'http://127.0.0.1:8000';
             API_URL_MARKET = 'http://127.0.0.1:8004';
         } else {
-            // Production: fe-web.eu con endpoints proxy
-            // Se il servizio market non è disponibile direttamente, usare proxy
-            API_URL_FEWEB = 'https://www.fe-web.eu/api/feweb';
-            API_URL_MARKET = 'https://www.fe-web.eu/api/market';
+            // Production: accesso via proxy Nginx
+            // Usa la stessa domain e path /api/
+            const currentProtocol = window.location.protocol;
+            const currentHost = window.location.host;
+            API_URL_FEWEB = `${currentProtocol}//${currentHost}/api/feweb`;
+            API_URL_MARKET = `${currentProtocol}//${currentHost}/api/market`;
         }
 
-        console.log(`Environment: ${isDevelopment ? 'DEVELOPMENT' : 'PRODUCTION'}`);
-        console.log(`Market API: ${API_URL_MARKET}`);
+        console.log(`🌍 Environment: ${isDevelopment ? 'DEVELOPMENT' : 'PRODUCTION'}`);
+        console.log(`📡 FeWeb API: ${API_URL_FEWEB}`);
+        console.log(`📊 Market API: ${API_URL_MARKET}`);
 
         let credentials = {
             username: localStorage.getItem('username'),
@@ -272,37 +275,8 @@
             document.getElementById('usernameDisplay').textContent = credentials.username;
             document.getElementById('currencyDisplay').textContent = credentials.currency;
 
-            await loadDefaultsFromFilter();
+            setDefaultDates();
             fetchMarketData();
-        }
-
-        async function loadDefaultsFromFilter() {
-            try {
-                const response = await fetch(`${API_URL_FEWEB}/getfilter`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        username: credentials.username,
-                        token: credentials.token,
-                        language: 'it_IT'
-                    })
-                });
-
-                if (response.ok) {
-                    const data = await response.json();
-                    let filter = data.filter;
-                    if (typeof filter === 'string') filter = JSON.parse(filter);
-
-                    const f = filter.Filter || {};
-                    if (f.date_start) document.getElementById('date-start').value = f.date_start;
-                    if (f.date_end) document.getElementById('date-end').value = f.date_end;
-                } else {
-                    setDefaultDates();
-                }
-            } catch (err) {
-                console.warn("Servizio di filtri non disponibile, utilizzo date di default", err);
-                setDefaultDates();
-            }
         }
 
         function getDefaultDates() {
