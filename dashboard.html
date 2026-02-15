@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Financial Estimates 0.1 alfa</title>
+    <title>Financial Estimates 0.2 alfa</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <script src="js/dashboard-shared.js"></script>
@@ -1196,14 +1196,24 @@
         function toggleHistorical() {
             showHistorical = !showHistorical;
             const btn = document.getElementById('historicalBtn');
+            const btnText = document.getElementById('historicalText');
+
             if (showHistorical) {
+                // Mostro tutto - cambio label a int.isquantity
                 btn.classList.add('active');
                 btn.style.backgroundColor = 'var(--neon-cyan)';
                 btn.style.color = '#000';
+                if (btnText) {
+                    btnText.textContent = getTranslation('int.isquantity') || 'Mostra Non Zero';
+                }
             } else {
+                // Nascondo zero - cambio label a int.historical (originale)
                 btn.classList.remove('active');
                 btn.style.backgroundColor = '';
                 btn.style.color = '';
+                if (btnText) {
+                    btnText.textContent = getTranslation('int.historical') || 'Storico';
+                }
             }
             renderTable();
         }
@@ -2497,6 +2507,11 @@
                 columns.forEach(col => {
                     if (col === 'Ticker') { totals[col] = 'TOTAL'; return; }
                     if (col === 'id_account' || col === '%') { totals[col] = ''; return; }
+                    // Non sommare il campo quantity (e varianti)
+                    if (col === 'quantity' || col.toLowerCase().includes('quantity') || col.toLowerCase().includes('qta')) {
+                        totals[col] = '';
+                        return;
+                    }
                     const desc = getTranslation(col) || col;
                     if (desc.includes('%')) { totals[col] = ''; return; }
                     const isNumeric = items.some(item => { const val = item[col]; return typeof val === 'number' || (typeof val === 'string' && /^-?\d+(\.\d+)?$/.test(val)); });
@@ -2809,6 +2824,11 @@
                     if (col === 'Ticker') { totals[col] = 'TOTAL'; return; }
                     if (col === 'id_account' || col === '%') { totals[col] = ''; return; }
                     const lower = col.toLowerCase();
+                    // Non sommare il campo quantity (e varianti)
+                    if (lower === 'quantity' || lower.includes('quantity') || lower.includes('qta')) {
+                        totals[col] = '';
+                        return;
+                    }
                     if (lower.includes('per@') || lower.includes('%')) { totals[col] = ''; return; }
                     const isNumeric = items.some(item => { const val = item[col]; return typeof val === 'number' || (typeof val === 'string' && /^-?\d+(\.\d+)?$/.test(val)); });
                     if (isNumeric) {
@@ -3024,6 +3044,13 @@
         document.getElementById('apply-filters')?.addEventListener('click', (e) => {
             e.preventDefault();
             applyFiltersAndSave();
+        });
+
+        // ========== AUTO REFRESH ON WINDOW FOCUS ==========
+        // Quando l'utente ritorna dalla finestra del rapporto, refresh il selettore
+        window.addEventListener('focus', () => {
+            console.log('Window focus detected - Refreshing filter selector');
+            loadFilter();
         });
 
     </script>
