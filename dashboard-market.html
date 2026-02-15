@@ -237,8 +237,25 @@
     </div>
 
     <script>
-        const API_URL_FEWEB = 'http://127.0.0.1:8000'; // Port of app_feweb
-        const API_URL_MARKET = 'http://127.0.0.1:8004'; // Port of app_market
+        // Auto-detect environment and set correct API URLs
+        const isDevelopment = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+
+        let API_URL_FEWEB;
+        let API_URL_MARKET;
+
+        if (isDevelopment) {
+            // Development: localhost
+            API_URL_FEWEB = 'http://127.0.0.1:8000';
+            API_URL_MARKET = 'http://127.0.0.1:8004';
+        } else {
+            // Production: fe-web.eu con endpoints proxy
+            // Se il servizio market non è disponibile direttamente, usare proxy
+            API_URL_FEWEB = 'https://www.fe-web.eu/api/feweb';
+            API_URL_MARKET = 'https://www.fe-web.eu/api/market';
+        }
+
+        console.log(`Environment: ${isDevelopment ? 'DEVELOPMENT' : 'PRODUCTION'}`);
+        console.log(`Market API: ${API_URL_MARKET}`);
 
         let credentials = {
             username: localStorage.getItem('username'),
