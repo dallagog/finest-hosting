@@ -1199,20 +1199,20 @@
             const btnText = document.getElementById('historicalText');
 
             if (showHistorical) {
-                // Mostro tutto - cambio label a int.isquantity
+                // Mostro tutto - cambio label a "Con saldo"
                 btn.classList.add('active');
                 btn.style.backgroundColor = 'var(--neon-cyan)';
                 btn.style.color = '#000';
                 if (btnText) {
-                    btnText.textContent = getTranslation('int.isquantity') || 'Mostra Non Zero';
+                    btnText.textContent = 'Con saldo';
                 }
             } else {
-                // Nascondo zero - cambio label a int.historical (originale)
+                // Nascondo zero - cambio label a "Storico"
                 btn.classList.remove('active');
                 btn.style.backgroundColor = '';
                 btn.style.color = '';
                 if (btnText) {
-                    btnText.textContent = getTranslation('int.historical') || 'Storico';
+                    btnText.textContent = 'Storico';
                 }
             }
             renderTable();
@@ -2794,6 +2794,12 @@
                 displayData = [...profitabilityData];
                 console.log('Using all profitabilityData (no account filter):', displayData.length);
             }
+
+            // Filtra solo i record che hanno RISTOT valorizzato
+            displayData = displayData.filter(item => {
+                return item.RISTOT !== undefined && item.RISTOT !== null && item.RISTOT !== '';
+            });
+            console.log('After RISTOT filter:', displayData.length, 'items');
 
             profitabilityTableColumns.forEach((col, index) => {
                 const th = document.createElement('th');
