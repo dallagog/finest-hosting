@@ -2369,6 +2369,8 @@
                 });
                 if (!response.ok) throw new Error('HTTP ' + response.status);
                 const data = await response.json();
+                console.log('Portfolio response from /getportfolio:', data);
+
                 if (data.status === 'ok') {
                     classificationMap = {};
                     let classificationList = data.classification;
@@ -2381,9 +2383,19 @@
                         localStorage.setItem('classificationMap', JSON.stringify(classificationMap));
                     }
 
-                    // USE SHARED LOGIC
-                    const rawPortfolio = data.portfolio || {};
-                    portfolioData = parsePortfolioItems(rawPortfolio);
+                    // Handle both formats: direct array or object with 'portfolio' key
+                    let rawPortfolio = data.portfolio;
+                    // If portfolio is not an array, assume data is the array itself
+                    if (!Array.isArray(rawPortfolio) && Array.isArray(data)) {
+                        rawPortfolio = data;
+                    }
+                    if (!Array.isArray(rawPortfolio)) {
+                        rawPortfolio = [];
+                    }
+                    console.log('Raw portfolio array:', rawPortfolio);
+
+                    // Direct assignment since data is already an array of portfolio items
+                    portfolioData = rawPortfolio;
 
                     // Note: parsePortfolioItems already handles '%' calculation if cost and MP exist
                     // But we might need to double check if we need to do it exactly as before for column detection?
@@ -2401,7 +2413,10 @@
 
                     populateGroupingSelect(classificationList);
                     renderTable();
+                    console.log('Portfolio data loaded and rendered. Total items:', portfolioData.length);
+                    console.log('Table columns:', tableColumns);
                     document.getElementById('portfolio-section').style.display = 'block';
+                    console.log('Portfolio section made visible');
                 }
             } catch (error) { console.error('Error loading portfolio:', error); }
         }
@@ -2427,11 +2442,23 @@
         }
 
         function renderTable() {
+            console.log('renderTable called. portfolioData length:', portfolioData.length);
+            console.log('selectedAccounts:', selectedAccounts);
             const thead = document.getElementById('portfolio-header-row');
             const tbody = document.getElementById('portfolio-body');
+            if (!thead || !tbody) {
+                console.error('ERROR: portfolio-header-row or portfolio-body element not found!');
+                return;
+            }
             thead.innerHTML = ''; tbody.innerHTML = '';
             let displayData = [];
-            if (selectedAccounts.length > 0) displayData = portfolioData.filter(item => isAccountSelected(item.id_account));
+            if (selectedAccounts.length > 0) {
+                displayData = portfolioData.filter(item => isAccountSelected(item.id_account));
+                console.log('Filtered displayData (with account selection):', displayData.length);
+            } else {
+                displayData = [...portfolioData];
+                console.log('Using all portfolioData (no account filter):', displayData.length);
+            }
 
             tableColumns.forEach((col, index) => {
                 const th = document.createElement('th');
@@ -2640,6 +2667,8 @@
                 });
                 if (!response.ok) throw new Error('HTTP ' + response.status);
                 const data = await response.json();
+                console.log('Profitability response from /getportfolioyield:', data);
+
                 if (data.status === 'ok') {
                     classificationMap = {};
                     let classificationList = data.classification;
@@ -2651,24 +2680,39 @@
                         classificationList.forEach(item => { if (item.id_instrument) classificationMap[item.id_instrument] = item; });
                         localStorage.setItem('classificationMap', JSON.stringify(classificationMap));
                     }
+
                     profitabilityData = [];
-                    const rawYield = data.portfolioyield || {};
-                    const parseYieldItem = (symbol, details) => {
-                        const flatItem = { Ticker: symbol };
-                        if (details && typeof details === 'object') {
-                            Object.keys(details).forEach(key => {
-                                let val = details[key];
-                                if (key !== 'id_account' && typeof val === 'string' && /^-?\d+(\.\d+)?$/.test(val.trim())) flatItem[key] = parseFloat(val);
-                                else flatItem[key] = val;
-                            });
-                        }
-                        return flatItem;
-                    };
-                    if (Array.isArray(rawYield)) {
-                        rawYield.forEach(entry => { if (Array.isArray(entry) && entry.length === 2) profitabilityData.push(parseYieldItem(entry[0], entry[1])); });
-                    } else if (typeof rawYield === 'object') {
-                        Object.keys(rawYield).forEach(symbol => profitabilityData.push(parseYieldItem(symbol, rawYield[symbol])));
+                    let rawYield = data.portfolioyield;
+
+                    // Handle both formats: direct array or object with 'portfolioyield' key
+                    if (!Array.isArray(rawYield) && Array.isArray(data)) {
+                        rawYield = data;
                     }
+                    if (!Array.isArray(rawYield)) {
+                        rawYield = [];
+                    }
+                    console.log('Raw portfolio yield array:', rawYield);
+
+                    // Direct assignment since data is already an array of yield items
+                    if (Array.isArray(rawYield)) {
+                        profitabilityData = rawYield.map(item => {
+                            if (item && typeof item === 'object') {
+                                // Convert numeric strings to numbers
+                                const flatItem = {};
+                                Object.keys(item).forEach(key => {
+                                    let val = item[key];
+                                    if (typeof val === 'string' && /^-?\d+(\.\d+)?$/.test(val.trim())) {
+                                        flatItem[key] = parseFloat(val);
+                                    } else {
+                                        flatItem[key] = val;
+                                    }
+                                });
+                                return flatItem;
+                            }
+                            return item;
+                        });
+                    }
+                    console.log('Parsed profitability data:', profitabilityData);
                     if (profitabilityData.length > 0) {
                         profitabilityData.forEach(item => {
                             const ristot = item['RISTOT']; const giacmed = item['GIACMED'];
@@ -2691,7 +2735,10 @@
                     });
                     populateProfitabilityGroupingSelect(classificationList);
                     renderProfitabilityTable();
+                    console.log('Profitability data loaded and rendered. Total items:', profitabilityData.length);
+                    console.log('Profitability table columns:', profitabilityTableColumns);
                     document.getElementById('profitability-section').style.display = 'block';
+                    console.log('Profitability section made visible');
                 }
             } catch (error) { console.error('Error loading profitability:', error); }
         }
@@ -2715,11 +2762,23 @@
         }
 
         function renderProfitabilityTable() {
+            console.log('renderProfitabilityTable called. profitabilityData length:', profitabilityData.length);
+            console.log('selectedAccounts:', selectedAccounts);
             const thead = document.getElementById('profitability-header-row');
             const tbody = document.getElementById('profitability-body');
+            if (!thead || !tbody) {
+                console.error('ERROR: profitability-header-row or profitability-body element not found!');
+                return;
+            }
             thead.innerHTML = ''; tbody.innerHTML = '';
             let displayData = [];
-            if (selectedAccounts.length > 0) displayData = profitabilityData.filter(item => isAccountSelected(item.id_account));
+            if (selectedAccounts.length > 0) {
+                displayData = profitabilityData.filter(item => isAccountSelected(item.id_account));
+                console.log('Filtered displayData (with account selection):', displayData.length);
+            } else {
+                displayData = [...profitabilityData];
+                console.log('Using all profitabilityData (no account filter):', displayData.length);
+            }
 
             profitabilityTableColumns.forEach((col, index) => {
                 const th = document.createElement('th');
