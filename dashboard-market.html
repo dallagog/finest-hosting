@@ -163,16 +163,31 @@
         }
 
         .message {
-            padding: 10px;
-            margin-bottom: 10px;
+            padding: 12px 15px;
+            margin-bottom: 15px;
             border-radius: 4px;
             display: none;
+            border-left: 4px solid;
         }
 
         .message.error {
             background: #fee;
             color: #c00;
-            border: 1px solid #c00;
+            border-color: #c00;
+            display: block;
+        }
+
+        .message.warning {
+            background: #ffeaa7;
+            color: #856404;
+            border-color: #ffc107;
+            display: block;
+        }
+
+        .message.success {
+            background: #d4edda;
+            color: #155724;
+            border-color: #28a745;
             display: block;
         }
     </style>
@@ -264,10 +279,31 @@
                     const f = filter.Filter || {};
                     if (f.date_start) document.getElementById('date-start').value = f.date_start;
                     if (f.date_end) document.getElementById('date-end').value = f.date_end;
+                } else {
+                    setDefaultDates();
                 }
             } catch (err) {
-                console.error("Error loading filter.json", err);
+                console.warn("Servizio di filtri non disponibile, utilizzo date di default", err);
+                setDefaultDates();
             }
+        }
+
+        function getDefaultDates() {
+            const today = new Date();
+            const firstDayLastMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+
+            const formatDate = (date) => date.toISOString().split('T')[0];
+
+            return {
+                date_start: formatDate(firstDayLastMonth),
+                date_end: formatDate(today)
+            };
+        }
+
+        function setDefaultDates() {
+            const defaults = getDefaultDates();
+            document.getElementById('date-start').value = defaults.date_start;
+            document.getElementById('date-end').value = defaults.date_end;
         }
 
         async function fetchMarketData() {
@@ -275,6 +311,7 @@
             const date_end = document.getElementById('date-end').value;
 
             if (!date_start || !date_end) {
+                showMessage("Selezionare entrambe le date", "error");
                 return;
             }
 
@@ -298,14 +335,19 @@
                 if (result.status === 'ok') {
                     renderTable(result.data);
                 } else {
-                    msgDiv.textContent = result.msg || "Errore nel caricamento dati";
-                    msgDiv.className = "message error";
+                    showMessage(result.msg || "Errore nel caricamento dati", "error");
                 }
             } catch (err) {
                 console.error("Error fetching market data", err);
-                msgDiv.textContent = "Errore di connessione al servizio market";
-                msgDiv.className = "message error";
+                showMessage("Errore di connessione al servizio market. Verificare che il servizio sia disponibile.", "error");
             }
+        }
+
+        function showMessage(text, type) {
+            const msgDiv = document.getElementById('message');
+            msgDiv.textContent = text;
+            msgDiv.className = `message ${type}`;
+            msgDiv.style.display = 'block';
         }
 
         function renderTable(data) {
