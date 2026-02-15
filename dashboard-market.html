@@ -309,27 +309,53 @@
             const msgDiv = document.getElementById('message');
             msgDiv.style.display = 'none';
 
+            const requestPayload = {
+                username: credentials.username,
+                token: credentials.token,
+                currency: credentials.currency,
+                date_start: date_start,
+                date_end: date_end
+            };
+
+            console.group('📤 REQUEST: /getmarket');
+            console.log('URL:', `${API_URL_MARKET}/getmarket`);
+            console.log('Method: POST');
+            console.log('Headers:', { 'Content-Type': 'application/json' });
+            console.log('Payload:', requestPayload);
+            console.groupEnd();
+
             try {
                 const response = await fetch(`${API_URL_MARKET}/getmarket`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        username: credentials.username,
-                        token: credentials.token,
-                        currency: credentials.currency,
-                        date_start: date_start,
-                        date_end: date_end
-                    })
+                    body: JSON.stringify(requestPayload)
+                });
+
+                console.group('📥 RESPONSE: /getmarket');
+                console.log('Status:', response.status, response.statusText);
+                console.log('Headers:', {
+                    'Content-Type': response.headers.get('Content-Type'),
+                    'Access-Control-Allow-Origin': response.headers.get('Access-Control-Allow-Origin')
                 });
 
                 const result = await response.json();
+                console.log('Payload:', result);
+                console.groupEnd();
+
                 if (result.status === 'ok') {
+                    console.log(`✅ Success! Loaded ${result.data.length} records`);
                     renderTable(result.data);
                 } else {
                     showMessage(result.msg || "Errore nel caricamento dati", "error");
+                    console.error('❌ Error:', result.msg);
                 }
             } catch (err) {
-                console.error("Error fetching market data", err);
+                console.group('❌ ERROR: /getmarket');
+                console.error('Error type:', err.name);
+                console.error('Error message:', err.message);
+                console.error('Full error:', err);
+                console.groupEnd();
+
                 showMessage("Errore di connessione al servizio market. Verificare che il servizio sia disponibile.", "error");
             }
         }
