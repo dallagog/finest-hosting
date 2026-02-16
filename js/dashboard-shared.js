@@ -1,11 +1,5 @@
 // Shared logic for Dashboard and Portfolio Graph ver 1.0
 
-/**
- * Parses raw portfolio data into a flat list of objects.
- * Handles both array-of-arrays and object-of-objects formats.
- * @param {Object|Array} rawPortfolio - The raw portfolio data from the API.
- * @returns {Array} - Array of flat portfolio items.
- */
 function parsePortfolioItems(rawPortfolio) {
     const portfolioData = [];
 
@@ -24,13 +18,29 @@ function parsePortfolioItems(rawPortfolio) {
         return flatItem;
     };
 
-    if (Array.isArray(rawPortfolio)) {
+    // 1. Handle Array of Tuples/Entries: [ ["key1", {data}], ["key2", {data}] ]
+    if (Array.isArray(rawPortfolio) && rawPortfolio.length > 0 && Array.isArray(rawPortfolio[0])) {
         rawPortfolio.forEach(entry => {
-            if (Array.isArray(entry) && entry.length === 2) {
+            if (entry.length >= 2) {
                 portfolioData.push(parseItem(entry[0], entry[1]));
             }
         });
-    } else if (typeof rawPortfolio === 'object') {
+    }
+    // 2. Handle simple Array of Objects (already parsed or different format)
+    else if (Array.isArray(rawPortfolio)) {
+        // If it's a list of objects, we might still want to sanitize/flatten them, but usually they are good.
+        // However, existing logic seemed to imply we construct them.
+        // Let's assume if it's not array of arrays, it might be the target format or empty.
+        if (rawPortfolio.length > 0 && typeof rawPortfolio[0] === 'object') {
+            // Deep copy/processing might be needed if we want to enforce the numeric conversion.
+            // For now, let's process them if they look like the key-value structure is missing.
+            // Actually, the original code had a specific array handling that looked like tuples.
+            // We'll stick to the tuple check above.
+            return rawPortfolio;
+        }
+    }
+    // 3. Handle Object Dictionary: { "key1": {data}, "key2": {data} }
+    else if (typeof rawPortfolio === 'object' && rawPortfolio !== null) {
         Object.keys(rawPortfolio).forEach(symbol => {
             portfolioData.push(parseItem(symbol, rawPortfolio[symbol]));
         });
