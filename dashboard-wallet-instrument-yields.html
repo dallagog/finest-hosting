@@ -117,11 +117,35 @@
             margin-top: 20px;
         }
 
-        th, td {
-            padding: 12px 15px;
-            text-align: left;
+        th,
+        td {
+            padding: 6px 10px;
+            text-align: right;
             border-bottom: 1px solid #eee;
-            font-family: 'Orbitron', sans-serif; /* Font richiesto */
+            font-family: 'Orbitron', sans-serif;
+            /* Font richiesto */
+            color: #333;
+            height: 32px;
+            font-size: 13px;
+        }
+
+        /* First column alignment override (usually text/description) */
+        td:first-child,
+        th:first-child {
+            text-align: left;
+        }
+
+        /* Row colors */
+        tbody tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+
+        tbody tr:nth-child(odd) {
+            background-color: #ffffff;
+        }
+
+        tbody tr:hover {
+            background: #f0f0f0 !important;
         }
 
         th {
@@ -133,17 +157,44 @@
             cursor: pointer;
             user-select: none;
             position: relative;
+            white-space: nowrap;
         }
 
-        th:hover { background-color: #e0e0e0; }
+        th:hover {
+            background-color: #e0e0e0;
+        }
 
-        th.sort-asc::after { content: ' ▲'; font-size: 0.8em; position: absolute; right: 5px; }
-        th.sort-desc::after { content: ' ▼'; font-size: 0.8em; position: absolute; right: 5px; }
+        th.sort-asc::after {
+            content: ' ▲';
+            font-size: 0.8em;
+            position: absolute;
+            right: 5px;
+        }
 
-        tr:hover { background-color: #f5f5f5; }
+        th.sort-desc::after {
+            content: ' ▼';
+            font-size: 0.8em;
+            position: absolute;
+            right: 5px;
+        }
 
-        .error-msg { color: #ff3333; text-align: center; margin-top: 20px; font-weight: bold; }
-        .loading { text-align: center; margin-top: 20px; font-style: italic; color: #666; }
+        tr:hover {
+            background-color: #f5f5f5;
+        }
+
+        .error-msg {
+            color: #ff3333;
+            text-align: center;
+            margin-top: 20px;
+            font-weight: bold;
+        }
+
+        .loading {
+            text-align: center;
+            margin-top: 20px;
+            font-style: italic;
+            color: #666;
+        }
     </style>
 </head>
 
@@ -221,17 +272,17 @@
                 if (!response.ok) return {};
                 const data = await response.json();
                 translations = data;
-                
+
                 // --- AGGIORNAMENTO UI HEADER (User, Lang, Flag, Font) ---
                 document.getElementById('userLabel').textContent = translations['int.user.label'] || 'Utente:';
                 document.getElementById('closeText').textContent = translations['int.close'] || 'Chiudi';
                 document.getElementById('pageTitle').textContent = translations['int.yield.history'] || 'Yield Details';
                 document.getElementById('usernameDisplay').textContent = username || '-';
-                
+
                 const langBase = language.split('_')[0];
                 document.getElementById('languageDisplay').textContent = langBase.toUpperCase();
                 document.getElementById('languageFlag').style.backgroundImage = `url('images/flags/${langBase}.png')`;
-                
+
                 return data;
             } catch (error) { return {}; }
         }
@@ -290,10 +341,10 @@
                 const th = document.createElement('th');
                 th.textContent = getTranslation(col) || col;
                 th.draggable = true;
-                
+
                 // Aggiunto ordinamento
                 th.onclick = () => sortTable(col);
-                
+
                 // Mantenuto drag & drop originale
                 th.ondragstart = (e) => handleDragStart(e, index);
                 th.ondragover = (e) => handleDragOver(e);
@@ -369,4 +420,5 @@
         })();
     </script>
 </body>
+
 </html>
