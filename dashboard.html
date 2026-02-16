@@ -2663,12 +2663,12 @@
         //            window.open(`dashboard-trade.html?code=${encodeURIComponent(symbol)}`, '_blank');
         //        }
 
-        function openTradeYieldDetails(symbol) {
-            console.log('openTradeYieldDetails called with symbol:', symbol);
+        function openTradeYieldDetails(id_account, id_instrument) {
+            console.log('openTradeYieldDetails called with id_account:', id_account, 'id_instrument:', id_instrument);
             const params = new URLSearchParams();
-            params.set('code', symbol || '');
-            params.set('id_account', credentials.username || '');
-            params.set('id_instrument', symbol || '');
+            params.set('code', `${id_account}:${id_instrument}` || '');
+            params.set('id_account', id_account || '');
+            params.set('id_instrument', id_instrument || '');
             const url = `dashboard-wallet-instrument-yields.html?${params.toString()}`;
             console.log('Opening URL:', url);
             window.open(url, '_blank');
@@ -2923,14 +2923,13 @@
                         e.stopPropagation();
                         // Open Yield Details
                         console.log('Account clicked:', val, 'Ticker:', item.Ticker, 'id_instrument:', item.id_instrument);
-                        if (item.Ticker) {
-                            console.log('Opening yield details with Ticker:', item.Ticker);
-                            openTradeYieldDetails(item.Ticker);
-                        } else if (item.id_instrument) {
-                            console.log('Opening yield details with id_instrument:', item.id_instrument);
-                            openTradeYieldDetails(item.id_instrument);
+                        const idAccount = val;
+                        const idInstrument = item.Ticker || item.id_instrument;
+                        if (idAccount && idInstrument) {
+                            console.log('Opening yield details with id_account:', idAccount, 'id_instrument:', idInstrument);
+                            openTradeYieldDetails(idAccount, idInstrument);
                         } else {
-                            console.warn('No Ticker or id_instrument found for item:', item);
+                            console.warn('Missing id_account or id_instrument:', { idAccount, idInstrument });
                         }
                     };
                     td.appendChild(span);
