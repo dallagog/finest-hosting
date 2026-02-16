@@ -1251,6 +1251,8 @@
             credentials.language = language;
             credentials.filter = filter;
 
+            console.log('Authentication check - credentials set:', { username, token, language, filter });
+
             document.getElementById('usernameDisplay').textContent = username || '-';
             document.getElementById('headerBar').style.display = 'flex';
             document.getElementById('authCheck').style.display = 'none';
@@ -2662,11 +2664,14 @@
         //        }
 
         function openTradeYieldDetails(symbol) {
+            console.log('openTradeYieldDetails called with symbol:', symbol);
             const params = new URLSearchParams();
             params.set('code', symbol || '');
             params.set('id_account', credentials.username || '');
             params.set('id_instrument', symbol || '');
-            window.open(`dashboard-wallet-instrument-yields.html?${params.toString()}`, '_blank');
+            const url = `dashboard-wallet-instrument-yields.html?${params.toString()}`;
+            console.log('Opening URL:', url);
+            window.open(url, '_blank');
         }
 
         // ========== PROFITABILITY TABLE ==========
@@ -2917,7 +2922,16 @@
                     span.onclick = (e) => {
                         e.stopPropagation();
                         // Open Yield Details
-                        if (item.Ticker) openTradeYieldDetails(item.Ticker);
+                        console.log('Account clicked:', val, 'Ticker:', item.Ticker, 'id_instrument:', item.id_instrument);
+                        if (item.Ticker) {
+                            console.log('Opening yield details with Ticker:', item.Ticker);
+                            openTradeYieldDetails(item.Ticker);
+                        } else if (item.id_instrument) {
+                            console.log('Opening yield details with id_instrument:', item.id_instrument);
+                            openTradeYieldDetails(item.id_instrument);
+                        } else {
+                            console.warn('No Ticker or id_instrument found for item:', item);
+                        }
                     };
                     td.appendChild(span);
                 } else if (isClickableDescription) {
