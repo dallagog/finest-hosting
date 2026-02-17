@@ -297,7 +297,7 @@
 
             filtered.forEach(row => {
                 html += `<tr>
-                    <td>${row.id_instrument}</td>
+                    <td><a href="#" onclick="openPriceGraph('${row.id_instrument}')" style="color:blue; text-decoration:underline;">${row.id_instrument}</a></td>
                     <td>${row.date_start}</td>
                     <td>${row.value}</td>
                 </tr>`;
@@ -320,6 +320,11 @@
         function logout() {
             localStorage.clear();
             window.location.href = 'index.html';
+        }
+
+        function openPriceGraph(instrumentId) {
+            const url = `dashboard-graph-prices.html?id_instrument=${instrumentId}&username=${credentials.username}&token=${credentials.token}&instrument_currency=${credentials.currency}`;
+            window.open(url, '_blank');
         }
 
         window.onload = init;
