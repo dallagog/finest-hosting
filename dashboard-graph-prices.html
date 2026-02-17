@@ -638,11 +638,9 @@
                 labels.push(date);
                 prices.push(avgPrice);
 
-                // Media Forza
-                const avgForce = data.forces.length > 0
-                    ? data.forces.reduce((a, b) => a + b, 0) / data.forces.length
-                    : 0;
-                forces.push(avgForce);
+                // Forza (prendo il primo valore non zero trovato per preservare il dato originale)
+                const actualForce = data.forces.find(f => f !== 0) || 0;
+                forces.push(actualForce);
 
                 // Merge Patterns (unique patterns for the day)
                 let mergedPattern = {};
