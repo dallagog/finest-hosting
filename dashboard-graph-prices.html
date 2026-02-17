@@ -581,25 +581,35 @@
             const forces = [];
             const patternValues = [];
 
-            trendDataRaw.forEach(item => {
-                const priceParsed = parseValue(item[priceField]);
+            // Aggregazione dati per data
+            const aggregatedData = {};
 
-                // Salta i punti con prezzo 0
-                if (priceParsed === 0) {
-                    return;
+            trendDataRaw.forEach(item => {
+                const date = item.date_start || item.date;
+                if (!aggregatedData[date]) {
+                    aggregatedData[date] = {
+                        date: date,
+                        prices: [],
+                        forces: [],
+                        patterns: []
+                    };
                 }
 
-                labels.push(item.date_start || item.date);
-                prices.push(priceParsed);
+                const priceParsed = parseValue(item[priceField]);
+                if (priceParsed !== 0) {
+                    aggregatedData[date].prices.push(priceParsed);
+                }
 
-                const forceValue =
-                    item[forceField] !== undefined && item[forceField] !== null
-                        ? parseValue(item[forceField])
-                        : 0;
+                const forceValue = item[forceField] !== undefined && item[forceField] !== null
+                    ? parseValue(item[forceField])
+                    : 0;
 
-                forces.push(forceValue);
+                // Collect forces but only if non-zero, or keep 0 if it's the only value? 
+                // Logic: average force might be misleading. Let's sum it or average it? 
+                // User asked: "raggruppa i dati facendo una media se si sono più prezzi in una singola data"
+                // Implicitly this applies to prices. For forces and patterns, we should probably merge/average too.
+                aggregatedData[date].forces.push(forceValue);
 
-                // Raccogli i pattern per questo punto
                 const patternObj = {};
                 patternFields.forEach(field => {
                     if (item[field] !== undefined && item[field] !== null && item[field] !== "") {
@@ -608,7 +618,38 @@
                     }
                 });
 
-                patternValues.push(Object.keys(patternObj).length ? patternObj : null);
+                if (Object.keys(patternObj).length > 0) {
+                    aggregatedData[date].patterns.push(patternObj);
+                }
+            });
+
+            const sortedDates = Object.keys(aggregatedData).sort((a, b) => new Date(a) - new Date(b));
+
+            sortedDates.forEach(date => {
+                const data = aggregatedData[date];
+
+                // Media Prezzi
+                const avgPrice = data.prices.length > 0
+                    ? data.prices.reduce((a, b) => a + b, 0) / data.prices.length
+                    : 0;
+
+                if (avgPrice === 0) return; // Skip if no valid price
+
+                labels.push(date);
+                prices.push(avgPrice);
+
+                // Media Forza
+                const avgForce = data.forces.length > 0
+                    ? data.forces.reduce((a, b) => a + b, 0) / data.forces.length
+                    : 0;
+                forces.push(avgForce);
+
+                // Merge Patterns (unique patterns for the day)
+                let mergedPattern = {};
+                data.patterns.forEach(p => {
+                    Object.assign(mergedPattern, p);
+                });
+                patternValues.push(Object.keys(mergedPattern).length ? mergedPattern : null);
             });
 
             const gradient = ctx.createLinearGradient(0, 0, 0, 400);
