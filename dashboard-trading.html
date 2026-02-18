@@ -635,36 +635,45 @@
             console.log('Processing and rendering portfolio...');
             portfolioData = [];
 
+            const parseVal = (val) => {
+                if (typeof val === 'string' && val.trim() !== '') {
+                    const numberRegex = /^-?\d+(\.\d+)?$/;
+                    if (numberRegex.test(val)) {
+                        return parseFloat(val);
+                    }
+                }
+                return val;
+            };
+
             const parsePortfolioItem = (symbol, details) => {
                 const flatItem = { Ticker: symbol };
                 if (details && typeof details === 'object') {
                     Object.keys(details).forEach(key => {
-                        // Prevent overwriting Ticker which is key/symbol
                         if (key === 'Ticker') return;
-
-                        let val = details[key];
-                        if (typeof val === 'string' && val.trim() !== '') {
-                            const numberRegex = /^-?\d+(\.\d+)?$/;
-                            if (numberRegex.test(val)) {
-                                flatItem[key] = parseFloat(val);
-                            } else {
-                                flatItem[key] = val;
-                            }
-                        } else {
-                            flatItem[key] = val;
-                        }
+                        flatItem[key] = parseVal(details[key]);
                     });
                 }
                 return flatItem;
             };
 
             if (Array.isArray(rawPortfolio)) {
-                rawPortfolio.forEach(entry => {
-                    if (Array.isArray(entry) && entry.length === 2) {
-                        portfolioData.push(parsePortfolioItem(entry[0], entry[1]));
+                rawPortfolio.forEach(item => {
+                    if (typeof item === 'object' && item !== null) {
+                        if (item.id_instrument) {
+                            // New format: array of objects
+                            const flatItem = { Ticker: item.id_instrument };
+                            Object.keys(item).forEach(key => {
+                                flatItem[key] = parseVal(item[key]);
+                            });
+                            portfolioData.push(flatItem);
+                        } else if (Array.isArray(item) && item.length === 2) {
+                            // Old format: array of [symbol, details]
+                            portfolioData.push(parsePortfolioItem(item[0], item[1]));
+                        }
                     }
                 });
             } else if (typeof rawPortfolio === 'object' && rawPortfolio !== null) {
+                // Old format: object of {symbol: details}
                 Object.keys(rawPortfolio).forEach(symbol => {
                     portfolioData.push(parsePortfolioItem(symbol, rawPortfolio[symbol]));
                 });
@@ -672,11 +681,18 @@
 
             if (portfolioData.length > 0) {
                 const allKeys = new Set();
+                // Ensure Ticker (mapped from id_instrument) is the first column
+                allKeys.add('Ticker');
+
+                // Add all other keys except internal ones
                 portfolioData.forEach(item => {
-                    Object.keys(item).forEach(k => allKeys.add(k));
+                    Object.keys(item).forEach(k => {
+                        if (k !== 'Ticker' && k !== 'divisor_price' && k !== 'price_divisor' && k !== 'id_instrument') {
+                            allKeys.add(k);
+                        }
+                    });
                 });
-                const keys = Array.from(allKeys);
-                tableColumns = keys.filter(k => k !== 'Ticker' && k !== 'divisor_price');
+                tableColumns = Array.from(allKeys);
             }
 
             renderTable();
