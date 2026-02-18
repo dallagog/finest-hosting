@@ -573,6 +573,7 @@
                 }
             }
             const currency = localStorage.getItem('currency') || 'EUR';
+            credentials.currency = currency; // ENSURE CREDENTIALS HAS THE CURRENCY
             const currData = currencies.find(c => c.currency === currency);
             if (currData && currData['img.currency.flag']) {
                 document.getElementById('currencyDisplay').textContent = `${currData['img.currency.flag']} ${currency}`;
@@ -1070,7 +1071,8 @@
 
                 // 2. Start WebSocket connection
                 const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-                const wsUrl = `${wsProtocol}//feweb-tunnel.fe-web.eu/ws/updateportfolioonline/${credentials.username}/${credentials.currency}`;
+                const currency = credentials.currency || localStorage.getItem('currency') || 'EUR';
+                const wsUrl = `${wsProtocol}//feweb-tunnel.fe-web.eu/ws/updateportfolioonline/${credentials.username}/${currency}`;
                 console.log('WebSocket connecting to:', wsUrl);
 
 
