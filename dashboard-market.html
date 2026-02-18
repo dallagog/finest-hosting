@@ -243,6 +243,16 @@
             const msgDiv = document.getElementById('message');
             msgDiv.style.display = 'none';
 
+            console.log("Checking health from:", `${API_URL_MARKET}/health`);
+            try {
+                const healthResponse = await fetch(`${API_URL_MARKET}/health`);
+                console.log("Health status:", healthResponse.status);
+                const healthResult = await healthResponse.json();
+                console.log("Health Result:", healthResult);
+            } catch (hErr) {
+                console.warn("Health check failed, proceeding anyway:", hErr);
+            }
+
             const payload = {
                 username: credentials.username,
                 token: credentials.token,
