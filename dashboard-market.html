@@ -251,6 +251,9 @@
                 date_end: date_end
             };
 
+            console.log("Fetching market data from:", `${API_URL_MARKET}/getmarket`);
+            console.log("Payload:", payload);
+
             try {
                 const response = await fetch(`${API_URL_MARKET}/getmarket`, {
                     method: 'POST',
@@ -258,7 +261,9 @@
                     body: JSON.stringify(payload)
                 });
 
+                console.log("Response status:", response.status);
                 const result = await response.json();
+                console.log("Result:", result);
 
                 if (result.status === 'ok') {
                     renderTable(result.data);
