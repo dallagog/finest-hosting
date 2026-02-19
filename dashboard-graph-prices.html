@@ -868,48 +868,58 @@
                                     return `📅 ${context[0].label}`;
                                 },
                                 label: function (context) {
-                                    if (context.parsed.y === null) return '';
-                                    return `💰 Prezzo: ${context.parsed.y.toLocaleString(undefined, {
+                                    if (context.parsed.y === null || context.parsed.y === 0) return '';
+                                    const label = context.dataset.label || '';
+                                    const value = context.parsed.y.toLocaleString(undefined, {
                                         minimumFractionDigits: 2,
-                                        maximumFractionDigits: 2
-                                    })} ${instrumentCurrency}`;
+                                        maximumFractionDigits: 4
+                                    });
+                                    let unit = '';
+                                    if (label.includes('Price') || label === document.getElementById('page-title-input').value) unit = ` ${instrumentCurrency}`;
+                                    else if (label.includes('Short')) unit = '%';
+
+                                    return `${label}: ${value}${unit}`;
                                 },
                                 afterBody: function (context) {
                                     const index = context[0].dataIndex;
-                                    const dataset = context[0].dataset;
+                                    const chart = context[0].chart;
+                                    const priceDataset = chart.data.datasets[0];
                                     const lines = [];
 
-                                    // Forza (solo se presente)
-                                    const force = dataset.forceValues?.[index];
-                                    if (force && force !== 0) {
-                                        const direction = force > 0 ? '▲' : '▼';
-                                        lines.push(`⚡ Forza: ${direction} ${Math.abs(force).toFixed(2)}`);
+                                    // Forza (solo se presente e layer-price è attivo)
+                                    if (document.getElementById('layer-price').checked) {
+                                        const force = priceDataset.forceValues?.[index];
+                                        if (force && force !== 0) {
+                                            const direction = force > 0 ? '▲' : '▼';
+                                            lines.push(`⚡ ${getTranslation('int.force') || 'Forza'}: ${direction} ${Math.abs(force).toFixed(2)}`);
+                                        }
                                     }
 
-                                    // Pattern (solo se presenti)
-                                    const patternObj = dataset.patternValues?.[index];
+                                    // Pattern (solo se presenti e layer-pattern è attivo)
+                                    const patternObj = priceDataset.patternValues?.[index];
                                     if (patternObj && Object.keys(patternObj).length > 0 && document.getElementById('layer-pattern').checked) {
-                                        lines.push('🔍 PATTERN:');
+                                        lines.push(`🔍 ${getTranslation('int.pattern') || 'Pattern'}:`);
                                         Object.entries(patternObj).forEach(([key, value]) => {
-                                            const formattedKey = key
+                                            const formattedKey = getTranslation(key) || key
                                                 .replace(/_/g, ' ')
                                                 .replace(/\b\w/g, l => l.toUpperCase());
                                             lines.push(`   • ${formattedKey}: ${value}`);
                                         });
                                     }
 
-                                    // Exchange Rate
+                                    // Exchange Rate (solo se layer-exchange è attivo)
                                     if (document.getElementById('layer-exchange').checked) {
-                                        const chart = context[0].chart;
-                                        const exchVal = chart.data.datasets.find(ds => ds.label.startsWith("Exchange Rate"))?.data[index];
+                                        const exchDS = chart.data.datasets.find(ds => ds.yAxisID === 'y1' && ds.borderColor.includes('255, 159, 64'));
+                                        const exchVal = exchDS?.data[index];
                                         if (exchVal && exchVal !== 0) {
-                                            lines.push(`💱 Exchange: ${exchVal.toFixed(4)}`);
+                                            lines.push(`💱 ${getTranslation('int.exchange') || 'Cambio'}: ${exchVal.toFixed(4)}`);
                                         }
                                     }
 
-                                    // Short (solo se presente)
+                                    // Short (solo se presente e layer-short è attivo)
                                     if (document.getElementById('layer-short').checked) {
-                                        const shortVal = chart.data.datasets.find(ds => ds.label === "Total Short (%)")?.data[index];
+                                        const shortDS = chart.data.datasets.find(ds => ds.label === "Total Short (%)");
+                                        const shortVal = shortDS?.data[index];
                                         if (shortVal && shortVal !== 0) {
                                             lines.push(`📉 Short: ${shortVal.toFixed(2)}%`);
                                         }
@@ -923,7 +933,7 @@
                                     const patternObj = dataset.patternValues?.[index];
 
                                     if (patternObj && Object.keys(patternObj).length > 0) {
-                                        return ['────────────────', '📊 Giorno con pattern'];
+                                        return ['────────────────', `📊 ${getTranslation('int.day.with.pattern') || 'Giorno con pattern'}`];
                                     }
                                     return null;
                                 }
