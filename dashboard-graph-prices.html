@@ -414,8 +414,9 @@
         const idAccount = urlParams.get('id_account');
         const initialTitle = urlParams.get('title');
         const instrumentNameFromUrl = urlParams.get('instrument_name');
-        // IMPORTANTE: Usa la divisa del titolo, non quella dell'utente
+        // IMPORTANTE: Usa la divisa del titolo per i layer, ma la divisa target per il backend
         const instrumentCurrency = urlParams.get('instrument_currency') || 'EUR';
+        const targetCurrency = urlParams.get('currency') || 'EUR';
 
         const API_URL = "https://feweb-tunnel.fe-web.eu";
         let trendDataRaw = [];
@@ -642,7 +643,7 @@
                         username,
                         token,
                         language,
-                        currency: instrumentCurrency, // USA LA DIVISA DEL TITOLO
+                        currency: targetCurrency, // USA LA DIVISA TARGET (es: EUR) PER OTTENERE IL CAMBIO
                         instrument: {
                             id_instrument: idInstrument,
                             id_account: idAccount,
