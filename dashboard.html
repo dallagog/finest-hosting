@@ -660,6 +660,28 @@
             margin-top: 20px;
             text-align: center;
         }
+
+        .grouping-container {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .expand-toggle {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 14px;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .expand-toggle input {
+            width: auto;
+            margin: 0;
+            cursor: pointer;
+        }
     </style>
 </head>
 
@@ -779,10 +801,17 @@
                 </div>
                 <div class="collapsible-content active">
                     <div class="portfolio-controls">
-                        <label for="grouping-select" id="grouping-label-dashboard">Raggruppa per:</label>
-                        <select id="grouping-select" onchange="updateTableGrouping()">
-                            <option value="">Nessun raggruppamento</option>
-                        </select>
+                        <div class="grouping-container">
+                            <label for="grouping-select" id="grouping-label-dashboard">Raggruppa per:</label>
+                            <select id="grouping-select" onchange="onGroupingChange()">
+                                <option value="">Nessun raggruppamento</option>
+                            </select>
+
+                            <label class="expand-toggle">
+                                <input type="checkbox" id="expand-details" onchange="renderTable()">
+                                <span id="expandLabel">Espandi</span>
+                            </label>
+                        </div>
 
                         <button id="graphBtn" onclick="openGraphNewWindow('portfolio')">
                             <i class="fa fa-pie-chart"></i> <span id="graphText">Graph</span>
@@ -819,10 +848,18 @@
                 </div>
                 <div class="collapsible-content">
                     <div class="portfolio-controls">
-                        <label for="profitability-grouping-select">Raggruppa per:</label>
-                        <select id="profitability-grouping-select" onchange="updateProfitabilityGrouping()">
-                            <option value="">Nessun raggruppamento</option>
-                        </select>
+                        <div class="grouping-container">
+                            <label for="profitability-grouping-select">Raggruppa per:</label>
+                            <select id="profitability-grouping-select" onchange="onProfitabilityGroupingChange()">
+                                <option value="">Nessun raggruppamento</option>
+                            </select>
+
+                            <label class="expand-toggle">
+                                <input type="checkbox" id="expand-profitability-details"
+                                    onchange="renderProfitabilityTable()">
+                                <span id="expandProfitabilityLabel">Espandi</span>
+                            </label>
+                        </div>
                         <button id="profitabilityGraphBtn" onclick="openGraphNewWindow('profitability')">
                             <i class="fa fa-bar-chart"></i> <span id="profitabilityGraphText">Graph</span>
                         </button>
@@ -1193,6 +1230,12 @@
                 const historicalBtn = document.getElementById('historicalText');
                 if (historicalBtn) historicalBtn.textContent = historicalText;
             }
+
+            const expandLabel = getTranslation('int.expand') || 'Espandi';
+            const elExpand = document.getElementById('expandLabel');
+            if (elExpand) elExpand.textContent = expandLabel;
+            const elProfitExpand = document.getElementById('expandProfitabilityLabel');
+            if (elProfitExpand) elProfitExpand.textContent = expandLabel;
         }
 
         // ========== UTILITY FUNCTIONS ==========
@@ -2451,6 +2494,12 @@
             );
         }
 
+        function onGroupingChange() {
+            const expandCheckbox = document.getElementById('expand-details');
+            if (expandCheckbox) expandCheckbox.checked = false;
+            updateTableGrouping();
+        }
+
         function updateTableGrouping() {
             currentGroup = document.getElementById('grouping-select').value;
             renderTable();
@@ -2548,8 +2597,13 @@
                     if (!groups[groupVal]) groups[groupVal] = [];
                     groups[groupVal].push(item);
                 });
+
+                const isExpanded = document.getElementById('expand-details')?.checked;
+
                 Object.keys(groups).sort().forEach(group => {
                     const groupItems = groups[group];
+
+                    // Header del gruppo
                     const trGroup = document.createElement('tr');
                     trGroup.className = 'group-header';
                     const tdGroup = document.createElement('td');
@@ -2557,9 +2611,15 @@
                     tdGroup.textContent = `${getTranslation(group) || group} (${groupItems.length})`;
                     trGroup.appendChild(tdGroup);
                     tbody.appendChild(trGroup);
-                    groupItems.forEach(item => renderRow(item, tbody));
+
+                    // Totale del gruppo (Sempre visibile, messo in testa)
                     const groupTotal = calculateTotals(groupItems, tableColumns);
                     renderRow(groupTotal, tbody, true);
+
+                    // Dettagli (solo se espanso)
+                    if (isExpanded) {
+                        groupItems.forEach(item => renderRow(item, tbody));
+                    }
                 });
                 const grandTotal = calculateTotals(displayData, tableColumns);
                 renderRow(grandTotal, tbody, true, true);
@@ -2788,6 +2848,12 @@
             });
         }
 
+        function onProfitabilityGroupingChange() {
+            const expandCheckbox = document.getElementById('expand-profitability-details');
+            if (expandCheckbox) expandCheckbox.checked = false;
+            updateProfitabilityGrouping();
+        }
+
         function updateProfitabilityGrouping() {
             currentProfitabilityGroup = document.getElementById('profitability-grouping-select').value;
             renderProfitabilityTable();
@@ -2877,8 +2943,13 @@
                     if (!groups[groupVal]) groups[groupVal] = [];
                     groups[groupVal].push(item);
                 });
+
+                const isExpanded = document.getElementById('expand-profitability-details')?.checked;
+
                 Object.keys(groups).sort().forEach(group => {
                     const groupItems = groups[group];
+
+                    // Header del gruppo
                     const trGroup = document.createElement('tr');
                     trGroup.className = 'group-header';
                     const tdGroup = document.createElement('td');
@@ -2886,9 +2957,15 @@
                     tdGroup.textContent = `${getTranslation(group) || group} (${groupItems.length})`;
                     trGroup.appendChild(tdGroup);
                     tbody.appendChild(trGroup);
-                    groupItems.forEach(item => renderProfitabilityRow(item, tbody));
+
+                    // Totale del gruppo (Sempre visibile, messo in testa)
                     const groupTotal = calculateTotals(groupItems, profitabilityTableColumns);
                     renderProfitabilityRow(groupTotal, tbody, true);
+
+                    // Dettagli (solo se espanso)
+                    if (isExpanded) {
+                        groupItems.forEach(item => renderProfitabilityRow(item, tbody));
+                    }
                 });
                 const grandTotal = calculateTotals(displayData, profitabilityTableColumns);
                 renderProfitabilityRow(grandTotal, tbody, true, true);

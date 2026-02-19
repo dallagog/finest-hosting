@@ -254,6 +254,72 @@
             font-size: 1.2rem;
             letter-spacing: 1px;
         }
+
+        /* Multi-select Styles */
+        .select-container {
+            position: relative;
+            min-width: 150px;
+        }
+
+        .select-btn {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 12px;
+            background: #fff;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 0.8rem;
+        }
+
+        .select-btn i {
+            font-size: 12px;
+            transition: transform 0.3s;
+        }
+
+        .select-btn.active i {
+            transform: rotate(180deg);
+        }
+
+        .options-list {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            width: 100%;
+            background: #fff;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            margin-top: 5px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            z-index: 100;
+            display: none;
+            max-height: 250px;
+            overflow-y: auto;
+        }
+
+        .options-list.show {
+            display: block;
+        }
+
+        .option-item {
+            padding: 8px 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: background 0.2s;
+        }
+
+        .option-item:hover {
+            background: #f0f0f0;
+        }
+
+        .option-item input {
+            cursor: pointer;
+        }
     </style>
 </head>
 
@@ -291,6 +357,36 @@
             <div class="control-group">
                 <label for="end-date" id="label-end-date">End:</label>
                 <input type="date" id="end-date" class="date-input">
+            </div>
+
+            <div class="control-group">
+                <label id="label-layers">Layers:</label>
+                <div class="select-container" id="layers-container">
+                    <div class="select-btn" onclick="toggleDropdown()">
+                        <span id="select-label">Seleziona</span>
+                        <i class="fa-solid fa-chevron-down"></i>
+                    </div>
+                    <div class="options-list" id="options-list">
+                        <div class="option-item">
+                            <input type="checkbox" id="layer-price" value="price" checked onchange="onLayerChange()">
+                            <label for="layer-price" data-i18n="int.detail.prices">Prezzi</label>
+                        </div>
+                        <div class="option-item">
+                            <input type="checkbox" id="layer-pattern" value="pattern" checked
+                                onchange="onLayerChange()">
+                            <label for="layer-pattern" data-i18n="int.pattern">Pattern</label>
+                        </div>
+                        <div class="option-item">
+                            <input type="checkbox" id="layer-exchange" value="exchange" checked
+                                onchange="onLayerChange()">
+                            <label for="layer-exchange" data-i18n="int.exchange">Cambi</label>
+                        </div>
+                        <div class="option-item">
+                            <input type="checkbox" id="layer-short" value="short" checked onchange="onLayerChange()">
+                            <label for="layer-short">Short</label>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <button class="confirm-btn" onclick="loadPrices()" id="btn-confirm">Carica</button>
@@ -412,7 +508,31 @@
             if (document.getElementById('label-start-date')) document.getElementById('label-start-date').textContent = (getTranslation('int.date.start') || 'Start') + ':';
             if (document.getElementById('label-end-date')) document.getElementById('label-end-date').textContent = (getTranslation('int.date.end') || 'End') + ':';
 
+            // Localize multi-select
+            document.querySelector('[for="layer-price"]').textContent = getTranslation('int.detail.prices') || 'Prezzi';
+            document.querySelector('[for="layer-pattern"]').textContent = getTranslation('int.pattern') || 'Pattern';
+            document.querySelector('[for="layer-exchange"]').textContent = getTranslation('int.exchange') || 'Cambi';
+            if (document.getElementById('label-layers')) document.getElementById('label-layers').textContent = (getTranslation('int.layers') || 'Layers') + ':';
+            document.getElementById('select-label').textContent = getTranslation('int.layers') || 'Layers';
+
             await loadPrices();
+        }
+
+        function toggleDropdown() {
+            document.getElementById('options-list').classList.toggle('show');
+            document.querySelector('.select-btn').classList.toggle('active');
+        }
+
+        // Close dropdown when clicking outside
+        window.addEventListener('click', function (e) {
+            if (!document.getElementById('layers-container').contains(e.target)) {
+                document.getElementById('options-list').classList.remove('show');
+                document.querySelector('.select-btn').classList.remove('active');
+            }
+        });
+
+        function onLayerChange() {
+            renderChart();
         }
 
         const forceArrowsPlugin = {
@@ -478,7 +598,7 @@
                 const { ctx, chartArea } = chart;
                 const dataset = chart.data.datasets[0];
 
-                if (!dataset || !dataset.patternValues) return;
+                if (!dataset || !dataset.patternValues || !document.getElementById('layer-pattern').checked) return;
 
                 const meta = chart.getDatasetMeta(0);
                 if (!meta || meta.hidden) return;
@@ -580,6 +700,9 @@
             const prices = [];
             const forces = [];
             const patternValues = [];
+            const shorts = [];
+            const exchanges = [];
+            let dualExchangeLabel = "";
 
             // Aggregazione dati per data
             const aggregatedData = {};
@@ -591,7 +714,9 @@
                         date: date,
                         prices: [],
                         forces: [],
-                        patterns: []
+                        patterns: [],
+                        shorts: [],
+                        exchanges: []
                     };
                 }
 
@@ -621,6 +746,15 @@
                 if (Object.keys(patternObj).length > 0) {
                     aggregatedData[date].patterns.push(patternObj);
                 }
+
+                if (item.short !== undefined && item.short !== null) {
+                    aggregatedData[date].shorts.push(parseValue(item.short));
+                }
+
+                if (item.valore !== undefined && item.valore !== null) {
+                    aggregatedData[date].exchanges.push(parseValue(item.valore));
+                    if (item.dual_exchange) dualExchangeLabel = item.dual_exchange;
+                }
             });
 
             const sortedDates = Object.keys(aggregatedData).sort((a, b) => new Date(a) - new Date(b));
@@ -648,6 +782,18 @@
                     Object.assign(mergedPattern, p);
                 });
                 patternValues.push(Object.keys(mergedPattern).length ? mergedPattern : null);
+
+                // Short (Somma)
+                const totalShort = data.shorts.length > 0
+                    ? data.shorts.reduce((a, b) => a + b, 0)
+                    : 0;
+                shorts.push(totalShort);
+
+                // Exchange (Media se presenti più valori)
+                const avgExch = data.exchanges.length > 0
+                    ? data.exchanges.reduce((a, b) => a + b, 0) / data.exchanges.length
+                    : 0;
+                exchanges.push(avgExch);
             });
 
             const gradient = ctx.createLinearGradient(0, 0, 0, 400);
@@ -677,7 +823,33 @@
                         pointBorderColor: '#ffffff',
                         pointBorderWidth: 1,
                         pointRadius: 4,
-                        pointHoverRadius: 8
+                        pointHoverRadius: 8,
+                        yAxisID: 'y',
+                        hidden: !document.getElementById('layer-price').checked
+                    },
+                    {
+                        label: `Exchange Rate (${dualExchangeLabel || 'N/A'})`,
+                        data: exchanges,
+                        borderColor: 'rgba(255, 159, 64, 1)',
+                        backgroundColor: 'rgba(255, 159, 64, 0.2)',
+                        borderWidth: 2,
+                        tension: 0.1,
+                        fill: false,
+                        yAxisID: 'y1',
+                        pointRadius: 3,
+                        hidden: !document.getElementById('layer-exchange').checked || exchanges.every(v => v === 0)
+                    },
+                    {
+                        label: "Total Short (%)",
+                        data: shorts,
+                        borderColor: 'rgba(255, 99, 132, 1)',
+                        backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                        borderWidth: 2,
+                        tension: 0.1,
+                        fill: false,
+                        yAxisID: 'y1',
+                        pointRadius: 3,
+                        hidden: !document.getElementById('layer-short').checked || shorts.every(v => v === 0)
                     }]
                 },
                 plugins: [forceArrowsPlugin, patternLinesPlugin],
@@ -715,7 +887,7 @@
 
                                     // Pattern (solo se presenti)
                                     const patternObj = dataset.patternValues?.[index];
-                                    if (patternObj && Object.keys(patternObj).length > 0) {
+                                    if (patternObj && Object.keys(patternObj).length > 0 && document.getElementById('layer-pattern').checked) {
                                         lines.push('🔍 PATTERN:');
                                         Object.entries(patternObj).forEach(([key, value]) => {
                                             const formattedKey = key
@@ -723,6 +895,23 @@
                                                 .replace(/\b\w/g, l => l.toUpperCase());
                                             lines.push(`   • ${formattedKey}: ${value}`);
                                         });
+                                    }
+
+                                    // Exchange Rate
+                                    if (document.getElementById('layer-exchange').checked) {
+                                        const chart = context[0].chart;
+                                        const exchVal = chart.data.datasets.find(ds => ds.label.startsWith("Exchange Rate"))?.data[index];
+                                        if (exchVal && exchVal !== 0) {
+                                            lines.push(`💱 Exchange: ${exchVal.toFixed(4)}`);
+                                        }
+                                    }
+
+                                    // Short (solo se presente)
+                                    if (document.getElementById('layer-short').checked) {
+                                        const shortVal = chart.data.datasets.find(ds => ds.label === "Total Short (%)")?.data[index];
+                                        if (shortVal && shortVal !== 0) {
+                                            lines.push(`📉 Short: ${shortVal.toFixed(2)}%`);
+                                        }
                                     }
 
                                     return lines.length > 0 ? lines : null;
@@ -754,20 +943,26 @@
                                     const labels = Chart.defaults.plugins.legend.labels.generateLabels(chart);
 
                                     if (labels.length > 0) {
-                                        labels[0].fillStyle = 'rgba(75,192,192,1)';
-                                        labels[0].strokeStyle = 'rgba(75,192,192,1)';
+                                        // Update Prices label color explicitly if needed
+                                        const priceDS = chart.data.datasets[0];
+                                        if (priceDS) {
+                                            labels[0].fillStyle = priceDS.borderColor;
+                                            labels[0].strokeStyle = priceDS.borderColor;
+                                        }
                                     }
 
-                                    // Aggiungi etichetta per i pattern
-                                    labels.push({
-                                        text: '📊 Giorni con Pattern (linea viola)',
-                                        fillStyle: '#800080',
-                                        strokeStyle: '#800080',
-                                        lineWidth: 2,
-                                        hidden: false,
-                                        index: labels.length,
-                                        pointStyle: 'line'
-                                    });
+                                    // Aggiungi etichetta per i pattern se attivata
+                                    if (document.getElementById('layer-pattern').checked) {
+                                        labels.push({
+                                            text: '📊 ' + (getTranslation('int.pattern') || 'Pattern') + ' (linea viola)',
+                                            fillStyle: '#800080',
+                                            strokeStyle: '#800080',
+                                            lineWidth: 2,
+                                            hidden: false,
+                                            index: labels.length,
+                                            pointStyle: 'line'
+                                        });
+                                    }
 
                                     return labels;
                                 }
@@ -786,6 +981,29 @@
                             },
                             grid: {
                                 color: 'rgba(0, 0, 0, 0.1)'
+                            }
+                        },
+                        y1: {
+                            position: 'right',
+                            display: document.getElementById('layer-exchange').checked || document.getElementById('layer-short').checked,
+                            suggestedMin: 0,
+                            ticks: {
+                                callback: function (value) {
+                                    // Determina se stiamo mostrando cambo o percentuale
+                                    const hasShort = document.getElementById('layer-short').checked;
+                                    const hasExch = document.getElementById('layer-exchange').checked;
+
+                                    if (hasShort && !hasExch) return value.toFixed(2) + '%';
+                                    if (hasExch && !hasShort) return value.toFixed(4);
+                                    return value.toLocaleString();
+                                }
+                            },
+                            grid: {
+                                drawOnChartArea: false
+                            },
+                            title: {
+                                display: true,
+                                text: 'Ratio / %'
                             }
                         },
                         x: {
