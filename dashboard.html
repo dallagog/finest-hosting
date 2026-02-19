@@ -2603,17 +2603,14 @@
                 Object.keys(groups).sort().forEach(group => {
                     const groupItems = groups[group];
 
-                    // Header del gruppo
-                    const trGroup = document.createElement('tr');
-                    trGroup.className = 'group-header';
-                    const tdGroup = document.createElement('td');
-                    tdGroup.colSpan = tableColumns.length;
-                    tdGroup.textContent = `${getTranslation(group) || group} (${groupItems.length})`;
-                    trGroup.appendChild(tdGroup);
-                    tbody.appendChild(trGroup);
-
                     // Totale del gruppo (Sempre visibile, messo in testa)
                     const groupTotal = calculateTotals(groupItems, tableColumns);
+
+                    // Sovrascrivi la prima colonna con la descrizione del gruppo
+                    const groupDesc = `${getTranslation(group) || group} (${groupItems.length})`;
+                    const firstCol = tableColumns[0];
+                    groupTotal[firstCol] = groupDesc;
+
                     renderRow(groupTotal, tbody, true);
 
                     // Dettagli (solo se espanso)
@@ -2949,17 +2946,14 @@
                 Object.keys(groups).sort().forEach(group => {
                     const groupItems = groups[group];
 
-                    // Header del gruppo
-                    const trGroup = document.createElement('tr');
-                    trGroup.className = 'group-header';
-                    const tdGroup = document.createElement('td');
-                    tdGroup.colSpan = profitabilityTableColumns.length;
-                    tdGroup.textContent = `${getTranslation(group) || group} (${groupItems.length})`;
-                    trGroup.appendChild(tdGroup);
-                    tbody.appendChild(trGroup);
-
                     // Totale del gruppo (Sempre visibile, messo in testa)
                     const groupTotal = calculateTotals(groupItems, profitabilityTableColumns);
+
+                    // Sovrascrivi la prima colonna con la descrizione del gruppo
+                    const groupDesc = `${getTranslation(group) || group} (${groupItems.length})`;
+                    const firstCol = profitabilityTableColumns[0];
+                    groupTotal[firstCol] = groupDesc;
+
                     renderProfitabilityRow(groupTotal, tbody, true);
 
                     // Dettagli (solo se espanso)
