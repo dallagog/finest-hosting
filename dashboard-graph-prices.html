@@ -326,14 +326,14 @@
 <body>
 
     <div id="loading">
-        <div class="spinner"></div>
-        <div id="loadingText">Analyzing Trend Data...</div>
+        <div class=\"spinner\"></div>
+        <div id=\"loadingText\">Analyzing Trend Data...</div>
     </div>
 
     <div class="header-bar">
         <div class="header-left">
             <div class="user-info-row">
-                <strong class="user-label" id="user-label-text"></strong>
+                <strong class="user-label" id="user-label-text">User:</strong>
                 <span id="username-display" class="username-display"></span>
             </div>
             <div class="user-info-row">
@@ -360,16 +360,15 @@
             </div>
 
             <div class="control-group">
-                <label id="label-layers">Layers:</label>
                 <div class="select-container" id="layers-container">
                     <div class="select-btn" onclick="toggleDropdown()">
-                        <span id="select-label">Seleziona</span>
+                        <span id="select-label">Layers</span>
                         <i class="fa-solid fa-chevron-down"></i>
                     </div>
                     <div class="options-list" id="options-list">
                         <div class="option-item">
                             <input type="checkbox" id="layer-price" value="price" checked onchange="onLayerChange()">
-                            <label for="layer-price" data-i18n="int.prices">Prezzi</label>
+                            <label for="layer-price" data-i18n="int.prices">Prices</label>
                         </div>
                         <div class="option-item">
                             <input type="checkbox" id="layer-pattern" value="pattern" checked
@@ -379,7 +378,7 @@
                         <div class="option-item">
                             <input type="checkbox" id="layer-exchange" value="exchange" checked
                                 onchange="onLayerChange()">
-                            <label for="layer-exchange" data-i18n="int.exchange">Cambi</label>
+                            <label for="layer-exchange" data-i18n="int.exchange">Exchange</label>
                         </div>
                         <div class="option-item">
                             <input type="checkbox" id="layer-short" value="short" checked onchange="onLayerChange()">
@@ -389,7 +388,7 @@
                 </div>
             </div>
 
-            <button class="confirm-btn" onclick="loadPrices()" id="btn-confirm">Carica</button>
+            <button class="confirm-btn" onclick="loadPrices()" id="btn-confirm">Applica</button>
             <button class="close-button" onclick="window.close()" id="close-btn">Close</button>
         </div>
     </div>
@@ -401,7 +400,6 @@
     </div>
 
     <script>
-        // --- TRANSLATION SYSTEM ---
         let translations = {};
         let availableLanguages = [];
         let currencies = [];
@@ -414,7 +412,6 @@
         const idAccount = urlParams.get('id_account');
         const initialTitle = urlParams.get('title');
         const instrumentNameFromUrl = urlParams.get('instrument_name');
-        // IMPORTANTE: Usa la divisa del titolo per i layer, ma la divisa target per il backend
         const instrumentCurrency = urlParams.get('instrument_currency') || 'EUR';
         const targetCurrency = urlParams.get('currency') || 'EUR';
 
@@ -428,7 +425,9 @@
                 if (!response.ok) return [];
                 const manifest = await response.json();
                 return manifest.languages || [];
-            } catch (e) { return []; }
+            } catch (e) {
+                return [];
+            }
         }
 
         async function initializeLanguages() {
@@ -445,7 +444,9 @@
                             flag: json['img.language.flag'] || '🏳️'
                         });
                     }
-                } catch (e) { console.error(e); }
+                } catch (e) {
+                    console.error(e);
+                }
             }
         }
 
@@ -457,7 +458,9 @@
                     return;
                 }
                 currencies = await response.json();
-            } catch (error) { currencies = []; }
+            } catch (error) {
+                currencies = [];
+            }
         }
 
         async function loadTranslations(langCode) {
@@ -465,13 +468,21 @@
                 let response = await fetch(`lang/${langCode}.json`);
                 if (!response.ok) {
                     const simple = langCode.split('_')[0];
-                    if (simple && simple !== langCode) response = await fetch(`lang/${simple}.json`);
+                    if (simple && simple !== langCode) {
+                        response = await fetch(`lang/${simple}.json`);
+                    }
                 }
-                if (response.ok) translations = await response.json();
-            } catch (error) { console.error(error); }
+                if (response.ok) {
+                    translations = await response.json();
+                }
+            } catch (error) {
+                console.error(error);
+            }
         }
 
-        function getTranslation(key) { return translations[key] || key; }
+        function getTranslation(key) {
+            return translations[key] || key;
+        }
 
         function updateUserInfoUI() {
             if (availableLanguages.length > 0) {
@@ -482,38 +493,42 @@
                     document.getElementById('languageDisplay').textContent = langDesc !== 'int.language.description' ? langDesc : language;
                 }
             }
-
-            // Mostra la divisa del titolo nell'header
             document.getElementById('currencyDisplay').textContent = instrumentCurrency;
         }
 
         async function init() {
             document.getElementById('username-display').textContent = username;
+
             if (!username || !token) {
-                document.getElementById('loadingText').textContent = "Access Denied";
+                document.getElementById('loadingText').textContent = "Access Denied: Username or Token missing";
                 return;
             }
 
             const today = new Date();
             const oneYearAgo = new Date();
             oneYearAgo.setFullYear(today.getFullYear() - 1);
+
             document.getElementById('end-date').value = today.toISOString().split('T')[0];
             document.getElementById('start-date').value = oneYearAgo.toISOString().split('T')[0];
 
-            await Promise.all([initializeLanguages(), loadTranslations(language), loadCurrencies(language)]);
+            await Promise.all([
+                initializeLanguages(),
+                loadTranslations(language),
+                loadCurrencies(language)
+            ]);
+
             updateUserInfoUI();
 
+            document.getElementById('btn-confirm').textContent = getTranslation('int.apply') || 'Applica';
             document.getElementById('page-title-input').value = initialTitle || getTranslation('int.detail.prices') || "";
-            document.getElementById('btn-confirm').textContent = getTranslation('int.detail.prices') || 'Carica';
             document.getElementById('close-btn').textContent = getTranslation('int.close') || 'Close';
+            if (document.getElementById('user-label-text')) document.getElementById('user-label-text').textContent = (getTranslation('int.user') || 'User') + ':';
             if (document.getElementById('label-start-date')) document.getElementById('label-start-date').textContent = (getTranslation('int.date.start') || 'Start') + ':';
             if (document.getElementById('label-end-date')) document.getElementById('label-end-date').textContent = (getTranslation('int.date.end') || 'End') + ':';
 
-            // Localize multi-select
-            document.querySelector('[for="layer-price"]').textContent = getTranslation('int.apply') || 'Applica';
+            document.querySelector('[for="layer-price"]').textContent = getTranslation('int.prices') || 'Prices';
             document.querySelector('[for="layer-pattern"]').textContent = getTranslation('int.pattern') || 'Pattern';
-            document.querySelector('[for="layer-exchange"]').textContent = getTranslation('int.exchange') || 'Cambi';
-            if (document.getElementById('label-layers')) document.getElementById('label-layers').textContent = (getTranslation('int.layers') || 'Layers') + ':';
+            document.querySelector('[for="layer-exchange"]').textContent = getTranslation('int.exchange') || 'Exchange';
             document.getElementById('select-label').textContent = getTranslation('int.layers') || 'Layers';
 
             await loadPrices();
@@ -524,7 +539,6 @@
             document.querySelector('.select-btn').classList.toggle('active');
         }
 
-        // Close dropdown when clicking outside
         window.addEventListener('click', function (e) {
             if (!document.getElementById('layers-container').contains(e.target)) {
                 document.getElementById('options-list').classList.remove('show');
@@ -541,16 +555,18 @@
             afterDatasetsDraw(chart) {
                 const { ctx } = chart;
                 ctx.save();
+
                 chart.data.datasets.forEach((dataset, datasetIndex) => {
                     const meta = chart.getDatasetMeta(datasetIndex);
                     if (meta.hidden) return;
+
                     dataset.data.forEach((value, index) => {
                         const force = dataset.forceValues ? dataset.forceValues[index] : null;
                         if (force === null || force === 0) return;
 
                         const { x, y } = meta.data[index];
-                        const isPos = force > 0;
-                        const color = isPos ? 'green' : 'red';
+                        const isPositive = force > 0;
+                        const color = isPositive ? 'green' : 'red';
                         const offset = 20;
                         const arrowSize = 10;
 
@@ -559,15 +575,17 @@
                         ctx.strokeStyle = color;
                         ctx.fillStyle = color;
 
-                        if (isPos) {
+                        if (isPositive) {
                             ctx.moveTo(x, y - offset);
                             ctx.lineTo(x, y - offset - arrowSize);
                             ctx.stroke();
+
                             ctx.beginPath();
                             ctx.moveTo(x, y - offset - arrowSize);
                             ctx.lineTo(x - 5, y - offset - arrowSize + 5);
                             ctx.lineTo(x + 5, y - offset - arrowSize + 5);
                             ctx.fill();
+
                             ctx.font = 'bold 10px Orbitron';
                             ctx.textAlign = 'center';
                             ctx.fillStyle = color;
@@ -576,11 +594,13 @@
                             ctx.moveTo(x, y + offset);
                             ctx.lineTo(x, y + offset + arrowSize);
                             ctx.stroke();
+
                             ctx.beginPath();
                             ctx.moveTo(x, y + offset + arrowSize);
                             ctx.lineTo(x - 5, y + offset + arrowSize - 5);
                             ctx.lineTo(x + 5, y + offset + arrowSize - 5);
                             ctx.fill();
+
                             ctx.font = 'bold 10px Orbitron';
                             ctx.textAlign = 'center';
                             ctx.fillStyle = color;
@@ -592,40 +612,29 @@
             }
         };
 
-        // Plugin per disegnare righe verticali viola nei giorni con pattern
         const patternLinesPlugin = {
             id: 'patternLines',
             afterDatasetsDraw(chart) {
                 const { ctx, chartArea } = chart;
                 const dataset = chart.data.datasets[0];
-
                 if (!dataset || !dataset.patternValues || !document.getElementById('layer-pattern').checked) return;
 
                 const meta = chart.getDatasetMeta(0);
                 if (!meta || meta.hidden) return;
 
                 ctx.save();
-
-                // Per ogni punto nel dataset
                 meta.data.forEach((point, index) => {
                     const patternObj = dataset.patternValues[index];
-
-                    // Se questo punto ha un pattern
                     if (patternObj && Object.keys(patternObj).length > 0) {
                         const x = point.x;
-
-                        // Disegna una linea verticale sottile viola
                         ctx.beginPath();
-                        ctx.strokeStyle = '#800080'; // Viola
+                        ctx.strokeStyle = '#800080';
                         ctx.lineWidth = 0.5;
-                        //ctx.setLineDash([4, 2]); // Linea tratteggiata sottile
-
                         ctx.moveTo(x, chartArea.top);
                         ctx.lineTo(x, chartArea.bottom);
                         ctx.stroke();
                     }
                 });
-
                 ctx.restore();
             }
         };
@@ -643,7 +652,7 @@
                         username,
                         token,
                         language,
-                        currency: targetCurrency, // USA LA DIVISA TARGET (es: EUR) PER OTTENERE IL CAMBIO
+                        currency: targetCurrency,
                         instrument: {
                             id_instrument: idInstrument,
                             id_account: idAccount,
@@ -652,6 +661,7 @@
                         }
                     })
                 });
+
                 const data = await response.json();
                 trendDataRaw = data.prices || (Array.isArray(data) ? data : []);
                 trendDataRaw.sort((a, b) => new Date(a.date_start || a.date) - new Date(b.date_start || b.date));
@@ -659,8 +669,8 @@
                 renderChart();
                 document.getElementById('loading').style.display = 'none';
             } catch (error) {
-                console.error(error);
-                document.getElementById('loadingText').textContent = "Error loading data";
+                console.error('Error loading prices:', error);
+                document.getElementById('loadingText').textContent = "Error loading data from server";
                 document.getElementById('loading').style.display = 'none';
             }
         }
@@ -672,7 +682,8 @@
         }
 
         function renderChart() {
-            const ctx = document.getElementById('chartCanvas').getContext('2d');
+            const canvas = document.getElementById('chartCanvas');
+            const ctx = canvas.getContext('2d');
 
             if (chartInstance) {
                 chartInstance.destroy();
@@ -681,21 +692,12 @@
 
             if (!trendDataRaw || trendDataRaw.length === 0) return;
 
-            // Nome strumento con la divisa corretta
-            document.getElementById('instrument-name-display').textContent =
-                `${instrumentNameFromUrl || idInstrument}`;
+            document.getElementById('instrument-name-display').textContent = `${instrumentNameFromUrl || idInstrument}`;
 
-            // Individua campi dinamici
             const firstRow = trendDataRaw[0];
-
-            const priceField =
-                Object.keys(firstRow).find(k => k.startsWith('price@')) || 'price_mkt';
-
-            // Il campo forza è specifico per la divisa del titolo
+            const priceField = Object.keys(firstRow).find(k => k.startsWith('price@')) || 'price_mkt';
             const forceField = `forza@${instrumentCurrency}`;
-
-            const patternFields =
-                Object.keys(firstRow).filter(k => k.startsWith('pattern@'));
+            const patternFields = Object.keys(firstRow).filter(k => k.startsWith('pattern@'));
 
             const labels = [];
             const prices = [];
@@ -705,54 +707,27 @@
             const exchanges = [];
             let dualExchangeLabel = "";
 
-            // Aggregazione dati per data
             const aggregatedData = {};
-
             trendDataRaw.forEach(item => {
                 const date = item.date_start || item.date;
                 if (!aggregatedData[date]) {
-                    aggregatedData[date] = {
-                        date: date,
-                        prices: [],
-                        forces: [],
-                        patterns: [],
-                        shorts: [],
-                        exchanges: []
-                    };
+                    aggregatedData[date] = { date, prices: [], forces: [], patterns: [], shorts: [], exchanges: [] };
                 }
 
                 const priceParsed = parseValue(item[priceField]);
-                if (priceParsed !== 0) {
-                    aggregatedData[date].prices.push(priceParsed);
-                }
+                if (priceParsed !== 0) aggregatedData[date].prices.push(priceParsed);
 
-                const forceValue = item[forceField] !== undefined && item[forceField] !== null
-                    ? parseValue(item[forceField])
-                    : 0;
-
-                // Collect forces but only if non-zero, or keep 0 if it's the only value? 
-                // Logic: average force might be misleading. Let's sum it or average it? 
-                // User asked: "raggruppa i dati facendo una media se si sono più prezzi in una singola data"
-                // Implicitly this applies to prices. For forces and patterns, we should probably merge/average too.
-                aggregatedData[date].forces.push(forceValue);
+                const forceVal = item[forceField] !== undefined ? parseValue(item[forceField]) : 0;
+                aggregatedData[date].forces.push(forceVal);
 
                 const patternObj = {};
                 patternFields.forEach(field => {
-                    if (item[field] !== undefined && item[field] !== null && item[field] !== "") {
-                        const cleanKey = field.replace('pattern@', '');
-                        patternObj[cleanKey] = item[field];
-                    }
+                    if (item[field]) patternObj[field.replace('pattern@', '')] = item[field];
                 });
+                if (Object.keys(patternObj).length > 0) aggregatedData[date].patterns.push(patternObj);
 
-                if (Object.keys(patternObj).length > 0) {
-                    aggregatedData[date].patterns.push(patternObj);
-                }
-
-                if (item.short !== undefined && item.short !== null) {
-                    aggregatedData[date].shorts.push(parseValue(item.short));
-                }
-
-                if (item.valore !== undefined && item.valore !== null) {
+                if (item.short !== undefined) aggregatedData[date].shorts.push(parseValue(item.short));
+                if (item.valore !== undefined) {
                     aggregatedData[date].exchanges.push(parseValue(item.valore));
                     if (item.dual_exchange) dualExchangeLabel = item.dual_exchange;
                 }
@@ -762,96 +737,71 @@
 
             sortedDates.forEach(date => {
                 const data = aggregatedData[date];
-
-                // Media Prezzi
-                const avgPrice = data.prices.length > 0
-                    ? data.prices.reduce((a, b) => a + b, 0) / data.prices.length
-                    : 0;
-
-                if (avgPrice === 0) return; // Skip if no valid price
+                const avgPrice = data.prices.length ? data.prices.reduce((a, b) => a + b, 0) / data.prices.length : 0;
+                if (avgPrice === 0) return;
 
                 labels.push(date);
                 prices.push(avgPrice);
+                forces.push(data.forces.find(f => f !== 0) || 0);
 
-                // Forza (prendo il primo valore non zero trovato per preservare il dato originale)
-                const actualForce = data.forces.find(f => f !== 0) || 0;
-                forces.push(actualForce);
-
-                // Merge Patterns (unique patterns for the day)
                 let mergedPattern = {};
-                data.patterns.forEach(p => {
-                    Object.assign(mergedPattern, p);
-                });
+                data.patterns.forEach(p => Object.assign(mergedPattern, p));
                 patternValues.push(Object.keys(mergedPattern).length ? mergedPattern : null);
 
-                // Short (Somma)
-                const totalShort = data.shorts.length > 0
-                    ? data.shorts.reduce((a, b) => a + b, 0)
-                    : 0;
-                shorts.push(totalShort);
-
-                // Exchange (Media se presenti più valori)
-                const avgExch = data.exchanges.length > 0
-                    ? data.exchanges.reduce((a, b) => a + b, 0) / data.exchanges.length
-                    : 0;
-                exchanges.push(avgExch);
+                shorts.push(data.shorts.length ? data.shorts.reduce((a, b) => a + b, 0) : 0);
+                exchanges.push(data.exchanges.length ? data.exchanges.reduce((a, b) => a + b, 0) / data.exchanges.length : 0);
             });
 
             const gradient = ctx.createLinearGradient(0, 0, 0, 400);
-            gradient.addColorStop(0, 'rgba(75,192,192,0.4)');
-            gradient.addColorStop(1, 'rgba(75,192,192,0.05)');
+            gradient.addColorStop(0, 'rgba(75, 192, 192, 0.4)');
+            gradient.addColorStop(1, 'rgba(75, 192, 192, 0.05)');
 
             chartInstance = new Chart(ctx, {
                 type: 'line',
                 data: {
                     labels: labels,
-                    datasets: [{
-                        label: document.getElementById('page-title-input').value,
-                        data: prices,
-                        forceValues: forces,
-                        patternValues: patternValues,
-                        borderColor: 'rgba(75,192,192,1)',
-                        backgroundColor: gradient,
-                        borderWidth: 2,
-                        tension: 0.1,
-                        fill: true,
-
-                        // Configurazione punti - leggera evidenza per pattern
-                        pointBackgroundColor: function (context) {
-                            const index = context.dataIndex;
-                            return patternValues[index] ? '#800080' : 'rgba(75,192,192,1)';
+                    datasets: [
+                        {
+                            label: document.getElementById('page-title-input').value,
+                            data: prices,
+                            forceValues: forces,
+                            patternValues: patternValues,
+                            borderColor: 'rgba(75, 192, 192, 1)',
+                            backgroundColor: gradient,
+                            borderWidth: 2,
+                            tension: 0.1,
+                            fill: true,
+                            pointBackgroundColor: (context) => {
+                                const index = context.dataIndex;
+                                return patternValues[index] ? '#800080' : 'rgba(75, 192, 192, 1)';
+                            },
+                            pointRadius: 4,
+                            yAxisID: 'y',
+                            hidden: !document.getElementById('layer-price').checked
                         },
-                        pointBorderColor: '#ffffff',
-                        pointBorderWidth: 1,
-                        pointRadius: 4,
-                        pointHoverRadius: 8,
-                        yAxisID: 'y',
-                        hidden: !document.getElementById('layer-price').checked
-                    },
-                    {
-                        label: `Exchange Rate (${dualExchangeLabel || 'N/A'})`,
-                        data: exchanges,
-                        borderColor: 'rgba(255, 159, 64, 1)',
-                        backgroundColor: 'rgba(255, 159, 64, 0.2)',
-                        borderWidth: 2,
-                        tension: 0.1,
-                        fill: false,
-                        yAxisID: 'y1',
-                        pointRadius: 3,
-                        hidden: !document.getElementById('layer-exchange').checked || exchanges.every(v => v === 0)
-                    },
-                    {
-                        label: "Total Short (%)",
-                        data: shorts,
-                        borderColor: 'rgba(255, 99, 132, 1)',
-                        backgroundColor: 'rgba(255, 99, 132, 0.2)',
-                        borderWidth: 2,
-                        tension: 0.1,
-                        fill: false,
-                        yAxisID: 'y1',
-                        pointRadius: 3,
-                        hidden: !document.getElementById('layer-short').checked || shorts.every(v => v === 0)
-                    }]
+                        {
+                            label: `${getTranslation('int.exchange') || 'Exchange Rate'} (${dualExchangeLabel || 'N/A'})`,
+                            data: exchanges,
+                            borderColor: 'rgba(255, 159, 64, 1)',
+                            backgroundColor: 'transparent',
+                            borderWidth: 2,
+                            tension: 0.1,
+                            pointRadius: 0,
+                            yAxisID: 'y1',
+                            hidden: !document.getElementById('layer-exchange').checked || exchanges.every(v => v === 0)
+                        },
+                        {
+                            label: `Short (%)`,
+                            data: shorts,
+                            borderColor: 'rgba(255, 99, 132, 1)',
+                            backgroundColor: 'transparent',
+                            borderWidth: 2,
+                            tension: 0.1,
+                            pointRadius: 0,
+                            yAxisID: 'y1',
+                            hidden: !document.getElementById('layer-short').checked || shorts.every(v => v === 0)
+                        }
+                    ]
                 },
                 plugins: [forceArrowsPlugin, patternLinesPlugin],
                 options: {
@@ -859,148 +809,26 @@
                     maintainAspectRatio: false,
                     interaction: {
                         mode: 'index',
-                        intersect: false
-                    },
-                    plugins: {
-                        tooltip: {
-                            callbacks: {
-                                title: function (context) {
-                                    return `📅 ${context[0].label}`;
-                                },
-                                label: function (context) {
-                                    if (context.parsed.y === null || context.parsed.y === 0) return '';
-                                    const label = context.dataset.label || '';
-                                    const value = context.parsed.y.toLocaleString(undefined, {
-                                        minimumFractionDigits: 2,
-                                        maximumFractionDigits: 4
-                                    });
-                                    let unit = '';
-                                    if (label.includes('Price') || label === document.getElementById('page-title-input').value) unit = ` ${instrumentCurrency}`;
-                                    else if (label.includes('Short')) unit = '%';
-
-                                    return `${label}: ${value}${unit}`;
-                                },
-                                afterBody: function (context) {
-                                    const index = context[0].dataIndex;
-                                    const chart = context[0].chart;
-                                    const priceDataset = chart.data.datasets[0];
-                                    const lines = [];
-
-                                    // Forza (solo se presente e layer-price è attivo)
-                                    if (document.getElementById('layer-price').checked) {
-                                        const force = priceDataset.forceValues?.[index];
-                                        if (force && force !== 0) {
-                                            const direction = force > 0 ? '▲' : '▼';
-                                            lines.push(`⚡ ${getTranslation('int.force') || 'Forza'}: ${direction} ${Math.abs(force).toFixed(2)}`);
-                                        }
-                                    }
-
-                                    // Pattern (solo se presenti e layer-pattern è attivo)
-                                    const patternObj = priceDataset.patternValues?.[index];
-                                    if (patternObj && Object.keys(patternObj).length > 0 && document.getElementById('layer-pattern').checked) {
-                                        lines.push(`🔍 ${getTranslation('int.pattern') || 'Pattern'}:`);
-                                        Object.entries(patternObj).forEach(([key, value]) => {
-                                            const formattedKey = getTranslation(key) || key
-                                                .replace(/_/g, ' ')
-                                                .replace(/\b\w/g, l => l.toUpperCase());
-                                            lines.push(`   • ${formattedKey}: ${value}`);
-                                        });
-                                    }
-
-                                    // Exchange Rate (solo se layer-exchange è attivo)
-                                    if (document.getElementById('layer-exchange').checked) {
-                                        const exchDS = chart.data.datasets.find(ds => ds.yAxisID === 'y1' && ds.borderColor.includes('255, 159, 64'));
-                                        const exchVal = exchDS?.data[index];
-                                        if (exchVal && exchVal !== 0) {
-                                            lines.push(`💱 ${getTranslation('int.exchange') || 'Cambio'}: ${exchVal.toFixed(4)}`);
-                                        }
-                                    }
-
-                                    // Short (solo se presente e layer-short è attivo)
-                                    if (document.getElementById('layer-short').checked) {
-                                        const shortDS = chart.data.datasets.find(ds => ds.label === "Total Short (%)");
-                                        const shortVal = shortDS?.data[index];
-                                        if (shortVal && shortVal !== 0) {
-                                            lines.push(`📉 Short: ${shortVal.toFixed(2)}%`);
-                                        }
-                                    }
-
-                                    return lines.length > 0 ? lines : null;
-                                },
-                                footer: function (context) {
-                                    const index = context[0].dataIndex;
-                                    const dataset = context[0].dataset;
-                                    const patternObj = dataset.patternValues?.[index];
-
-                                    if (patternObj && Object.keys(patternObj).length > 0) {
-                                        return ['────────────────', `📊 ${getTranslation('int.day.with.pattern') || 'Giorno con pattern'}`];
-                                    }
-                                    return null;
-                                }
-                            },
-                            backgroundColor: 'rgba(0, 0, 0, 0.9)',
-                            titleColor: '#fff',
-                            bodyColor: '#fff',
-                            footerColor: '#800080',
-                            borderColor: '#800080',
-                            borderWidth: 2,
-                            padding: 12,
-                            cornerRadius: 8
-                        },
-                        legend: {
-                            display: true,
-                            labels: {
-                                generateLabels: function (chart) {
-                                    const labels = Chart.defaults.plugins.legend.labels.generateLabels(chart);
-
-                                    if (labels.length > 0) {
-                                        // Update Prices label color explicitly if needed
-                                        const priceDS = chart.data.datasets[0];
-                                        if (priceDS) {
-                                            labels[0].fillStyle = priceDS.borderColor;
-                                            labels[0].strokeStyle = priceDS.borderColor;
-                                        }
-                                    }
-
-                                    // Aggiungi etichetta per i pattern se attivata
-                                    if (document.getElementById('layer-pattern').checked) {
-                                        labels.push({
-                                            text: '📊 ' + (getTranslation('int.pattern') || 'Pattern') + ' (linea viola)',
-                                            fillStyle: '#800080',
-                                            strokeStyle: '#800080',
-                                            lineWidth: 2,
-                                            hidden: false,
-                                            index: labels.length,
-                                            pointStyle: 'line'
-                                        });
-                                    }
-
-                                    return labels;
-                                }
-                            }
-                        }
+                        intersect: false,
                     },
                     scales: {
                         y: {
+                            type: 'linear',
+                            display: true,
+                            position: 'left',
                             ticks: {
                                 callback: function (value) {
-                                    return value.toLocaleString(undefined, {
-                                        minimumFractionDigits: 2,
-                                        maximumFractionDigits: 2
-                                    }) + ` ${instrumentCurrency}`;
+                                    return value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ` ${instrumentCurrency}`;
                                 }
-                            },
-                            grid: {
-                                color: 'rgba(0, 0, 0, 0.1)'
                             }
                         },
                         y1: {
-                            position: 'right',
+                            type: 'linear',
                             display: document.getElementById('layer-exchange').checked || document.getElementById('layer-short').checked,
-                            suggestedMin: 0,
+                            position: 'right',
+                            beginAtZero: false,
                             ticks: {
                                 callback: function (value) {
-                                    // Determina se stiamo mostrando cambo o percentuale
                                     const hasShort = document.getElementById('layer-short').checked;
                                     const hasExch = document.getElementById('layer-exchange').checked;
 
@@ -1024,6 +852,33 @@
                             ticks: {
                                 maxRotation: 45,
                                 minRotation: 45
+                            }
+                        }
+                    },
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                afterBody: function (context) {
+                                    const index = context[0].dataIndex;
+                                    const lines = [];
+                                    const priceDS = context[0].chart.data.datasets[0];
+
+                                    if (document.getElementById('layer-price').checked) {
+                                        const force = priceDS.forceValues ? priceDS.forceValues[index] : null;
+                                        if (force !== null && force !== 0) {
+                                            lines.push(`⚡ Forza: ${force > 0 ? '▲' : '▼'} ${Math.abs(force).toFixed(2)}`);
+                                        }
+                                    }
+
+                                    const patternObj = priceDS.patternValues ? priceDS.patternValues[index] : null;
+                                    if (patternObj && document.getElementById('layer-pattern').checked) {
+                                        lines.push(`🔍 Pattern:`);
+                                        Object.entries(patternObj).forEach(([key, val]) => {
+                                            lines.push(`  • ${getTranslation(key)}: ${val}`);
+                                        });
+                                    }
+                                    return lines;
+                                }
                             }
                         }
                     }
