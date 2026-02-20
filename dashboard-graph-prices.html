@@ -1135,3 +1135,830 @@
 </body>
 
 </html>
+<!DOCTYPE html>
+<html lang="it">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Financial Estimates 0.1 alfa</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link rel="icon" type="image/png" href="images/icon-finest.png">
+    <script src="js/dashboard-shared.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&display=swap');
+
+        :root {
+            --bg-color: #f5f5f0;
+            --neon-cyan: #000000;
+            --neon-red: #000000;
+            --neon-blue: #333333;
+            --neon-purple: #000000;
+            --neon-green: #000000;
+            --neon-orange: #000000;
+            --glass-bg: #ffffff;
+            --text-color: #333333;
+            --button-bg: #ffffff;
+            --button-border: #000000;
+            --button-hover: #f0f0f0;
+        }
+
+        html,
+        body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+
+        body {
+            font-family: 'Orbitron', sans-serif;
+            background-color: var(--bg-color);
+            padding: 15px;
+            color: var(--text-color);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header-bar {
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
+            align-items: center;
+            padding: 15px 20px;
+            background: var(--glass-bg);
+            border: 1px solid #ddd;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+            margin-bottom: 15px;
+            flex-shrink: 0;
+        }
+
+        .header-left {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 5px;
+        }
+
+        .user-info-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+        }
+
+        .user-label {
+            color: #666;
+            font-weight: bold;
+        }
+
+        .username-display {
+            color: var(--text-color);
+            text-transform: uppercase;
+        }
+
+        .flag-icon {
+            font-size: 18px;
+        }
+
+        .header-center {
+            text-align: center;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 1.5rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: #000;
+        }
+
+        .header-title-input {
+            background: transparent;
+            border: none;
+            border-bottom: 2px solid transparent;
+            font-family: inherit;
+            font-size: 1.5rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: #000;
+            text-align: center;
+            width: 100%;
+            outline: none;
+            transition: border-bottom 0.3s;
+        }
+
+        .header-title-input:focus {
+            border-bottom: 2px solid #000;
+        }
+
+        .instrument-subtitle {
+            font-size: 0.9rem;
+            color: #666;
+            margin-top: 5px;
+            font-weight: 500;
+            letter-spacing: 1px;
+            text-align: center;
+        }
+
+        .header-title-input::placeholder {
+            color: #ccc;
+            text-transform: none;
+            letter-spacing: normal;
+            font-weight: 400;
+        }
+
+        .header-right {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            justify-content: flex-end;
+            flex-wrap: wrap;
+        }
+
+        .control-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        label {
+            color: var(--text-color);
+            font-size: 0.8rem;
+            white-space: nowrap;
+        }
+
+        .date-input {
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-family: inherit;
+        }
+
+        .confirm-btn {
+            padding: 8px 20px;
+            background: #000;
+            color: #fff;
+            border: 1px solid #000;
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: inherit;
+            transition: all 0.3s;
+        }
+
+        .confirm-btn:hover {
+            background: #333;
+        }
+
+        .close-button {
+            padding: 8px 15px;
+            background: #dc3545;
+            border: 1px solid #dc3545;
+            color: #fff;
+            font-family: inherit;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.3s;
+        }
+
+        .close-button:hover {
+            background: #c82333;
+            border-color: #bd2130;
+        }
+
+        .chart-wrapper {
+            flex: 1;
+            position: relative;
+            background: #fff;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            padding: 15px;
+            min-height: 0;
+            overflow: hidden;
+        }
+
+        #chartContainerInner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+        }
+
+        #chartCanvas {
+            width: 100% !important;
+            height: 100% !important;
+        }
+
+        #loading {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 3px solid #000;
+            border-top: 3px solid transparent;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        #loadingText {
+            color: #fff;
+            font-size: 1.2rem;
+            letter-spacing: 1px;
+        }
+
+        /* Multi-select Styles */
+        .select-container {
+            position: relative;
+            min-width: 180px;
+        }
+
+        .select-btn {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 12px;
+            background: #fff;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 0.8rem;
+        }
+
+        .select-btn i {
+            font-size: 12px;
+            transition: transform 0.3s;
+        }
+
+        .select-btn.active i {
+            transform: rotate(180deg);
+        }
+
+        .options-list {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            width: 100%;
+            background: #fff;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            margin-top: 5px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            z-index: 100;
+            display: none;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .options-list.show {
+            display: block;
+        }
+
+        .option-item {
+            padding: 8px 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: background 0.2s;
+        }
+
+        .option-item:hover {
+            background: #f0f0f0;
+        }
+
+        .option-item input {
+            cursor: pointer;
+        }
+
+        .pattern-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 2px;
+            display: inline-block;
+            margin-right: 5px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="loading">
+        <div class="spinner"></div>
+        <div id="loadingText">Analyzing Trend Data...</div>
+    </div>
+
+    <div class="header-bar">
+        <div class="header-left">
+            <div class="user-info-row">
+                <strong class="user-label" id="user-label-text">User:</strong>
+                <span id="username-display" class="username-display"></span>
+            </div>
+            <div class="user-info-row">
+                <span class="flag-icon" id="languageFlag"></span>
+                <span id="languageDisplay"></span>
+                <span style="margin: 0 5px; color: var(--neon-blue);">|</span>
+                <span id="currencyDisplay"></span>
+            </div>
+        </div>
+
+        <div class="header-center">
+            <input type="text" id="page-title-input" class="header-title-input" placeholder="Titolo Grafico">
+            <div id="instrument-name-display" class="instrument-subtitle"></div>
+        </div>
+
+        <div class="header-right">
+            <div class="control-group">
+                <label for="start-date" id="label-start-date">Start:</label>
+                <input type="date" id="start-date" class="date-input">
+            </div>
+            <div class="control-group">
+                <label for="end-date" id="label-end-date">End:</label>
+                <input type="date" id="end-date" class="date-input">
+            </div>
+
+            <div class="control-group">
+                <div class="select-container" id="layers-container">
+                    <div class="select-btn" onclick="toggleDropdown('layers')">
+                        <span id="select-label">Layers</span>
+                        <i class="fa-solid fa-chevron-down"></i>
+                    </div>
+                    <div class="options-list" id="layers-options-list">
+                        <div class="option-item">
+                            <input type="checkbox" id="layer-price" value="price" checked onchange="onLayerChange()">
+                            <label for="layer-price" data-i18n="int.prices">Prices</label>
+                        </div>
+                        <div class="option-item">
+                            <input type="checkbox" id="layer-pattern" value="pattern" checked
+                                onchange="onLayerChange()">
+                            <label for="layer-pattern" data-i18n="int.pattern">Pattern</label>
+                        </div>
+                        <div class="option-item">
+                            <input type="checkbox" id="layer-exchange" value="exchange" checked
+                                onchange="onLayerChange()">
+                            <label for="layer-exchange" data-i18n="int.exchange">Exchange</label>
+                        </div>
+                        <div class="option-item">
+                            <input type="checkbox" id="layer-short" value="short" checked onchange="onLayerChange()">
+                            <label for="layer-short">Short</label>
+                        </div>
+                        <div class="option-item">
+                            <input type="checkbox" id="layer-force" value="force" checked onchange="onLayerChange()">
+                            <label for="layer-force">Forza</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <button class="confirm-btn" onclick="loadPrices()" id="btn-confirm">Applica</button>
+            <button class="close-button" onclick="window.close()" id="close-btn">Close</button>
+        </div>
+    </div>
+
+    <div class="chart-wrapper">
+        <div id="chartContainerInner">
+            <canvas id="chartCanvas"></canvas>
+        </div>
+    </div>
+
+    <script>
+        console.log('===== SCRIPT LOADED =====');
+
+        let translations = {};
+        let availableLanguages = [];
+        let currencies = [];
+        let patternFields = [];
+        let forceFields = [];
+        let selectedPatterns = new Set();
+        let selectedForceField = null;
+        let forceFieldOptions = [];
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const username = urlParams.get('username') || '';
+        const token = urlParams.get('token');
+        const language = urlParams.get('language') || 'it_IT';
+        const idInstrument = urlParams.get('id_instrument');
+        const idAccount = urlParams.get('id_account');
+        const initialTitle = urlParams.get('title');
+        const instrumentNameFromUrl = urlParams.get('instrument_name');
+        const instrumentCurrency = urlParams.get('instrument_currency') || 'EUR';
+        const targetCurrency = urlParams.get('currency') || 'EUR';
+
+        const API_URL = "https://feweb-tunnel.fe-web.eu";
+        let trendDataRaw = [];
+        let chartInstance = null;
+
+        async function loadLanguageManifest() {
+            try {
+                const response = await fetch('lang/manifest.json');
+                if (!response.ok) return [];
+                const manifest = await response.json();
+                return manifest.languages || [];
+            } catch (e) {
+                return [];
+            }
+        }
+
+        async function initializeLanguages() {
+            const codes = await loadLanguageManifest();
+            availableLanguages = [];
+            for (const code of codes) {
+                try {
+                    const res = await fetch(`lang/${code}.json`);
+                    if (res.ok) {
+                        const json = await res.json();
+                        availableLanguages.push({
+                            code: code,
+                            name: json['int.language.description'] || code,
+                            flag: json['img.language.flag'] || '🏳️'
+                        });
+                    }
+                } catch (e) {
+                    console.error(e);
+                }
+            }
+        }
+
+        async function loadCurrencies(lang) {
+            try {
+                const response = await fetch(`currencies/${lang}.json`);
+                if (!response.ok) {
+                    if (lang !== 'it_IT') return loadCurrencies('it_IT');
+                    return;
+                }
+                currencies = await response.json();
+            } catch (error) {
+                currencies = [];
+            }
+        }
+
+        async function loadTranslations(langCode) {
+            try {
+                let response = await fetch(`lang/${langCode}.json`);
+                if (!response.ok) {
+                    const simple = langCode.split('_')[0];
+                    if (simple && simple !== langCode) {
+                        response = await fetch(`lang/${simple}.json`);
+                    }
+                }
+                if (response.ok) {
+                    translations = await response.json();
+                }
+            } catch (error) {
+                console.error(error);
+            }
+        }
+
+        function getTranslation(key) {
+            return translations[key] || key;
+        }
+
+        function updateUserInfoUI() {
+            if (availableLanguages.length > 0) {
+                const langData = availableLanguages.find(l => l.code === language);
+                if (langData) {
+                    document.getElementById('languageFlag').textContent = langData.flag;
+                    const langDesc = getTranslation('int.language.description');
+                    document.getElementById('languageDisplay').textContent = langDesc !== 'int.language.description' ? langDesc : language;
+                }
+            }
+            document.getElementById('currencyDisplay').textContent = instrumentCurrency;
+        }
+
+        function toggleDropdown(dropdownId) {
+            const list = document.getElementById(`${dropdownId}-options-list`);
+            if (list) list.classList.toggle('show');
+            const btn = document.querySelector(`#${dropdownId}-container .select-btn`);
+            if (btn) btn.classList.toggle('active');
+        }
+
+        window.addEventListener('click', function (e) {
+            ['layers', 'patterns', 'force'].forEach(id => {
+                const container = document.getElementById(`${id}-container`);
+                if (container && !container.contains(e.target)) {
+                    const list = document.getElementById(`${id}-options-list`);
+                    const btn = container.querySelector('.select-btn');
+                    if (list) list.classList.remove('show');
+                    if (btn) btn.classList.remove('active');
+                }
+            });
+        });
+
+        function extractFieldsFromData() {
+            if (!trendDataRaw || trendDataRaw.length === 0) return;
+
+            let allKeys = new Set();
+            trendDataRaw.forEach(item => {
+                Object.keys(item).forEach(key => allKeys.add(key));
+            });
+
+            patternFields = Array.from(allKeys).filter(k => k.startsWith('pattern@'));
+            forceFields = Array.from(allKeys).filter(k => k.startsWith('forza@'));
+
+            // Inizializza i set internamente senza aggiungere selettori alla UI
+            patternFields.forEach(field => {
+                selectedPatterns.add(field);
+            });
+
+            if (forceFields.length > 0) {
+                selectedForceField = forceFields[0];
+            } else {
+                selectedForceField = null;
+            }
+        }
+
+        function getPatternColor(patternName) {
+            const colors = ['#800080', '#FF4500', '#1E90FF', '#32CD32', '#FF1493', '#FFD700', '#00CED1', '#FF6347', '#8A2BE2', '#DC143C'];
+            let hash = 0;
+            for (let i = 0; i < patternName.length; i++) {
+                hash = patternName.charCodeAt(i) + ((hash << 5) - hash);
+            }
+            return colors[Math.abs(hash) % colors.length];
+        }
+
+        function onPatternFilterChange() {
+            // Logica rimossa in quanto i selettori sono stati tolti
+            renderChart();
+        }
+
+        function onForceFieldChange() {
+            // Logica rimossa in quanto i selettori sono stati tolti
+            renderChart();
+        }
+
+        function onLayerChange() {
+            renderChart();
+        }
+
+        const forceArrowsPlugin = {
+            id: 'forceArrows',
+            afterDatasetsDraw(chart) {
+                if (!document.getElementById('layer-force')?.checked) return;
+                const { ctx, chartArea } = chart;
+                ctx.save();
+                const dataset = chart.data.datasets[0];
+                if (!dataset || !dataset.forceValues) { ctx.restore(); return; }
+                const meta = chart.getDatasetMeta(0);
+                if (!meta || meta.hidden) { ctx.restore(); return; }
+                const forceValues = dataset.forceValues;
+                const selectedField = selectedForceField;
+
+                meta.data.forEach((point, index) => {
+                    const forceObj = forceValues[index];
+                    if (!forceObj) return;
+                    let forcesToDraw = [];
+                    if (selectedField && forceObj[selectedField] !== undefined) {
+                        if (forceObj[selectedField] !== 0) {
+                            forcesToDraw.push({ field: selectedField, value: forceObj[selectedField] });
+                        }
+                    } else {
+                        Object.entries(forceObj).forEach(([field, value]) => {
+                            if (value !== 0) forcesToDraw.push({ field, value });
+                        });
+                    }
+                    forcesToDraw.slice(0, 2).forEach((force, idx) => {
+                        const isPositive = force.value > 0;
+                        const color = isPositive ? 'green' : 'red';
+                        const offset = 20 + (idx * 15);
+                        const arrowSize = 10;
+                        const { x, y } = point;
+                        ctx.beginPath();
+                        ctx.lineWidth = 2;
+                        ctx.strokeStyle = color;
+                        ctx.fillStyle = color;
+                        if (isPositive) {
+                            ctx.moveTo(x, y - offset); ctx.lineTo(x, y - offset - arrowSize); ctx.stroke();
+                            ctx.beginPath(); ctx.moveTo(x, y - offset - arrowSize);
+                            ctx.lineTo(x - 5, y - offset - arrowSize + 5); ctx.lineTo(x + 5, y - offset - arrowSize + 5);
+                            ctx.closePath(); ctx.fill();
+                            ctx.font = 'bold 10px Orbitron'; ctx.textAlign = 'center'; ctx.fillStyle = color;
+                            ctx.fillText(force.value.toFixed(2), x, y - offset - arrowSize - 5);
+                        } else {
+                            ctx.moveTo(x, y + offset); ctx.lineTo(x, y + offset + arrowSize); ctx.stroke();
+                            ctx.beginPath(); ctx.moveTo(x, y + offset + arrowSize);
+                            ctx.lineTo(x - 5, y + offset + arrowSize - 5); ctx.lineTo(x + 5, y + offset + arrowSize - 5);
+                            ctx.closePath(); ctx.fill();
+                            ctx.font = 'bold 10px Orbitron'; ctx.textAlign = 'center'; ctx.fillStyle = color;
+                            ctx.fillText(force.value.toFixed(2), x, y + offset + arrowSize + 12);
+                        }
+                    });
+                });
+                ctx.restore();
+            }
+        };
+
+        const patternLinesPlugin = {
+            id: 'patternLines',
+            afterDatasetsDraw(chart) {
+                if (!document.getElementById('layer-pattern')?.checked || selectedPatterns.size === 0) return;
+                const { ctx, chartArea } = chart;
+                const dataset = chart.data.datasets[0];
+                if (!dataset || !dataset.patternValues) return;
+                const meta = chart.getDatasetMeta(0);
+                if (!meta || meta.hidden) return;
+                ctx.save();
+                meta.data.forEach((point, index) => {
+                    const patternsAtPoint = dataset.patternValues[index];
+                    if (!patternsAtPoint || patternsAtPoint.length === 0) return;
+                    const x = point.x;
+                    let hasSelectedPattern = patternsAtPoint.some(patternObj =>
+                        Object.keys(patternObj).some(key => selectedPatterns.has(`pattern@${key}`))
+                    );
+                    if (hasSelectedPattern) {
+                        ctx.beginPath(); ctx.strokeStyle = '#800080'; ctx.lineWidth = 1.5; ctx.setLineDash([5, 3]);
+                        ctx.moveTo(x, chartArea.top); ctx.lineTo(x, chartArea.bottom); ctx.stroke(); ctx.setLineDash([]);
+                    }
+                });
+                ctx.restore();
+            }
+        };
+
+        async function loadPrices() {
+            document.getElementById('loading').style.display = 'flex';
+            const startDate = document.getElementById('start-date').value;
+            const endDate = document.getElementById('end-date').value;
+            try {
+                const response = await fetch(`${API_URL}/getprices`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        username, token, language, currency: targetCurrency,
+                        instrument: { id_instrument: idInstrument, id_account: idAccount, date_start: startDate, date_end: endDate }
+                    })
+                });
+                const data = await response.json();
+                trendDataRaw = data.prices || (Array.isArray(data) ? data : []);
+                trendDataRaw.sort((a, b) => new Date(a.date_start || a.date) - new Date(b.date_start || b.date));
+                extractFieldsFromData();
+                renderChart();
+                document.getElementById('loading').style.display = 'none';
+            } catch (error) {
+                console.error(error);
+                document.getElementById('loadingText').textContent = "Error loading data";
+                document.getElementById('loading').style.display = 'none';
+            }
+        }
+
+        function parseValue(v) {
+            if (v === null || v === undefined) return 0;
+            if (typeof v === 'number') return v;
+            if (typeof v === 'string') return parseFloat(v.replace(/[^0-9.-]/g, '')) || 0;
+            return 0;
+        }
+
+        function renderChart() {
+            const canvas = document.getElementById('chartCanvas');
+            const ctx = canvas.getContext('2d');
+            if (chartInstance) { chartInstance.destroy(); chartInstance = null; }
+            if (!trendDataRaw || trendDataRaw.length === 0) return;
+
+            const firstRow = trendDataRaw[0];
+            const priceField = Object.keys(firstRow).find(k => k.startsWith('price@')) || 'price_mkt';
+            const patternFieldList = Object.keys(firstRow).filter(k => k.startsWith('pattern@'));
+
+            const labels = [];
+            const prices = [];
+            const forces = [];
+            const patternValues = [];
+            const shorts = [];
+            const exchanges = [];
+            let dualExchangeLabel = "";
+
+            const aggregatedData = {};
+            trendDataRaw.forEach(item => {
+                const date = item.date_start || item.date;
+                if (!aggregatedData[date]) {
+                    aggregatedData[date] = { date, prices: [], forces: {}, patterns: [], shorts: [], exchanges: [] };
+                }
+                if (item[priceField] !== undefined) {
+                    const priceParsed = parseValue(item[priceField]);
+                    // Se il prezzo è zero, non viene aggiunto alla media (evita il disegno a zero)
+                    if (priceParsed !== 0) aggregatedData[date].prices.push(priceParsed);
+                }
+                forceFields.forEach(field => {
+                    if (item[field] !== undefined && item[field] !== null) aggregatedData[date].forces[field] = parseValue(item[field]);
+                });
+                patternFieldList.forEach(field => {
+                    if (item[field] !== undefined && item[field] !== null && item[field] !== '') {
+                        aggregatedData[date].patterns.push({ [field.replace('pattern@', '')]: parseValue(item[field]) });
+                    }
+                });
+                if (item.short !== undefined) aggregatedData[date].shorts.push(parseValue(item.short));
+                if (item.exchange !== undefined) {
+                    aggregatedData[date].exchanges.push(parseValue(item.exchange));
+                    if (item.dual_exchange) dualExchangeLabel = item.dual_exchange;
+                }
+            });
+
+            const sortedDates = Object.keys(aggregatedData).sort((a, b) => new Date(a) - new Date(b));
+            sortedDates.forEach(date => {
+                const data = aggregatedData[date];
+                // Se non ci sono prezzi (es. tutti zero), restituisce null invece di zero
+                const avgPrice = data.prices.length ? data.prices.reduce((a, b) => a + b, 0) / data.prices.length : null;
+                labels.push(date);
+                prices.push(avgPrice);
+                forces.push(data.forces);
+                patternValues.push(data.patterns);
+                shorts.push(data.shorts.length ? data.shorts.reduce((a, b) => a + b, 0) / data.shorts.length : 0);
+                exchanges.push(data.exchanges.length ? data.exchanges.reduce((a, b) => a + b, 0) / data.exchanges.length : 0);
+            });
+
+            const gradient = ctx.createLinearGradient(0, 0, 0, 400);
+            gradient.addColorStop(0, 'rgba(75, 192, 192, 0.4)');
+            gradient.addColorStop(1, 'rgba(75, 192, 192, 0.05)');
+
+            chartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: document.getElementById('page-title-input').value || 'Prezzi',
+                        data: prices,
+                        forceValues: forces,
+                        patternValues: patternValues,
+                        borderColor: 'rgba(75, 192, 192, 1)',
+                        backgroundColor: gradient,
+                        borderWidth: 2,
+                        tension: 0.1,
+                        fill: true,
+                        spanGaps: false, // Impedisce il disegno dei segmenti tra valori null
+                        pointRadius: 4,
+                        yAxisID: 'y',
+                        hidden: !document.getElementById('layer-price')?.checked
+                    }, {
+                        label: `Exchange (${dualExchangeLabel || 'N/A'})`,
+                        data: exchanges,
+                        borderColor: 'rgba(255, 159, 64, 1)',
+                        borderWidth: 2,
+                        tension: 0.1,
+                        pointRadius: 0,
+                        yAxisID: 'y1',
+                        hidden: !document.getElementById('layer-exchange')?.checked || exchanges.every(v => v === 0)
+                    }, {
+                        label: `Short (%)`,
+                        data: shorts,
+                        borderColor: 'rgba(255, 99, 132, 1)',
+                        borderWidth: 2,
+                        tension: 0.1,
+                        pointRadius: 0,
+                        yAxisID: 'y1',
+                        hidden: !document.getElementById('layer-short')?.checked || shorts.every(v => v === 0)
+                    }]
+                },
+                plugins: [forceArrowsPlugin, patternLinesPlugin],
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: { type: 'linear', display: true, position: 'left' },
+                        y1: { type: 'linear', position: 'right', display: true, grid: { drawOnChartArea: false } }
+                    }
+                }
+            });
+        }
+
+        async function init() {
+            document.getElementById('username-display').textContent = username;
+            if (!username || !token) return;
+            const today = new Date();
+            const oneYearAgo = new Date();
+            oneYearAgo.setFullYear(today.getFullYear() - 1);
+            document.getElementById('end-date').value = today.toISOString().split('T')[0];
+            document.getElementById('start-date').value = oneYearAgo.toISOString().split('T')[0];
+            await Promise.all([initializeLanguages(), loadTranslations(language), loadCurrencies(language)]);
+            updateUserInfoUI();
+            await loadPrices();
+        }
+
+        window.onload = init;
+    </script>
+</body>
+
+</html>
