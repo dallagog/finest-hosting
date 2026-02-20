@@ -823,7 +823,8 @@
                             <i class="fa fa-rocket"></i> <span id="goLiveText">Go Live</span>
                         </button>
                         <button onclick="window.open('dashboard-market.html', '_blank')">
-                            <i class="fa fa-line-chart"></i> <span data-translate="int.market">Market</span>
+                            <i class="fa fa-line-chart"></i> <span id="marketText"
+                                data-translate="int.market">Market</span>
                         </button>
                     </div>
                     <div id="portfolio-table-container">
@@ -1231,6 +1232,12 @@
                 if (historicalBtn) historicalBtn.textContent = historicalText;
             }
 
+            const marketText = getTranslation('int.market');
+            if (marketText !== 'int.market') {
+                const marketBtn = document.getElementById('marketText');
+                if (marketBtn) marketBtn.textContent = marketText;
+            }
+
             const expandLabel = getTranslation('int.expand') || 'Espandi';
             const elExpand = document.getElementById('expandLabel');
             if (elExpand) elExpand.textContent = expandLabel;
@@ -1245,20 +1252,22 @@
             const btnText = document.getElementById('historicalText');
 
             if (showHistorical) {
-                // Mostro tutto - cambio label a "Con saldo"
+                // Mostro tutto - cambio label a traduzione di "int.withquantity"
                 btn.classList.add('active');
                 btn.style.backgroundColor = 'var(--neon-cyan)';
                 btn.style.color = '#000';
                 if (btnText) {
-                    btnText.textContent = 'Con saldo';
+                    const withQuantityText = getTranslation('int.withquantity') || 'Con saldo';
+                    btnText.textContent = withQuantityText;
                 }
             } else {
-                // Nascondo zero - cambio label a "Storico"
+                // Nascondo zero - cambio label a traduzione di "int.historical"
                 btn.classList.remove('active');
                 btn.style.backgroundColor = '';
                 btn.style.color = '';
                 if (btnText) {
-                    btnText.textContent = 'Storico';
+                    const historicalText = getTranslation('int.historical') || 'Storico';
+                    btnText.textContent = historicalText;
                 }
             }
             renderTable();
