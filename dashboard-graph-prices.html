@@ -569,7 +569,7 @@
                     });
                 }
 
-                // Aggiungi forza come radio button
+                // Aggiungi forza come radio button (dopo il checkbox layer-force)
                 if (forceFields.length > 0) {
                     forceFieldOptions = forceFields;
                     forceFields.forEach((field, index) => {
@@ -577,11 +577,14 @@
                         if (!document.getElementById(`force-${field}`)) {
                             const div = document.createElement('div');
                             div.className = 'option-item';
+                            div.style.paddingLeft = '20px'; // Indenta i radio button
                             div.innerHTML = `
                                 <input type="radio" name="forceField" id="force-${field}" value="${field}" ${index === 0 ? 'checked' : ''} onchange="onForceFieldChange()">
                                 <label for="force-${field}">${field}</label>
                             `;
-                            layersOptionsList.appendChild(div);
+                            // Inserisci dopo il checkbox layer-force
+                            const layerForceDiv = document.getElementById('layer-force').parentElement;
+                            layerForceDiv.parentNode.insertBefore(div, layerForceDiv.nextSibling);
                         }
                     });
 
@@ -745,7 +748,7 @@
             }
         };
 
-        // Plugin per le linee verticali dei pattern (SENZA ETICHETTE)
+        // Plugin per le linee verticali dei pattern CON ETICHETTE FORMATTATE
         const patternLinesPlugin = {
             id: 'patternLines',
             afterDatasetsDraw(chart) {
@@ -766,20 +769,22 @@
                     if (!patternsAtPoint || patternsAtPoint.length === 0) return;
 
                     const x = point.x;
-                    let hasSelectedPattern = false;
+                    const y = point.y;
+                    let selectedPatternsAtPoint = [];
 
-                    // Verifica se c'è almeno un pattern selezionato in questo punto
+                    // Raccogli i pattern selezionati in questo punto
                     patternsAtPoint.forEach(patternObj => {
                         Object.entries(patternObj).forEach(([patternName, value]) => {
                             const fullFieldName = `pattern@${patternName}`;
                             if (selectedPatterns.has(fullFieldName)) {
-                                hasSelectedPattern = true;
+                                selectedPatternsAtPoint.push({ name: patternName, value: value });
                             }
                         });
                     });
 
-                    // Se c'è almeno un pattern selezionato, disegna UNA SOLA linea verticale
-                    if (hasSelectedPattern) {
+                    // Se c'è almeno un pattern selezionato, disegna la linea verticale e le etichette
+                    if (selectedPatternsAtPoint.length > 0) {
+                        // Linea verticale tratteggiata
                         ctx.beginPath();
                         ctx.strokeStyle = '#800080'; // Colore viola per tutte le linee di pattern
                         ctx.lineWidth = 1.5;
@@ -788,6 +793,49 @@
                         ctx.lineTo(x, chartArea.bottom);
                         ctx.stroke();
                         ctx.setLineDash([]); // Resetta il tratteggio
+
+                        // Calcola posizione del box (sopra il punto, ma dentro i limiti del grafico)
+                        const boxPadding = 6;
+                        const lineHeight = 15;
+                        const boxHeight = selectedPatternsAtPoint.length * lineHeight + boxPadding * 2;
+                        const maxLabelWidth = Math.max(...selectedPatternsAtPoint.map(p =>
+                            ctx.measureText(`${p.name}: ${parseFloat(p.value).toFixed(3)}`).width
+                        ));
+                        const boxWidth = maxLabelWidth + boxPadding * 2 + 10;
+
+                        let boxY = y - boxHeight - 15;
+                        let boxX = x - boxWidth / 2;
+
+                        // Se il box esce dai limiti del grafico, adatta
+                        if (boxY < chartArea.top + 5) {
+                            boxY = y + 10;
+                        }
+                        if (boxX + boxWidth > chartArea.right) {
+                            boxX = chartArea.right - boxWidth - 5;
+                        }
+                        if (boxX < chartArea.left) {
+                            boxX = chartArea.left + 5;
+                        }
+
+                        // Disegna il box di sfondo con bordi retti
+                        ctx.fillStyle = 'rgba(128, 0, 128, 0.85)'; // Viola con trasparenza
+                        ctx.fillRect(boxX, boxY, boxWidth, boxHeight);
+
+                        ctx.strokeStyle = '#FFFFFF';
+                        ctx.lineWidth = 1;
+                        ctx.strokeRect(boxX, boxY, boxWidth, boxHeight);
+
+                        // Etichette dei pattern nel box
+                        ctx.font = 'bold 10px Orbitron';
+                        ctx.fillStyle = '#FFFFFF';
+                        ctx.textAlign = 'center';
+                        let yOffset = boxY + boxPadding + 11;
+
+                        selectedPatternsAtPoint.forEach((pattern) => {
+                            const label = `${pattern.name}: ${parseFloat(pattern.value).toFixed(3)}`;
+                            ctx.fillText(label, x, yOffset);
+                            yOffset += lineHeight;
+                        });
                     }
                 });
                 ctx.restore();
