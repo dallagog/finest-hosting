@@ -400,17 +400,6 @@
                 </div>
             </div>
 
-            <div class="control-group">
-                <div class="select-container" id="patterns-container">
-                    <div class="select-btn" onclick="toggleDropdown('patterns')">
-                        <span id="patterns-select-label">Filtra Pattern</span>
-                        <i class="fa-solid fa-chevron-down"></i>
-                    </div>
-                    <div class="options-list" id="patterns-options-list">
-                        <!-- I pattern verranno inseriti dinamicamente qui -->
-                    </div>
-                </div>
-            </div>
 
             <div class="control-group">
                 <div class="select-container" id="force-container">
@@ -568,11 +557,18 @@
             console.log('Pattern fields found:', patternFields);
             console.log('Force fields found:', forceFields);
 
-            // Popola dropdown pattern
-            const patternsList = document.getElementById('patterns-options-list');
-            patternsList.innerHTML = '';
+            // Popola dropdown pattern nel filtro generale (selettore layer)
+            // Aggiungi i pattern alle opzioni di filtraggio generale se necessario
+            const patternContainer = document.getElementById('layers-options-list');
+
+            // Rimuovi pattern precedenti dal filtro generale (se esistevano)
+            patternFields.forEach(field => {
+                const checkbox = patternContainer?.querySelector(`input[value="${field}"]`);
+                if (checkbox) checkbox.parentElement.remove();
+            });
 
             if (patternFields.length > 0) {
+                // Aggiungi i nuovi pattern al filtro generale
                 patternFields.forEach(field => {
                     const patternName = field.replace('pattern@', '');
                     const color = getPatternColor(patternName);
@@ -583,16 +579,19 @@
                         <span class="pattern-indicator" style="background-color: ${color};"></span>
                         <label for="pattern-${patternName}">${patternName}</label>
                     `;
-                    patternsList.appendChild(div);
+                    patternContainer?.appendChild(div);
                     selectedPatterns.add(field);
                 });
-            } else {
-                patternsList.innerHTML = '<div class="option-item">Nessun pattern disponibile</div>';
             }
 
-            // Popola dropdown forza
-            const forceList = document.getElementById('force-options-list');
-            forceList.innerHTML = '';
+            // Popola dropdown forza nel filtro generale
+            const forceContainer = document.getElementById('layers-options-list');
+
+            // Rimuovi campi forza precedenti dal filtro generale (se esistevano)
+            forceFields.forEach(field => {
+                const checkbox = forceContainer?.querySelector(`input[value="${field}"]`);
+                if (checkbox) checkbox.parentElement.remove();
+            });
 
             if (forceFields.length > 0) {
                 forceFieldOptions = forceFields;
@@ -603,15 +602,12 @@
                         <input type="radio" name="forceField" id="force-${field}" value="${field}" ${index === 0 ? 'checked' : ''} onchange="onForceFieldChange()">
                         <label for="force-${field}">${field}</label>
                     `;
-                    forceList.appendChild(div);
+                    forceContainer?.appendChild(div);
                 });
 
                 // Seleziona il primo per default
                 selectedForceField = forceFields[0];
                 console.log('Selected force field:', selectedForceField);
-            } else {
-                forceList.innerHTML = '<div class="option-item">Nessun campo forza disponibile</div>';
-                selectedForceField = null;
             }
         }
 
@@ -1073,7 +1069,7 @@
                         y: {
                             type: 'linear',
                             display: true,
-                            position: 'left',
+                            position: 'right',
                             ticks: {
                                 callback: function (value) {
                                     return value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ` ${instrumentCurrency}`;
@@ -1083,7 +1079,7 @@
                         y1: {
                             type: 'linear',
                             display: (document.getElementById('layer-exchange')?.checked || document.getElementById('layer-short')?.checked),
-                            position: 'right',
+                            position: 'left',
                             beginAtZero: false,
                             ticks: {
                                 callback: function (value) {
