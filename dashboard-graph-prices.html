@@ -668,61 +668,99 @@
                     return;
                 }
 
-                const forceValues = dataset.forceValues;
-                console.log('Drawing force arrows for values:', forceValues);
+                const forceValues = dataset.forceValues; // Array di oggetti con tutti i campi forza
+                const selectedField = selectedForceField; // Campo selezionato
+
+                console.log('Drawing force arrows with values:', forceValues);
+                console.log('Selected force field:', selectedField);
 
                 meta.data.forEach((point, index) => {
-                    const force = forceValues[index];
-                    // Mostra solo se il valore è valido e diverso da zero
-                    if (force === null || force === undefined || force === 0) return;
+                    const forceObj = forceValues[index];
+                    if (!forceObj) return;
 
-                    const { x, y } = point;
-                    const isPositive = force > 0;
-                    const color = isPositive ? 'green' : 'red';
-                    const offset = 20;
-                    const arrowSize = 10;
+                    // Determina quali campi forza disegnare
+                    let forcesToDraw = [];
 
-                    ctx.beginPath();
-                    ctx.lineWidth = 2;
-                    ctx.strokeStyle = color;
-                    ctx.fillStyle = color;
-
-                    // Disegna la linea e la punta della freccia
-                    if (isPositive) {
-                        // Freccia su
-                        ctx.moveTo(x, y - offset);
-                        ctx.lineTo(x, y - offset - arrowSize);
-                        ctx.stroke();
-
-                        ctx.beginPath();
-                        ctx.moveTo(x, y - offset - arrowSize);
-                        ctx.lineTo(x - 5, y - offset - arrowSize + 5);
-                        ctx.lineTo(x + 5, y - offset - arrowSize + 5);
-                        ctx.fill();
-
-                        // Testo del valore sopra la freccia
-                        ctx.font = 'bold 10px Orbitron';
-                        ctx.textAlign = 'center';
-                        ctx.fillStyle = color;
-                        ctx.fillText(force.toFixed(2), x, y - offset - arrowSize - 5);
+                    if (selectedField && forceObj[selectedField] !== undefined) {
+                        // Disegna solo il campo selezionato se non è zero
+                        if (forceObj[selectedField] !== 0) {
+                            forcesToDraw.push({
+                                field: selectedField,
+                                value: forceObj[selectedField]
+                            });
+                        }
                     } else {
-                        // Freccia giù
-                        ctx.moveTo(x, y + offset);
-                        ctx.lineTo(x, y + offset + arrowSize);
-                        ctx.stroke();
+                        // Disegna tutti i campi non zero
+                        Object.entries(forceObj).forEach(([field, value]) => {
+                            if (value !== 0) {
+                                forcesToDraw.push({ field, value });
+                            }
+                        });
+                    }
+
+                    // Disegna le frecce (massimo 2 per punto per evitare sovrapposizioni)
+                    forcesToDraw.slice(0, 2).forEach((force, idx) => {
+                        const isPositive = force.value > 0;
+                        const color = isPositive ? 'green' : 'red';
+                        const offset = 20 + (idx * 15); // Offset diverso per ogni freccia
+                        const arrowSize = 10;
+                        const { x, y } = point;
 
                         ctx.beginPath();
-                        ctx.moveTo(x, y + offset + arrowSize);
-                        ctx.lineTo(x - 5, y + offset + arrowSize - 5);
-                        ctx.lineTo(x + 5, y + offset + arrowSize - 5);
-                        ctx.fill();
-
-                        // Testo del valore sotto la freccia
-                        ctx.font = 'bold 10px Orbitron';
-                        ctx.textAlign = 'center';
+                        ctx.lineWidth = 2;
+                        ctx.strokeStyle = color;
                         ctx.fillStyle = color;
-                        ctx.fillText(force.toFixed(2), x, y + offset + arrowSize + 12);
-                    }
+
+                        if (isPositive) {
+                            // Freccia su
+                            ctx.moveTo(x, y - offset);
+                            ctx.lineTo(x, y - offset - arrowSize);
+                            ctx.stroke();
+
+                            ctx.beginPath();
+                            ctx.moveTo(x, y - offset - arrowSize);
+                            ctx.lineTo(x - 5, y - offset - arrowSize + 5);
+                            ctx.lineTo(x + 5, y - offset - arrowSize + 5);
+                            ctx.closePath();
+                            ctx.fill();
+
+                            // Testo del valore sopra la freccia
+                            ctx.font = 'bold 10px Orbitron';
+                            ctx.textAlign = 'center';
+                            ctx.fillStyle = color;
+                            ctx.fillText(force.value.toFixed(2), x, y - offset - arrowSize - 5);
+
+                            // Aggiungi il nome del campo se ci sono più frecce
+                            if (forcesToDraw.length > 1) {
+                                ctx.font = '8px Orbitron';
+                                ctx.fillText(force.field.replace('forza@', ''), x, y - offset - arrowSize - 15);
+                            }
+                        } else {
+                            // Freccia giù
+                            ctx.moveTo(x, y + offset);
+                            ctx.lineTo(x, y + offset + arrowSize);
+                            ctx.stroke();
+
+                            ctx.beginPath();
+                            ctx.moveTo(x, y + offset + arrowSize);
+                            ctx.lineTo(x - 5, y + offset + arrowSize - 5);
+                            ctx.lineTo(x + 5, y + offset + arrowSize - 5);
+                            ctx.closePath();
+                            ctx.fill();
+
+                            // Testo del valore sotto la freccia
+                            ctx.font = 'bold 10px Orbitron';
+                            ctx.textAlign = 'center';
+                            ctx.fillStyle = color;
+                            ctx.fillText(force.value.toFixed(2), x, y + offset + arrowSize + 12);
+
+                            // Aggiungi il nome del campo se ci sono più frecce
+                            if (forcesToDraw.length > 1) {
+                                ctx.font = '8px Orbitron';
+                                ctx.fillText(force.field.replace('forza@', ''), x, y + offset + arrowSize + 22);
+                            }
+                        }
+                    });
                 });
                 ctx.restore();
             }
@@ -822,6 +860,7 @@
         }
 
         function parseValue(v) {
+            if (v === null || v === undefined) return 0;
             if (typeof v === 'number') return v;
             if (typeof v === 'string') return parseFloat(v.replace(/[^0-9.-]/g, '')) || 0;
             return 0;
@@ -855,6 +894,7 @@
 
             const patternFieldList = Object.keys(firstRow).filter(k => k.startsWith('pattern@'));
             console.log('Pattern fields in data:', patternFieldList);
+            console.log('Force fields in data:', forceFields);
 
             const labels = [];
             const prices = [];
@@ -872,7 +912,7 @@
                     aggregatedData[date] = {
                         date,
                         prices: [],
-                        forces: [],
+                        forces: {},
                         patterns: [],
                         shorts: [],
                         exchanges: []
@@ -885,11 +925,13 @@
                     if (priceParsed !== 0) aggregatedData[date].prices.push(priceParsed);
                 }
 
-                // Forza (solo se il campo esiste)
-                if (forceField && item[forceField] !== undefined) {
-                    const forceVal = parseValue(item[forceField]);
-                    aggregatedData[date].forces.push(forceVal);
-                }
+                // Forza - Raccogli TUTTI i campi forza
+                forceFields.forEach(field => {
+                    if (item[field] !== undefined && item[field] !== null) {
+                        const forceVal = parseValue(item[field]);
+                        aggregatedData[date].forces[field] = forceVal;
+                    }
+                });
 
                 // Pattern: Itera su tutti i campi pattern conosciuti e aggiungi se presenti
                 patternFieldList.forEach(field => {
@@ -923,9 +965,8 @@
                 labels.push(date);
                 prices.push(avgPrice);
 
-                // Forza: usa la media, o 0 se non ci sono valori
-                const avgForce = data.forces.length ? data.forces.reduce((a, b) => a + b, 0) / data.forces.length : 0;
-                forces.push(avgForce);
+                // Forza: passa l'oggetto con tutti i campi forza
+                forces.push(data.forces);
 
                 // Pattern: passa l'array di oggetti
                 patternValues.push(data.patterns.length > 0 ? data.patterns : []);
@@ -939,7 +980,13 @@
                 exchanges.push(avgExchange);
             });
 
-            console.log('Processed data for chart:', { labels, prices, forces, patternValues });
+            console.log('Processed data for chart:', {
+                labels,
+                prices,
+                forces,
+                patternValues,
+                forceFields
+            });
 
             const gradient = ctx.createLinearGradient(0, 0, 0, 400);
             gradient.addColorStop(0, 'rgba(75, 192, 192, 0.4)');
@@ -1075,12 +1122,24 @@
                                     const lines = [];
                                     const priceDS = context[0].chart.data.datasets[0];
 
-                                    // Informazioni Forza
+                                    // Informazioni Forza - Mostra TUTTI i campi forza per questo punto
                                     if (document.getElementById('layer-price')?.checked && document.getElementById('layer-force')?.checked) {
-                                        const force = priceDS.forceValues ? priceDS.forceValues[index] : null;
-                                        if (force !== null && force !== 0) {
-                                            const forceFieldName = selectedForceField || 'default';
-                                            lines.push(`⚡ ${forceFieldName}: ${force > 0 ? '▲' : '▼'} ${Math.abs(force).toFixed(2)}`);
+                                        const forceObj = priceDS.forceValues ? priceDS.forceValues[index] : null;
+                                        if (forceObj && Object.keys(forceObj).length > 0) {
+                                            // Se c'è un campo forza selezionato, mostra solo quello
+                                            if (selectedForceField && forceObj[selectedForceField] !== undefined) {
+                                                const force = forceObj[selectedForceField];
+                                                if (force !== 0) {
+                                                    lines.push(`⚡ ${selectedForceField.replace('forza@', '')}: ${force > 0 ? '▲' : '▼'} ${Math.abs(force).toFixed(2)}`);
+                                                }
+                                            } else {
+                                                // Altrimenti mostra tutti i campi forza non zero
+                                                Object.entries(forceObj).forEach(([field, force]) => {
+                                                    if (force !== 0) {
+                                                        lines.push(`⚡ ${field.replace('forza@', '')}: ${force > 0 ? '▲' : '▼'} ${Math.abs(force).toFixed(2)}`);
+                                                    }
+                                                });
+                                            }
                                         }
                                     }
 
