@@ -258,7 +258,7 @@
         /* Multi-select Styles */
         .select-container {
             position: relative;
-            min-width: 150px;
+            min-width: 180px;
         }
 
         .select-btn {
@@ -295,7 +295,7 @@
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
             z-index: 100;
             display: none;
-            max-height: 250px;
+            max-height: 300px;
             overflow-y: auto;
         }
 
@@ -320,14 +320,22 @@
         .option-item input {
             cursor: pointer;
         }
+
+        .pattern-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 2px;
+            display: inline-block;
+            margin-right: 5px;
+        }
     </style>
 </head>
 
 <body>
 
     <div id="loading">
-        <div class=\"spinner\"></div>
-        <div id=\"loadingText\">Analyzing Trend Data...</div>
+        <div class="spinner"></div>
+        <div id="loadingText">Analyzing Trend Data...</div>
     </div>
 
     <div class="header-bar">
@@ -361,11 +369,11 @@
 
             <div class="control-group">
                 <div class="select-container" id="layers-container">
-                    <div class="select-btn" onclick="toggleDropdown()">
+                    <div class="select-btn" onclick="toggleDropdown('layers')">
                         <span id="select-label">Layers</span>
                         <i class="fa-solid fa-chevron-down"></i>
                     </div>
-                    <div class="options-list" id="options-list">
+                    <div class="options-list" id="layers-options-list">
                         <div class="option-item">
                             <input type="checkbox" id="layer-price" value="price" checked onchange="onLayerChange()">
                             <label for="layer-price" data-i18n="int.prices">Prices</label>
@@ -384,6 +392,34 @@
                             <input type="checkbox" id="layer-short" value="short" checked onchange="onLayerChange()">
                             <label for="layer-short">Short</label>
                         </div>
+                        <div class="option-item">
+                            <input type="checkbox" id="layer-force" value="force" checked onchange="onLayerChange()">
+                            <label for="layer-force">Forza</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <div class="select-container" id="patterns-container">
+                    <div class="select-btn" onclick="toggleDropdown('patterns')">
+                        <span id="patterns-select-label">Filtra Pattern</span>
+                        <i class="fa-solid fa-chevron-down"></i>
+                    </div>
+                    <div class="options-list" id="patterns-options-list">
+                        <!-- I pattern verranno inseriti dinamicamente qui -->
+                    </div>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <div class="select-container" id="force-container">
+                    <div class="select-btn" onclick="toggleDropdown('force')">
+                        <span id="force-select-label">Campo Forza</span>
+                        <i class="fa-solid fa-chevron-down"></i>
+                    </div>
+                    <div class="options-list" id="force-options-list">
+                        <!-- I campi forza verranno inseriti dinamicamente qui -->
                     </div>
                 </div>
             </div>
@@ -403,6 +439,11 @@
         let translations = {};
         let availableLanguages = [];
         let currencies = [];
+        let patternFields = [];
+        let forceFields = [];
+        let selectedPatterns = new Set();
+        let selectedForceField = null;
+        let forceFieldOptions = [];
 
         const urlParams = new URLSearchParams(window.location.search);
         const username = urlParams.get('username') || '';
@@ -496,55 +537,105 @@
             document.getElementById('currencyDisplay').textContent = instrumentCurrency;
         }
 
-        async function init() {
-            document.getElementById('username-display').textContent = username;
-
-            if (!username || !token) {
-                document.getElementById('loadingText').textContent = "Access Denied: Username or Token missing";
-                return;
-            }
-
-            const today = new Date();
-            const oneYearAgo = new Date();
-            oneYearAgo.setFullYear(today.getFullYear() - 1);
-
-            document.getElementById('end-date').value = today.toISOString().split('T')[0];
-            document.getElementById('start-date').value = oneYearAgo.toISOString().split('T')[0];
-
-            await Promise.all([
-                initializeLanguages(),
-                loadTranslations(language),
-                loadCurrencies(language)
-            ]);
-
-            updateUserInfoUI();
-
-            document.getElementById('btn-confirm').textContent = getTranslation('int.apply') || 'Applica';
-            document.getElementById('page-title-input').value = initialTitle || getTranslation('int.detail.prices') || "";
-            document.getElementById('close-btn').textContent = getTranslation('int.close') || 'Close';
-            if (document.getElementById('user-label-text')) document.getElementById('user-label-text').textContent = (getTranslation('int.user') || 'User') + ':';
-            if (document.getElementById('label-start-date')) document.getElementById('label-start-date').textContent = (getTranslation('int.date.start') || 'Start') + ':';
-            if (document.getElementById('label-end-date')) document.getElementById('label-end-date').textContent = (getTranslation('int.date.end') || 'End') + ':';
-
-            document.querySelector('[for="layer-price"]').textContent = getTranslation('int.prices') || 'Prices';
-            document.querySelector('[for="layer-pattern"]').textContent = getTranslation('int.pattern') || 'Pattern';
-            document.querySelector('[for="layer-exchange"]').textContent = getTranslation('int.exchange') || 'Exchange';
-            document.getElementById('select-label').textContent = getTranslation('int.layers') || 'Layers';
-
-            await loadPrices();
-        }
-
-        function toggleDropdown() {
-            document.getElementById('options-list').classList.toggle('show');
-            document.querySelector('.select-btn').classList.toggle('active');
+        function toggleDropdown(dropdownId) {
+            document.getElementById(`${dropdownId}-options-list`).classList.toggle('show');
+            document.querySelector(`#${dropdownId}-container .select-btn`).classList.toggle('active');
         }
 
         window.addEventListener('click', function (e) {
-            if (!document.getElementById('layers-container').contains(e.target)) {
-                document.getElementById('options-list').classList.remove('show');
-                document.querySelector('.select-btn').classList.remove('active');
-            }
+            ['layers', 'patterns', 'force'].forEach(id => {
+                const container = document.getElementById(`${id}-container`);
+                if (container && !container.contains(e.target)) {
+                    const list = document.getElementById(`${id}-options-list`);
+                    const btn = container.querySelector('.select-btn');
+                    if (list) list.classList.remove('show');
+                    if (btn) btn.classList.remove('active');
+                }
+            });
         });
+
+        function extractFieldsFromData() {
+            if (!trendDataRaw || trendDataRaw.length === 0) return;
+
+            const firstRow = trendDataRaw[0];
+
+            // Estrai campi pattern
+            patternFields = Object.keys(firstRow).filter(k => k.startsWith('pattern@'));
+
+            // Estrai campi forza
+            forceFields = Object.keys(firstRow).filter(k => k.startsWith('forza@'));
+
+            // Popola dropdown pattern
+            const patternsList = document.getElementById('patterns-options-list');
+            patternsList.innerHTML = '';
+
+            if (patternFields.length > 0) {
+                patternFields.forEach(field => {
+                    const patternName = field.replace('pattern@', '');
+                    const color = getPatternColor(patternName);
+                    const div = document.createElement('div');
+                    div.className = 'option-item';
+                    div.innerHTML = `
+                        <input type="checkbox" id="pattern-${patternName}" value="${field}" checked onchange="onPatternFilterChange()">
+                        <span class="pattern-indicator" style="background-color: ${color};"></span>
+                        <label for="pattern-${patternName}">${patternName}</label>
+                    `;
+                    patternsList.appendChild(div);
+                    selectedPatterns.add(field);
+                });
+            } else {
+                patternsList.innerHTML = '<div class="option-item">Nessun pattern disponibile</div>';
+            }
+
+            // Popola dropdown forza
+            const forceList = document.getElementById('force-options-list');
+            forceList.innerHTML = '';
+
+            if (forceFields.length > 0) {
+                forceFieldOptions = forceFields;
+                forceFields.forEach(field => {
+                    const div = document.createElement('div');
+                    div.className = 'option-item';
+                    div.innerHTML = `
+                        <input type="radio" name="forceField" id="force-${field}" value="${field}" ${!selectedForceField && field === forceFields[0] ? 'checked' : ''} onchange="onForceFieldChange()">
+                        <label for="force-${field}">${field}</label>
+                    `;
+                    forceList.appendChild(div);
+                });
+
+                // Seleziona il primo per default
+                if (!selectedForceField && forceFields.length > 0) {
+                    selectedForceField = forceFields[0];
+                }
+            } else {
+                forceList.innerHTML = '<div class="option-item">Nessun campo forza disponibile</div>';
+            }
+        }
+
+        function getPatternColor(patternName) {
+            const colors = ['#800080', '#FF4500', '#1E90FF', '#32CD32', '#FF1493', '#FFD700', '#00CED1', '#FF6347'];
+            let hash = 0;
+            for (let i = 0; i < patternName.length; i++) {
+                hash = patternName.charCodeAt(i) + ((hash << 5) - hash);
+            }
+            return colors[Math.abs(hash) % colors.length];
+        }
+
+        function onPatternFilterChange() {
+            selectedPatterns.clear();
+            document.querySelectorAll('#patterns-options-list input[type="checkbox"]:checked').forEach(cb => {
+                selectedPatterns.add(cb.value);
+            });
+            renderChart();
+        }
+
+        function onForceFieldChange() {
+            const selected = document.querySelector('input[name="forceField"]:checked');
+            if (selected) {
+                selectedForceField = selected.value;
+                renderChart();
+            }
+        }
 
         function onLayerChange() {
             renderChart();
@@ -553,6 +644,8 @@
         const forceArrowsPlugin = {
             id: 'forceArrows',
             afterDatasetsDraw(chart) {
+                if (!document.getElementById('layer-force').checked) return;
+
                 const { ctx } = chart;
                 ctx.save();
 
@@ -615,25 +708,46 @@
         const patternLinesPlugin = {
             id: 'patternLines',
             afterDatasetsDraw(chart) {
+                if (!document.getElementById('layer-pattern').checked || selectedPatterns.size === 0) return;
+
                 const { ctx, chartArea } = chart;
                 const dataset = chart.data.datasets[0];
-                if (!dataset || !dataset.patternValues || !document.getElementById('layer-pattern').checked) return;
+                if (!dataset) return;
 
                 const meta = chart.getDatasetMeta(0);
                 if (!meta || meta.hidden) return;
 
                 ctx.save();
+
                 meta.data.forEach((point, index) => {
-                    const patternObj = dataset.patternValues[index];
-                    if (patternObj && Object.keys(patternObj).length > 0) {
-                        const x = point.x;
-                        ctx.beginPath();
-                        ctx.strokeStyle = '#800080';
-                        ctx.lineWidth = 0.5;
-                        ctx.moveTo(x, chartArea.top);
-                        ctx.lineTo(x, chartArea.bottom);
-                        ctx.stroke();
-                    }
+                    const patternArray = dataset.patternValues[index];
+                    if (!patternArray || patternArray.length === 0) return;
+
+                    const x = point.x;
+                    let patternCount = 0;
+
+                    patternArray.forEach(patternObj => {
+                        Object.entries(patternObj).forEach(([key, value]) => {
+                            const fullField = `pattern@${key}`;
+                            if (selectedPatterns.has(fullField)) {
+                                const color = getPatternColor(key);
+                                ctx.beginPath();
+                                ctx.strokeStyle = color;
+                                ctx.lineWidth = 1.5;
+                                ctx.setLineDash([5, 3]);
+                                ctx.moveTo(x, chartArea.top);
+                                ctx.lineTo(x, chartArea.bottom);
+                                ctx.stroke();
+
+                                // Etichetta in alto
+                                ctx.setLineDash([]);
+                                ctx.font = 'bold 8px Orbitron';
+                                ctx.fillStyle = color;
+                                ctx.fillText(key, x + 5, chartArea.top + 5 + (patternCount * 12));
+                                patternCount++;
+                            }
+                        });
+                    });
                 });
                 ctx.restore();
             }
@@ -666,6 +780,7 @@
                 trendDataRaw = data.prices || (Array.isArray(data) ? data : []);
                 trendDataRaw.sort((a, b) => new Date(a.date_start || a.date) - new Date(b.date_start || b.date));
 
+                extractFieldsFromData();
                 renderChart();
                 document.getElementById('loading').style.display = 'none';
             } catch (error) {
@@ -696,7 +811,7 @@
 
             const firstRow = trendDataRaw[0];
             const priceField = Object.keys(firstRow).find(k => k.startsWith('price@')) || 'price_mkt';
-            const forceField = `forza@${instrumentCurrency}`;
+            const forceField = selectedForceField || `forza@${instrumentCurrency}`;
             const patternFields = Object.keys(firstRow).filter(k => k.startsWith('pattern@'));
 
             const labels = [];
@@ -711,7 +826,14 @@
             trendDataRaw.forEach(item => {
                 const date = item.date_start || item.date;
                 if (!aggregatedData[date]) {
-                    aggregatedData[date] = { date, prices: [], forces: [], patterns: [], shorts: [], exchanges: [] };
+                    aggregatedData[date] = {
+                        date,
+                        prices: [],
+                        forces: [],
+                        patterns: [],
+                        shorts: [],
+                        exchanges: []
+                    };
                 }
 
                 const priceParsed = parseValue(item[priceField]);
@@ -720,11 +842,13 @@
                 const forceVal = item[forceField] !== undefined ? parseValue(item[forceField]) : 0;
                 aggregatedData[date].forces.push(forceVal);
 
-                const patternObj = {};
+                // Aggiungi ogni pattern individualmente
                 patternFields.forEach(field => {
-                    if (item[field]) patternObj[field.replace('pattern@', '')] = item[field];
+                    if (item[field]) {
+                        const patternName = field.replace('pattern@', '');
+                        aggregatedData[date].patterns.push({ [patternName]: item[field] });
+                    }
                 });
-                if (Object.keys(patternObj).length > 0) aggregatedData[date].patterns.push(patternObj);
 
                 if (item.short !== undefined) aggregatedData[date].shorts.push(parseValue(item.short));
                 if (item.valore !== undefined) {
@@ -743,11 +867,7 @@
                 labels.push(date);
                 prices.push(avgPrice);
                 forces.push(data.forces.find(f => f !== 0) || 0);
-
-                let mergedPattern = {};
-                data.patterns.forEach(p => Object.assign(mergedPattern, p));
-                patternValues.push(Object.keys(mergedPattern).length ? mergedPattern : null);
-
+                patternValues.push(data.patterns.length > 0 ? data.patterns : null);
                 shorts.push(data.shorts.length ? data.shorts.reduce((a, b) => a + b, 0) : 0);
                 exchanges.push(data.exchanges.length ? data.exchanges.reduce((a, b) => a + b, 0) / data.exchanges.length : 0);
             });
@@ -773,9 +893,26 @@
                             fill: true,
                             pointBackgroundColor: (context) => {
                                 const index = context.dataIndex;
-                                return patternValues[index] ? '#800080' : 'rgba(75, 192, 192, 1)';
+                                const patterns = patternValues[index];
+                                if (patterns && patterns.length > 0) {
+                                    const hasSelectedPattern = patterns.some(p =>
+                                        Object.keys(p).some(key => selectedPatterns.has(`pattern@${key}`))
+                                    );
+                                    return hasSelectedPattern ? '#800080' : 'rgba(75, 192, 192, 1)';
+                                }
+                                return 'rgba(75, 192, 192, 1)';
                             },
-                            pointRadius: 4,
+                            pointRadius: (context) => {
+                                const index = context.dataIndex;
+                                const patterns = patternValues[index];
+                                if (patterns && patterns.length > 0) {
+                                    const hasSelectedPattern = patterns.some(p =>
+                                        Object.keys(p).some(key => selectedPatterns.has(`pattern@${key}`))
+                                    );
+                                    return hasSelectedPattern ? 6 : 4;
+                                }
+                                return 4;
+                            },
                             yAxisID: 'y',
                             hidden: !document.getElementById('layer-price').checked
                         },
@@ -863,19 +1000,28 @@
                                     const lines = [];
                                     const priceDS = context[0].chart.data.datasets[0];
 
-                                    if (document.getElementById('layer-price').checked) {
+                                    if (document.getElementById('layer-price').checked && document.getElementById('layer-force').checked) {
                                         const force = priceDS.forceValues ? priceDS.forceValues[index] : null;
                                         if (force !== null && force !== 0) {
-                                            lines.push(`⚡ Forza: ${force > 0 ? '▲' : '▼'} ${Math.abs(force).toFixed(2)}`);
+                                            lines.push(`⚡ Forza (${selectedForceField || 'default'}): ${force > 0 ? '▲' : '▼'} ${Math.abs(force).toFixed(2)}`);
                                         }
                                     }
 
-                                    const patternObj = priceDS.patternValues ? priceDS.patternValues[index] : null;
-                                    if (patternObj && document.getElementById('layer-pattern').checked) {
-                                        lines.push(`🔍 Pattern:`);
-                                        Object.entries(patternObj).forEach(([key, val]) => {
-                                            lines.push(`  • ${getTranslation(key)}: ${val}`);
+                                    const patternArray = priceDS.patternValues ? priceDS.patternValues[index] : null;
+                                    if (patternArray && patternArray.length > 0 && document.getElementById('layer-pattern').checked) {
+                                        const filteredPatterns = patternArray.filter(p => {
+                                            const key = Object.keys(p)[0];
+                                            return selectedPatterns.has(`pattern@${key}`);
                                         });
+
+                                        if (filteredPatterns.length > 0) {
+                                            lines.push(`🔍 Pattern:`);
+                                            filteredPatterns.forEach(p => {
+                                                Object.entries(p).forEach(([key, val]) => {
+                                                    lines.push(`  • ${key}: ${val}`);
+                                                });
+                                            });
+                                        }
                                     }
                                     return lines;
                                 }
@@ -884,6 +1030,44 @@
                     }
                 }
             });
+        }
+
+        async function init() {
+            document.getElementById('username-display').textContent = username;
+
+            if (!username || !token) {
+                document.getElementById('loadingText').textContent = "Access Denied: Username or Token missing";
+                return;
+            }
+
+            const today = new Date();
+            const oneYearAgo = new Date();
+            oneYearAgo.setFullYear(today.getFullYear() - 1);
+
+            document.getElementById('end-date').value = today.toISOString().split('T')[0];
+            document.getElementById('start-date').value = oneYearAgo.toISOString().split('T')[0];
+
+            await Promise.all([
+                initializeLanguages(),
+                loadTranslations(language),
+                loadCurrencies(language)
+            ]);
+
+            updateUserInfoUI();
+
+            document.getElementById('btn-confirm').textContent = getTranslation('int.apply') || 'Applica';
+            document.getElementById('page-title-input').value = initialTitle || getTranslation('int.detail.prices') || "";
+            document.getElementById('close-btn').textContent = getTranslation('int.close') || 'Close';
+            if (document.getElementById('user-label-text')) document.getElementById('user-label-text').textContent = (getTranslation('int.user') || 'User') + ':';
+            if (document.getElementById('label-start-date')) document.getElementById('label-start-date').textContent = (getTranslation('int.date.start') || 'Start') + ':';
+            if (document.getElementById('label-end-date')) document.getElementById('label-end-date').textContent = (getTranslation('int.date.end') || 'End') + ':';
+
+            document.querySelector('[for="layer-price"]').textContent = getTranslation('int.prices') || 'Prices';
+            document.querySelector('[for="layer-pattern"]').textContent = getTranslation('int.pattern') || 'Pattern';
+            document.querySelector('[for="layer-exchange"]').textContent = getTranslation('int.exchange') || 'Exchange';
+            document.getElementById('select-label').textContent = getTranslation('int.layers') || 'Layers';
+
+            await loadPrices();
         }
 
         window.onload = init;
