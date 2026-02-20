@@ -575,25 +575,8 @@
             }
 
             if (layersOptionsList) {
-                // Aggiungi checkbox per i pattern dinamicamente
-                if (patternFields.length > 0) {
-                    patternFields.forEach(field => {
-                        const patternName = field.replace('pattern@', '');
-                        const color = getPatternColor(patternName);
-
-                        if (!document.getElementById(`pattern-${patternName}`)) {
-                            const div = document.createElement('div');
-                            div.className = 'option-item';
-                            div.innerHTML = `
-                                <input type="checkbox" id="pattern-${patternName}" value="${field}" checked onchange="onPatternFilterChange()">
-                                <span class="pattern-indicator" style="background-color: ${color};"></span>
-                                <label for="pattern-${patternName}">${patternName}</label>
-                            `;
-                            layersOptionsList.appendChild(div);
-                            console.log('Added pattern checkbox:', patternName);
-                        }
-                    });
-                }
+                // I pattern sono gestiti con la singola checkbox 'Pattern' (layer-pattern)
+                // selectedPatterns contiene sempre tutti i pattern disponibili
 
                 // Aggiungi radio button per i force field dinamicamente
                 if (forceFields.length > 0) {
@@ -860,7 +843,10 @@
             const priceField = Object.keys(firstRow).find(k => k.startsWith('price@')) || 'price_mkt';
             const priceCurrencyField = `price_mkt@${targetCurrency}`;
             const hasPriceCurrency = trendDataRaw.some(item => item[priceCurrencyField] !== undefined);
-            const patternFieldList = Object.keys(firstRow).filter(k => k.startsWith('pattern@'));
+            // Scansiona TUTTI i record per trovare i campi pattern@* (non solo il primo)
+            const patternFieldSet = new Set();
+            trendDataRaw.forEach(item => Object.keys(item).filter(k => k.startsWith('pattern@')).forEach(k => patternFieldSet.add(k)));
+            const patternFieldList = Array.from(patternFieldSet);
 
             const labels = [];
             const prices = [];
@@ -1037,8 +1023,8 @@
                                 }
                             },
                             title: {
-                                display: true,
-                                text: 'Ratio / %'
+                                display: !!document.getElementById('layer-exchange')?.checked,
+                                text: getTranslation('int.exchange') || 'Exchange'
                             }
                         },
                         y1: {
@@ -1047,15 +1033,14 @@
                             position: 'right',
                             ticks: {
                                 callback: function (value) {
-                                    return value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ` ${instrumentCurrency}`;
+                                    return value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
                                 }
                             },
                             grid: {
                                 drawOnChartArea: false
                             },
                             title: {
-                                display: true,
-                                text: instrumentCurrency
+                                display: false
                             }
                         },
                         x: {
