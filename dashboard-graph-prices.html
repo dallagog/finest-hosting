@@ -615,17 +615,18 @@
         const patternLinesPlugin = {
             id: 'patternLines',
             afterDatasetsDraw(chart) {
-                const { ctx, chartArea, scales } = chart;
+                const { ctx, chartArea } = chart;
                 const dataset = chart.data.datasets[0];
                 if (!dataset || !dataset.patternValues || !document.getElementById('layer-pattern').checked) return;
 
-                const xScale = scales['x'];
-                if (!xScale) return;
+                const meta = chart.getDatasetMeta(0);
+                if (!meta || meta.hidden) return;
 
                 ctx.save();
-                dataset.patternValues.forEach((patternObj, index) => {
+                meta.data.forEach((point, index) => {
+                    const patternObj = dataset.patternValues[index];
                     if (patternObj && Object.keys(patternObj).length > 0) {
-                        const x = xScale.getPixelForIndex(index);
+                        const x = point.x;
                         ctx.beginPath();
                         ctx.strokeStyle = '#800080';
                         ctx.lineWidth = 0.5;
