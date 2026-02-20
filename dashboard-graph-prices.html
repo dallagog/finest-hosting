@@ -400,19 +400,6 @@
                 </div>
             </div>
 
-
-            <div class="control-group">
-                <div class="select-container" id="force-container">
-                    <div class="select-btn" onclick="toggleDropdown('force')">
-                        <span id="force-select-label">Campo Forza</span>
-                        <i class="fa-solid fa-chevron-down"></i>
-                    </div>
-                    <div class="options-list" id="force-options-list">
-                        <!-- I campi forza verranno inseriti dinamicamente qui -->
-                    </div>
-                </div>
-            </div>
-
             <button class="confirm-btn" onclick="loadPrices()" id="btn-confirm">Applica</button>
             <button class="close-button" onclick="window.close()" id="close-btn">Close</button>
         </div>
@@ -957,6 +944,9 @@
 
                 // Calcolo media prezzi (salta se non ci sono prezzi)
                 const avgPrice = data.prices.length ? data.prices.reduce((a, b) => a + b, 0) / data.prices.length : 0;
+
+                // Non aggiungere la riga se il prezzo è zero
+                if (avgPrice === 0) return;
 
                 labels.push(date);
                 prices.push(avgPrice);
