@@ -379,6 +379,11 @@
                             <label for="layer-price" data-i18n="int.prices">Prices</label>
                         </div>
                         <div class="option-item">
+                            <input type="checkbox" id="layer-price-currency" value="price-currency" checked
+                                onchange="onLayerChange()">
+                            <label for="layer-price-currency" id="label-layer-price-currency">Prezzo valuta</label>
+                        </div>
+                        <div class="option-item">
                             <input type="checkbox" id="layer-pattern" value="pattern" checked
                                 onchange="onLayerChange()">
                             <label for="layer-pattern" data-i18n="int.pattern">Pattern</label>
@@ -853,10 +858,13 @@
 
             const firstRow = trendDataRaw[0];
             const priceField = Object.keys(firstRow).find(k => k.startsWith('price@')) || 'price_mkt';
+            const priceCurrencyField = `price_mkt@${targetCurrency}`;
+            const hasPriceCurrency = trendDataRaw.some(item => item[priceCurrencyField] !== undefined);
             const patternFieldList = Object.keys(firstRow).filter(k => k.startsWith('pattern@'));
 
             const labels = [];
             const prices = [];
+            const priceCurrencies = [];
             const forces = [];
             const patternValues = [];
             const shorts = [];
@@ -870,6 +878,7 @@
                     aggregatedData[date] = {
                         date,
                         prices: [],
+                        priceCurrencies: [],
                         forces: {},
                         patterns: [],
                         shorts: [],
@@ -880,6 +889,10 @@
                 if (item[priceField] !== undefined) {
                     const priceParsed = parseValue(item[priceField]);
                     if (priceParsed !== 0) aggregatedData[date].prices.push(priceParsed);
+                }
+                if (hasPriceCurrency && item[priceCurrencyField] !== undefined) {
+                    const pcParsed = parseValue(item[priceCurrencyField]);
+                    if (pcParsed !== 0) aggregatedData[date].priceCurrencies.push(pcParsed);
                 }
 
                 forceFields.forEach(field => {
@@ -911,8 +924,10 @@
             sortedDates.forEach(date => {
                 const data = aggregatedData[date];
                 const avgPrice = data.prices.length ? data.prices.reduce((a, b) => a + b, 0) / data.prices.length : 0;
+                const avgPriceCurrency = data.priceCurrencies.length ? data.priceCurrencies.reduce((a, b) => a + b, 0) / data.priceCurrencies.length : null;
                 labels.push(date);
                 prices.push(avgPrice);
+                priceCurrencies.push(avgPriceCurrency);
                 forces.push(data.forces);
                 patternValues.push(data.patterns.length > 0 ? data.patterns : []);
                 shorts.push(data.shorts.length ? data.shorts.reduce((a, b) => a + b, 0) / data.shorts.length : 0);
@@ -960,8 +975,19 @@
                                 }
                                 return 4;
                             },
-                            yAxisID: 'y',
+                            yAxisID: 'y1',
                             hidden: !document.getElementById('layer-price')?.checked
+                        },
+                        {
+                            label: `Prezzo ${targetCurrency}`,
+                            data: priceCurrencies,
+                            borderColor: 'rgba(100, 200, 100, 1)',
+                            backgroundColor: 'transparent',
+                            borderWidth: 2,
+                            tension: 0.1,
+                            pointRadius: 2,
+                            yAxisID: 'y1',
+                            hidden: !hasPriceCurrency || !document.getElementById('layer-price-currency')?.checked
                         },
                         {
                             label: `${getTranslation('int.exchange') || 'Exchange Rate'} (${dualExchangeLabel || 'N/A'})`,
@@ -971,7 +997,7 @@
                             borderWidth: 2,
                             tension: 0.1,
                             pointRadius: 0,
-                            yAxisID: 'y1',
+                            yAxisID: 'y',
                             hidden: !document.getElementById('layer-exchange')?.checked || exchanges.every(v => v === 0)
                         },
                         {
@@ -982,7 +1008,7 @@
                             borderWidth: 2,
                             tension: 0.1,
                             pointRadius: 0,
-                            yAxisID: 'y1',
+                            yAxisID: 'y',
                             hidden: !document.getElementById('layer-short')?.checked || shorts.every(v => v === 0)
                         }
                     ]
@@ -998,18 +1024,8 @@
                     scales: {
                         y: {
                             type: 'linear',
-                            display: true,
-                            position: 'left',
-                            ticks: {
-                                callback: function (value) {
-                                    return value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ` ${instrumentCurrency}`;
-                                }
-                            }
-                        },
-                        y1: {
-                            type: 'linear',
                             display: (document.getElementById('layer-exchange')?.checked || document.getElementById('layer-short')?.checked),
-                            position: 'right',
+                            position: 'left',
                             beginAtZero: false,
                             ticks: {
                                 callback: function (value) {
@@ -1020,12 +1036,26 @@
                                     return value.toLocaleString();
                                 }
                             },
+                            title: {
+                                display: true,
+                                text: 'Ratio / %'
+                            }
+                        },
+                        y1: {
+                            type: 'linear',
+                            display: true,
+                            position: 'right',
+                            ticks: {
+                                callback: function (value) {
+                                    return value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ` ${instrumentCurrency}`;
+                                }
+                            },
                             grid: {
                                 drawOnChartArea: false
                             },
                             title: {
                                 display: true,
-                                text: 'Ratio / %'
+                                text: instrumentCurrency
                             }
                         },
                         x: {
