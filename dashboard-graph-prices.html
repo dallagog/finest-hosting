@@ -10,6 +10,7 @@
     <link rel="icon" type="image/png" href="images/icon-finest.png">
     <script src="js/dashboard-shared.js"></script>
     <style>
+        /* ... (stili invariati, rimangono quelli da te forniti) ... */
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&display=swap');
 
         :root {
@@ -559,10 +560,10 @@
 
             const firstRow = trendDataRaw[0];
 
-            // Estrai campi pattern
+            // Estrai campi pattern (chiavi che iniziano con 'pattern@')
             patternFields = Object.keys(firstRow).filter(k => k.startsWith('pattern@'));
 
-            // Estrai campi forza
+            // Estrai campi forza (chiavi che iniziano con 'forza@')
             forceFields = Object.keys(firstRow).filter(k => k.startsWith('forza@'));
 
             // Popola dropdown pattern
@@ -641,65 +642,76 @@
             renderChart();
         }
 
+        // --- PLUGINS CORRETTI ---
         const forceArrowsPlugin = {
             id: 'forceArrows',
             afterDatasetsDraw(chart) {
-                if (!document.getElementById('layer-force').checked) return;
+                // Verifica se il layer 'force' è attivo
+                if (!document.getElementById('layer-force')?.checked) return;
 
-                const { ctx } = chart;
+                const { ctx, chartArea } = chart;
                 ctx.save();
 
-                chart.data.datasets.forEach((dataset, datasetIndex) => {
-                    const meta = chart.getDatasetMeta(datasetIndex);
-                    if (meta.hidden) return;
+                const dataset = chart.data.datasets[0];
+                if (!dataset || !dataset.forceValues) return;
 
-                    dataset.data.forEach((value, index) => {
-                        const force = dataset.forceValues ? dataset.forceValues[index] : null;
-                        if (force === null || force === 0) return;
+                const meta = chart.getDatasetMeta(0);
+                if (!meta || meta.hidden) return;
 
-                        const { x, y } = meta.data[index];
-                        const isPositive = force > 0;
-                        const color = isPositive ? 'green' : 'red';
-                        const offset = 20;
-                        const arrowSize = 10;
+                const forceValues = dataset.forceValues;
+
+                meta.data.forEach((point, index) => {
+                    const force = forceValues[index];
+                    // Mostra solo se il valore è valido e diverso da zero
+                    if (force === null || force === undefined || force === 0) return;
+
+                    const { x, y } = point;
+                    const isPositive = force > 0;
+                    const color = isPositive ? 'green' : 'red';
+                    const offset = 20; // Distanza dal punto
+                    const arrowSize = 10;
+
+                    ctx.beginPath();
+                    ctx.lineWidth = 2;
+                    ctx.strokeStyle = color;
+                    ctx.fillStyle = color;
+
+                    // Disegna la linea e la punta della freccia
+                    if (isPositive) {
+                        // Freccia su
+                        ctx.moveTo(x, y - offset);
+                        ctx.lineTo(x, y - offset - arrowSize);
+                        ctx.stroke();
 
                         ctx.beginPath();
-                        ctx.lineWidth = 2;
-                        ctx.strokeStyle = color;
+                        ctx.moveTo(x, y - offset - arrowSize);
+                        ctx.lineTo(x - 5, y - offset - arrowSize + 5);
+                        ctx.lineTo(x + 5, y - offset - arrowSize + 5);
+                        ctx.fill();
+
+                        // Testo del valore sopra la freccia
+                        ctx.font = 'bold 10px Orbitron';
+                        ctx.textAlign = 'center';
                         ctx.fillStyle = color;
+                        ctx.fillText(force.toFixed(2), x, y - offset - arrowSize - 5);
+                    } else {
+                        // Freccia giù
+                        ctx.moveTo(x, y + offset);
+                        ctx.lineTo(x, y + offset + arrowSize);
+                        ctx.stroke();
 
-                        if (isPositive) {
-                            ctx.moveTo(x, y - offset);
-                            ctx.lineTo(x, y - offset - arrowSize);
-                            ctx.stroke();
+                        ctx.beginPath();
+                        ctx.moveTo(x, y + offset + arrowSize);
+                        ctx.lineTo(x - 5, y + offset + arrowSize - 5);
+                        ctx.lineTo(x + 5, y + offset + arrowSize - 5);
+                        ctx.fill();
 
-                            ctx.beginPath();
-                            ctx.moveTo(x, y - offset - arrowSize);
-                            ctx.lineTo(x - 5, y - offset - arrowSize + 5);
-                            ctx.lineTo(x + 5, y - offset - arrowSize + 5);
-                            ctx.fill();
-
-                            ctx.font = 'bold 10px Orbitron';
-                            ctx.textAlign = 'center';
-                            ctx.fillStyle = color;
-                            ctx.fillText(Math.abs(force).toFixed(2), x, y - offset - arrowSize - 5);
-                        } else {
-                            ctx.moveTo(x, y + offset);
-                            ctx.lineTo(x, y + offset + arrowSize);
-                            ctx.stroke();
-
-                            ctx.beginPath();
-                            ctx.moveTo(x, y + offset + arrowSize);
-                            ctx.lineTo(x - 5, y + offset + arrowSize - 5);
-                            ctx.lineTo(x + 5, y + offset + arrowSize - 5);
-                            ctx.fill();
-
-                            ctx.font = 'bold 10px Orbitron';
-                            ctx.textAlign = 'center';
-                            ctx.fillStyle = color;
-                            ctx.fillText(Math.abs(force).toFixed(2), x, y + offset + arrowSize + 12);
-                        }
-                    });
+                        // Testo del valore sotto la freccia
+                        ctx.font = 'bold 10px Orbitron';
+                        ctx.textAlign = 'center';
+                        ctx.fillStyle = color;
+                        ctx.fillText(force.toFixed(2), x, y + offset + arrowSize + 12);
+                    }
                 });
                 ctx.restore();
             }
@@ -708,11 +720,12 @@
         const patternLinesPlugin = {
             id: 'patternLines',
             afterDatasetsDraw(chart) {
-                if (!document.getElementById('layer-pattern').checked || selectedPatterns.size === 0) return;
+                // Verifica se il layer 'pattern' è attivo e se ci sono pattern selezionati
+                if (!document.getElementById('layer-pattern')?.checked || selectedPatterns.size === 0) return;
 
                 const { ctx, chartArea } = chart;
                 const dataset = chart.data.datasets[0];
-                if (!dataset) return;
+                if (!dataset || !dataset.patternValues) return;
 
                 const meta = chart.getDatasetMeta(0);
                 if (!meta || meta.hidden) return;
@@ -720,30 +733,33 @@
                 ctx.save();
 
                 meta.data.forEach((point, index) => {
-                    const patternArray = dataset.patternValues[index];
-                    if (!patternArray || patternArray.length === 0) return;
+                    const patternsAtPoint = dataset.patternValues[index];
+                    // patternsAtPoint è un array di oggetti { "patternName": valore }
+                    if (!patternsAtPoint || patternsAtPoint.length === 0) return;
 
                     const x = point.x;
-                    let patternCount = 0;
+                    let patternCount = 0; // Per posizionare le etichette una sotto l'altra
 
-                    patternArray.forEach(patternObj => {
-                        Object.entries(patternObj).forEach(([key, value]) => {
-                            const fullField = `pattern@${key}`;
-                            if (selectedPatterns.has(fullField)) {
-                                const color = getPatternColor(key);
+                    patternsAtPoint.forEach(patternObj => {
+                        Object.entries(patternObj).forEach(([patternName, value]) => {
+                            const fullFieldName = `pattern@${patternName}`;
+                            // Disegna la linea solo se il pattern è selezionato dall'utente
+                            if (selectedPatterns.has(fullFieldName)) {
+                                const color = getPatternColor(patternName);
                                 ctx.beginPath();
                                 ctx.strokeStyle = color;
                                 ctx.lineWidth = 1.5;
-                                ctx.setLineDash([5, 3]);
+                                ctx.setLineDash([5, 3]); // Linea tratteggiata
                                 ctx.moveTo(x, chartArea.top);
                                 ctx.lineTo(x, chartArea.bottom);
                                 ctx.stroke();
 
-                                // Etichetta in alto
-                                ctx.setLineDash([]);
+                                // Etichetta in alto, una per ogni pattern attivo su questo punto
+                                ctx.setLineDash([]); // Torna linea continua per il testo
                                 ctx.font = 'bold 8px Orbitron';
                                 ctx.fillStyle = color;
-                                ctx.fillText(key, x + 5, chartArea.top + 5 + (patternCount * 12));
+                                // Aggiunge un piccolo offset per evitare sovrapposizioni
+                                ctx.fillText(patternName, x + 5, chartArea.top + 5 + (patternCount * 12));
                                 patternCount++;
                             }
                         });
@@ -777,6 +793,7 @@
                 });
 
                 const data = await response.json();
+                // Assicurati che trendDataRaw sia un array
                 trendDataRaw = data.prices || (Array.isArray(data) ? data : []);
                 trendDataRaw.sort((a, b) => new Date(a.date_start || a.date) - new Date(b.date_start || b.date));
 
@@ -809,19 +826,24 @@
 
             document.getElementById('instrument-name-display').textContent = `${instrumentNameFromUrl || idInstrument}`;
 
+            // --- DETERMINA I CAMPI DINAMICAMENTE ---
             const firstRow = trendDataRaw[0];
+            // Cerca un campo che inizia con 'price@', altrimenti usa 'price_mkt'
             const priceField = Object.keys(firstRow).find(k => k.startsWith('price@')) || 'price_mkt';
-            const forceField = selectedForceField || `forza@${instrumentCurrency}`;
-            const patternFields = Object.keys(firstRow).filter(k => k.startsWith('pattern@'));
+            // Usa il campo forza selezionato, altrimenti prova a costruirne uno default, altrimenti null
+            const forceField = selectedForceField || Object.keys(firstRow).find(k => k.startsWith('forza@')) || null;
+            const patternFieldList = Object.keys(firstRow).filter(k => k.startsWith('pattern@'));
+            // Nota: Non c'è un campo 'short' o 'exchange' nel tuo JSON, ma li teniamo per compatibilità futura
 
             const labels = [];
             const prices = [];
             const forces = [];
-            const patternValues = [];
+            const patternValues = []; // Array di array, ogni elemento è un array di oggetti pattern per quella data
             const shorts = [];
             const exchanges = [];
             let dualExchangeLabel = "";
 
+            // --- AGGREGAZIONE DATI CORRETTA ---
             const aggregatedData = {};
             trendDataRaw.forEach(item => {
                 const date = item.date_start || item.date;
@@ -830,27 +852,41 @@
                         date,
                         prices: [],
                         forces: [],
-                        patterns: [],
+                        patterns: [], // <-- Array per accumulare TUTTI i pattern della giornata
                         shorts: [],
                         exchanges: []
                     };
                 }
 
+                // Prezzo
                 const priceParsed = parseValue(item[priceField]);
                 if (priceParsed !== 0) aggregatedData[date].prices.push(priceParsed);
 
-                const forceVal = item[forceField] !== undefined ? parseValue(item[forceField]) : 0;
-                aggregatedData[date].forces.push(forceVal);
+                // Forza (solo se il campo esiste)
+                if (forceField && item[forceField] !== undefined) {
+                    const forceVal = parseValue(item[forceField]);
+                    // Aggiungi solo valori non zero? No, meglio tenerli per l'analisi, anche zero è un dato
+                    aggregatedData[date].forces.push(forceVal);
+                } else {
+                    aggregatedData[date].forces.push(0); // Placeholder se non c'è campo forza
+                }
 
-                // Aggiungi ogni pattern individualmente
-                patternFields.forEach(field => {
-                    if (item[field]) {
+                // Pattern: Itera su tutti i campi pattern conosciuti e aggiungi se presenti
+                patternFieldList.forEach(field => {
+                    if (item[field] !== undefined && item[field] !== null) {
                         const patternName = field.replace('pattern@', '');
-                        aggregatedData[date].patterns.push({ [patternName]: item[field] });
+                        // Aggiunge un oggetto { nomePattern: valore } all'array patterns della data
+                        // Questo permette di avere più pattern diversi sullo stesso giorno
+                        aggregatedData[date].patterns.push({ [patternName]: parseValue(item[field]) });
                     }
                 });
 
-                if (item.short !== undefined) aggregatedData[date].shorts.push(parseValue(item.short));
+                // Short (se presente)
+                if (item.short !== undefined) {
+                    aggregatedData[date].shorts.push(parseValue(item.short));
+                }
+
+                // Exchange (se presente)
                 if (item.exchange !== undefined) {
                     aggregatedData[date].exchanges.push(parseValue(item.exchange));
                     if (item.dual_exchange) dualExchangeLabel = item.dual_exchange;
@@ -861,14 +897,24 @@
 
             sortedDates.forEach(date => {
                 const data = aggregatedData[date];
+
+                // Calcolo media prezzi (salta se non ci sono prezzi)
                 const avgPrice = data.prices.length ? data.prices.reduce((a, b) => a + b, 0) / data.prices.length : 0;
-                if (avgPrice === 0) return;
+                if (avgPrice === 0) return; // Salta giorni senza prezzo valido
 
                 labels.push(date);
                 prices.push(avgPrice);
-                forces.push(data.forces.find(f => f !== 0) || 0);
-                patternValues.push(data.patterns.length > 0 ? data.patterns : null);
-                shorts.push(data.shorts.length ? data.shorts.reduce((a, b) => a + b, 0) : 0);
+
+                // Forza: usa la media, o 0 se non ci sono valori
+                forces.push(data.forces.length ? data.forces.reduce((a, b) => a + b, 0) / data.forces.length : 0);
+
+                // Pattern: passa l'array di oggetti, anche se vuoto
+                patternValues.push(data.patterns.length > 0 ? data.patterns : []); // <-- Salva l'array, anche vuoto
+
+                // Short
+                shorts.push(data.shorts.length ? data.shorts.reduce((a, b) => a + b, 0) / data.shorts.length : 0);
+
+                // Exchange
                 exchanges.push(data.exchanges.length ? data.exchanges.reduce((a, b) => a + b, 0) / data.exchanges.length : 0);
             });
 
@@ -876,14 +922,16 @@
             gradient.addColorStop(0, 'rgba(75, 192, 192, 0.4)');
             gradient.addColorStop(1, 'rgba(75, 192, 192, 0.05)');
 
+            // --- CREAZIONE CHART ---
             chartInstance = new Chart(ctx, {
                 type: 'line',
                 data: {
                     labels: labels,
                     datasets: [
                         {
-                            label: document.getElementById('page-title-input').value,
+                            label: document.getElementById('page-title-input').value || 'Prezzi',
                             data: prices,
+                            // Valori aggiuntivi per i plugin
                             forceValues: forces,
                             patternValues: patternValues,
                             borderColor: 'rgba(75, 192, 192, 1)',
@@ -891,10 +939,12 @@
                             borderWidth: 2,
                             tension: 0.1,
                             fill: true,
+                            // Personalizzazione punti in base alla presenza di pattern selezionati
                             pointBackgroundColor: (context) => {
                                 const index = context.dataIndex;
                                 const patterns = patternValues[index];
                                 if (patterns && patterns.length > 0) {
+                                    // Controlla se almeno uno dei pattern presenti è selezionato
                                     const hasSelectedPattern = patterns.some(p =>
                                         Object.keys(p).some(key => selectedPatterns.has(`pattern@${key}`))
                                     );
@@ -914,7 +964,7 @@
                                 return 4;
                             },
                             yAxisID: 'y',
-                            hidden: !document.getElementById('layer-price').checked
+                            hidden: !document.getElementById('layer-price')?.checked
                         },
                         {
                             label: `${getTranslation('int.exchange') || 'Exchange Rate'} (${dualExchangeLabel || 'N/A'})`,
@@ -925,7 +975,7 @@
                             tension: 0.1,
                             pointRadius: 0,
                             yAxisID: 'y1',
-                            hidden: !document.getElementById('layer-exchange').checked || exchanges.every(v => v === 0)
+                            hidden: !document.getElementById('layer-exchange')?.checked || exchanges.every(v => v === 0)
                         },
                         {
                             label: `Short (%)`,
@@ -936,10 +986,11 @@
                             tension: 0.1,
                             pointRadius: 0,
                             yAxisID: 'y1',
-                            hidden: !document.getElementById('layer-short').checked || shorts.every(v => v === 0)
+                            hidden: !document.getElementById('layer-short')?.checked || shorts.every(v => v === 0)
                         }
                     ]
                 },
+                // I plugin vanno registrati qui
                 plugins: [forceArrowsPlugin, patternLinesPlugin],
                 options: {
                     responsive: true,
@@ -961,17 +1012,17 @@
                         },
                         y1: {
                             type: 'linear',
-                            display: document.getElementById('layer-exchange').checked || document.getElementById('layer-short').checked,
+                            display: (document.getElementById('layer-exchange')?.checked || document.getElementById('layer-short')?.checked),
                             position: 'right',
                             beginAtZero: false,
                             ticks: {
                                 callback: function (value) {
-                                    const hasShort = document.getElementById('layer-short').checked;
-                                    const hasExch = document.getElementById('layer-exchange').checked;
+                                    const hasShort = document.getElementById('layer-short')?.checked;
+                                    const hasExch = document.getElementById('layer-exchange')?.checked;
 
                                     if (hasShort && !hasExch) return value.toFixed(2) + '%';
                                     if (hasExch && !hasShort) return value.toFixed(4);
-                                    return value.toLocaleString();
+                                    return value.toLocaleString(); // Caso entrambi attivi
                                 }
                             },
                             grid: {
@@ -979,7 +1030,7 @@
                             },
                             title: {
                                 display: true,
-                                text: 'Ratio'
+                                text: 'Ratio / %'
                             }
                         },
                         x: {
@@ -996,19 +1047,24 @@
                         tooltip: {
                             callbacks: {
                                 afterBody: function (context) {
+                                    if (context.length === 0) return [];
                                     const index = context[0].dataIndex;
                                     const lines = [];
                                     const priceDS = context[0].chart.data.datasets[0];
 
-                                    if (document.getElementById('layer-price').checked && document.getElementById('layer-force').checked) {
+                                    // Informazioni Forza
+                                    if (document.getElementById('layer-price')?.checked && document.getElementById('layer-force')?.checked) {
                                         const force = priceDS.forceValues ? priceDS.forceValues[index] : null;
                                         if (force !== null && force !== 0) {
-                                            lines.push(`⚡ Forza (${selectedForceField || 'default'}): ${force > 0 ? '▲' : '▼'} ${Math.abs(force).toFixed(2)}`);
+                                            const forceFieldName = selectedForceField || 'default';
+                                            lines.push(`⚡ ${forceFieldName}: ${force > 0 ? '▲' : '▼'} ${Math.abs(force).toFixed(2)}`);
                                         }
                                     }
 
+                                    // Informazioni Pattern
                                     const patternArray = priceDS.patternValues ? priceDS.patternValues[index] : null;
-                                    if (patternArray && patternArray.length > 0 && document.getElementById('layer-pattern').checked) {
+                                    if (patternArray && patternArray.length > 0 && document.getElementById('layer-pattern')?.checked) {
+                                        // Filtra solo i pattern selezionati
                                         const filteredPatterns = patternArray.filter(p => {
                                             const key = Object.keys(p)[0];
                                             return selectedPatterns.has(`pattern@${key}`);
@@ -1018,7 +1074,7 @@
                                             lines.push(`🔍 Pattern:`);
                                             filteredPatterns.forEach(p => {
                                                 Object.entries(p).forEach(([key, val]) => {
-                                                    lines.push(`  • ${key}: ${val}`);
+                                                    lines.push(`  • ${key}: ${val.toFixed(3)}`);
                                                 });
                                             });
                                         }
@@ -1062,10 +1118,15 @@
             if (document.getElementById('label-start-date')) document.getElementById('label-start-date').textContent = (getTranslation('int.date.start') || 'Start') + ':';
             if (document.getElementById('label-end-date')) document.getElementById('label-end-date').textContent = (getTranslation('int.date.end') || 'End') + ':';
 
-            document.querySelector('[for="layer-price"]').textContent = getTranslation('int.prices') || 'Prices';
-            document.querySelector('[for="layer-pattern"]').textContent = getTranslation('int.pattern') || 'Pattern';
-            document.querySelector('[for="layer-exchange"]').textContent = getTranslation('int.exchange') || 'Exchange';
-            document.getElementById('select-label').textContent = getTranslation('int.layers') || 'Layers';
+            // Aggiorna testi layers (se gli elementi esistono)
+            const layerPriceLabel = document.querySelector('[for="layer-price"]');
+            if (layerPriceLabel) layerPriceLabel.textContent = getTranslation('int.prices') || 'Prices';
+            const layerPatternLabel = document.querySelector('[for="layer-pattern"]');
+            if (layerPatternLabel) layerPatternLabel.textContent = getTranslation('int.pattern') || 'Pattern';
+            const layerExchangeLabel = document.querySelector('[for="layer-exchange"]');
+            if (layerExchangeLabel) layerExchangeLabel.textContent = getTranslation('int.exchange') || 'Exchange';
+            const selectLabel = document.getElementById('select-label');
+            if (selectLabel) selectLabel.textContent = getTranslation('int.layers') || 'Layers';
 
             await loadPrices();
         }
