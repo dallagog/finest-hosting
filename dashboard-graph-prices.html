@@ -615,38 +615,24 @@
         const patternLinesPlugin = {
             id: 'patternLines',
             afterDatasetsDraw(chart) {
-                const { ctx, chartArea, scales } = chart;
-                if (!document.getElementById('layer-pattern').checked) return;
-
-                // Find the dataset that carries patternValues (always dataset[0] = price)
+                const { ctx, chartArea } = chart;
                 const dataset = chart.data.datasets[0];
-                if (!dataset || !dataset.patternValues) return;
+                if (!dataset || !dataset.patternValues || !document.getElementById('layer-pattern').checked) return;
 
-                // Use x-axis scale to compute x positions independently of layer-price visibility
-                const xScale = scales['x'];
-                if (!xScale) return;
+                const meta = chart.getDatasetMeta(0);
+                if (!meta || meta.hidden) return;
 
                 ctx.save();
-                dataset.patternValues.forEach((patternObj, index) => {
+                meta.data.forEach((point, index) => {
+                    const patternObj = dataset.patternValues[index];
                     if (patternObj && Object.keys(patternObj).length > 0) {
-                        const x = xScale.getPixelForIndex(index);
+                        const x = point.x;
                         ctx.beginPath();
                         ctx.strokeStyle = '#800080';
-                        ctx.lineWidth = 1;
-                        ctx.setLineDash([4, 3]);
+                        ctx.lineWidth = 0.5;
                         ctx.moveTo(x, chartArea.top);
                         ctx.lineTo(x, chartArea.bottom);
                         ctx.stroke();
-                        ctx.setLineDash([]);
-
-                        // Draw a small purple triangle at the top to mark the pattern
-                        ctx.beginPath();
-                        ctx.fillStyle = '#800080';
-                        ctx.moveTo(x, chartArea.top + 6);
-                        ctx.lineTo(x - 5, chartArea.top);
-                        ctx.lineTo(x + 5, chartArea.top);
-                        ctx.closePath();
-                        ctx.fill();
                     }
                 });
                 ctx.restore();
@@ -713,11 +699,6 @@
             const forceField = `forza@${instrumentCurrency}`;
             const patternFields = Object.keys(firstRow).filter(k => k.startsWith('pattern@'));
 
-            // If the first row has no pattern fields, scan all rows to find them
-            const allPatternFields = patternFields.length > 0
-                ? patternFields
-                : [...new Set(trendDataRaw.flatMap(item => Object.keys(item).filter(k => k.startsWith('pattern@'))))];
-
             const labels = [];
             const prices = [];
             const forces = [];
@@ -740,10 +721,8 @@
                 aggregatedData[date].forces.push(forceVal);
 
                 const patternObj = {};
-                allPatternFields.forEach(field => {
-                    if (item[field] !== undefined && item[field] !== null && item[field] !== '') {
-                        patternObj[field.replace('pattern@', '')] = item[field];
-                    }
+                patternFields.forEach(field => {
+                    if (item[field]) patternObj[field.replace('pattern@', '')] = item[field];
                 });
                 if (Object.keys(patternObj).length > 0) aggregatedData[date].patterns.push(patternObj);
 
@@ -863,7 +842,7 @@
                             },
                             title: {
                                 display: true,
-                                text: `${getTranslation('int.exchange')}`
+                                text: 'Ratio / %'
                             }
                         },
                         x: {
