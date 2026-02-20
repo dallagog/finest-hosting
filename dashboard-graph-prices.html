@@ -753,20 +753,40 @@
             id: 'patternLines',
             afterDatasetsDraw(chart) {
                 // Verifica se il layer 'pattern' è attivo e se ci sono pattern selezionati
-                if (!document.getElementById('layer-pattern')?.checked || selectedPatterns.size === 0) return;
+                const layerPatternCheckbox = document.getElementById('layer-pattern');
+                console.log('Layer pattern checkbox:', layerPatternCheckbox);
+                console.log('Layer pattern checked:', layerPatternCheckbox?.checked);
+                console.log('Selected patterns:', selectedPatterns);
+
+                if (!layerPatternCheckbox?.checked || selectedPatterns.size === 0) {
+                    console.log('Early return: layer not checked or no patterns selected');
+                    return;
+                }
 
                 const { ctx, chartArea } = chart;
                 const dataset = chart.data.datasets[0];
-                if (!dataset || !dataset.patternValues) return;
+                console.log('Dataset:', dataset);
+                console.log('Pattern values:', dataset?.patternValues);
+
+                if (!dataset || !dataset.patternValues) {
+                    console.log('Early return: no dataset or patternValues');
+                    return;
+                }
 
                 const meta = chart.getDatasetMeta(0);
-                if (!meta || meta.hidden) return;
+                if (!meta || meta.hidden) {
+                    console.log('Early return: no meta or hidden');
+                    return;
+                }
 
                 ctx.save();
+                let patternsDrawn = 0;
 
                 meta.data.forEach((point, index) => {
                     const patternsAtPoint = dataset.patternValues[index];
                     if (!patternsAtPoint || patternsAtPoint.length === 0) return;
+
+                    console.log(`Point ${index} patterns:`, patternsAtPoint);
 
                     const x = point.x;
                     const y = point.y;
@@ -776,6 +796,7 @@
                     patternsAtPoint.forEach(patternObj => {
                         Object.entries(patternObj).forEach(([patternName, value]) => {
                             const fullFieldName = `pattern@${patternName}`;
+                            console.log(`Checking pattern: ${fullFieldName}, selected: ${selectedPatterns.has(fullFieldName)}`);
                             if (selectedPatterns.has(fullFieldName)) {
                                 selectedPatternsAtPoint.push({ name: patternName, value: value });
                             }
@@ -784,17 +805,20 @@
 
                     // Se c'è almeno un pattern selezionato, disegna la linea verticale e le etichette
                     if (selectedPatternsAtPoint.length > 0) {
+                        patternsDrawn++;
+                        console.log(`Drawing ${selectedPatternsAtPoint.length} patterns at point ${index}`);
+
                         // Linea verticale tratteggiata
                         ctx.beginPath();
-                        ctx.strokeStyle = '#800080'; // Colore viola per tutte le linee di pattern
+                        ctx.strokeStyle = '#800080';
                         ctx.lineWidth = 1.5;
-                        ctx.setLineDash([5, 3]); // Linea tratteggiata
+                        ctx.setLineDash([5, 3]);
                         ctx.moveTo(x, chartArea.top);
                         ctx.lineTo(x, chartArea.bottom);
                         ctx.stroke();
-                        ctx.setLineDash([]); // Resetta il tratteggio
+                        ctx.setLineDash([]);
 
-                        // Calcola posizione del box (sopra il punto, ma dentro i limiti del grafico)
+                        // Calcola posizione del box
                         const boxPadding = 6;
                         const lineHeight = 15;
                         const boxHeight = selectedPatternsAtPoint.length * lineHeight + boxPadding * 2;
@@ -806,7 +830,6 @@
                         let boxY = y - boxHeight - 15;
                         let boxX = x - boxWidth / 2;
 
-                        // Se il box esce dai limiti del grafico, adatta
                         if (boxY < chartArea.top + 5) {
                             boxY = y + 10;
                         }
@@ -817,15 +840,15 @@
                             boxX = chartArea.left + 5;
                         }
 
-                        // Disegna il box di sfondo con bordi retti
-                        ctx.fillStyle = 'rgba(128, 0, 128, 0.85)'; // Viola con trasparenza
+                        // Disegna il box di sfondo
+                        ctx.fillStyle = 'rgba(128, 0, 128, 0.85)';
                         ctx.fillRect(boxX, boxY, boxWidth, boxHeight);
 
                         ctx.strokeStyle = '#FFFFFF';
                         ctx.lineWidth = 1;
                         ctx.strokeRect(boxX, boxY, boxWidth, boxHeight);
 
-                        // Etichette dei pattern nel box
+                        // Etichette dei pattern
                         ctx.font = 'bold 10px Orbitron';
                         ctx.fillStyle = '#FFFFFF';
                         ctx.textAlign = 'center';
@@ -838,6 +861,8 @@
                         });
                     }
                 });
+
+                console.log(`Total patterns drawn: ${patternsDrawn}`);
                 ctx.restore();
             }
         };
@@ -1015,7 +1040,8 @@
                 prices,
                 forces,
                 patternValues,
-                forceFields
+                forceFields,
+                selectedPatterns: Array.from(selectedPatterns)
             });
 
             const gradient = ctx.createLinearGradient(0, 0, 0, 400);
