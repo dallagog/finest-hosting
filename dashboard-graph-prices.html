@@ -400,30 +400,6 @@
                 </div>
             </div>
 
-            <div class="control-group">
-                <div class="select-container" id="patterns-container">
-                    <div class="select-btn" onclick="toggleDropdown('patterns')">
-                        <span id="patterns-select-label">Filtra Pattern</span>
-                        <i class="fa-solid fa-chevron-down"></i>
-                    </div>
-                    <div class="options-list" id="patterns-options-list">
-                        <!-- I pattern verranno inseriti dinamicamente qui -->
-                    </div>
-                </div>
-            </div>
-
-            <div class="control-group">
-                <div class="select-container" id="force-container">
-                    <div class="select-btn" onclick="toggleDropdown('force')">
-                        <span id="force-select-label">Campo Forza</span>
-                        <i class="fa-solid fa-chevron-down"></i>
-                    </div>
-                    <div class="options-list" id="force-options-list">
-                        <!-- I campi forza verranno inseriti dinamicamente qui -->
-                    </div>
-                </div>
-            </div>
-
             <button class="confirm-btn" onclick="loadPrices()" id="btn-confirm">Applica</button>
             <button class="close-button" onclick="window.close()" id="close-btn">Close</button>
         </div>
@@ -541,8 +517,10 @@
         }
 
         function toggleDropdown(dropdownId) {
-            document.getElementById(`${dropdownId}-options-list`).classList.toggle('show');
-            document.querySelector(`#${dropdownId}-container .select-btn`).classList.toggle('active');
+            const list = document.getElementById(`${dropdownId}-options-list`);
+            const btn = document.querySelector(`#${dropdownId}-container .select-btn`);
+            if (list) list.classList.toggle('show');
+            if (btn) btn.classList.toggle('active');
         }
 
         window.addEventListener('click', function (e) {
@@ -564,7 +542,6 @@
                 return;
             }
 
-            // Scansiona TUTTI i record per trovare i campi pattern e forza
             let allKeys = new Set();
             trendDataRaw.forEach(item => {
                 Object.keys(item).forEach(key => allKeys.add(key));
@@ -572,25 +549,21 @@
 
             console.log('All keys found in all records:', Array.from(allKeys));
 
-            // Estrai campi pattern e forza da TUTTI i record
             patternFields = Array.from(allKeys).filter(k => k.startsWith('pattern@'));
             forceFields = Array.from(allKeys).filter(k => k.startsWith('forza@'));
 
             console.log('Pattern fields found:', patternFields);
             console.log('Force fields found:', forceFields);
 
-            // Aggiungi i pattern e forza al filtro generale (layers)
             const layersOptionsList = document.getElementById('layers-options-list');
             console.log('layersOptionsList:', layersOptionsList);
 
             if (layersOptionsList) {
-                // Aggiungi pattern come checkbox
                 if (patternFields.length > 0) {
                     patternFields.forEach(field => {
                         const patternName = field.replace('pattern@', '');
                         const color = getPatternColor(patternName);
 
-                        // Verifica se esiste già
                         if (!document.getElementById(`pattern-${patternName}`)) {
                             const div = document.createElement('div');
                             div.className = 'option-item';
@@ -606,11 +579,9 @@
                     });
                 }
 
-                // Aggiungi forza come radio button
                 if (forceFields.length > 0) {
                     forceFieldOptions = forceFields;
                     forceFields.forEach((field, index) => {
-                        // Verifica se esiste già
                         if (!document.getElementById(`force-${field}`)) {
                             const div = document.createElement('div');
                             div.className = 'option-item';
@@ -623,7 +594,6 @@
                         }
                     });
 
-                    // Seleziona il primo per default
                     selectedForceField = forceFields[0];
                     console.log('Selected force field:', selectedForceField);
                 } else {
@@ -647,7 +617,7 @@
 
         function onPatternFilterChange() {
             selectedPatterns.clear();
-            document.querySelectorAll('#patterns-options-list input[type="checkbox"]:checked').forEach(cb => {
+            document.querySelectorAll('#layers-options-list input[type="checkbox"][id^="pattern-"]:checked').forEach(cb => {
                 selectedPatterns.add(cb.value);
             });
             renderChart();
@@ -666,11 +636,9 @@
             renderChart();
         }
 
-        // Plugin per le frecce della forza
         const forceArrowsPlugin = {
             id: 'forceArrows',
             afterDatasetsDraw(chart) {
-                // Verifica se il layer 'force' è attivo
                 if (!document.getElementById('layer-force')?.checked) return;
 
                 const { ctx, chartArea } = chart;
@@ -678,7 +646,6 @@
 
                 const dataset = chart.data.datasets[0];
                 if (!dataset || !dataset.forceValues) {
-                    console.log('No force values found in dataset');
                     ctx.restore();
                     return;
                 }
@@ -689,21 +656,16 @@
                     return;
                 }
 
-                const forceValues = dataset.forceValues; // Array di oggetti con tutti i campi forza
-                const selectedField = selectedForceField; // Campo selezionato
-
-                console.log('Drawing force arrows with values:', forceValues);
-                console.log('Selected force field:', selectedField);
+                const forceValues = dataset.forceValues;
+                const selectedField = selectedForceField;
 
                 meta.data.forEach((point, index) => {
                     const forceObj = forceValues[index];
                     if (!forceObj) return;
 
-                    // Determina quali campi forza disegnare
                     let forcesToDraw = [];
 
                     if (selectedField && forceObj[selectedField] !== undefined) {
-                        // Disegna solo il campo selezionato se non è zero
                         if (forceObj[selectedField] !== 0) {
                             forcesToDraw.push({
                                 field: selectedField,
@@ -711,7 +673,6 @@
                             });
                         }
                     } else {
-                        // Disegna tutti i campi non zero
                         Object.entries(forceObj).forEach(([field, value]) => {
                             if (value !== 0) {
                                 forcesToDraw.push({ field, value });
@@ -719,11 +680,10 @@
                         });
                     }
 
-                    // Disegna le frecce (massimo 2 per punto per evitare sovrapposizioni)
                     forcesToDraw.slice(0, 2).forEach((force, idx) => {
                         const isPositive = force.value > 0;
                         const color = isPositive ? 'green' : 'red';
-                        const offset = 20 + (idx * 15); // Offset diverso per ogni freccia
+                        const offset = 20 + (idx * 15);
                         const arrowSize = 10;
                         const { x, y } = point;
 
@@ -733,7 +693,6 @@
                         ctx.fillStyle = color;
 
                         if (isPositive) {
-                            // Freccia su
                             ctx.moveTo(x, y - offset);
                             ctx.lineTo(x, y - offset - arrowSize);
                             ctx.stroke();
@@ -745,19 +704,16 @@
                             ctx.closePath();
                             ctx.fill();
 
-                            // Testo del valore sopra la freccia
                             ctx.font = 'bold 10px Orbitron';
                             ctx.textAlign = 'center';
                             ctx.fillStyle = color;
                             ctx.fillText(force.value.toFixed(2), x, y - offset - arrowSize - 5);
 
-                            // Aggiungi il nome del campo se ci sono più frecce
                             if (forcesToDraw.length > 1) {
                                 ctx.font = '8px Orbitron';
                                 ctx.fillText(force.field.replace('forza@', ''), x, y - offset - arrowSize - 15);
                             }
                         } else {
-                            // Freccia giù
                             ctx.moveTo(x, y + offset);
                             ctx.lineTo(x, y + offset + arrowSize);
                             ctx.stroke();
@@ -769,13 +725,11 @@
                             ctx.closePath();
                             ctx.fill();
 
-                            // Testo del valore sotto la freccia
                             ctx.font = 'bold 10px Orbitron';
                             ctx.textAlign = 'center';
                             ctx.fillStyle = color;
                             ctx.fillText(force.value.toFixed(2), x, y + offset + arrowSize + 12);
 
-                            // Aggiungi il nome del campo se ci sono più frecce
                             if (forcesToDraw.length > 1) {
                                 ctx.font = '8px Orbitron';
                                 ctx.fillText(force.field.replace('forza@', ''), x, y + offset + arrowSize + 22);
@@ -787,11 +741,9 @@
             }
         };
 
-        // Plugin per le linee verticali dei pattern (SENZA ETICHETTE)
         const patternLinesPlugin = {
             id: 'patternLines',
             afterDatasetsDraw(chart) {
-                // Verifica se il layer 'pattern' è attivo e se ci sono pattern selezionati
                 if (!document.getElementById('layer-pattern')?.checked || selectedPatterns.size === 0) return;
 
                 const { ctx, chartArea } = chart;
@@ -810,7 +762,6 @@
                     const x = point.x;
                     let hasSelectedPattern = false;
 
-                    // Verifica se c'è almeno un pattern selezionato in questo punto
                     patternsAtPoint.forEach(patternObj => {
                         Object.entries(patternObj).forEach(([patternName, value]) => {
                             const fullFieldName = `pattern@${patternName}`;
@@ -820,16 +771,15 @@
                         });
                     });
 
-                    // Se c'è almeno un pattern selezionato, disegna UNA SOLA linea verticale
                     if (hasSelectedPattern) {
                         ctx.beginPath();
-                        ctx.strokeStyle = '#800080'; // Colore viola per tutte le linee di pattern
+                        ctx.strokeStyle = '#800080';
                         ctx.lineWidth = 1.5;
-                        ctx.setLineDash([5, 3]); // Linea tratteggiata
+                        ctx.setLineDash([5, 3]);
                         ctx.moveTo(x, chartArea.top);
                         ctx.lineTo(x, chartArea.bottom);
                         ctx.stroke();
-                        ctx.setLineDash([]); // Resetta il tratteggio
+                        ctx.setLineDash([]);
                     }
                 });
                 ctx.restore();
@@ -843,8 +793,6 @@
             const endDate = document.getElementById('end-date').value;
 
             try {
-                console.log('Loading prices with params:', { username, token, language, currency: targetCurrency, instrument: { id_instrument: idInstrument, id_account: idAccount, date_start: startDate, date_end: endDate } });
-
                 const response = await fetch(`${API_URL}/getprices`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -863,22 +811,10 @@
                 });
 
                 const data = await response.json();
-                console.log('===== RECEIVED DATA =====');
-                console.log('Received data type:', Array.isArray(data) ? 'Array' : typeof data);
-                console.log('Received data length:', Array.isArray(data) ? data.length : (data.prices ? data.prices.length : 'N/A'));
-
-                // Assicurati che trendDataRaw sia un array
                 trendDataRaw = data.prices || (Array.isArray(data) ? data : []);
-                console.log('trendDataRaw length:', trendDataRaw.length);
-                console.log('First item in trendDataRaw:', trendDataRaw[0]);
-                console.log('Keys in first item:', trendDataRaw[0] ? Object.keys(trendDataRaw[0]) : []);
-
                 trendDataRaw.sort((a, b) => new Date(a.date_start || a.date) - new Date(b.date_start || b.date));
 
-                console.log('Processed trendDataRaw length:', trendDataRaw.length);
-                console.log('Calling extractFieldsFromData...');
                 extractFieldsFromData();
-                console.log('Calling renderChart...');
                 renderChart();
                 document.getElementById('loading').style.display = 'none';
             } catch (error) {
@@ -904,29 +840,13 @@
                 chartInstance = null;
             }
 
-            if (!trendDataRaw || trendDataRaw.length === 0) {
-                console.log('No data to render');
-                return;
-            }
+            if (!trendDataRaw || trendDataRaw.length === 0) return;
 
             document.getElementById('instrument-name-display').textContent = `${instrumentNameFromUrl || idInstrument}`;
 
-            // --- DETERMINA I CAMPI DINAMICAMENTE ---
             const firstRow = trendDataRaw[0];
-            console.log('First row:', firstRow);
-            console.log('All keys in first row:', Object.keys(firstRow));
-
-            // Cerca un campo che inizia con 'price@', altrimenti usa 'price_mkt'
             const priceField = Object.keys(firstRow).find(k => k.startsWith('price@')) || 'price_mkt';
-            console.log('Price field:', priceField);
-
-            // Usa il campo forza selezionato
-            const forceField = selectedForceField;
-            console.log('Force field selected:', forceField);
-
             const patternFieldList = Object.keys(firstRow).filter(k => k.startsWith('pattern@'));
-            console.log('Pattern fields in data:', patternFieldList);
-            console.log('Force fields in data:', forceFields);
 
             const labels = [];
             const prices = [];
@@ -936,7 +856,6 @@
             const exchanges = [];
             let dualExchangeLabel = "";
 
-            // --- AGGREGAZIONE DATI ---
             const aggregatedData = {};
             trendDataRaw.forEach(item => {
                 const date = item.date_start || item.date;
@@ -951,36 +870,28 @@
                     };
                 }
 
-                // Prezzo
                 if (item[priceField] !== undefined) {
                     const priceParsed = parseValue(item[priceField]);
                     if (priceParsed !== 0) aggregatedData[date].prices.push(priceParsed);
                 }
 
-                // Forza - Raccogli TUTTI i campi forza
                 forceFields.forEach(field => {
                     if (item[field] !== undefined && item[field] !== null) {
-                        const forceVal = parseValue(item[field]);
-                        aggregatedData[date].forces[field] = forceVal;
-                        console.log(`Added ${field}: ${forceVal} to date ${date}`);
+                        aggregatedData[date].forces[field] = parseValue(item[field]);
                     }
                 });
 
-                // Pattern: Itera su tutti i campi pattern conosciuti e aggiungi se presenti
                 patternFieldList.forEach(field => {
                     if (item[field] !== undefined && item[field] !== null && item[field] !== '') {
                         const patternName = field.replace('pattern@', '');
-                        const patternValue = parseValue(item[field]);
-                        aggregatedData[date].patterns.push({ [patternName]: patternValue });
+                        aggregatedData[date].patterns.push({ [patternName]: parseValue(item[field]) });
                     }
                 });
 
-                // Short (se presente)
                 if (item.short !== undefined) {
                     aggregatedData[date].shorts.push(parseValue(item.short));
                 }
 
-                // Exchange (se presente)
                 if (item.exchange !== undefined) {
                     aggregatedData[date].exchanges.push(parseValue(item.exchange));
                     if (item.dual_exchange) dualExchangeLabel = item.dual_exchange;
@@ -991,41 +902,19 @@
 
             sortedDates.forEach(date => {
                 const data = aggregatedData[date];
-
-                // Calcolo media prezzi (salta se non ci sono prezzi)
                 const avgPrice = data.prices.length ? data.prices.reduce((a, b) => a + b, 0) / data.prices.length : 0;
-
                 labels.push(date);
                 prices.push(avgPrice);
-
-                // Forza: passa l'oggetto con tutti i campi forza
                 forces.push(data.forces);
-
-                // Pattern: passa l'array di oggetti
                 patternValues.push(data.patterns.length > 0 ? data.patterns : []);
-
-                // Short
-                const avgShort = data.shorts.length ? data.shorts.reduce((a, b) => a + b, 0) / data.shorts.length : 0;
-                shorts.push(avgShort);
-
-                // Exchange
-                const avgExchange = data.exchanges.length ? data.exchanges.reduce((a, b) => a + b, 0) / data.exchanges.length : 0;
-                exchanges.push(avgExchange);
-            });
-
-            console.log('Processed data for chart:', {
-                labels,
-                prices,
-                forces,
-                patternValues,
-                forceFields
+                shorts.push(data.shorts.length ? data.shorts.reduce((a, b) => a + b, 0) / data.shorts.length : 0);
+                exchanges.push(data.exchanges.length ? data.exchanges.reduce((a, b) => a + b, 0) / data.exchanges.length : 0);
             });
 
             const gradient = ctx.createLinearGradient(0, 0, 0, 400);
             gradient.addColorStop(0, 'rgba(75, 192, 192, 0.4)');
             gradient.addColorStop(1, 'rgba(75, 192, 192, 0.05)');
 
-            // --- CREAZIONE CHART ---
             chartInstance = new Chart(ctx, {
                 type: 'line',
                 data: {
@@ -1034,7 +923,6 @@
                         {
                             label: document.getElementById('page-title-input').value || 'Prezzi',
                             data: prices,
-                            // Valori aggiuntivi per i plugin
                             forceValues: forces,
                             patternValues: patternValues,
                             borderColor: 'rgba(75, 192, 192, 1)',
@@ -1042,12 +930,10 @@
                             borderWidth: 2,
                             tension: 0.1,
                             fill: true,
-                            // Personalizzazione punti in base alla presenza di pattern selezionati
                             pointBackgroundColor: (context) => {
                                 const index = context.dataIndex;
                                 const patterns = patternValues[index];
                                 if (patterns && patterns.length > 0) {
-                                    // Controlla se almeno uno dei pattern presenti è selezionato
                                     const hasSelectedPattern = patterns.some(p =>
                                         Object.keys(p).some(key => selectedPatterns.has(`pattern@${key}`))
                                     );
@@ -1093,7 +979,6 @@
                         }
                     ]
                 },
-                // I plugin vanno registrati qui
                 plugins: [forceArrowsPlugin, patternLinesPlugin],
                 options: {
                     responsive: true,
@@ -1122,7 +1007,6 @@
                                 callback: function (value) {
                                     const hasShort = document.getElementById('layer-short')?.checked;
                                     const hasExch = document.getElementById('layer-exchange')?.checked;
-
                                     if (hasShort && !hasExch) return value.toFixed(2) + '%';
                                     if (hasExch && !hasShort) return value.toFixed(4);
                                     return value.toLocaleString();
@@ -1155,18 +1039,15 @@
                                     const lines = [];
                                     const priceDS = context[0].chart.data.datasets[0];
 
-                                    // Informazioni Forza - Mostra TUTTI i campi forza per questo punto
                                     if (document.getElementById('layer-price')?.checked && document.getElementById('layer-force')?.checked) {
                                         const forceObj = priceDS.forceValues ? priceDS.forceValues[index] : null;
                                         if (forceObj && Object.keys(forceObj).length > 0) {
-                                            // Se c'è un campo forza selezionato, mostra solo quello
                                             if (selectedForceField && forceObj[selectedForceField] !== undefined) {
                                                 const force = forceObj[selectedForceField];
                                                 if (force !== 0) {
                                                     lines.push(`⚡ ${selectedForceField.replace('forza@', '')}: ${force > 0 ? '▲' : '▼'} ${Math.abs(force).toFixed(2)}`);
                                                 }
                                             } else {
-                                                // Altrimenti mostra tutti i campi forza non zero
                                                 Object.entries(forceObj).forEach(([field, force]) => {
                                                     if (force !== 0) {
                                                         lines.push(`⚡ ${field.replace('forza@', '')}: ${force > 0 ? '▲' : '▼'} ${Math.abs(force).toFixed(2)}`);
@@ -1176,10 +1057,8 @@
                                         }
                                     }
 
-                                    // Informazioni Pattern
                                     const patternArray = priceDS.patternValues ? priceDS.patternValues[index] : null;
                                     if (patternArray && patternArray.length > 0 && document.getElementById('layer-pattern')?.checked) {
-                                        // Filtra solo i pattern selezionati
                                         const filteredPatterns = patternArray.filter(p => {
                                             const key = Object.keys(p)[0];
                                             return selectedPatterns.has(`pattern@${key}`);
@@ -1204,15 +1083,10 @@
         }
 
         async function init() {
-            console.log('===== INIT STARTED =====');
-            console.log('Username:', username);
-            console.log('Token:', token ? 'present' : 'missing');
-
             document.getElementById('username-display').textContent = username;
 
             if (!username || !token) {
                 document.getElementById('loadingText').textContent = "Access Denied: Username or Token missing";
-                console.log('Init stopped: missing username or token');
                 return;
             }
 
@@ -1238,7 +1112,6 @@
             if (document.getElementById('label-start-date')) document.getElementById('label-start-date').textContent = (getTranslation('int.date.start') || 'Start') + ':';
             if (document.getElementById('label-end-date')) document.getElementById('label-end-date').textContent = (getTranslation('int.date.end') || 'End') + ':';
 
-            // Aggiorna testi layers
             const layerPriceLabel = document.querySelector('[for="layer-price"]');
             if (layerPriceLabel) layerPriceLabel.textContent = getTranslation('int.prices') || 'Prices';
             const layerPatternLabel = document.querySelector('[for="layer-pattern"]');
@@ -1248,18 +1121,14 @@
             const selectLabel = document.getElementById('select-label');
             if (selectLabel) selectLabel.textContent = getTranslation('int.layers') || 'Layers';
 
-            console.log('===== CALLING loadPrices =====');
             await loadPrices();
-            console.log('===== loadPrices COMPLETED =====');
         }
 
         window.onload = function () {
-            console.log('===== WINDOW.ONLOAD TRIGGERED =====');
             try {
                 init();
             } catch (error) {
                 console.error('===== ERROR IN INIT =====', error);
-                console.error('Stack:', error.stack);
             }
         };
     </script>
