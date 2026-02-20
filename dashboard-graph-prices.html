@@ -400,6 +400,7 @@
                 </div>
             </div>
 
+
             <button class="confirm-btn" onclick="loadPrices()" id="btn-confirm">Applica</button>
             <button class="close-button" onclick="window.close()" id="close-btn">Close</button>
         </div>
@@ -544,57 +545,52 @@
             console.log('Pattern fields found:', patternFields);
             console.log('Force fields found:', forceFields);
 
-            // Popola dropdown pattern nel filtro generale (selettore layer)
-            // Aggiungi i pattern alle opzioni di filtraggio generale se necessario
-            const patternContainer = document.getElementById('layers-options-list');
+            // Aggiungi pattern e forza al filtro generale (layers)
+            const layersOptionsList = document.getElementById('layers-options-list');
+            if (layersOptionsList) {
+                // Aggiungi pattern come checkbox
+                if (patternFields.length > 0) {
+                    patternFields.forEach(field => {
+                        const patternName = field.replace('pattern@', '');
+                        const color = getPatternColor(patternName);
 
-            // Rimuovi pattern precedenti dal filtro generale (se esistevano)
-            patternFields.forEach(field => {
-                const checkbox = patternContainer?.querySelector(`input[value="${field}"]`);
-                if (checkbox) checkbox.parentElement.remove();
-            });
+                        // Verifica se esiste già
+                        if (!document.getElementById(`pattern-${patternName}`)) {
+                            const div = document.createElement('div');
+                            div.className = 'option-item';
+                            div.innerHTML = `
+                                <input type="checkbox" id="pattern-${patternName}" value="${field}" checked onchange="onPatternFilterChange()">
+                                <span class="pattern-indicator" style="background-color: ${color};"></span>
+                                <label for="pattern-${patternName}">${patternName}</label>
+                            `;
+                            layersOptionsList.appendChild(div);
+                        }
+                        selectedPatterns.add(field);
+                    });
+                }
 
-            if (patternFields.length > 0) {
-                // Aggiungi i nuovi pattern al filtro generale
-                patternFields.forEach(field => {
-                    const patternName = field.replace('pattern@', '');
-                    const color = getPatternColor(patternName);
-                    const div = document.createElement('div');
-                    div.className = 'option-item';
-                    div.innerHTML = `
-                        <input type="checkbox" id="pattern-${patternName}" value="${field}" checked onchange="onPatternFilterChange()">
-                        <span class="pattern-indicator" style="background-color: ${color};"></span>
-                        <label for="pattern-${patternName}">${patternName}</label>
-                    `;
-                    patternContainer?.appendChild(div);
-                    selectedPatterns.add(field);
-                });
-            }
+                // Aggiungi forza come radio button
+                if (forceFields.length > 0) {
+                    forceFieldOptions = forceFields;
+                    forceFields.forEach((field, index) => {
+                        // Verifica se esiste già
+                        if (!document.getElementById(`force-${field}`)) {
+                            const div = document.createElement('div');
+                            div.className = 'option-item';
+                            div.innerHTML = `
+                                <input type="radio" name="forceField" id="force-${field}" value="${field}" ${index === 0 ? 'checked' : ''} onchange="onForceFieldChange()">
+                                <label for="force-${field}">${field}</label>
+                            `;
+                            layersOptionsList.appendChild(div);
+                        }
+                    });
 
-            // Popola dropdown forza nel filtro generale
-            const forceContainer = document.getElementById('layers-options-list');
-
-            // Rimuovi campi forza precedenti dal filtro generale (se esistevano)
-            forceFields.forEach(field => {
-                const checkbox = forceContainer?.querySelector(`input[value="${field}"]`);
-                if (checkbox) checkbox.parentElement.remove();
-            });
-
-            if (forceFields.length > 0) {
-                forceFieldOptions = forceFields;
-                forceFields.forEach((field, index) => {
-                    const div = document.createElement('div');
-                    div.className = 'option-item';
-                    div.innerHTML = `
-                        <input type="radio" name="forceField" id="force-${field}" value="${field}" ${index === 0 ? 'checked' : ''} onchange="onForceFieldChange()">
-                        <label for="force-${field}">${field}</label>
-                    `;
-                    forceContainer?.appendChild(div);
-                });
-
-                // Seleziona il primo per default
-                selectedForceField = forceFields[0];
-                console.log('Selected force field:', selectedForceField);
+                    // Seleziona il primo per default
+                    selectedForceField = forceFields[0];
+                    console.log('Selected force field:', selectedForceField);
+                } else {
+                    selectedForceField = null;
+                }
             }
         }
 
@@ -609,7 +605,7 @@
 
         function onPatternFilterChange() {
             selectedPatterns.clear();
-            document.querySelectorAll('#patterns-options-list input[type="checkbox"]:checked').forEach(cb => {
+            document.querySelectorAll('#layers-options-list input[type="checkbox"][id^="pattern-"]:checked').forEach(cb => {
                 selectedPatterns.add(cb.value);
             });
             renderChart();
