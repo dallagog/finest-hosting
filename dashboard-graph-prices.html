@@ -841,15 +841,22 @@
                 });
 
                 const data = await response.json();
-                console.log('Received data:', data);
+                console.log('===== RECEIVED DATA =====');
+                console.log('Received data type:', Array.isArray(data) ? 'Array' : typeof data);
+                console.log('Received data length:', Array.isArray(data) ? data.length : (data.prices ? data.prices.length : 'N/A'));
 
                 // Assicurati che trendDataRaw sia un array
                 trendDataRaw = data.prices || (Array.isArray(data) ? data : []);
+                console.log('trendDataRaw length:', trendDataRaw.length);
+                console.log('First item in trendDataRaw:', trendDataRaw[0]);
+                console.log('Keys in first item:', trendDataRaw[0] ? Object.keys(trendDataRaw[0]) : []);
+
                 trendDataRaw.sort((a, b) => new Date(a.date_start || a.date) - new Date(b.date_start || b.date));
 
-                console.log('Processed trendDataRaw:', trendDataRaw);
-
+                console.log('Processed trendDataRaw length:', trendDataRaw.length);
+                console.log('Calling extractFieldsFromData...');
                 extractFieldsFromData();
+                console.log('Calling renderChart...');
                 renderChart();
                 document.getElementById('loading').style.display = 'none';
             } catch (error) {
@@ -1175,10 +1182,15 @@
         }
 
         async function init() {
+            console.log('===== INIT STARTED =====');
+            console.log('Username:', username);
+            console.log('Token:', token ? 'present' : 'missing');
+
             document.getElementById('username-display').textContent = username;
 
             if (!username || !token) {
                 document.getElementById('loadingText').textContent = "Access Denied: Username or Token missing";
+                console.log('Init stopped: missing username or token');
                 return;
             }
 
@@ -1214,7 +1226,9 @@
             const selectLabel = document.getElementById('select-label');
             if (selectLabel) selectLabel.textContent = getTranslation('int.layers') || 'Layers';
 
+            console.log('===== CALLING loadPrices =====');
             await loadPrices();
+            console.log('===== loadPrices COMPLETED =====');
         }
 
         window.onload = init;
