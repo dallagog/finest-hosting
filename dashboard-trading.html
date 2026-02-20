@@ -636,64 +636,71 @@
             console.log('Processing and rendering portfolio...');
             portfolioData = [];
 
+            // Colonne da escludere dalla tabella (campi interni/tecnici)
+            const EXCLUDED_COLS = new Set(['id_account', 'id_currency', 'price_divisor', '$dual_currency', 'divisor_price']);
+
             const parseVal = (val) => {
+                if (val === null || val === undefined) return val;
+                if (typeof val === 'number') return val;
                 if (typeof val === 'string' && val.trim() !== '') {
-                    const numberRegex = /^-?\d+(\.\d+)?$/;
-                    if (numberRegex.test(val)) {
-                        return parseFloat(val);
-                    }
+                    const n = parseFloat(val.replace(',', '.'));
+                    if (!isNaN(n) && String(n) === val.trim()) return n;
                 }
                 return val;
             };
 
-            const parsePortfolioItem = (symbol, details) => {
-                const flatItem = { Ticker: symbol };
-                if (details && typeof details === 'object') {
-                    Object.keys(details).forEach(key => {
-                        if (key === 'Ticker') return;
-                        flatItem[key] = parseVal(details[key]);
-                    });
-                }
-                return flatItem;
+            // Normalizza un item flat (array nuovo formato)
+            const normalizeItem = (item) => {
+                const out = {};
+                Object.keys(item).forEach(key => {
+                    out[key] = parseVal(item[key]);
+                });
+                return out;
             };
 
             if (Array.isArray(rawPortfolio)) {
                 rawPortfolio.forEach(item => {
                     if (typeof item === 'object' && item !== null) {
                         if (item.id_instrument) {
-                            // New format: array of objects
-                            const flatItem = { Ticker: item.id_instrument };
-                            Object.keys(item).forEach(key => {
-                                flatItem[key] = parseVal(item[key]);
-                            });
-                            portfolioData.push(flatItem);
+                            // Nuovo formato flat
+                            portfolioData.push(normalizeItem(item));
                         } else if (Array.isArray(item) && item.length === 2) {
-                            // Old format: array of [symbol, details]
-                            portfolioData.push(parsePortfolioItem(item[0], item[1]));
+                            // Vecchio formato: [symbol, details]
+                            const flat = { id_instrument: item[0] };
+                            if (item[1] && typeof item[1] === 'object') {
+                                Object.assign(flat, item[1]);
+                            }
+                            portfolioData.push(normalizeItem(flat));
                         }
                     }
                 });
             } else if (typeof rawPortfolio === 'object' && rawPortfolio !== null) {
-                // Old format: object of {symbol: details}
+                // Vecchio formato: { symbol: details }
                 Object.keys(rawPortfolio).forEach(symbol => {
-                    portfolioData.push(parsePortfolioItem(symbol, rawPortfolio[symbol]));
+                    const flat = { id_instrument: symbol };
+                    const details = rawPortfolio[symbol];
+                    if (details && typeof details === 'object') {
+                        Object.assign(flat, details);
+                    }
+                    portfolioData.push(normalizeItem(flat));
                 });
             }
 
             if (portfolioData.length > 0) {
+                // Costruisci le colonne: prima id_instrument, poi in ordine preferenziale
+                const PREFERRED_ORDER = [
+                    'id_instrument', 'instrument_description',
+                    'quantity', '$price_mkt', '$cost_amount_curr', 'CTVMKTTQ', 'M/P'
+                ];
                 const allKeys = new Set();
-                // Ensure Ticker (mapped from id_instrument) is the first column
-                allKeys.add('Ticker');
+                portfolioData.forEach(item => Object.keys(item).forEach(k => allKeys.add(k)));
 
-                // Add all other keys except internal ones
-                portfolioData.forEach(item => {
-                    Object.keys(item).forEach(k => {
-                        if (k !== 'Ticker' && k !== 'divisor_price' && k !== 'price_divisor' && k !== 'id_instrument') {
-                            allKeys.add(k);
-                        }
-                    });
-                });
-                tableColumns = Array.from(allKeys);
+                // Colonne preferenziali prima (se presenti), poi le restanti non escluse
+                const ordered = [];
+                PREFERRED_ORDER.forEach(k => { if (allKeys.has(k) && !EXCLUDED_COLS.has(k)) ordered.push(k); });
+                allKeys.forEach(k => { if (!EXCLUDED_COLS.has(k) && !ordered.includes(k)) ordered.push(k); });
+
+                tableColumns = ordered;
             }
 
             renderTable();
@@ -744,17 +751,13 @@
 
             if (!isHistoricalActive) {
                 displayData = portfolioData.filter(item => {
-                    const qtyKey = Object.keys(item).find(k => k.toLowerCase() === 'quantity' || k.toLowerCase() === 'quantità' || k.toLowerCase() === 'qta');
-                    if (qtyKey && item[qtyKey] !== undefined) {
-                        const qty = parseFloat(item[qtyKey]);
-                        return !isNaN(qty) && Math.abs(qty) > 0.000001;
-                    }
-                    return true;
+                    const qty = parseFloat(item['quantity'] ?? item['Quantità'] ?? item['qta'] ?? 0);
+                    return !isNaN(qty) && Math.abs(qty) > 0.000001;
                 });
             }
 
             displayData.forEach(item => {
-                const ticker = item.Ticker || item.id_instrument || 'unknown';
+                const ticker = item.id_instrument || item.Ticker || 'unknown';
                 let tr = document.getElementById(`row-${ticker}`);
                 const isNewRow = !tr;
 
@@ -769,8 +772,9 @@
                     let displayVal = '';
 
                     if (index === 0) {
-                        displayVal = val !== undefined ? val : '';
-                    } else if (val !== undefined) {
+                        // Prima colonna: mostra id_instrument come ticker
+                        displayVal = item['id_instrument'] || item['Ticker'] || val || '';
+                    } else if (val !== undefined && val !== null) {
                         const colDescription = getTranslation(col) || col;
                         const isPercentageCol = colDescription.includes('%');
 
@@ -781,7 +785,7 @@
                                 displayVal = val.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
                             }
                         } else {
-                            displayVal = val;
+                            displayVal = String(val);
                         }
                     }
 
@@ -829,8 +833,8 @@
                 lastRenderedData[ticker] = JSON.parse(JSON.stringify(item));
             });
 
-            // Remove rows that are no longer in displayData
-            const currentTickers = displayData.map(i => i.Ticker || i.id_instrument || 'unknown');
+            // Rimuove righe non più presenti in displayData
+            const currentTickers = displayData.map(i => i.id_instrument || i.Ticker || 'unknown');
             Array.from(tbody.rows).forEach(row => {
                 const rowTicker = row.id.replace('row-', '');
                 if (!currentTickers.includes(rowTicker)) {
