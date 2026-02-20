@@ -1231,6 +1231,12 @@
                 if (historicalBtn) historicalBtn.textContent = historicalText;
             }
 
+            const withquantityText = getTranslation('int.withquantity');
+            if (withquantityText !== 'int.withquantity') {
+                const withquantityBtn = document.getElementById('withquantityText');
+                if (withquantityBtn) withquantityBtn.textContent = withquantityText;
+            }
+
             const expandLabel = getTranslation('int.expand') || 'Espandi';
             const elExpand = document.getElementById('expandLabel');
             if (elExpand) elExpand.textContent = expandLabel;
@@ -1247,18 +1253,18 @@
             if (showHistorical) {
                 // Mostro tutto - cambio label a "Con saldo"
                 btn.classList.add('active');
-                btn.style.backgroundColor = 'var(--neon-cyan)';
-                btn.style.color = '#000';
-                if (btnText) {
-                    btnText.textContent = 'Con saldo';
-                }
-            } else {
-                // Nascondo zero - cambio label a "Storico"
-                btn.classList.remove('active');
                 btn.style.backgroundColor = '';
                 btn.style.color = '';
                 if (btnText) {
-                    btnText.textContent = 'Storico';
+                    btnText.textContent = withquantityText;
+                }
+            } else {
+                // Nascondo zero - cambio label a "Storico"
+                btn.classList.add('active');
+                btn.style.backgroundColor = '';
+                btn.style.color = '';
+                if (btnText) {
+                    btnText.textContent = historicalText;
                 }
             }
             renderTable();
