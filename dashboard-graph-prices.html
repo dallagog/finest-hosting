@@ -891,7 +891,8 @@
                 patternFieldList.forEach(field => {
                     if (item[field] !== undefined && item[field] !== null && item[field] !== '') {
                         const patternName = field.replace('pattern@', '');
-                        aggregatedData[date].patterns.push({ [patternName]: parseValue(item[field]) });
+                        // I valori pattern@ arrivano già come stringa percentuale (es. "12.34%")
+                        aggregatedData[date].patterns.push({ [patternName]: item[field] });
                     }
                 });
 
@@ -1075,7 +1076,8 @@
                                             lines.push(`🔍 Pattern:`);
                                             filteredPatterns.forEach(p => {
                                                 Object.entries(p).forEach(([key, val]) => {
-                                                    lines.push(`  • ${key}: ${val.toFixed(3)}`);
+                                                    // val è già una stringa percentuale (es. "12.34%")
+                                                    lines.push(`  • ${key}: ${val}`);
                                                 });
                                             });
                                         }
