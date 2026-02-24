@@ -2504,35 +2504,52 @@
                     // Let's rely on the shared logic, but we still need to determine columns.
 
                     if (portfolioData.length > 0) {
-                        // Detect COSTO and MP column keys (case-insensitive)
                         const sampleKeys = Object.keys(portfolioData[0]);
-                        const costoKey = sampleKeys.find(k => /^costo$/i.test(k) || /^cost$/i.test(k) || k === 'cost_amount');
-                        const mpKey = sampleKeys.find(k => /^mp$/i.test(k) || /^controvalore$/i.test(k) || /^market.?value$/i.test(k) || k === 'CTVMKTTQ');
-                        window._pfCostoKey = costoKey;
-                        window._pfMpKey = mpKey;
-
-                        // Compute % = (MP - COSTO) / COSTO * 100  and  peso% = MP / totalMP * 100
-                        const totalMP = portfolioData.reduce((acc, item) => {
-                            const v = mpKey ? parseFloat(item[mpKey]) : NaN;
-                            return acc + (isNaN(v) ? 0 : v);
-                        }, 0);
-
                         const percKey = 'int.minusplus.percent';
                         const pesoKey = 'int.weight.percent';
 
+                        // Broad key detection
+                        const mpValueKey = sampleKeys.find(k => k === 'M/P' || k === 'Minus/Plus' || k === 'valutazioni_ctv_minusplus');
+                        const costValueKey = sampleKeys.find(k => k === '$cost_amount_curr' || k === '$amount_cost' || k === 'cost_amount' || /^costo$/i.test(k));
+                        const marketValueKey = sampleKeys.find(k => k === 'CTVMKTTQ' || /^mp$/i.test(k) || /^controvalore$/i.test(k) || /^market.?value$/i.test(k));
+
+                        window._pfCostoKey = costValueKey;
+                        window._pfMpKey = marketValueKey;
+                        window._pfMpValueKey = mpValueKey;
+
+                        const parseNumber = (val) => {
+                            if (val === null || val === undefined) return NaN;
+                            if (typeof val === 'number') return val;
+                            return parseFloat(String(val).replace(',', '.'));
+                        };
+
+                        // Compute totalMP for peso% denominator
+                        const totalMP = portfolioData.reduce((acc, item) => {
+                            const v = marketValueKey ? parseNumber(item[marketValueKey]) : NaN;
+                            return acc + (isNaN(v) ? 0 : v);
+                        }, 0);
+
                         portfolioData.forEach(item => {
-                            const costo = costoKey ? parseFloat(item[costoKey]) : NaN;
-                            const mp = mpKey ? parseFloat(item[mpKey]) : NaN;
+                            const mpValue = mpValueKey ? parseNumber(item[mpValueKey]) : NaN;
+                            const costValue = costValueKey ? parseNumber(item[costValueKey]) : NaN;
+                            const marketValue = marketValueKey ? parseNumber(item[marketValueKey]) : NaN;
 
-                            // Formula: (MP - COSTO) / COSTO * 100
-                            item[percKey] = (!isNaN(costo) && !isNaN(mp) && costo !== 0)
-                                ? parseFloat(((mp - costo) / Math.abs(costo) * 100).toFixed(3))
-                                : null;
+                            // Formula: M/P / Cost * 100
+                            if (!isNaN(mpValue) && !isNaN(costValue) && costValue !== 0) {
+                                item[percKey] = parseFloat((mpValue / Math.abs(costValue) * 100).toFixed(3));
+                            } else if (!isNaN(marketValue) && !isNaN(costValue) && costValue !== 0) {
+                                // Fallback: (MarketValue - CostValue) / CostValue * 100
+                                item[percKey] = parseFloat(((marketValue - costValue) / Math.abs(costValue) * 100).toFixed(3));
+                            } else {
+                                item[percKey] = null;
+                            }
 
-                            // Formula: MP / totalMP * 100
-                            item[pesoKey] = (!isNaN(mp) && totalMP !== 0)
-                                ? parseFloat((mp / totalMP * 100).toFixed(3))
-                                : null;
+                            // Formula: MarketValue / totalMP * 100
+                            if (!isNaN(marketValue) && totalMP !== 0) {
+                                item[pesoKey] = parseFloat((marketValue / totalMP * 100).toFixed(3));
+                            } else {
+                                item[pesoKey] = null;
+                            }
                         });
 
                         if (portfolioColumns.length > 0) {
@@ -2541,12 +2558,12 @@
                             cols = cols.filter(k => k !== '%' && k !== 'peso%');
 
                             // Insert int.minusplus.percent after costo column if found, else at end
-                            const costoIdx = costoKey ? cols.indexOf(costoKey) : -1;
+                            const costoIdx = costValueKey ? cols.indexOf(costValueKey) : -1;
                             if (!cols.includes(percKey)) {
                                 costoIdx >= 0 ? cols.splice(costoIdx + 1, 0, percKey) : cols.push(percKey);
                             }
                             // Insert int.weight.percent after mp column if found, else at end
-                            const mpIdx = mpKey ? cols.indexOf(mpKey) : -1;
+                            const mpIdx = marketValueKey ? cols.indexOf(marketValueKey) : -1;
                             if (!cols.includes(pesoKey)) {
                                 mpIdx >= 0 ? cols.splice(mpIdx + 1, 0, pesoKey) : cols.push(pesoKey);
                             }
@@ -2672,8 +2689,17 @@
                 // Recalculate % for total rows
                 const costoK = window._pfCostoKey;
                 const mpK = window._pfMpKey;
-                if (costoK && mpK && typeof totals[costoK] === 'number' && typeof totals[mpK] === 'number' && totals[costoK] !== 0)
-                    totals['int.minusplus.percent'] = parseFloat(((totals[mpK] - totals[costoK]) / Math.abs(totals[costoK]) * 100).toFixed(3));
+                const mpValueK = window._pfMpValueKey;
+
+                const totalCost = (costoK && typeof totals[costoK] === 'number') ? totals[costoK] : NaN;
+                const totalMP = (mpK && typeof totals[mpK] === 'number') ? totals[mpK] : NaN;
+                const totalMPValue = (mpValueK && typeof totals[mpValueK] === 'number') ? totals[mpValueK] : NaN;
+
+                if (!isNaN(totalMPValue) && !isNaN(totalCost) && totalCost !== 0) {
+                    totals['int.minusplus.percent'] = parseFloat((totalMPValue / Math.abs(totalCost) * 100).toFixed(3));
+                } else if (!isNaN(totalMP) && !isNaN(totalCost) && totalCost !== 0) {
+                    totals['int.minusplus.percent'] = parseFloat(((totalMP - totalCost) / Math.abs(totalCost) * 100).toFixed(3));
+                }
                 return totals;
             };
 
