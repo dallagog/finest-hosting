@@ -2473,11 +2473,46 @@
                     // Let's rely on the shared logic, but we still need to determine columns.
 
                     if (portfolioData.length > 0) {
-                        if (portfolioColumns.length > 0) tableColumns = [...portfolioColumns, '%'];
-                        else {
-                            const allKeys = new Set();
-                            portfolioData.forEach(item => Object.keys(item).forEach(k => allKeys.add(k)));
-                            tableColumns = Array.from(allKeys).filter(k => k !== 'Ticker');
+                        // Detect cost and market-value column names (case-insensitive search)
+                        const sampleItem = portfolioData[0];
+                        const allKeys = Object.keys(sampleItem);
+                        const costoKey = allKeys.find(k => /^costo$/i.test(k) || /^cost$/i.test(k) || /costo/i.test(k));
+                        const mpKey = allKeys.find(k => /^mp$/i.test(k) || /^controvalore$/i.test(k) || /^market.?value$/i.test(k) || /^mktval$/i.test(k));
+                        window._portfolioCostoKey = costoKey;
+                        window._portfolioMpKey = mpKey;
+
+                        // Calculate % (minus/plus on cost) with 3 decimals
+                        portfolioData.forEach(item => {
+                            const costo = costoKey ? parseFloat(item[costoKey]) : NaN;
+                            const mp = mpKey ? parseFloat(item[mpKey]) : NaN;
+                            if (!isNaN(costo) && !isNaN(mp) && costo !== 0) {
+                                item['%'] = parseFloat((mp / costo * 100).toFixed(3));
+                            } else {
+                                item['%'] = null;
+                            }
+                        });
+
+                        if (portfolioColumns.length > 0) {
+                            // Insert '%' after cost column, then add 'peso%' and 'peso_gruppo%' after mp column
+                            let cols = [...portfolioColumns];
+                            // Add % after % placeholder already in list or at end
+                            if (!cols.includes('%')) cols.push('%');
+                            // Add peso% right after the mp column (controvalore)
+                            const mpIdx = mpKey ? cols.indexOf(mpKey) : -1;
+                            if (mpIdx >= 0) {
+                                cols.splice(mpIdx + 1, 0, 'peso%');
+                                cols.splice(mpIdx + 2, 0, 'peso_gruppo%');
+                            } else {
+                                cols.push('peso%');
+                                cols.push('peso_gruppo%');
+                            }
+                            tableColumns = cols;
+                        } else {
+                            const allKeysSet = new Set();
+                            portfolioData.forEach(item => Object.keys(item).forEach(k => allKeysSet.add(k)));
+                            tableColumns = Array.from(allKeysSet).filter(k => k !== 'Ticker');
+                            tableColumns.push('peso%');
+                            tableColumns.push('peso_gruppo%');
                         }
                     }
 
@@ -2577,7 +2612,7 @@
                 const totals = {};
                 columns.forEach(col => {
                     if (col === 'Ticker') { totals[col] = 'TOTAL'; return; }
-                    if (col === 'id_account' || col === '%') { totals[col] = ''; return; }
+                    if (col === 'id_account' || col === '%' || col === 'peso%' || col === 'peso_gruppo%') { totals[col] = ''; return; }
                     // Non sommare il campo quantity (e varianti)
                     if (col === 'quantity' || col.toLowerCase().includes('quantity') || col.toLowerCase().includes('qta')) {
                         totals[col] = '';
@@ -2594,8 +2629,23 @@
                         totals[col] = parseFloat(sum.toFixed(2));
                     } else totals[col] = '';
                 });
+                // Compute % for the total row from summed cost and MP
+                const costoKey = window._portfolioCostoKey;
+                const mpK = window._portfolioMpKey;
+                if (costoKey && mpK && totals[costoKey] !== '' && totals[mpK] !== '') {
+                    const tc = totals[costoKey], tm = totals[mpK];
+                    totals['%'] = (tc !== 0) ? parseFloat((tm / tc * 100).toFixed(3)) : null;
+                }
                 return totals;
             };
+
+            const mpKey = window._portfolioMpKey;
+
+            // Compute grand total controvalore for peso%
+            const grandTotalMP = displayData.reduce((acc, item) => {
+                const v = mpKey ? parseFloat(item[mpKey]) : NaN;
+                return acc + (isNaN(v) ? 0 : v);
+            }, 0);
 
             if (currentGroup) {
                 const groups = {};
@@ -2618,6 +2668,16 @@
                     // Totale del gruppo (Sempre visibile, messo in testa)
                     const groupTotal = calculateTotals(groupItems, tableColumns);
 
+                    // Compute group controvalore for peso_gruppo%
+                    const groupTotalMP = mpKey ? groupItems.reduce((acc, item) => {
+                        const v = parseFloat(item[mpKey]);
+                        return acc + (isNaN(v) ? 0 : v);
+                    }, 0) : 0;
+
+                    // peso% for the group row = group total / grand total
+                    groupTotal['peso%'] = (grandTotalMP !== 0) ? parseFloat((groupTotalMP / grandTotalMP * 100).toFixed(3)) : null;
+                    groupTotal['peso_gruppo%'] = null; // no relative weight for header itself
+
                     // Sovrascrivi la prima colonna con la descrizione del gruppo
                     const groupDesc = `${getTranslation(group) || group} (${groupItems.length})`;
                     const firstCol = tableColumns[0];
@@ -2627,14 +2687,30 @@
 
                     // Dettagli (solo se espanso)
                     if (isExpanded) {
-                        groupItems.forEach(item => renderRow(item, tbody));
+                        groupItems.forEach(item => {
+                            // peso% = item MP / grand total
+                            const itemMP = mpKey ? parseFloat(item[mpKey]) : NaN;
+                            item['peso%'] = (!isNaN(itemMP) && grandTotalMP !== 0) ? parseFloat((itemMP / grandTotalMP * 100).toFixed(3)) : null;
+                            // peso_gruppo% = item MP / group total
+                            item['peso_gruppo%'] = (!isNaN(itemMP) && groupTotalMP !== 0) ? parseFloat((itemMP / groupTotalMP * 100).toFixed(3)) : null;
+                            renderRow(item, tbody);
+                        });
                     }
                 });
                 const grandTotal = calculateTotals(displayData, tableColumns);
+                grandTotal['peso%'] = 100;
+                grandTotal['peso_gruppo%'] = null;
                 renderRow(grandTotal, tbody, true, true);
             } else {
-                displayData.forEach(item => renderRow(item, tbody));
+                displayData.forEach(item => {
+                    const itemMP = mpKey ? parseFloat(item[mpKey]) : NaN;
+                    item['peso%'] = (!isNaN(itemMP) && grandTotalMP !== 0) ? parseFloat((itemMP / grandTotalMP * 100).toFixed(3)) : null;
+                    item['peso_gruppo%'] = null;
+                    renderRow(item, tbody);
+                });
                 const grandTotal = calculateTotals(displayData, tableColumns);
+                grandTotal['peso%'] = 100;
+                grandTotal['peso_gruppo%'] = null;
                 renderRow(grandTotal, tbody, true, true);
             }
         }
@@ -2685,6 +2761,25 @@
                         window.open(`dashboard-detail-instrument.html?${params.toString()}`, '_blank');
                     };
                     td.appendChild(span);
+                } else if (col === '%' || col === 'peso%' || col === 'peso_gruppo%') {
+                    // Special rendering for percentage columns
+                    td.style.textAlign = 'right';
+                    if (val === null || val === undefined || val === '') {
+                        td.textContent = '';
+                    } else if (typeof val === 'number') {
+                        const formatted = val.toLocaleString(undefined, { minimumFractionDigits: 3, maximumFractionDigits: 3 }) + ' %';
+                        td.textContent = formatted;
+                        if (col === '%') {
+                            // Color: green if >= 100 (gain), red if < 100 (loss)
+                            td.style.color = val >= 100 ? '#27ae60' : '#e74c3c';
+                            td.style.fontWeight = '600';
+                        } else {
+                            td.style.color = '#555';
+                            td.style.fontSize = '12px';
+                        }
+                    } else {
+                        td.textContent = val;
+                    }
                 } else if (val !== undefined) {
                     const colDescription = getTranslation(col) || col;
                     const isPercentageCol = colDescription.includes('%');
