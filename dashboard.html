@@ -2557,23 +2557,21 @@
                             // Clean up old keys if they exist
                             cols = cols.filter(k => k !== '%' && k !== 'peso%');
 
-                            // Insert int.minusplus.percent after costo column if found, else at end
-                            const costoIdx = costValueKey ? cols.indexOf(costValueKey) : -1;
-                            if (!cols.includes(percKey)) {
-                                costoIdx >= 0 ? cols.splice(costoIdx + 1, 0, percKey) : cols.push(percKey);
-                            }
                             // Insert int.weight.percent after mp column if found, else at end
                             const mpIdx = marketValueKey ? cols.indexOf(marketValueKey) : -1;
                             if (!cols.includes(pesoKey)) {
                                 mpIdx >= 0 ? cols.splice(mpIdx + 1, 0, pesoKey) : cols.push(pesoKey);
                             }
+                            // Move int.minusplus.percent to the very end
+                            cols = cols.filter(k => k !== percKey);
+                            cols.push(percKey);
                             tableColumns = cols;
                         } else {
                             const allKeys = new Set();
                             portfolioData.forEach(item => Object.keys(item).forEach(k => allKeys.add(k)));
-                            tableColumns = Array.from(allKeys).filter(k => k !== 'Ticker' && k !== '%' && k !== 'peso%');
-                            if (!tableColumns.includes(percKey)) tableColumns.push(percKey);
-                            if (!tableColumns.includes(pesoKey)) tableColumns.push(pesoKey);
+                            tableColumns = Array.from(allKeys).filter(k => k !== 'Ticker' && k !== '%' && k !== 'peso%' && k !== percKey && k !== pesoKey);
+                            tableColumns.push(pesoKey);
+                            tableColumns.push(percKey);
                         }
                     }
 
