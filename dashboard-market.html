@@ -359,6 +359,36 @@
         .cell-changed {
             animation: highlightChange 2s ease-out;
         }
+
+        @keyframes highlightUp {
+            0% {
+                background-color: rgba(46, 204, 113, 0.5);
+            }
+
+            /* Green */
+            100% {
+                background-color: transparent;
+            }
+        }
+
+        @keyframes highlightDown {
+            0% {
+                background-color: rgba(231, 76, 60, 0.5);
+            }
+
+            /* Red */
+            100% {
+                background-color: transparent;
+            }
+        }
+
+        .cell-price-up {
+            animation: highlightUp 2s ease-out;
+        }
+
+        .cell-price-down {
+            animation: highlightDown 2s ease-out;
+        }
     </style>
 </head>
 
@@ -409,6 +439,11 @@
                     <tbody id="portfolio-body">
                         <!-- Rows will be injected here -->
                     </tbody>
+                    <tfoot id="portfolio-footer">
+                        <tr id="portfolio-footer-row">
+                            <!-- Totals will be injected here -->
+                        </tr>
+                    </tfoot>
                 </table>
             </div>
         </div>
@@ -815,6 +850,14 @@
                         } else {
                             td.textContent = displayVal;
                             if (typeof val === 'number') td.style.textAlign = 'right';
+
+                            // Make price_mkt and exchange_mkt editable
+                            if (col === '$price_mkt' || col === '$exchange_mkt') {
+                                td.contentEditable = "true";
+                                td.style.border = "1px dashed #ccc";
+                                td.onblur = (e) => handleCellEdit(ticker, col, e.target.textContent);
+                                td.onkeydown = (e) => { if (e.key === 'Enter') { e.preventDefault(); e.target.blur(); } };
+                            }
                         }
                         tr.appendChild(td);
                     } else {
@@ -824,9 +867,26 @@
                             } else {
                                 td.textContent = displayVal;
                             }
-                            td.classList.remove('cell-changed');
+                            td.classList.remove('cell-changed', 'cell-price-up', 'cell-price-down');
                             void td.offsetWidth; // Trigger reflow
-                            td.classList.add('cell-changed');
+
+                            if (col === '$price_mkt') {
+                                const prevValNum = parseFloat(prevVal);
+                                const newValNum = parseFloat(item[col]);
+                                if (!isNaN(prevValNum) && !isNaN(newValNum)) {
+                                    if (newValNum > prevValNum) {
+                                        td.classList.add('cell-price-up');
+                                    } else if (newValNum < prevValNum) {
+                                        td.classList.add('cell-price-down');
+                                    } else {
+                                        td.classList.add('cell-changed');
+                                    }
+                                } else {
+                                    td.classList.add('cell-changed');
+                                }
+                            } else {
+                                td.classList.add('cell-changed');
+                            }
                             console.log(`[Diff] Updated ${ticker}.${col}: ${normalizedPrev} -> ${displayVal}`);
                         }
                     }
@@ -839,6 +899,8 @@
                 lastRenderedData[ticker] = JSON.parse(JSON.stringify(item));
             });
 
+            renderFooter(displayData);
+
             // Rimuove righe non più presenti in displayData
             const currentTickers = displayData.map(i => i.id_instrument || i.Ticker || 'unknown');
             Array.from(tbody.rows).forEach(row => {
@@ -849,6 +911,56 @@
                     delete lastRenderedData[rowTicker];
                 }
             });
+        }
+
+        function renderFooter(displayData) {
+            const tfoot = document.getElementById('portfolio-footer-row');
+            tfoot.innerHTML = '';
+
+            tableColumns.forEach((col, index) => {
+                const td = document.createElement('td');
+                td.style.fontWeight = 'bold';
+                td.style.background = '#f0f0f0';
+                td.style.borderTop = '2px solid #000';
+
+                if (col === 'CTVMKTTQ') {
+                    const total = displayData.reduce((sum, item) => sum + (parseFloat(item[col]) || 0), 0);
+                    td.textContent = total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                    td.style.textAlign = 'right';
+                } else if (index === 0) {
+                    td.textContent = 'TOTALE';
+                } else {
+                    td.textContent = '';
+                }
+                tfoot.appendChild(td);
+            });
+        }
+
+        function handleCellEdit(ticker, col, newValue) {
+            console.log(`[Edit] ${ticker}.${col} changed to ${newValue}`);
+            const item = portfolioData.find(i => (i.id_instrument || i.Ticker) === ticker);
+            if (!item) return;
+
+            const val = parseFloat(newValue.replace(',', '.'));
+            if (isNaN(val)) return;
+
+            item[col] = val;
+
+            // Recalculate
+            const qty = parseFloat(item['quantity'] || 0);
+            const priceMkt = parseFloat(item['$price_mkt'] || 0);
+            const exchMkt = parseFloat(item['$exchange_mkt'] || item['$exchange_cost'] || 1);
+            const divisor = parseFloat(item['price_divisor'] || item['divisor_price'] || 1);
+
+            // CTVMKTTQ = quantity * price_mkt / exchange_mkt / price_divisor
+            const newCtv = (qty * priceMkt) / exchMkt / divisor;
+            item['CTVMKTTQ'] = Math.round(newCtv * 1000) / 1000;
+
+            // M/P = CTVMKTTQ - $cost_amount_curr
+            const cost = parseFloat(item['$cost_amount_curr'] || 0);
+            item['M/P'] = item['CTVMKTTQ'] - cost;
+
+            renderTable();
         }
 
         function openTrade(item, action) {
