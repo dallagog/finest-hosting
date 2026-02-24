@@ -704,7 +704,10 @@
                 <h1 id="dashboardTitle">Dashboard</h1>
                 <div class="expiration-subtitle" id="expirationSubtitle" style="display:none;"></div>
             </div>
-            <div class="logout-container">
+            <div class="logout-container" style="display:flex; gap:8px; justify-content:flex-end; align-items:center;">
+                <button class="logout-btn" onclick="location.reload()" id="updateBtn">
+                    <i class="fa fa-refresh"></i> <span id="updateText">Aggiorna</span>
+                </button>
                 <button class="logout-btn" onclick="logout()">
                     <i class="fa fa-sign-out"></i> <span id="logoutText">Logout</span>
                 </button>
@@ -1169,6 +1172,10 @@
             // Special HTML Elements
             const logoutText = getTranslation('int.logout');
             if (logoutText !== 'int.logout') document.getElementById('logoutText').textContent = logoutText;
+
+            const updateText = getTranslation('int.update') || 'Aggiorna';
+            const elUpdate = document.getElementById('updateText');
+            if (elUpdate) elUpdate.textContent = updateText;
 
             const downloadPdfText = getTranslation('int.download.pdf');
             if (downloadPdfText !== 'int.download.pdf') document.getElementById('downloadPdfText').textContent = downloadPdfText
@@ -2473,46 +2480,48 @@
                     // Let's rely on the shared logic, but we still need to determine columns.
 
                     if (portfolioData.length > 0) {
-                        // Detect cost and market-value column names (case-insensitive search)
-                        const sampleItem = portfolioData[0];
-                        const allKeys = Object.keys(sampleItem);
-                        const costoKey = allKeys.find(k => /^costo$/i.test(k) || /^cost$/i.test(k) || /costo/i.test(k));
-                        const mpKey = allKeys.find(k => /^mp$/i.test(k) || /^controvalore$/i.test(k) || /^market.?value$/i.test(k) || /^mktval$/i.test(k));
-                        window._portfolioCostoKey = costoKey;
-                        window._portfolioMpKey = mpKey;
+                        // Detect COSTO and MP column keys (case-insensitive)
+                        const sampleKeys = Object.keys(portfolioData[0]);
+                        const costoKey = sampleKeys.find(k => /^costo$/i.test(k) || /^cost$/i.test(k));
+                        const mpKey = sampleKeys.find(k => /^mp$/i.test(k) || /^controvalore$/i.test(k) || /^market.?value$/i.test(k));
+                        window._pfCostoKey = costoKey;
+                        window._pfMpKey = mpKey;
 
-                        // Calculate % (minus/plus on cost) with 3 decimals
+                        // Compute % = (MP - COSTO) / COSTO * 100  and  peso% = MP / totalMP * 100
+                        const totalMP = portfolioData.reduce((acc, item) => {
+                            const v = mpKey ? parseFloat(item[mpKey]) : NaN;
+                            return acc + (isNaN(v) ? 0 : v);
+                        }, 0);
+
                         portfolioData.forEach(item => {
                             const costo = costoKey ? parseFloat(item[costoKey]) : NaN;
                             const mp = mpKey ? parseFloat(item[mpKey]) : NaN;
-                            if (!isNaN(costo) && !isNaN(mp) && costo !== 0) {
-                                item['%'] = parseFloat((mp / costo * 100).toFixed(3));
-                            } else {
-                                item['%'] = null;
-                            }
+                            item['%'] = (!isNaN(costo) && !isNaN(mp) && costo !== 0)
+                                ? parseFloat(((mp - costo) / Math.abs(costo) * 100).toFixed(3))
+                                : null;
+                            item['peso%'] = (!isNaN(mp) && totalMP !== 0)
+                                ? parseFloat((mp / totalMP * 100).toFixed(3))
+                                : null;
                         });
 
                         if (portfolioColumns.length > 0) {
-                            // Insert '%' after cost column, then add 'peso%' and 'peso_gruppo%' after mp column
                             let cols = [...portfolioColumns];
-                            // Add % after % placeholder already in list or at end
-                            if (!cols.includes('%')) cols.push('%');
-                            // Add peso% right after the mp column (controvalore)
+                            // Insert % after costo column if found, else at end before peso%
+                            const costoIdx = costoKey ? cols.indexOf(costoKey) : -1;
+                            if (!cols.includes('%')) {
+                                costoIdx >= 0 ? cols.splice(costoIdx + 1, 0, '%') : cols.push('%');
+                            }
+                            // Insert peso% after mp column if found, else at end
                             const mpIdx = mpKey ? cols.indexOf(mpKey) : -1;
-                            if (mpIdx >= 0) {
-                                cols.splice(mpIdx + 1, 0, 'peso%');
-                                cols.splice(mpIdx + 2, 0, 'peso_gruppo%');
-                            } else {
-                                cols.push('peso%');
-                                cols.push('peso_gruppo%');
+                            if (!cols.includes('peso%')) {
+                                mpIdx >= 0 ? cols.splice(mpIdx + 1, 0, 'peso%') : cols.push('peso%');
                             }
                             tableColumns = cols;
                         } else {
-                            const allKeysSet = new Set();
-                            portfolioData.forEach(item => Object.keys(item).forEach(k => allKeysSet.add(k)));
-                            tableColumns = Array.from(allKeysSet).filter(k => k !== 'Ticker');
-                            tableColumns.push('peso%');
-                            tableColumns.push('peso_gruppo%');
+                            const allKeys = new Set();
+                            portfolioData.forEach(item => Object.keys(item).forEach(k => allKeys.add(k)));
+                            tableColumns = Array.from(allKeys).filter(k => k !== 'Ticker');
+                            if (!tableColumns.includes('peso%')) tableColumns.push('peso%');
                         }
                     }
 
@@ -2612,12 +2621,8 @@
                 const totals = {};
                 columns.forEach(col => {
                     if (col === 'Ticker') { totals[col] = 'TOTAL'; return; }
-                    if (col === 'id_account' || col === '%' || col === 'peso%' || col === 'peso_gruppo%') { totals[col] = ''; return; }
-                    // Non sommare il campo quantity (e varianti)
-                    if (col === 'quantity' || col.toLowerCase().includes('quantity') || col.toLowerCase().includes('qta')) {
-                        totals[col] = '';
-                        return;
-                    }
+                    if (col === 'id_account' || col === '%' || col === 'peso%') { totals[col] = ''; return; }
+                    if (col === 'quantity' || col.toLowerCase().includes('quantity') || col.toLowerCase().includes('qta')) { totals[col] = ''; return; }
                     const desc = getTranslation(col) || col;
                     if (desc.includes('%')) { totals[col] = ''; return; }
                     const isNumeric = items.some(item => { const val = item[col]; return typeof val === 'number' || (typeof val === 'string' && /^-?\d+(\.\d+)?$/.test(val)); });
@@ -2629,21 +2634,18 @@
                         totals[col] = parseFloat(sum.toFixed(2));
                     } else totals[col] = '';
                 });
-                // Compute % for the total row from summed cost and MP
-                const costoKey = window._portfolioCostoKey;
-                const mpK = window._portfolioMpKey;
-                if (costoKey && mpK && totals[costoKey] !== '' && totals[mpK] !== '') {
-                    const tc = totals[costoKey], tm = totals[mpK];
-                    totals['%'] = (tc !== 0) ? parseFloat((tm / tc * 100).toFixed(3)) : null;
-                }
+                // Recalculate % for total rows
+                const costoK = window._pfCostoKey;
+                const mpK = window._pfMpKey;
+                if (costoK && mpK && typeof totals[costoK] === 'number' && typeof totals[mpK] === 'number' && totals[costoK] !== 0)
+                    totals['%'] = parseFloat(((totals[mpK] - totals[costoK]) / Math.abs(totals[costoK]) * 100).toFixed(3));
                 return totals;
             };
 
-            const mpKey = window._portfolioMpKey;
-
-            // Compute grand total controvalore for peso%
-            const grandTotalMP = displayData.reduce((acc, item) => {
-                const v = mpKey ? parseFloat(item[mpKey]) : NaN;
+            // Grand total MP for peso% denominator
+            const _pfMpK = window._pfMpKey;
+            const _grandTotalMP = displayData.reduce((acc, item) => {
+                const v = _pfMpK ? parseFloat(item[_pfMpK]) : NaN;
                 return acc + (isNaN(v) ? 0 : v);
             }, 0);
 
@@ -2668,15 +2670,11 @@
                     // Totale del gruppo (Sempre visibile, messo in testa)
                     const groupTotal = calculateTotals(groupItems, tableColumns);
 
-                    // Compute group controvalore for peso_gruppo%
-                    const groupTotalMP = mpKey ? groupItems.reduce((acc, item) => {
-                        const v = parseFloat(item[mpKey]);
-                        return acc + (isNaN(v) ? 0 : v);
+                    // peso% per la riga gruppo = somma MP gruppo / totale MP * 100
+                    const groupMP = _pfMpK ? groupItems.reduce((acc, it) => {
+                        const v = parseFloat(it[_pfMpK]); return acc + (isNaN(v) ? 0 : v);
                     }, 0) : 0;
-
-                    // peso% for the group row = group total / grand total
-                    groupTotal['peso%'] = (grandTotalMP !== 0) ? parseFloat((groupTotalMP / grandTotalMP * 100).toFixed(3)) : null;
-                    groupTotal['peso_gruppo%'] = null; // no relative weight for header itself
+                    groupTotal['peso%'] = (_grandTotalMP !== 0) ? parseFloat((groupMP / _grandTotalMP * 100).toFixed(3)) : null;
 
                     // Sovrascrivi la prima colonna con la descrizione del gruppo
                     const groupDesc = `${getTranslation(group) || group} (${groupItems.length})`;
@@ -2688,29 +2686,25 @@
                     // Dettagli (solo se espanso)
                     if (isExpanded) {
                         groupItems.forEach(item => {
-                            // peso% = item MP / grand total
-                            const itemMP = mpKey ? parseFloat(item[mpKey]) : NaN;
-                            item['peso%'] = (!isNaN(itemMP) && grandTotalMP !== 0) ? parseFloat((itemMP / grandTotalMP * 100).toFixed(3)) : null;
-                            // peso_gruppo% = item MP / group total
-                            item['peso_gruppo%'] = (!isNaN(itemMP) && groupTotalMP !== 0) ? parseFloat((itemMP / groupTotalMP * 100).toFixed(3)) : null;
+                            const itemMP = _pfMpK ? parseFloat(item[_pfMpK]) : NaN;
+                            item['peso%'] = (!isNaN(itemMP) && _grandTotalMP !== 0)
+                                ? parseFloat((itemMP / _grandTotalMP * 100).toFixed(3)) : null;
                             renderRow(item, tbody);
                         });
                     }
                 });
                 const grandTotal = calculateTotals(displayData, tableColumns);
-                grandTotal['peso%'] = 100;
-                grandTotal['peso_gruppo%'] = null;
+                grandTotal['peso%'] = 100.000;
                 renderRow(grandTotal, tbody, true, true);
             } else {
                 displayData.forEach(item => {
-                    const itemMP = mpKey ? parseFloat(item[mpKey]) : NaN;
-                    item['peso%'] = (!isNaN(itemMP) && grandTotalMP !== 0) ? parseFloat((itemMP / grandTotalMP * 100).toFixed(3)) : null;
-                    item['peso_gruppo%'] = null;
+                    const itemMP = _pfMpK ? parseFloat(item[_pfMpK]) : NaN;
+                    item['peso%'] = (!isNaN(itemMP) && _grandTotalMP !== 0)
+                        ? parseFloat((itemMP / _grandTotalMP * 100).toFixed(3)) : null;
                     renderRow(item, tbody);
                 });
                 const grandTotal = calculateTotals(displayData, tableColumns);
-                grandTotal['peso%'] = 100;
-                grandTotal['peso_gruppo%'] = null;
+                grandTotal['peso%'] = 100.000;
                 renderRow(grandTotal, tbody, true, true);
             }
         }
@@ -2761,20 +2755,17 @@
                         window.open(`dashboard-detail-instrument.html?${params.toString()}`, '_blank');
                     };
                     td.appendChild(span);
-                } else if (col === '%' || col === 'peso%' || col === 'peso_gruppo%') {
-                    // Special rendering for percentage columns
+                } else if (col === '%' || col === 'peso%') {
                     td.style.textAlign = 'right';
                     if (val === null || val === undefined || val === '') {
                         td.textContent = '';
                     } else if (typeof val === 'number') {
-                        const formatted = val.toLocaleString(undefined, { minimumFractionDigits: 3, maximumFractionDigits: 3 }) + ' %';
-                        td.textContent = formatted;
+                        td.textContent = val.toLocaleString(undefined, { minimumFractionDigits: 3, maximumFractionDigits: 3 }) + ' %';
                         if (col === '%') {
-                            // Color: green if >= 100 (gain), red if < 100 (loss)
-                            td.style.color = val >= 100 ? '#27ae60' : '#e74c3c';
+                            td.style.color = val >= 0 ? '#27ae60' : '#e74c3c';
                             td.style.fontWeight = '600';
                         } else {
-                            td.style.color = '#555';
+                            td.style.color = '#666';
                             td.style.fontSize = '12px';
                         }
                     } else {
