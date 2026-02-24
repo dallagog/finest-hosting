@@ -976,13 +976,12 @@
                             hidden: !document.getElementById('layer-exchange')?.checked || exchanges.every(v => v === 0)
                         },
                         {
+                            type: 'bar',
                             label: `Short (%)`,
                             data: shorts,
                             borderColor: 'rgba(255, 99, 132, 1)',
-                            backgroundColor: 'transparent',
-                            borderWidth: 2,
-                            tension: 0.1,
-                            pointRadius: 0,
+                            backgroundColor: 'rgba(255, 99, 132, 0.5)',
+                            borderWidth: 1,
                             yAxisID: 'y',
                             hidden: !document.getElementById('layer-short')?.checked || shorts.every(v => v === 0)
                         }
@@ -1086,6 +1085,14 @@
                                             });
                                         }
                                     }
+                                    const shortDS = context[0].chart.data.datasets.find(ds => ds.label === 'Short (%)');
+                                    if (shortDS && !shortDS.hidden) {
+                                        const shortVal = shortDS.data[index];
+                                        if (shortVal !== 0 && shortVal !== null && shortVal !== undefined) {
+                                            lines.push(`📉 Short: ${shortVal.toFixed(2)}%`);
+                                        }
+                                    }
+
                                     return lines;
                                 }
                             }
