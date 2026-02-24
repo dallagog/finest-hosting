@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="it">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Financial Estimates - Market Dashboard</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <script src="js/dashboard-shared.js"></script>
+    <link rel="icon" type="image/png" href="images/icon-finest.png">
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&display=swap');
+
+        :root {
+            --bg-color: #f5f5f0;
+            --neon-cyan: #000000;
+            --neon-blue: #333333;
+            --glass-bg: #ffffff;
+            --text-color: #333333;
+            --border-color: #000000;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Orbitron', sans-serif;
+            background-color: var(--bg-color);
+            padding: 20px;
+            color: var(--text-color);
+            min-height: 100vh;
+        }
+
+        .main-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: var(--glass-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+        }
+
+        .user-info-left {
+            flex: 1;
+            font-size: 14px;
+            color: var(--neon-cyan);
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        h1 {
+            flex: 1;
+            text-align: center;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            font-size: 1.5em;
+        }
+
+        .logout-btn {
+            padding: 8px 16px;
+            background: #000;
+            border: 1px solid #000;
+            color: #fff;
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: inherit;
+        }
+
+        .collapsible-container {
+            background: var(--glass-bg);
+            border: 1px solid #ddd;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+        }
+
+        .filter-group {
+            margin-bottom: 15px;
+        }
+
+        .filter-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .filter-group input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-family: inherit;
+        }
+
+        button {
+            padding: 10px 20px;
+            background: #000;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        .data-table th,
+        .data-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+
+        .data-table th {
+            background: #f0f0f0;
+        }
+
+        .message {
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+            display: none;
+            border-left: 5px solid;
+        }
+
+        .message.error {
+            background: #fee;
+            color: #c00;
+            border-color: #c00;
+            display: block;
+        }
+
+        .message.warning {
+            background: #fff3cd;
+            color: #856404;
+            border-color: #ffc107;
+            display: block;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="main-container">
+        <div class="header-bar">
+            <div class="user-info-left">
+                <div><strong>Utente:</strong> <span id="usernameDisplay">-</span></div>
+                <div><strong>Valuta:</strong> <span id="currencyDisplay">-</span></div>
+            </div>
+            <h1>Market Dashboard</h1>
+            <div class="logout-container">
+                <button class="logout-btn" onclick="closeDashboard()">Chiudi</button>
+            </div>
+        </div>
+
+        <div id="message" class="message"></div>
+
+        <div class="collapsible-container">
+            <div style="display: flex; gap: 15px; align-items: flex-end; flex-wrap: wrap;">
+                <div class="filter-group" style="flex: 1; min-width: 150px;">
+                    <label>Data iniziale:</label>
+                    <input type="date" id="date-start">
+                </div>
+                <div class="filter-group" style="flex: 1; min-width: 150px;">
+                    <label>Data finale:</label>
+                    <input type="date" id="date-end">
+                </div>
+                <div class="filter-group" style="flex: 1; min-width: 150px;">
+                    <label>Valore min:</label>
+                    <input type="number" id="value-min" step="0.01">
+                </div>
+                <div class="filter-group" style="flex: 1; min-width: 150px;">
+                    <label>Valore max:</label>
+                    <input type="number" id="value-max" step="0.01">
+                </div>
+                <div class="filter-group">
+                    <button onclick="fetchMarketData()" data-translate="int.apply">Applica selezione</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="collapsible-container">
+            <div id="table-container">
+                <p>In attesa di caricamento...</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // URL Servizio configurato correttamente via Cloudflare Tunnel
+        const API_URL_MARKET = "https://market-tunnel.fe-web.eu";
+
+        const credentials = {
+            username: localStorage.getItem('username'),
+            token: localStorage.getItem('token'),
+            currency: localStorage.getItem('currency') || 'EUR',
+            date_start: localStorage.getItem('date_start') || '',
+            date_end: localStorage.getItem('date_end') || ''
+        };
+
+        async function init() {
+            if (!credentials.username) {
+                window.location.href = 'index.html';
+                return;
+            }
+            document.getElementById('usernameDisplay').textContent = credentials.username;
+            document.getElementById('currencyDisplay').textContent = credentials.currency;
+
+            setDefaultDates();
+            await fetchMarketData();
+        }
+
+        function setDefaultDates() {
+            const today = new Date();
+            const lastMonth = new Date(today.getFullYear(), today.getMonth() - 1, today.getDate());
+
+            document.getElementById('date-start').value = lastMonth.toISOString().split('T')[0];
+            document.getElementById('date-end').value = today.toISOString().split('T')[0];
+            document.getElementById('value-min').value = 4;
+            document.getElementById('value-max').value = 9999;
+        }
+
+        async function fetchMarketData() {
+            const date_start = document.getElementById('date-start').value;
+            const date_end = document.getElementById('date-end').value;
+            const msgDiv = document.getElementById('message');
+            msgDiv.style.display = 'none';
+
+            console.log("Checking health from:", `${API_URL_MARKET}/health`);
+            try {
+                const healthResponse = await fetch(`${API_URL_MARKET}/health`);
+                console.log("Health status:", healthResponse.status);
+                const healthResult = await healthResponse.json();
+                console.log("Health Result:", healthResult);
+            } catch (hErr) {
+                console.warn("Health check failed, proceeding anyway:", hErr);
+            }
+
+            const payload = {
+                username: credentials.username,
+                token: credentials.token,
+                currency: credentials.currency,
+                date_start: date_start,
+                date_end: date_end
+            };
+
+            console.log("Fetching market data from:", `${API_URL_MARKET}/getmarket`);
+            console.log("Payload:", payload);
+
+            try {
+                const response = await fetch(`${API_URL_MARKET}/getmarket`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                console.log("Response status:", response.status);
+                const result = await response.json();
+                console.log("Result:", result);
+
+                if (result.status === 'ok') {
+                    renderTable(result.data);
+                } else {
+                    showMessage(result.msg || "Errore API", "error");
+                }
+            } catch (err) {
+                console.error("Fetch Error:", err);
+                showMessage(
+                    "Impossibile raggiungere il server market-tunnel. Verificare la connessione o i record DNS.",
+                    "error"
+                );
+            }
+        }
+
+        function renderTable(data) {
+            const container = document.getElementById('table-container');
+            const vMin = parseFloat(document.getElementById('value-min').value);
+            const vMax = parseFloat(document.getElementById('value-max').value);
+
+            let filtered = data.filter(row => {
+                const val = parseFloat(row.value);
+                if (isNaN(val)) return false;
+                const absVal = Math.abs(val);
+                if (!isNaN(vMin) && absVal < vMin) return false;
+                if (!isNaN(vMax) && absVal > vMax) return false;
+                return true;
+            });
+
+            if (filtered.length === 0) {
+                container.innerHTML = '<p>Nessun dato corrispondente ai filtri.</p>';
+                return;
+            }
+
+            let html = `<p style="margin-bottom:10px">Record trovati: <strong>${filtered.length}</strong></p>`;
+            html += '<table class="data-table"><thead><tr><th>Strumento</th><th>Data</th><th>Valore</th></tr></thead><tbody>';
+
+            filtered.forEach(row => {
+                html += `<tr>
+                    <td><a href="#" onclick="openPriceGraph('${row.id_instrument}')" style="color:blue; text-decoration:underline;">${row.id_instrument}</a></td>
+                    <td>${row.date_start}</td>
+                    <td>${row.value}</td>
+                </tr>`;
+            });
+            html += '</tbody></table>';
+            container.innerHTML = html;
+        }
+
+        function showMessage(text, type) {
+            const msgDiv = document.getElementById('message');
+            msgDiv.textContent = text;
+            msgDiv.className = `message ${type}`;
+            msgDiv.style.display = 'block';
+        }
+
+        function closeDashboard() {
+            window.location.href = 'dashboard.html';
+        }
+
+        function logout() {
+            localStorage.clear();
+            window.location.href = 'index.html';
+        }
+
+        function openPriceGraph(instrumentId) {
+            const url = `dashboard-graph-prices.html?id_instrument=${instrumentId}&username=${credentials.username}&token=${credentials.token}&instrument_currency=${credentials.currency}`;
+            window.open(url, '_blank');
+        }
+
+        window.onload = init;
+    </script>
+</body>
+
+</html>

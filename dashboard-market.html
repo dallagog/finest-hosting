@@ -4,11 +4,9 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Financial Estimates - Market Dashboard</title>
+    <title>Financial Estimates 0.1 alfa</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-    <script src="js/dashboard-shared.js"></script>
     <link rel="icon" type="image/png" href="images/icon-finest.png">
-
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&display=swap');
 
@@ -18,7 +16,7 @@
             --neon-blue: #333333;
             --glass-bg: #ffffff;
             --text-color: #333333;
-            --border-color: #000000;
+            --border-color: #dddddd;
         }
 
         * {
@@ -36,7 +34,7 @@
         }
 
         .main-container {
-            max-width: 1200px;
+            max-width: 1600px;
             margin: 0 auto;
         }
 
@@ -47,112 +45,319 @@
             margin-bottom: 30px;
             padding: 20px;
             background: var(--glass-bg);
-            border: 1px solid var(--border-color);
+            border: 1px solid #ddd;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
             border-radius: 8px;
         }
 
         .user-info-left {
             flex: 1;
+            text-align: left;
             font-size: 14px;
-            color: var(--neon-cyan);
-            display: flex;
-            flex-direction: column;
-            gap: 5px;
+            color: #666;
         }
 
         h1 {
             flex: 1;
             text-align: center;
+            margin: 0;
             font-weight: 700;
             text-transform: uppercase;
             letter-spacing: 2px;
-            font-size: 1.5em;
+            color: #000;
+            font-size: 2em;
         }
 
-        .logout-btn {
-            padding: 8px 16px;
-            background: #000;
-            border: 1px solid #000;
-            color: #fff;
-            border-radius: 4px;
-            cursor: pointer;
-            font-family: inherit;
-        }
-
-        .collapsible-container {
-            background: var(--glass-bg);
-            border: 1px solid #ddd;
-            padding: 20px;
-            margin-bottom: 20px;
-            border-radius: 8px;
-        }
-
-        .filter-group {
-            margin-bottom: 15px;
-        }
-
-        .filter-group label {
-            display: block;
-            margin-bottom: 5px;
-            color: #666;
-            font-size: 0.9rem;
-        }
-
-        .filter-group input {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            font-family: inherit;
+        .close-container {
+            flex: 1;
+            text-align: right;
         }
 
         button {
             padding: 10px 20px;
             background: #000;
+            border: 1px solid #000;
             color: #fff;
-            border: none;
+            font-family: inherit;
             border-radius: 4px;
             cursor: pointer;
+            font-size: 14px;
             font-weight: bold;
+            transition: all 0.3s;
+        }
+
+        button:hover {
+            background: #333;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .close-btn {
+            background: rgba(255, 0, 0, 0.2);
+            border-color: #ff3333;
+            color: #ff3333;
+        }
+
+        .close-btn:hover {
+            background: rgba(255, 0, 0, 0.4);
+            box-shadow: 0 0 10px #ff3333;
+        }
+
+        .content-section {
+            background: var(--glass-bg);
+            border: 1px solid #ddd;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
         }
 
         .data-table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 20px;
+            min-width: 800px;
         }
 
         .data-table th,
         .data-table td {
-            padding: 12px;
-            text-align: left;
+            padding: 6px 10px;
+            text-align: right;
             border-bottom: 1px solid #eee;
+            color: #333;
+            height: 32px;
+            font-size: 13px;
+        }
+
+        .data-table td:first-child,
+        .data-table th:first-child {
+            text-align: left;
         }
 
         .data-table th {
             background: #f0f0f0;
+            color: #000;
+            font-weight: 600;
+            cursor: pointer;
+            user-select: none;
+            position: relative;
+            white-space: nowrap;
+        }
+
+        .data-table th:hover {
+            background: #e0e0e0;
+        }
+
+        .data-table tbody tr {
+            transition: background 0.2s;
+            cursor: pointer;
+        }
+
+        .data-table tbody tr:hover {
+            background: #f9f9f9;
+        }
+
+        .data-table th.sort-asc::after {
+            content: ' ▲';
+            font-size: 0.8em;
+        }
+
+        .data-table th.sort-desc::after {
+            content: ' ▼';
+            font-size: 0.8em;
+        }
+
+        .trade-actions {
+            display: flex;
+            gap: 5px;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .trade-btn {
+            padding: 5px 10px;
+            font-size: 12px;
+            min-width: 60px;
+        }
+
+        .trade-btn.buy {
+            background: #fff;
+            border-color: #000;
+            color: #000;
+        }
+
+        .trade-btn.buy:hover {
+            background: #eee;
+        }
+
+        .trade-btn.sell {
+            background: #000;
+            border-color: #000;
+            color: #fff;
+        }
+
+        .trade-btn.sell:hover {
+            background: #333;
         }
 
         .message {
             padding: 15px;
-            margin-bottom: 20px;
             border-radius: 4px;
+            margin: 10px 0;
             display: none;
-            border-left: 5px solid;
+        }
+
+        .message.loading {
+            background: #f0f0f0;
+            color: #333;
+            border: 1px solid #ccc;
+            display: block;
         }
 
         .message.error {
-            background: #fee;
-            color: #c00;
-            border-color: #c00;
+            background: #fff0f0;
+            border-color: #d32f2f;
+            color: #d32f2f;
             display: block;
         }
 
-        .message.warning {
-            background: #fff3cd;
-            color: #856404;
-            border-color: #ffc107;
+        #portfolio-table-container {
+            overflow-x: auto;
+        }
+
+        /* Modal Styles */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            backdrop-filter: blur(5px);
+        }
+
+        .modal-content {
+            background: #fff;
+            border: 2px solid #000;
+            border-radius: 8px;
+            padding: 30px;
+            max-width: 500px;
+            width: 90%;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+
+        .modal-header {
+            margin-bottom: 25px;
+        }
+
+        .modal-header h2 {
+            color: #000;
+            font-size: 1.5em;
+            text-transform: uppercase;
+        }
+
+        .sector-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .sector-item {
+            padding: 12px;
+            background: #f9f9f9;
+            border: 1px solid #ddd;
+            color: #333;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 500;
+        }
+
+        .sector-item:hover {
+            background: #eee;
+            border-color: #000;
+            transform: translateX(5px);
+        }
+
+        .modal-footer {
+            margin-top: 20px;
+            text-align: center;
+        }
+
+        /* Update Button & Spinner */
+        .update-btn {
+            padding: 8px 16px;
+            background: #000;
+            border: 1px solid #000;
+            color: #fff;
+            font-family: inherit;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .update-btn:hover:not(:disabled) {
+            background: #333;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .update-btn:disabled {
+            background: #666;
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+
+        .spinner {
+            width: 14px;
+            height: 14px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-top: 2px solid #fff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            display: none;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .update-btn.loading .spinner {
             display: block;
+        }
+
+        .update-btn.loading {
+            background-color: #27ae60 !important;
+            opacity: 1 !important;
+        }
+
+        /* Differential Rendering Highlight */
+        @keyframes highlightChange {
+            0% {
+                background-color: rgba(255, 255, 0, 0.5);
+            }
+
+            100% {
+                background-color: transparent;
+            }
+        }
+
+        .cell-changed {
+            animation: highlightChange 2s ease-out;
         }
     </style>
 </head>
@@ -161,189 +366,824 @@
     <div class="main-container">
         <div class="header-bar">
             <div class="user-info-left">
-                <div><strong>Utente:</strong> <span id="usernameDisplay">-</span></div>
-                <div><strong>Valuta:</strong> <span id="currencyDisplay">-</span></div>
+                <div style="margin-bottom: 5px;">
+                    <strong id="userLabel">Utente:</strong>
+                    <span id="usernameDisplay">-</span>
+                </div>
+                <div style="font-size: 12px;">
+                    <span class="flag-icon" id="languageFlag"></span>
+                    <span id="languageDisplay">-</span>
+                    <span style="margin: 0 5px;">|</span>
+                    <span id="currencyDisplay">-</span>
+                </div>
             </div>
-            <h1>Market Dashboard</h1>
-            <div class="logout-container">
-                <button class="logout-btn" onclick="closeDashboard()">Chiudi</button>
+            <h1 id="tradingTitle">Trading Dashboard</h1>
+            <div class="close-container">
+                <button class="close-btn" onclick="window.close()">
+                    <i class="fa fa-times"></i> <span id="closeText">Chiudi</span>
+                </button>
             </div>
         </div>
 
         <div id="message" class="message"></div>
 
-        <div class="collapsible-container">
-            <div style="display: flex; gap: 15px; align-items: flex-end; flex-wrap: wrap;">
-                <div class="filter-group" style="flex: 1; min-width: 150px;">
-                    <label>Data iniziale:</label>
-                    <input type="date" id="date-start">
-                </div>
-                <div class="filter-group" style="flex: 1; min-width: 150px;">
-                    <label>Data finale:</label>
-                    <input type="date" id="date-end">
-                </div>
-                <div class="filter-group" style="flex: 1; min-width: 150px;">
-                    <label>Valore min:</label>
-                    <input type="number" id="value-min" step="0.01">
-                </div>
-                <div class="filter-group" style="flex: 1; min-width: 150px;">
-                    <label>Valore max:</label>
-                    <input type="number" id="value-max" step="0.01">
-                </div>
-                <div class="filter-group">
-                    <button onclick="fetchMarketData()" data-translate="int.apply">Applica selezione</button>
-                </div>
+        <div class="content-section">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <h2 style="font-size: 18px; font-weight: 600; color: #000; margin: 0;" id="portfolioTitle">Portafoglio
+                </h2>
+                <button id="updateBtn" class="update-btn" onclick="runUpdateOnline()">
+                    <div class="spinner"></div>
+                    <i class="fa fa-sync-alt"></i> <span id="updateBtnText">Conferma</span>
+                </button>
+            </div>
+
+
+
+            <div id="portfolio-table-container">
+                <table id="portfolio-table" class="data-table">
+                    <thead>
+                        <tr id="portfolio-header-row">
+                            <!-- Headers will be injected here -->
+                        </tr>
+                    </thead>
+                    <tbody id="portfolio-body">
+                        <!-- Rows will be injected here -->
+                    </tbody>
+                </table>
             </div>
         </div>
 
-        <div class="collapsible-container">
-            <div id="table-container">
-                <p>In attesa di caricamento...</p>
+        <!-- Sector Selector Modal -->
+        <div id="sector-modal" class="modal-overlay">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 id="sectorModalTitle">Seleziona Settore</h2>
+                </div>
+                <div id="sector-list" class="sector-list">
+                    <!-- Sectors will be injected here -->
+                    <div style="color: var(--neon-blue);">Caricamento settori...</div>
+                </div>
+                <div class="modal-footer">
+                    <button class="close-btn" onclick="closeSectorModal()">
+                        <i class="fa fa-times"></i> <span id="cancelBtnText">Annulla</span>
+                    </button>
+                </div>
             </div>
         </div>
     </div>
+    </div>
 
     <script>
-        // URL Servizio configurato correttamente via Cloudflare Tunnel
-        const API_URL_MARKET = "https://market-tunnel.fe-web.eu";
+        const API_URL = "https://feweb-tunnel.fe-web.eu";
+        let credentials = { username: '', token: '', language: '', currency: '' };
+        let portfolioData = [];
+        let tableColumns = [];
+        let translations = {};
+        let availableLanguages = [];
+        let currencies = [];
+        let sortColumn = null;
+        let sortAscending = true;
+        let isHistoricalActive = false;
+        let lastPortfolioHash = '';
+        let lastRenderedData = {}; // TRACKS PREVIOUS STATE FOR DIFF RENDERING
+        let lastRenderedColumns = []; // TRACKS COLUMN STRUCTURE
 
-        const credentials = {
-            username: localStorage.getItem('username'),
-            token: localStorage.getItem('token'),
-            currency: localStorage.getItem('currency') || 'EUR',
-            date_start: localStorage.getItem('date_start') || '',
-            date_end: localStorage.getItem('date_end') || ''
-        };
+        // ========== UTILITY FUNCTIONS ==========
+        async function computeHash(obj) {
+            if (!obj) return '';
+            const str = JSON.stringify(obj);
+            const msgUint8 = new TextEncoder().encode(str);
+            const hashBuffer = await crypto.subtle.digest('SHA-256', msgUint8);
+            const hashArray = Array.from(new Uint8Array(hashBuffer));
+            const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+            return hashHex;
+        }
 
-        async function init() {
-            if (!credentials.username) {
-                window.location.href = 'index.html';
-                return;
+        // ========== UTILITY FUNCTIONS ==========
+        function showMessage(text, type = 'loading') {
+            const msgEl = document.getElementById('message');
+            msgEl.textContent = text;
+            msgEl.className = 'message ' + type;
+            if (type === 'success' || type === 'error') {
+                setTimeout(() => { msgEl.style.display = 'none'; }, 3000);
             }
+        }
+
+        function getTranslation(key) {
+            return translations[key] || key;
+        }
+
+        // ========== AUTHENTICATION ==========
+        function getCredentialsFromURL() {
+            const params = new URLSearchParams(window.location.search);
+            const u = params.get('username') || '';
+            const t = params.get('token') || '';
+            const l = params.get('language') || 'it_IT';
+
+            console.log('getCredentialsFromURL params:', { username: u, token: t, language: l });
+
+            credentials.username = u;
+            credentials.token = t;
+            credentials.language = l;
+
+            if (!credentials.username || !credentials.token) {
+                console.error('Missing credentials');
+                showMessage('Credenziali mancanti', 'error');
+                return false;
+            }
+
             document.getElementById('usernameDisplay').textContent = credentials.username;
-            document.getElementById('currencyDisplay').textContent = credentials.currency;
-
-            setDefaultDates();
-            await fetchMarketData();
+            console.log('Credentials set successfully');
+            return true;
         }
 
-        function setDefaultDates() {
-            const today = new Date();
-            const lastMonth = new Date(today.getFullYear(), today.getMonth() - 1, today.getDate());
-
-            document.getElementById('date-start').value = lastMonth.toISOString().split('T')[0];
-            document.getElementById('date-end').value = today.toISOString().split('T')[0];
-            document.getElementById('value-min').value = 4;
-            document.getElementById('value-max').value = 9999;
-        }
-
-        async function fetchMarketData() {
-            const date_start = document.getElementById('date-start').value;
-            const date_end = document.getElementById('date-end').value;
-            const msgDiv = document.getElementById('message');
-            msgDiv.style.display = 'none';
-
-            console.log("Checking health from:", `${API_URL_MARKET}/health`);
+        // ========== TRANSLATIONS ==========
+        async function loadTranslations(lang) {
             try {
-                const healthResponse = await fetch(`${API_URL_MARKET}/health`);
-                console.log("Health status:", healthResponse.status);
-                const healthResult = await healthResponse.json();
-                console.log("Health Result:", healthResult);
-            } catch (hErr) {
-                console.warn("Health check failed, proceeding anyway:", hErr);
+                const response = await fetch(`lang/${lang}.json`);
+                if (!response.ok) throw new Error('Translation file not found');
+                translations = await response.json();
+                updatePageTranslations();
+            } catch (error) {
+                console.error('Error loading translations:', error);
             }
+        }
 
-            const payload = {
-                username: credentials.username,
-                token: credentials.token,
-                currency: credentials.currency,
-                date_start: date_start,
-                date_end: date_end
-            };
+        function updatePageTranslations() {
+            document.getElementById('tradingTitle').textContent = getTranslation('int.trading');
+            document.getElementById('userLabel').textContent = getTranslation('int.user.label');
+            document.getElementById('portfolioTitle').textContent = getTranslation('int.portfolio');
+            document.getElementById('closeText').textContent = getTranslation('int.close');
+            document.getElementById('updateBtnText').textContent = getTranslation('int.update') || '';
+        }
 
-            console.log("Fetching market data from:", `${API_URL_MARKET}/getmarket`);
-            console.log("Payload:", payload);
-
+        async function loadLanguageManifest() {
             try {
-                const response = await fetch(`${API_URL_MARKET}/getmarket`, {
+                const response = await fetch('lang/manifest.json');
+                if (!response.ok) return [];
+                const manifest = await response.json();
+                return manifest.languages || [];
+            } catch (error) {
+                return [];
+            }
+        }
+
+        async function loadLanguageFile(langCode) {
+            try {
+                const response = await fetch(`lang/${langCode}.json`);
+                if (!response.ok) return null;
+                const data = await response.json();
+                if (data['int.language.code'] && data['int.language.description'] && data['img.language.flag']) {
+                    return { code: data['int.language.code'], description: data['int.language.description'], flag: data['img.language.flag'] };
+                }
+                return null;
+            } catch (error) {
+                return null;
+            }
+        }
+
+        async function initializeLanguages() {
+            const langCodes = await loadLanguageManifest();
+            for (const langCode of langCodes) {
+                const langData = await loadLanguageFile(langCode);
+                if (langData) availableLanguages.push(langData);
+            }
+            availableLanguages.sort((a, b) => a.code.localeCompare(b.code));
+        }
+
+        async function loadCurrencies(lang) {
+            try {
+                const response = await fetch(`currency/${lang}.json`);
+                if (!response.ok) throw new Error('Currency file not found');
+                currencies = await response.json();
+            } catch (error) {
+                currencies = [];
+            }
+        }
+
+        function updateUserInfo() {
+            if (credentials.language) {
+                const langData = availableLanguages.find(l => l.code === credentials.language);
+                if (langData) {
+                    document.getElementById('languageFlag').textContent = langData.flag;
+                    const langDescription = getTranslation('int.language.description');
+                    document.getElementById('languageDisplay').textContent = langDescription !== 'int.language.description' ? langDescription : credentials.language;
+                } else {
+                    document.getElementById('languageDisplay').textContent = credentials.language;
+                }
+            }
+            const currency = localStorage.getItem('currency') || 'EUR';
+            credentials.currency = currency; // ENSURE CREDENTIALS HAS THE CURRENCY
+            const currData = currencies.find(c => c.currency === currency);
+            if (currData && currData['img.currency.flag']) {
+                document.getElementById('currencyDisplay').textContent = `${currData['img.currency.flag']} ${currency}`;
+            } else {
+                document.getElementById('currencyDisplay').textContent = currency;
+            }
+        }
+
+        // ========== PORTFOLIO DATA ==========
+        async function loadPortfolio(render = true) {
+            try {
+                showMessage('Caricamento portfolio...', 'loading');
+
+                const payload = {
+                    username: credentials.username,
+                    token: credentials.token,
+                    language: credentials.language,
+                    code: '',
+                    filter: ''
+                };
+
+                console.log('--- Calling /getportfolioonline ---');
+                console.log('Payload:', payload);
+
+                const response = await fetch(`${API_URL}/getportfolioonline`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
                 });
 
-                console.log("Response status:", response.status);
-                const result = await response.json();
-                console.log("Result:", result);
+                if (!response.ok) throw new Error('HTTP ' + response.status);
+                const data = await response.json();
 
-                if (result.status === 'ok') {
-                    renderTable(result.data);
+                if (data.status === 'ok') {
+                    console.log('Portfolio data received via HTTP:', data);
+
+                    // Update hash for comparison
+                    lastPortfolioHash = await computeHash(data.portfolio);
+                    console.log('Initial Portfolio Hash:', lastPortfolioHash);
+
+                    if (render) {
+                        processAndRenderPortfolio(data.portfolio, data.classification);
+                    }
+
+                    console.log('--- fine loadPortfolio ---');
+                    showMessage('Portfolio caricato', 'success');
+                    return data;
                 } else {
-                    showMessage(result.msg || "Errore API", "error");
+                    console.error('Portfolio error response:', data);
+                    throw new Error('Portfolio error: ' + (data.msg || 'Unknown error'));
                 }
-            } catch (err) {
-                console.error("Fetch Error:", err);
-                showMessage(
-                    "Impossibile raggiungere il server market-tunnel. Verificare la connessione o i record DNS.",
-                    "error"
-                );
+            } catch (error) {
+                console.error('Error loading portfolio:', error);
+                showMessage('Errore nel caricamento del portfolio: ' + error.message, 'error');
+                return null;
             }
         }
 
-        function renderTable(data) {
-            const container = document.getElementById('table-container');
-            const vMin = parseFloat(document.getElementById('value-min').value);
-            const vMax = parseFloat(document.getElementById('value-max').value);
+        function processAndRenderPortfolio(rawPortfolio, classification) {
+            console.log('Processing and rendering portfolio...');
+            portfolioData = [];
 
-            let filtered = data.filter(row => {
-                const val = parseFloat(row.value);
-                if (isNaN(val)) return false;
-                const absVal = Math.abs(val);
-                if (!isNaN(vMin) && absVal < vMin) return false;
-                if (!isNaN(vMax) && absVal > vMax) return false;
-                return true;
+            // Colonne da escludere dalla tabella (campi interni/tecnici)
+            const EXCLUDED_COLS = new Set(['id_account', 'id_currency', 'price_divisor', '$dual_currency', 'divisor_price']);
+
+            const parseVal = (val) => {
+                if (val === null || val === undefined) return val;
+                if (typeof val === 'number') return val;
+                if (typeof val === 'string' && val.trim() !== '') {
+                    const n = parseFloat(val.replace(',', '.'));
+                    if (!isNaN(n) && String(n) === val.trim()) return n;
+                }
+                return val;
+            };
+
+            // Normalizza un item flat (array nuovo formato)
+            const normalizeItem = (item) => {
+                const out = {};
+                Object.keys(item).forEach(key => {
+                    out[key] = parseVal(item[key]);
+                });
+                return out;
+            };
+
+            if (Array.isArray(rawPortfolio)) {
+                rawPortfolio.forEach(item => {
+                    if (typeof item === 'object' && item !== null) {
+                        if (item.id_instrument) {
+                            // Nuovo formato flat
+                            portfolioData.push(normalizeItem(item));
+                        } else if (Array.isArray(item) && item.length === 2) {
+                            // Vecchio formato: [symbol, details]
+                            const flat = { id_instrument: item[0] };
+                            if (item[1] && typeof item[1] === 'object') {
+                                Object.assign(flat, item[1]);
+                            }
+                            portfolioData.push(normalizeItem(flat));
+                        }
+                    }
+                });
+            } else if (typeof rawPortfolio === 'object' && rawPortfolio !== null) {
+                // Vecchio formato: { symbol: details }
+                Object.keys(rawPortfolio).forEach(symbol => {
+                    const flat = { id_instrument: symbol };
+                    const details = rawPortfolio[symbol];
+                    if (details && typeof details === 'object') {
+                        Object.assign(flat, details);
+                    }
+                    portfolioData.push(normalizeItem(flat));
+                });
+            }
+
+            if (portfolioData.length > 0) {
+                // Costruisci le colonne: prima id_instrument, poi in ordine preferenziale
+                const PREFERRED_ORDER = [
+                    'id_instrument', 'instrument_description',
+                    'quantity', 'id_currency', '$cost_amount_orig',
+                    '$price_cost', '$exchange_cost',
+                    '$cost_amount_curr',
+                    'CTVMKTTQ', '$price_mkt', 'M/P'
+                ];
+                const allKeys = new Set();
+                portfolioData.forEach(item => Object.keys(item).forEach(k => allKeys.add(k)));
+
+                // Colonne preferenziali prima (se presenti), poi le restanti non escluse
+                const ordered = [];
+                PREFERRED_ORDER.forEach(k => { if (allKeys.has(k) && !EXCLUDED_COLS.has(k)) ordered.push(k); });
+                allKeys.forEach(k => { if (!EXCLUDED_COLS.has(k) && !ordered.includes(k)) ordered.push(k); });
+
+                tableColumns = ordered;
+            }
+
+            renderTable();
+        }
+
+        function renderTable() {
+            const thead = document.getElementById('portfolio-header-row');
+            const tbody = document.getElementById('portfolio-body');
+
+            // Check if column structure changed
+            const currentColsHash = JSON.stringify(tableColumns);
+            const prevColsHash = JSON.stringify(lastRenderedColumns);
+            const columnsChanged = currentColsHash !== prevColsHash;
+
+            if (columnsChanged) {
+                console.log('[Render] Columns changed, full rebuild');
+                thead.innerHTML = '';
+                tbody.innerHTML = '';
+                lastRenderedColumns = [...tableColumns];
+                lastRenderedData = {}; // Reset data tracking on structural change
+
+                // Headers
+                tableColumns.forEach(col => {
+                    const th = document.createElement('th');
+                    th.textContent = getTranslation(col) || col;
+                    th.style.cursor = 'pointer';
+                    th.onclick = () => sortTable(col);
+                    if (sortColumn === col) {
+                        th.classList.add(sortAscending ? 'sort-asc' : 'sort-desc');
+                    }
+                    thead.appendChild(th);
+                });
+            } else {
+                // Update header classes for sorting
+                Array.from(thead.cells).forEach((th, index) => {
+                    const col = tableColumns[index];
+                    th.classList.remove('sort-asc', 'sort-desc');
+                    if (sortColumn === col) {
+                        th.classList.add(sortAscending ? 'sort-asc' : 'sort-desc');
+                    }
+                });
+            }
+
+
+
+            // Data Rows
+            let displayData = portfolioData;
+
+            if (!isHistoricalActive) {
+                displayData = portfolioData.filter(item => {
+                    const qty = parseFloat(item['quantity'] ?? item['Quantità'] ?? item['qta'] ?? 0);
+                    return !isNaN(qty) && Math.abs(qty) > 0.000001;
+                });
+            }
+
+            displayData.forEach(item => {
+                const ticker = item.id_instrument || item.Ticker || 'unknown';
+                let tr = document.getElementById(`row-${ticker}`);
+                const isNewRow = !tr;
+
+                if (isNewRow) {
+                    tr = document.createElement('tr');
+                    tr.id = `row-${ticker}`;
+                }
+
+                tableColumns.forEach((col, index) => {
+                    let td = isNewRow ? document.createElement('td') : tr.cells[index];
+                    let val = item[col];
+                    let displayVal = '';
+
+                    if (index === 0) {
+                        // Prima colonna: mostra id_instrument come ticker
+                        displayVal = item['id_instrument'] || item['Ticker'] || val || '';
+                    } else if (val !== undefined && val !== null) {
+                        const colDescription = getTranslation(col) || col;
+                        const isPercentageCol = colDescription.includes('%');
+
+                        if (typeof val === 'number') {
+                            if (isPercentageCol && Math.abs(val) > 5000) {
+                                displayVal = '--';
+                            } else {
+                                displayVal = val.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                            }
+                        } else {
+                            displayVal = String(val);
+                        }
+                    }
+
+                    // Differential update
+                    const prevVal = lastRenderedData[ticker] ? lastRenderedData[ticker][col] : undefined;
+                    const normalizedPrev = prevVal !== undefined ? (typeof prevVal === 'number' ? prevVal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : prevVal) : null;
+
+                    if (isNewRow) {
+                        if (index === 0) {
+                            const span = document.createElement('span');
+                            span.textContent = displayVal;
+                            span.style.cursor = 'pointer';
+                            span.style.color = '#000';
+                            span.style.textDecoration = 'underline';
+                            span.onclick = (e) => {
+                                e.stopPropagation();
+                                const code = item.id_instrument || item.Ticker || val;
+                                openInstrumentDetails(code);
+                            };
+                            td.appendChild(span);
+                        } else {
+                            td.textContent = displayVal;
+                            if (typeof val === 'number') td.style.textAlign = 'right';
+                        }
+                        tr.appendChild(td);
+                    } else {
+                        if (displayVal !== td.textContent && normalizedPrev !== displayVal) {
+                            if (index === 0) {
+                                td.querySelector('span').textContent = displayVal;
+                            } else {
+                                td.textContent = displayVal;
+                            }
+                            td.classList.remove('cell-changed');
+                            void td.offsetWidth; // Trigger reflow
+                            td.classList.add('cell-changed');
+                            console.log(`[Diff] Updated ${ticker}.${col}: ${normalizedPrev} -> ${displayVal}`);
+                        }
+                    }
+                });
+
+                if (isNewRow) tbody.appendChild(tr);
+
+                // Track state
+                if (!lastRenderedData[ticker]) lastRenderedData[ticker] = {};
+                lastRenderedData[ticker] = JSON.parse(JSON.stringify(item));
             });
 
-            if (filtered.length === 0) {
-                container.innerHTML = '<p>Nessun dato corrispondente ai filtri.</p>';
+            // Rimuove righe non più presenti in displayData
+            const currentTickers = displayData.map(i => i.id_instrument || i.Ticker || 'unknown');
+            Array.from(tbody.rows).forEach(row => {
+                const rowTicker = row.id.replace('row-', '');
+                if (!currentTickers.includes(rowTicker)) {
+                    console.log(`[Diff] Removing row: ${rowTicker}`);
+                    row.remove();
+                    delete lastRenderedData[rowTicker];
+                }
+            });
+        }
+
+        function openTrade(item, action) {
+            console.log('[openTrade] Item data:', item);
+            console.log('[openTrade] Action:', action);
+
+            const params = new URLSearchParams({
+                username: credentials.username,
+                token: credentials.token,
+                language: credentials.language,
+                action: action,
+                type_event: action === 'buy' ? 'FI-BB' : 'FI-BA'
+            });
+
+            // Pass ticker/strumento
+            let instrumentCode = item.Ticker || item.id_instrument || item.code || '';
+            console.log('[openTrade] Raw instrument code candidate:', instrumentCode);
+
+            if (instrumentCode) {
+                // Normalize: remove anything before last colon (ACCOUNT:TICKER -> TICKER)
+                if (instrumentCode.includes(':')) {
+                    const parts = instrumentCode.split(':');
+                    instrumentCode = parts[parts.length - 1];
+                    console.log('[openTrade] Normalized after colon split:', instrumentCode);
+                }
+                // Also remove anything after space or hyphen
+                instrumentCode = instrumentCode.split(' ')[0].split('-')[0].trim();
+                console.log('[openTrade] Final normalized instrument code:', instrumentCode);
+
+                params.append('id_instrument', instrumentCode);
+            }
+
+            // Pass l'account se disponibile
+            const accountKey = Object.keys(item).find(k =>
+                k.toLowerCase().includes('account') ||
+                k.toLowerCase().includes('conto')
+            );
+            if (accountKey && item[accountKey]) {
+                params.append('id_account', String(item[accountKey]));
+            }
+
+            // [NEW] Passa il settore se disponibile
+            const sectorKey = Object.keys(item).find(k =>
+                k.toLowerCase().includes('sector') ||
+                k.toLowerCase().includes('settore')
+            );
+            if (sectorKey && item[sectorKey]) {
+                params.append('account_sector', String(item[sectorKey]));
+                console.log('[DEBUG] Passing account_sector to URL:', item[sectorKey]);
+            }
+
+            // Pass exchange if available
+            const exchangeKey = Object.keys(item).find(k => k.toLowerCase() === 'exchange');
+            if (exchangeKey && item[exchangeKey]) {
+                params.append('exchange', String(item[exchangeKey]));
+            }
+
+            // Pass tutti i campi disponibili come JSON per referenza
+            params.append('portfolio_data', JSON.stringify(item));
+
+            window.open(`dashboard-dataentry-trade.html?${params.toString()}`, '_blank');
+        }
+
+        function sortTable(column) {
+            if (sortColumn === column) {
+                sortAscending = !sortAscending;
+            } else {
+                sortColumn = column;
+                sortAscending = true;
+            }
+
+            portfolioData.sort((a, b) => {
+                const valA = a[column];
+                const valB = b[column];
+
+                if (valA === undefined || valA === null) return 1;
+                if (valB === undefined || valB === null) return -1;
+
+                if (typeof valA === 'number' && typeof valB === 'number') {
+                    return sortAscending ? valA - valB : valB - valA;
+                } else {
+                    const strA = String(valA);
+                    const strB = String(valB);
+                    return sortAscending ? strA.localeCompare(strB) : strB.localeCompare(strA);
+                }
+            });
+
+            renderTable();
+        }
+
+        function toggleHistorical() {
+            isHistoricalActive = !isHistoricalActive;
+            const btn = document.getElementById('historicalBtn');
+
+            if (isHistoricalActive) {
+                btn.style.background = '#000';
+                btn.style.color = '#fff';
+            } else {
+                btn.style.background = '#fff';
+                btn.style.color = '#000';
+            }
+
+            renderTable();
+        }
+
+        async function openTradeOperations() {
+            try {
+                const response = await fetch('lang/domine.json');
+                if (!response.ok) throw new Error('Cannot load domine.json');
+                const domine = await response.json();
+
+                const sectors = domine.account_sector || [];
+                const sectorListContainer = document.getElementById('sector-list');
+                const modalTitle = document.getElementById('sectorModalTitle');
+                const cancelBtnText = document.getElementById('cancelBtnText');
+
+                modalTitle.textContent = getTranslation('int.account.account_sector') || 'Seleziona Settore';
+                cancelBtnText.textContent = getTranslation('int.cancel') || 'Annulla';
+
+                sectorListContainer.innerHTML = '';
+
+                sectors.forEach(sectorKey => {
+                    const sectorLabel = getTranslation(sectorKey);
+                    // Extracting the value from the key (e.g., "dom.account_sector:FI" -> "FI")
+                    let sectorValue = sectorKey.split(':').pop();
+
+                    const div = document.createElement('div');
+                    div.className = 'sector-item';
+                    div.textContent = sectorLabel;
+                    div.onclick = () => {
+                        closeSectorModal();
+                        // Open Data Entry for Filtered Sector
+                        const params = new URLSearchParams({
+                            username: credentials.username,
+                            token: credentials.token,
+                            language: credentials.language,
+                            action: 'buy', // Default to buy or generic
+                            type_event: 'FI-BB', // Default
+                            account_sector: sectorValue
+                        });
+                        window.open(`dashboard-dataentry-trade.html?${params.toString()}`, '_blank');
+                    };
+                    sectorListContainer.appendChild(div);
+                });
+
+                document.getElementById('sector-modal').style.display = 'flex';
+
+            } catch (error) {
+                console.error("Error loading sectors:", error);
+                showMessage(getTranslation('int.error.loading_sectors') || "Errore caricamento settori", 'error');
+            }
+        }
+
+        function closeSectorModal() {
+            document.getElementById('sector-modal').style.display = 'none';
+        }
+
+        function openInstrumentDetails(symbol) {
+            const params = new URLSearchParams();
+            params.set('username', credentials.username);
+            params.set('token', credentials.token);
+            params.set('language', credentials.language || 'it_IT');
+            params.set('id_instrument', symbol);
+            window.open(`dashboard-detail-instrument.html?${params.toString()}`, '_blank');
+        }
+
+        function selectSector(sectorValue) {
+            closeSectorModal();
+
+            const params = new URLSearchParams({
+                username: credentials.username,
+                token: credentials.token,
+                language: credentials.language,
+                account_sector: sectorValue
+            });
+
+            window.open(`dashboard-dataentry-trade.html?${params.toString()}`, '_blank');
+        }
+
+        // Online Update via WebSocket
+        async function runUpdateOnline() {
+            console.log('--- runUpdateOnline init ---');
+            const btn = document.getElementById('updateBtn');
+            const btnText = document.getElementById('updateBtnText');
+            const username = credentials.username;
+            if (!username) {
+                console.error('Username missing in credentials. Current credentials:', credentials);
+                alert('Errore: username mancante');
+                return;
+            }
+            console.log('Username found:', username);
+
+            // Prepare UI
+            btn.disabled = true;
+            btn.classList.add('loading');
+            const originalText = btnText.textContent;
+            btnText.textContent = getTranslation('int.online') || 'Online...';
+
+            try {
+                // 1. Trigger the evaluation by calling /putfilter
+                // First get the current filter
+                console.log('Fetching current filter to trigger update...');
+                const getFilterResp = await fetch(`${API_URL}/getfilter`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        username: credentials.username,
+                        token: credentials.token,
+                        language: credentials.language
+                    })
+                });
+                const filterData = await getFilterResp.json();
+                if (filterData.status !== 'ok') throw new Error('Failed to get filter: ' + filterData.msg);
+
+                console.log('Triggering evaluation via /putfilter...');
+                const putFilterResp = await fetch(`${API_URL}/putfilter`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        username: credentials.username,
+                        token: credentials.token,
+                        language: credentials.language,
+                        currency: credentials.currency,
+                        filter: JSON.stringify(filterData.filter)
+                    })
+                });
+                const putResult = await putFilterResp.json();
+                if (putResult.status !== 'ok') throw new Error('Failed to trigger update: ' + putResult.msg);
+                console.log('/putfilter success, starting WebSocket...');
+
+                // 2. Start WebSocket connection
+                const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+                const currency = credentials.currency || localStorage.getItem('currency') || 'EUR';
+                const wsUrl = `${wsProtocol}//feweb-tunnel.fe-web.eu/ws/updateportfolioonline/${credentials.username}/${currency}`;
+                console.log('WebSocket connecting to:', wsUrl);
+
+
+                ws = new WebSocket(wsUrl);
+            } catch (err) {
+                console.error('Failed to initiate update process:', err);
+                finishUpdate(false, err.message);
                 return;
             }
 
-            let html = `<p style="margin-bottom:10px">Record trovati: <strong>${filtered.length}</strong></p>`;
-            html += '<table class="data-table"><thead><tr><th>Strumento</th><th>Data</th><th>Valore</th></tr></thead><tbody>';
+            ws.onopen = () => {
+                console.log("WebSocket connection established (onopen).");
+                // No payload needed as per new server logic
+            };
 
-            filtered.forEach(row => {
-                html += `<tr>
-                    <td><a href="#" onclick="openPriceGraph('${row.id_instrument}')" style="color:blue; text-decoration:underline;">${row.id_instrument}</a></td>
-                    <td>${row.date_start}</td>
-                    <td>${row.value}</td>
-                </tr>`;
-            });
-            html += '</tbody></table>';
-            container.innerHTML = html;
+            ws.onmessage = async (event) => {
+                console.log("WebSocket message received.");
+                try {
+                    const data = JSON.parse(event.data);
+                    if (data.status === 'ok') {
+                        const newHash = await computeHash(data.portfolio);
+                        console.log("Current hash:", lastPortfolioHash, "New hash:", newHash);
+
+                        if (newHash !== lastPortfolioHash) {
+                            console.log("Portfolio changed! Updating UI...");
+                            lastPortfolioHash = newHash;
+                            processAndRenderPortfolio(data.portfolio, data.classification);
+                            // Do not close, continue monitoring for more updates
+                        } else {
+                            console.log("Portfolio hash unchanged. Still waiting...");
+                        }
+                    } else if (data.error) {
+                        console.error("Server signaled ERROR:", data.error);
+                        ws.close(1008, data.error); // 1008 = Policy Violation / App Error
+                    }
+                } catch (pe) {
+                    console.error("Error parsing WS message:", pe);
+                }
+            };
+
+            ws.onerror = (error) => {
+                console.error("WebSocket error observed (onerror):", error);
+                finishUpdate(false, "Errore connessione");
+            };
+
+            ws.onclose = (event) => {
+                console.log("WebSocket connection closed (onclose). Code:", event.code, "Reason:", event.reason);
+                if (event.code === 1000 || event.code === 1005) {
+                    // Normal closure or no status
+                    finishUpdate(true, null, true);
+                } else {
+                    // Abnormal closure
+                    finishUpdate(false, event.reason || "Monitoraggio terminato");
+                }
+            };
+
+            function finishUpdate(success, errorMsg, skipRefresh = false) {
+                console.log('--- finishUpdate --- success:', success, 'errorMsg:', errorMsg, 'skipRefresh:', skipRefresh);
+                btn.disabled = false;
+                btn.classList.remove('loading');
+                btnText.textContent = getTranslation('int.update');
+
+                if (success) {
+                    if (!skipRefresh) {
+                        console.log('Refreshing portfolio data via HTTP...');
+                        loadPortfolio();
+                    } else {
+                        console.log('Data already updated via WebSocket, skipping redundant fetch.');
+                        showMessage(getTranslation('int.success.update') || 'Aggiornamento completato', 'success');
+                    }
+                } else {
+                    alert(getTranslation('int.failed.update') || ("Aggiornamento fallito: " + (errorMsg || "")));
+                }
+            }
         }
 
-        function showMessage(text, type) {
-            const msgDiv = document.getElementById('message');
-            msgDiv.textContent = text;
-            msgDiv.className = `message ${type}`;
-            msgDiv.style.display = 'block';
-        }
+        // ========== INITIALIZATION ==========
+        window.addEventListener('load', async () => {
+            console.log('--- Window Load Event Fired ---');
+            if (getCredentialsFromURL()) {
+                console.log('Credentials obtained, starting initialization...');
 
-        function closeDashboard() {
-            window.location.href = 'dashboard.html';
-        }
+                // Start portfolio fetch immediately (without internal rendering)
+                console.log('Starting immediate loadPortfolio(false)...');
+                const portfolioPromise = loadPortfolio(false);
 
-        function logout() {
-            localStorage.clear();
-            window.location.href = 'index.html';
-        }
+                await initializeLanguages();
+                await loadTranslations(credentials.language);
+                await loadCurrencies(credentials.language);
+                updateUserInfo();
 
-        function openPriceGraph(instrumentId) {
-            const url = `dashboard-graph-prices.html?id_instrument=${instrumentId}&username=${credentials.username}&token=${credentials.token}&instrument_currency=${credentials.currency}`;
-            window.open(url, '_blank');
-        }
-
-        window.onload = init;
+                // Wait for portfolio data and then render
+                console.log('Waiting for portfolio data...');
+                const data = await portfolioPromise;
+                if (data && data.status === 'ok') {
+                    console.log('Portfolio data ready, rendering...');
+                    processAndRenderPortfolio(data.portfolio, data.classification);
+                } else {
+                    console.error('Portfolio data failed or invalid', data);
+                }
+            } else {
+                console.error('getCredentialsFromURL returned false');
+            }
+        });
     </script>
 </body>
 
