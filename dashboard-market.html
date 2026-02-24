@@ -700,7 +700,7 @@
                 // Colonne preferenziali prima (se presenti), poi le restanti non escluse
                 const ordered = [];
                 PREFERRED_ORDER.forEach(k => { if (allKeys.has(k) && !EXCLUDED_COLS.has(k)) ordered.push(k); });
-                allKeys.forEach(k => { if (!EXCLUDED_COLS.has(k) && !ordered.includes(k)) ordered.push(k); });
+                allKeys.forEach(k => { if (!EXCLUDED_COLS.has(k) && !PREFERRED_ORDER.includes(k) && !ordered.includes(k)) ordered.push(k); });
 
                 tableColumns = ordered;
             }
@@ -784,7 +784,10 @@
                             if (isPercentageCol && Math.abs(val) > 5000) {
                                 displayVal = '--';
                             } else {
-                                displayVal = val.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                                // 3 decimali per colonne prezzo/cambio
+                                const isPriceOrExchange = col.toLowerCase().includes('price') || col.toLowerCase().includes('exchange') || col === '$price_cost' || col === '$price_mkt' || col === '$exchange_cost';
+                                const decimals = isPriceOrExchange ? 3 : 2;
+                                displayVal = val.toLocaleString(undefined, { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
                             }
                         } else {
                             displayVal = String(val);
@@ -793,7 +796,9 @@
 
                     // Differential update
                     const prevVal = lastRenderedData[ticker] ? lastRenderedData[ticker][col] : undefined;
-                    const normalizedPrev = prevVal !== undefined ? (typeof prevVal === 'number' ? prevVal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : prevVal) : null;
+                    const isPriceOrExchangePrev = col.toLowerCase().includes('price') || col.toLowerCase().includes('exchange') || col === '$price_cost' || col === '$price_mkt' || col === '$exchange_cost';
+                    const decimalsPrev = isPriceOrExchangePrev ? 3 : 2;
+                    const normalizedPrev = prevVal !== undefined ? (typeof prevVal === 'number' ? prevVal.toLocaleString(undefined, { minimumFractionDigits: decimalsPrev, maximumFractionDigits: decimalsPrev }) : prevVal) : null;
 
                     if (isNewRow) {
                         if (index === 0) {
