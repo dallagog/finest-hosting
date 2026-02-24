@@ -2506,8 +2506,8 @@
                     if (portfolioData.length > 0) {
                         // Detect COSTO and MP column keys (case-insensitive)
                         const sampleKeys = Object.keys(portfolioData[0]);
-                        const costoKey = sampleKeys.find(k => /^costo$/i.test(k) || /^cost$/i.test(k));
-                        const mpKey = sampleKeys.find(k => /^mp$/i.test(k) || /^controvalore$/i.test(k) || /^market.?value$/i.test(k));
+                        const costoKey = sampleKeys.find(k => /^costo$/i.test(k) || /^cost$/i.test(k) || k === 'cost_amount');
+                        const mpKey = sampleKeys.find(k => /^mp$/i.test(k) || /^controvalore$/i.test(k) || /^market.?value$/i.test(k) || k === 'CTVMKTTQ');
                         window._pfCostoKey = costoKey;
                         window._pfMpKey = mpKey;
 
@@ -2517,36 +2517,46 @@
                             return acc + (isNaN(v) ? 0 : v);
                         }, 0);
 
+                        const percKey = 'int.minusplus.percent';
+                        const pesoKey = 'int.weight.percent';
+
                         portfolioData.forEach(item => {
                             const costo = costoKey ? parseFloat(item[costoKey]) : NaN;
                             const mp = mpKey ? parseFloat(item[mpKey]) : NaN;
-                            const controvalore = mpKey ? parseFloat(item[controvaloreKey]) : NaN;
-                            item['%'] = (!isNaN(costo) && !isNaN(mp) && costo !== 0)
-                                ? parseFloat((mp / Math.abs(costo) * 100).toFixed(3))
+
+                            // Formula: (MP - COSTO) / COSTO * 100
+                            item[percKey] = (!isNaN(costo) && !isNaN(mp) && costo !== 0)
+                                ? parseFloat(((mp - costo) / Math.abs(costo) * 100).toFixed(3))
                                 : null;
-                            item['peso%'] = (!isNaN(mp) && totalControvalore !== 0)
-                                ? parseFloat((controvalore / totalControvalore * 100).toFixed(3))
+
+                            // Formula: MP / totalMP * 100
+                            item[pesoKey] = (!isNaN(mp) && totalMP !== 0)
+                                ? parseFloat((mp / totalMP * 100).toFixed(3))
                                 : null;
                         });
 
                         if (portfolioColumns.length > 0) {
                             let cols = [...portfolioColumns];
-                            // Insert % after costo column if found, else at end before peso%
+                            // Clean up old keys if they exist
+                            cols = cols.filter(k => k !== '%' && k !== 'peso%');
+
+                            // Insert int.minusplus.percent after costo column if found, else at end
                             const costoIdx = costoKey ? cols.indexOf(costoKey) : -1;
-                            if (!cols.includes('%')) {
-                                costoIdx >= 0 ? cols.splice(costoIdx + 1, 0, '%') : cols.push('%');
+                            if (!cols.includes(percKey)) {
+                                costoIdx >= 0 ? cols.splice(costoIdx + 1, 0, percKey) : cols.push(percKey);
                             }
-                            // Insert peso% after mp column if found, else at end
+                            // Insert int.weight.percent after mp column if found, else at end
                             const mpIdx = mpKey ? cols.indexOf(mpKey) : -1;
-                            if (!cols.includes('peso%')) {
-                                mpIdx >= 0 ? cols.splice(mpIdx + 1, 0, 'peso%') : cols.push('peso%');
+                            if (!cols.includes(pesoKey)) {
+                                mpIdx >= 0 ? cols.splice(mpIdx + 1, 0, pesoKey) : cols.push(pesoKey);
                             }
                             tableColumns = cols;
                         } else {
                             const allKeys = new Set();
                             portfolioData.forEach(item => Object.keys(item).forEach(k => allKeys.add(k)));
-                            tableColumns = Array.from(allKeys).filter(k => k !== 'Ticker');
-                            if (!tableColumns.includes('peso%')) tableColumns.push('peso%');
+                            tableColumns = Array.from(allKeys).filter(k => k !== 'Ticker' && k !== '%' && k !== 'peso%');
+                            if (!tableColumns.includes(percKey)) tableColumns.push(percKey);
+                            if (!tableColumns.includes(pesoKey)) tableColumns.push(pesoKey);
                         }
                     }
 
@@ -2646,7 +2656,7 @@
                 const totals = {};
                 columns.forEach(col => {
                     if (col === 'Ticker') { totals[col] = 'TOTAL'; return; }
-                    if (col === 'id_account' || col === '%' || col === 'peso%') { totals[col] = ''; return; }
+                    if (col === 'id_account' || col === 'int.minusplus.percent' || col === 'int.weight.percent') { totals[col] = ''; return; }
                     if (col === 'quantity' || col.toLowerCase().includes('quantity') || col.toLowerCase().includes('qta')) { totals[col] = ''; return; }
                     const desc = getTranslation(col) || col;
                     if (desc.includes('%')) { totals[col] = ''; return; }
@@ -2663,7 +2673,7 @@
                 const costoK = window._pfCostoKey;
                 const mpK = window._pfMpKey;
                 if (costoK && mpK && typeof totals[costoK] === 'number' && typeof totals[mpK] === 'number' && totals[costoK] !== 0)
-                    totals['%'] = parseFloat(((totals[mpK] - totals[costoK]) / Math.abs(totals[costoK]) * 100).toFixed(3));
+                    totals['int.minusplus.percent'] = parseFloat(((totals[mpK] - totals[costoK]) / Math.abs(totals[costoK]) * 100).toFixed(3));
                 return totals;
             };
 
@@ -2699,7 +2709,7 @@
                     const groupMP = _pfMpK ? groupItems.reduce((acc, it) => {
                         const v = parseFloat(it[_pfMpK]); return acc + (isNaN(v) ? 0 : v);
                     }, 0) : 0;
-                    groupTotal['peso%'] = (_grandTotalMP !== 0) ? parseFloat((groupMP / _grandTotalMP * 100).toFixed(3)) : null;
+                    groupTotal['int.weight.percent'] = (_grandTotalMP !== 0) ? parseFloat((groupMP / _grandTotalMP * 100).toFixed(3)) : null;
 
                     // Sovrascrivi la prima colonna con la descrizione del gruppo
                     const groupDesc = `${getTranslation(group) || group} (${groupItems.length})`;
@@ -2712,24 +2722,24 @@
                     if (isExpanded) {
                         groupItems.forEach(item => {
                             const itemMP = _pfMpK ? parseFloat(item[_pfMpK]) : NaN;
-                            item['peso%'] = (!isNaN(itemMP) && _grandTotalMP !== 0)
-                                ? parseFloat((itemMP / _grandTotalMP * 100).toFixed(3)) : null;
+                            item['int.weight.percent'] = (!isNaN(itemMP) && _grandTotalMP !== 0)
+                                ? parseFloat((itemMP / _grandTotalMP * 100).toFixed(2)) : null;
                             renderRow(item, tbody);
                         });
                     }
                 });
                 const grandTotal = calculateTotals(displayData, tableColumns);
-                grandTotal['peso%'] = 100.000;
+                grandTotal['int.weight.percent'] = 100.00;
                 renderRow(grandTotal, tbody, true, true);
             } else {
                 displayData.forEach(item => {
                     const itemMP = _pfMpK ? parseFloat(item[_pfMpK]) : NaN;
-                    item['peso%'] = (!isNaN(itemMP) && _grandTotalMP !== 0)
-                        ? parseFloat((itemMP / _grandTotalMP * 100).toFixed(3)) : null;
+                    item['int.weight.percent'] = (!isNaN(itemMP) && _grandTotalMP !== 0)
+                        ? parseFloat((itemMP / _grandTotalMP * 100).toFixed(2)) : null;
                     renderRow(item, tbody);
                 });
                 const grandTotal = calculateTotals(displayData, tableColumns);
-                grandTotal['peso%'] = 100.000;
+                grandTotal['int.weight.percent'] = 100.00;
                 renderRow(grandTotal, tbody, true, true);
             }
         }
@@ -2780,13 +2790,14 @@
                         window.open(`dashboard-detail-instrument.html?${params.toString()}`, '_blank');
                     };
                     td.appendChild(span);
-                } else if (col === '%' || col === 'peso%') {
+                } else if (col === 'int.minusplus.percent' || col === 'int.weight.percent') {
+
                     td.style.textAlign = 'right';
                     if (val === null || val === undefined || val === '') {
                         td.textContent = '';
                     } else if (typeof val === 'number') {
-                        td.textContent = val.toLocaleString(undefined, { minimumFractionDigits: 3, maximumFractionDigits: 3 }) + ' %';
-                        if (col === '%') {
+                        td.textContent = val.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' %';
+                        if (col === 'int.minusplus.percent') {
                             td.style.color = val >= 0 ? '#27ae60' : '#e74c3c';
                             td.style.fontWeight = '600';
                         } else {
