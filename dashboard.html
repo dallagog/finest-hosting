@@ -1868,8 +1868,15 @@
         function populateFilterUI() {
             const f = filterData.Filter || {};
             console.log('populateFilterUI - current Filter:', f);
-            if (f.date_start) document.getElementById('date-start').value = f.date_start;
-            if (f.date_end) document.getElementById('date-end').value = f.date_end;
+
+            // Calcola i default di data
+            const today = new Date();
+            const defaultDateEnd = today.toISOString().substring(0, 10);
+            const defaultDateStart = today.getFullYear() + '-01-01';
+
+            // Imposta date con fallback ai default
+            document.getElementById('date-start').value = f.date_start || defaultDateStart;
+            document.getElementById('date-end').value = f.date_end || defaultDateEnd;
 
             // Popola il dropdown del portafoglio usando domine.json (level_portfolio)
             const portfolioSelect = document.getElementById('portfolio');
@@ -1916,6 +1923,12 @@
                 portfolioSelect.appendChild(opt);
             });
 
+            // Se nessuna opzione è selezionata, usa PMP come default
+            if (!portfolioSelect.value) {
+                const pmpOpt = Array.from(portfolioSelect.options).find(o => o.value === 'PMP');
+                if (pmpOpt) pmpOpt.selected = true;
+            }
+
             // Popola il dropdown della redditività usando domine.json (level_yield)
             const profitabilitySelect = document.getElementById('profitability');
             profitabilitySelect.innerHTML = `<option value="">${getTranslation('int.select.option') || '-- seleziona --'}</option>`;
@@ -1959,6 +1972,12 @@
 
                 profitabilitySelect.appendChild(opt);
             });
+
+            // Se nessuna opzione è selezionata, usa EMVL come default
+            if (!profitabilitySelect.value) {
+                const emvlOpt = Array.from(profitabilitySelect.options).find(o => o.value === 'EMVL');
+                if (emvlOpt) emvlOpt.selected = true;
+            }
         }
         function updateSelectAllCheckbox() {
             const selectAllCheckbox = document.getElementById('select-all-accounts');
@@ -2043,11 +2062,16 @@
                 const portfolioSelect = document.getElementById('portfolio');
                 const profitabilitySelect = document.getElementById('profitability');
 
+                // Calcola i default di data
+                const today = new Date();
+                const defaultDateEnd = today.toISOString().substring(0, 10);
+                const defaultDateStart = today.getFullYear() + '-01-01';
+
                 // Aggiorna il filtro con i valori correnti
                 if (!filterData.Filter) filterData.Filter = {};
 
-                filterData.Filter.date_start = dateStart || filterData.Filter.date_start || '';
-                filterData.Filter.date_end = dateEnd || filterData.Filter.date_end || '';
+                filterData.Filter.date_start = dateStart || filterData.Filter.date_start || defaultDateStart;
+                filterData.Filter.date_end = dateEnd || filterData.Filter.date_end || defaultDateEnd;
 
                 // Usa l'username dalle credenziali
                 filterData.Filter.username = credentials.username || '';
@@ -2068,7 +2092,7 @@
                 }
 
                 // MODIFICA CHIAVE 1: Portfolio - mantieni solo selected: true
-                const portfolioValue = portfolioSelect.value;
+                const portfolioValue = portfolioSelect.value || 'PMP';
                 const portfolioArray = [];
 
                 if (portfolioValue) {
@@ -2081,7 +2105,7 @@
                 filterData.Filter.portfolio = portfolioArray;
 
                 // MODIFICA CHIAVE 2: Yield - mantieni solo selected: true
-                const profitabilityValue = profitabilitySelect.value;
+                const profitabilityValue = profitabilitySelect.value || 'EMVL';
                 const yieldArray = [];
 
                 if (profitabilityValue) {
