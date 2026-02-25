@@ -690,6 +690,7 @@
                 Object.keys(item).forEach(key => {
                     out[key] = parseVal(item[key]);
                 });
+                recalculateItem(out);
                 return out;
             };
 
@@ -936,6 +937,21 @@
             });
         }
 
+        function recalculateItem(item) {
+            const qty = parseFloat(item['quantity'] ?? item['Quantità'] ?? item['qta'] ?? 0.0);
+            const priceMkt = parseFloat(item['$price_mkt'] ?? 1);
+            const priceUnit = parseFloat(item['price_unit'] ?? item['unit_price'] ?? 1);
+            const exchMkt = parseFloat(item['$exchange_mkt'] ?? 1);
+
+            // CTVMKTTQ = quantita * prezzo di mercato * price_unit / cambio di mercato
+            const newCtv = (qty * priceMkt * priceUnit) / exchMkt;
+            item['CTVMKTTQ'] = Math.round(newCtv * 100) / 100;
+
+            // M/P = CTVMKTTQ - amount_cost
+            const amountCost = parseFloat(item['$amount_cost'] ?? item['$cost_amount_curr'] ?? 0);
+            item['M/P'] = Math.round((item['CTVMKTTQ'] - amountCost) * 100) / 100;
+        }
+
         function handleCellEdit(ticker, col, newValue) {
             console.log(`[Edit] ${ticker}.${col} changed to ${newValue}`);
             const item = portfolioData.find(i => (i.id_instrument || i.Ticker) === ticker);
@@ -947,18 +963,7 @@
             item[col] = val;
 
             // Recalculate
-            const qty = parseFloat(item['quantity'] || 0);
-            const priceMkt = parseFloat(item['$price_mkt'] || 0);
-            const exchMkt = parseFloat(item['$exchange_mkt'] || item['$exchange_cost'] || 1);
-            const divisor = parseFloat(item['price_divisor'] || item['divisor_price'] || 1);
-
-            // CTVMKTTQ = quantity * price_mkt / exchange_mkt / price_divisor
-            const newCtv = (qty * priceMkt) / exchMkt / divisor;
-            item['CTVMKTTQ'] = Math.round(newCtv * 1000) / 1000;
-
-            // M/P = CTVMKTTQ - $cost_amount_curr
-            const cost = parseFloat(item['$cost_amount_curr'] || 0);
-            item['M/P'] = item['CTVMKTTQ'] - cost;
+            recalculateItem(item);
 
             renderTable();
         }
