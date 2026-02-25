@@ -119,12 +119,12 @@
 
         .data-table th,
         .data-table td {
-            padding: 6px 10px;
+            padding: 4px 8px;
             text-align: right;
-            border-bottom: 1px solid #eee;
+            border-bottom: none;
             color: #333;
-            height: 32px;
-            font-size: 13px;
+            min-height: 32px;
+            font-size: 12px;
         }
 
         .data-table td:first-child,
@@ -139,7 +139,11 @@
             cursor: pointer;
             user-select: none;
             position: relative;
-            white-space: nowrap;
+            white-space: normal;
+            line-height: 1.1;
+            vertical-align: bottom;
+            max-width: 100px;
+            padding: 8px 4px;
         }
 
         .data-table th:hover {
@@ -151,8 +155,16 @@
             cursor: pointer;
         }
 
+        .data-table tbody tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+
+        .data-table tbody tr:nth-child(odd) {
+            background-color: #ffffff;
+        }
+
         .data-table tbody tr:hover {
-            background: #f9f9f9;
+            background: #f0f0f0 !important;
         }
 
         .data-table th.sort-asc::after {
@@ -763,7 +775,14 @@
                 // Headers
                 tableColumns.forEach(col => {
                     const th = document.createElement('th');
-                    th.textContent = getTranslation(col) || col;
+                    let label = getTranslation(col) || col;
+                    // Split label on space or slash to put on two rows
+                    if (label.includes(' ')) {
+                        label = label.replace(' ', '<br>');
+                    } else if (label.includes('/')) {
+                        label = label.replace('/', '/<br>');
+                    }
+                    th.innerHTML = label;
                     th.style.cursor = 'pointer';
                     th.onclick = () => sortTable(col);
                     if (sortColumn === col) {
@@ -855,7 +874,7 @@
                             // Make price_mkt and exchange_mkt editable
                             if (col === '$price_mkt' || col === '$exchange_mkt') {
                                 td.contentEditable = "true";
-                                td.style.border = "1px dashed #ccc";
+                                td.style.backgroundColor = "rgba(0,0,0,0.02)";
                                 td.onblur = (e) => handleCellEdit(ticker, col, e.target.textContent);
                                 td.onkeydown = (e) => { if (e.key === 'Enter') { e.preventDefault(); e.target.blur(); } };
                             }
