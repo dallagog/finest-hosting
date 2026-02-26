@@ -1221,7 +1221,7 @@ class SharedDataEntryRenderer {
                     getTranslation: key => this.getTranslation(key),
                     name: field.name,
                     required: field.required,
-                    defaultValue: field.defaultValue || this.urlParams[name] || '',
+                    defaultValue: field.defaultValue || this.context.urlParams[name] || '',
                     isFixed: isFixed
                 });
             }
