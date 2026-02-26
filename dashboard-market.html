@@ -966,18 +966,45 @@
         }
 
         function recalculateItem(item) {
-            const qty = parseFloat(item['quantity'] ?? item['Quantità'] ?? item['qta'] ?? 0.0);
-            const priceMkt = parseFloat(item['$price_mkt'] ?? 1);
-            const priceUnit = parseFloat(item['price_unit'] ?? item['unit_price'] ?? 1);
-            const exchMkt = parseFloat(item['$exchange_mkt'] ?? 1);
+            const qtyRaw = item['quantity'] ?? item['Quantità'] ?? item['qta'];
+            const priceMktRaw = item['$price_mkt'];
+            const priceUnitRaw = item['price_unit'] ?? item['unit_price'];
+            const exchMktRaw = item['$exchange_mkt'];
 
-            // CTVMKTTQ = quantita * prezzo di mercato * price_unit / cambio di mercato
+            // Se mancano campi obbligatori il controvalore non può essere calcolato
+            if (qtyRaw === null || qtyRaw === undefined || priceMktRaw === null || priceMktRaw === undefined) {
+                item['CTVMKTTQ'] = null;
+                item['M/P'] = null;
+                return;
+            }
+
+            const qty = parseFloat(qtyRaw);
+            const priceMkt = parseFloat(priceMktRaw);
+            const priceUnit = (priceUnitRaw !== null && priceUnitRaw !== undefined) ? parseFloat(priceUnitRaw) : 1;
+            const exchMkt = (exchMktRaw !== null && exchMktRaw !== undefined) ? parseFloat(exchMktRaw) : 1;
+
+            if (isNaN(qty) || isNaN(priceMkt)) {
+                item['CTVMKTTQ'] = null;
+                item['M/P'] = null;
+                return;
+            }
+
+            // CTVMKTTQ = quantita * prezzo di mercato * unit_price / cambio di mercato
             const newCtv = (qty * priceMkt * priceUnit) / exchMkt;
             item['CTVMKTTQ'] = Math.round(newCtv * 100) / 100;
 
             // M/P = CTVMKTTQ - amount_cost
-            const amountCost = parseFloat(item['$amount_cost'] ?? item['$cost_amount_curr'] ?? 0);
-            item['M/P'] = Math.round((item['CTVMKTTQ'] - amountCost) * 100) / 100;
+            const amountCostRaw = item['$amount_cost'] ?? item['$cost_amount_curr'];
+            if (amountCostRaw !== null && amountCostRaw !== undefined) {
+                const amountCost = parseFloat(amountCostRaw);
+                if (!isNaN(amountCost)) {
+                    item['M/P'] = Math.round((item['CTVMKTTQ'] - amountCost) * 100) / 100;
+                } else {
+                    item['M/P'] = null;
+                }
+            } else {
+                item['M/P'] = null;
+            }
         }
 
         function handleCellEdit(ticker, col, newValue) {
