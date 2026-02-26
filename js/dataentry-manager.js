@@ -780,15 +780,20 @@ class InstrumentSearchBox {
             `${value} - ${this.instruments[value].instrument_description || ''}` :
             value;
 
+        // Give the wrapper a specific ID and transfer the main ID to the input for label association
+        this.element.id = `field_${this.name}_wrapper`;
+
         this.element.innerHTML = `
             <div class="instrument-search-container">
                 <input type="text" 
+                       id="field_${this.name}"
                        class="form-input instrument-search-input${this.isFixed ? ' fixed-field' : ''}" 
                        placeholder="${this.getTranslation('int.search.instrument') || 'Cerca strumento...'}"
                        value="${initialText}"
                        ${this.isFixed ? 'readonly' : ''}
-                       autocomplete="off">
-                <input type="hidden" name="${this.name}" id="field_${this.name}" value="${value}" ${this.required ? 'required' : ''}>
+                       autocomplete="off"
+                       data-format="FE_Instrument">
+                <input type="hidden" name="${this.name}" id="field_${this.name}_hidden" value="${value}" ${this.required ? 'required' : ''}>
                 <div class="instrument-dropdown" style="display: none;"></div>
             </div>
         `;
@@ -796,6 +801,8 @@ class InstrumentSearchBox {
         this.nodes.input = this.element.querySelector('.instrument-search-input');
         this.nodes.hidden = this.element.querySelector('input[type="hidden"]');
         this.nodes.dropdown = this.element.querySelector('.instrument-dropdown');
+
+        InstrumentSearchBox.injectStyles();
 
         if (!this.isFixed) {
             this.attachEvents();
@@ -1135,8 +1142,8 @@ class SharedDataEntryRenderer {
                         </select>`;
                 break;
             case 'FE_Instrument':
-                // Use advanced searchable combobox
-                input = `<div id="searchbox_${name}" class="instrument-search-box-wrapper"></div>`;
+                // Use advanced searchable combobox - Placeholder ID must be field_${name} for initial label/listener logic
+                input = `<div id="field_${name}" class="instrument-search-box-wrapper"></div>`;
                 break;
             case 'FE_Currency':
                 const currOptions = Object.entries(this.context.availableCurrenciesInstruments || {}).map(([id, curr]) => {
@@ -1204,6 +1211,23 @@ class SharedDataEntryRenderer {
     attachFieldListeners(field, inputElement, callbacks = {}) {
         const formatType = field.format.format || 'text';
         const isFixed = field.format.modify === "False" && field.defaultValue;
+        const name = field.name;
+
+        if (formatType === 'FE_Instrument' && !isFixed) {
+            const wrapper = inputElement.querySelector('.instrument-search-box-wrapper') || inputElement;
+            if (wrapper) {
+                new InstrumentSearchBox(wrapper, {
+                    instruments: this.context.availableInstruments,
+                    getTranslation: key => this.getTranslation(key),
+                    name: field.name,
+                    required: field.required,
+                    defaultValue: field.defaultValue || this.urlParams[name] || '',
+                    isFixed: isFixed
+                });
+            }
+            return;
+        }
+
         if (isFixed) return;
         const input = inputElement.querySelector('input') || inputElement;
         if (formatType === 'FE_Decimal') this.attachValidator(input, field.required, 'Decimal', callbacks);
