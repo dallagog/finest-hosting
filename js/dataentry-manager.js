@@ -737,9 +737,290 @@ class DataEntryManager {
     /**
      * Inizializza il form
      */
+    /**
+     * Inizializza il form
+     */
     async init(containerId) {
         await this.loadConfiguration();
         this.generateForm(containerId);
+    }
+}
+
+/**
+ * Advanced searchable combobox for Instrument Selection
+ */
+class InstrumentSearchBox {
+    constructor(element, options = {}) {
+        this.element = element; // The container div
+        this.options = options;
+        this.instruments = options.instruments || {};
+        this.onSelect = options.onSelect || (() => { });
+        this.getTranslation = options.getTranslation || (key => key);
+        this.name = options.name || 'id_instrument';
+        this.required = options.required || false;
+        this.defaultValue = options.defaultValue || '';
+        this.isFixed = options.isFixed || false;
+
+        this.isOpen = false;
+        this.selectedIndex = -1;
+        this.filteredResults = [];
+
+        this.nodes = {
+            input: null,
+            hidden: null,
+            dropdown: null
+        };
+
+        this.init();
+    }
+
+    init() {
+        const value = this.defaultValue;
+        const initialText = this.instruments[value] ?
+            `${value} - ${this.instruments[value].instrument_description || ''}` :
+            value;
+
+        this.element.innerHTML = `
+            <div class="instrument-search-container">
+                <input type="text" 
+                       class="form-input instrument-search-input${this.isFixed ? ' fixed-field' : ''}" 
+                       placeholder="${this.getTranslation('int.search.instrument') || 'Cerca strumento...'}"
+                       value="${initialText}"
+                       ${this.isFixed ? 'readonly' : ''}
+                       autocomplete="off">
+                <input type="hidden" name="${this.name}" id="field_${this.name}" value="${value}" ${this.required ? 'required' : ''}>
+                <div class="instrument-dropdown" style="display: none;"></div>
+            </div>
+        `;
+
+        this.nodes.input = this.element.querySelector('.instrument-search-input');
+        this.nodes.hidden = this.element.querySelector('input[type="hidden"]');
+        this.nodes.dropdown = this.element.querySelector('.instrument-dropdown');
+
+        if (!this.isFixed) {
+            this.attachEvents();
+        }
+    }
+
+    attachEvents() {
+        this.nodes.input.addEventListener('input', (e) => {
+            const query = e.target.value;
+            this.handleSearch(query);
+        });
+
+        this.nodes.input.addEventListener('focus', () => {
+            if (this.nodes.input.value.trim() === '') {
+                this.handleSearch('');
+            } else {
+                this.handleSearch(this.nodes.input.value);
+            }
+        });
+
+        document.addEventListener('click', (e) => {
+            if (!this.element.contains(e.target)) {
+                this.closeDropdown();
+            }
+        });
+
+        this.nodes.input.addEventListener('keydown', (e) => {
+            if (!this.isOpen) {
+                if (e.key === 'ArrowDown') this.handleSearch(this.nodes.input.value);
+                return;
+            }
+
+            switch (e.key) {
+                case 'ArrowDown':
+                    e.preventDefault();
+                    this.moveSelection(1);
+                    break;
+                case 'ArrowUp':
+                    e.preventDefault();
+                    this.moveSelection(-1);
+                    break;
+                case 'Enter':
+                    e.preventDefault();
+                    if (this.selectedIndex >= 0) {
+                        this.selectResult(this.filteredResults[this.selectedIndex]);
+                    }
+                    break;
+                case 'Escape':
+                    this.closeDropdown();
+                    break;
+            }
+        });
+    }
+
+    handleSearch(query) {
+        const q = query.toLowerCase().trim();
+        this.filteredResults = Object.entries(this.instruments)
+            .map(([id, data]) => ({ id, ...data }))
+            .filter(inst => {
+                if (!q) return true;
+                return (
+                    inst.id.toLowerCase().includes(q) ||
+                    (inst.instrument_description || '').toLowerCase().includes(q) ||
+                    (inst.sector || '').toLowerCase().includes(q) ||
+                    (inst.instrument_type || '').toLowerCase().includes(q) ||
+                    (inst.id_currency || '').toLowerCase().includes(q)
+                );
+            })
+            .slice(0, 50); // Limit to 50 results
+
+        this.renderDropdown();
+    }
+
+    renderDropdown() {
+        if (this.filteredResults.length === 0) {
+            this.nodes.dropdown.innerHTML = `<div class="dropdown-item empty">${this.getTranslation('int.no.results') || 'Nessun risultato'}</div>`;
+        } else {
+            this.nodes.dropdown.innerHTML = this.filteredResults.map((inst, index) => {
+                const isSelected = index === this.selectedIndex;
+                const sector = inst.sector ? `<span class="badge sector">${inst.sector}</span>` : '';
+                const type = inst.instrument_type ? `<span class="badge typeShort">${inst.instrument_type}</span>` : '';
+                const currency = inst.id_currency ? `<span class="badge currency">${inst.id_currency}</span>` : '';
+
+                return `
+                    <div class="dropdown-item ${isSelected ? 'selected' : ''}" data-index="${index}">
+                        <div class="item-main">
+                            <span class="item-id">${inst.id}</span>
+                            <span class="item-desc">${inst.instrument_description || ''}</span>
+                        </div>
+                        <div class="item-meta">
+                            ${type} ${sector} ${currency}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            this.nodes.dropdown.querySelectorAll('.dropdown-item:not(.empty)').forEach(el => {
+                el.addEventListener('click', () => {
+                    const index = parseInt(el.dataset.index);
+                    this.selectResult(this.filteredResults[index]);
+                });
+            });
+        }
+
+        this.nodes.dropdown.style.display = 'block';
+        this.isOpen = true;
+    }
+
+    moveSelection(direction) {
+        this.selectedIndex += direction;
+        if (this.selectedIndex < 0) this.selectedIndex = this.filteredResults.length - 1;
+        if (this.selectedIndex >= this.filteredResults.length) this.selectedIndex = 0;
+        this.renderDropdown();
+
+        // Scroll into view
+        const selectedEl = this.nodes.dropdown.querySelector('.selected');
+        if (selectedEl) {
+            selectedEl.scrollIntoView({ block: 'nearest' });
+        }
+    }
+
+    selectResult(inst) {
+        const text = `${inst.id} - ${inst.instrument_description || ''}`;
+        this.nodes.input.value = text;
+        this.nodes.hidden.value = inst.id;
+        this.closeDropdown();
+        this.onSelect(inst);
+
+        // Trigger change event for form tracking
+        const event = new Event('change', { bubbles: true });
+        this.nodes.hidden.dispatchEvent(event);
+    }
+
+    closeDropdown() {
+        this.nodes.dropdown.style.display = 'none';
+        this.isOpen = false;
+        this.selectedIndex = -1;
+
+        // If user left something that doesn't match an instrument, reset or handle
+        const currentVal = this.nodes.hidden.value;
+        if (currentVal && this.instruments[currentVal]) {
+            const inst = this.instruments[currentVal];
+            this.nodes.input.value = `${currentVal} - ${inst.instrument_description || ''}`;
+        }
+    }
+
+    static injectStyles() {
+        if (document.getElementById('instrument-search-styles')) return;
+
+        const css = `
+            .instrument-search-container {
+                position: relative;
+                width: 100%;
+            }
+            .instrument-dropdown {
+                position: absolute;
+                top: 100%;
+                left: 0;
+                right: 0;
+                background: #fff;
+                border: 1px solid #000;
+                border-top: none;
+                z-index: 1000;
+                max-height: 300px;
+                overflow-y: auto;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                border-radius: 0 0 4px 4px;
+            }
+            .dropdown-item {
+                padding: 8px 12px;
+                cursor: pointer;
+                border-bottom: 1px solid #eee;
+                display: flex;
+                flex-direction: column;
+                gap: 4px;
+            }
+            .dropdown-item:last-child {
+                border-bottom: none;
+            }
+            .dropdown-item:hover, .dropdown-item.selected {
+                background: #f0f0f0;
+            }
+            .dropdown-item.empty {
+                color: #999;
+                font-style: italic;
+                cursor: default;
+            }
+            .item-main {
+                display: flex;
+                gap: 10px;
+                align-items: baseline;
+            }
+            .item-id {
+                font-weight: bold;
+                color: #000;
+                min-width: 80px;
+            }
+            .item-desc {
+                font-size: 0.9em;
+                color: #333;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+            .item-meta {
+                display: flex;
+                gap: 6px;
+                flex-wrap: wrap;
+            }
+            .badge {
+                font-size: 0.75em;
+                padding: 1px 6px;
+                border-radius: 3px;
+                text-transform: uppercase;
+                font-weight: bold;
+            }
+            .badge.sector { background: #e3f2fd; color: #1565c0; border: 1px solid #bbdefb; }
+            .badge.typeShort { background: #f3e5f5; color: #7b1fa2; border: 1px solid #e1bee7; }
+            .badge.currency { background: #e8f5e9; color: #2e7d32; border: 1px solid #c8e6c9; }
+        `;
+
+        const style = document.createElement('style');
+        style.id = 'instrument-search-styles';
+        style.textContent = css;
+        document.head.appendChild(style);
     }
 }
 
@@ -854,16 +1135,8 @@ class SharedDataEntryRenderer {
                         </select>`;
                 break;
             case 'FE_Instrument':
-                // Use instruments loaded from /getinstruments API
-                const instOptions = Object.entries(this.context.availableInstruments || {}).map(([id, inst]) => {
-                    const instId = inst.id || id;
-                    const isSelected = String(instId).trim() === String(value).trim();
-                    return `<option value="${instId}" ${isSelected ? 'selected' : ''}>${instId} ${inst.instrument_description || ''}</option>`;
-                }).join('');
-                input = `<select name="${name}" id="${fieldId}" ${required ? 'required' : ''} class="form-select${fixedClass}" data-format="FE_Instrument">
-                            <option value="">-- ${this.getTranslation('ins.select.option') || 'Seleziona'} --</option>
-                            ${instOptions}
-                        </select>`;
+                // Use advanced searchable combobox
+                input = `<div id="searchbox_${name}" class="instrument-search-box-wrapper"></div>`;
                 break;
             case 'FE_Currency':
                 const currOptions = Object.entries(this.context.availableCurrenciesInstruments || {}).map(([id, curr]) => {
