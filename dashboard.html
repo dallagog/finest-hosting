@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Financial Estimates 0.3 alfa</title>
+    <title>Financial Estimates 0.4 alfa</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <script src="js/dashboard-shared.js"></script>
@@ -2836,7 +2836,7 @@
                     const isPercentageCol = colDescription.includes('%');
                     if (typeof val === 'number') {
                         if (isPercentageCol && val > 5000) td.textContent = '--';
-                        else td.textContent = val.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                        else td.textContent = val.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + (isPercentageCol ? ' %' : '');
                         td.style.textAlign = 'right';
                     } else td.textContent = val;
                 } else td.textContent = '';
@@ -3070,7 +3070,7 @@
                         totals[col] = '';
                         return;
                     }
-                    if (lower.includes('per@') || lower.includes('%')) { totals[col] = ''; return; }
+                    if (lower.includes('per@')) { totals[col] = ''; return; }
                     const isNumeric = items.some(item => { const val = item[col]; return typeof val === 'number' || (typeof val === 'string' && /^-?\d+(\.\d+)?$/.test(val)); });
                     if (isNumeric) {
                         const sum = items.reduce((acc, curr) => {
@@ -3080,6 +3080,16 @@
                         totals[col] = parseFloat(sum.toFixed(2));
                     } else totals[col] = '';
                 });
+
+                // Calcolo rendimento percentuale per riga totale
+                const totalRistot = totals['RISTOT'];
+                const totalGiacmed = totals['GIACMED'];
+                if (typeof totalRistot === 'number' && typeof totalGiacmed === 'number' && totalGiacmed !== 0) {
+                    totals['%'] = parseFloat(((totalRistot / totalGiacmed) * 100).toFixed(2));
+                } else {
+                    totals['%'] = '';
+                }
+
                 return totals;
             };
 
@@ -3182,7 +3192,7 @@
                     const isPercentageCol = colDescription.includes('%');
                     if (typeof val === 'number') {
                         if (isPercentageCol && val > 5000) td.textContent = '--';
-                        else td.textContent = val.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                        else td.textContent = val.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + (isPercentageCol ? ' %' : '');
                         td.style.textAlign = 'right';
                         if (!col.toLowerCase().includes('%')) td.title = col;
                     } else td.textContent = val;
