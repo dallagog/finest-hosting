@@ -2835,7 +2835,7 @@
                     const colDescription = getTranslation(col) || col;
                     const isPercentageCol = colDescription.includes('%');
                     if (typeof val === 'number') {
-                        if (isPercentageCol && Math.abs(val) > 5000) td.textContent = '--';
+                        if (isPercentageCol && val > 5000) td.textContent = '--';
                         else td.textContent = val.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
                         td.style.textAlign = 'right';
                     } else td.textContent = val;
@@ -2960,7 +2960,7 @@
                     if (profitabilityData.length > 0) {
                         profitabilityData.forEach(item => {
                             const ristot = item['RISTOT']; const giacmed = item['GIACMED'];
-                            if (typeof ristot === 'number' && typeof giacmed === 'number' && giacmed !== 0) item['%'] = parseFloat(((ristot / giacmed) * 100).toFixed(1));
+                            if (typeof ristot === 'number' && typeof giacmed === 'number' && giacmed !== 0) item['%'] = parseFloat(((ristot / giacmed) * 100).toFixed(2));
                             else item['%'] = null;
                         });
                         if (profitabilityColumns.length > 0) profitabilityTableColumns = [...profitabilityColumns, '%'];
@@ -3181,7 +3181,7 @@
                     const colDescription = getTranslation(col) || col;
                     const isPercentageCol = colDescription.includes('%');
                     if (typeof val === 'number') {
-                        if (isPercentageCol && Math.abs(val) > 5000) td.textContent = '--';
+                        if (isPercentageCol && val > 5000) td.textContent = '--';
                         else td.textContent = val.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
                         td.style.textAlign = 'right';
                         if (!col.toLowerCase().includes('%')) td.title = col;
