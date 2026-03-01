@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Financial Estimates 0.5 alfa</title>
+    <title>Financial Estimates 0.2 alfa</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <link rel="icon" type="image/png" href="images/icon-finest.png">
     <style>
@@ -654,12 +654,22 @@
                 const data = typeof tradingHours === 'string' ? JSON.parse(tradingHours) : tradingHours;
                 if (!data.start || !data.end) return false;
 
-                const start = new Date(data.start);
-                const end = new Date(data.end);
                 const now = new Date();
 
-                // Validate dates
+                // Try full datetime parse first
+                let start = new Date(data.start);
+                let end = new Date(data.end);
+
+                // If dates are invalid, try treating as time-only "HH:mm" or "HH:mm:ss"
+                if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+                    const todayPrefix = now.toISOString().slice(0, 10); // "YYYY-MM-DD"
+                    start = new Date(`${todayPrefix}T${data.start}`);
+                    end = new Date(`${todayPrefix}T${data.end}`);
+                }
+
                 if (isNaN(start.getTime()) || isNaN(end.getTime())) return false;
+
+                console.log(`[isMarketOpen] now=${now.toISOString()} start=${start.toISOString()} end=${end.toISOString()} open=${now >= start && now <= end}`);
 
                 return now >= start && now <= end;
             } catch (e) {
