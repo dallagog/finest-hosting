@@ -401,6 +401,44 @@
         .cell-price-down {
             animation: highlightDown 2s ease-out;
         }
+
+        /* Market Status Circle */
+        .status-circle {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 8px;
+            vertical-align: middle;
+        }
+
+        .status-open {
+            background-color: #2ecc71;
+            /* Green */
+            box-shadow: 0 0 5px #2ecc71;
+        }
+
+        .status-closed {
+            background-color: #e74c3c;
+            /* Red */
+            box-shadow: 0 0 5px #e74c3c;
+        }
+
+        .market-selector-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        #marketSelector {
+            padding: 8px;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+            font-family: inherit;
+            font-size: 14px;
+            background: #fff;
+            cursor: pointer;
+        }
     </style>
 </head>
 
@@ -433,10 +471,15 @@
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
                 <h2 style="font-size: 18px; font-weight: 600; color: #000; margin: 0;" id="portfolioTitle">Portafoglio
                 </h2>
-                <button id="updateBtn" class="update-btn" onclick="runUpdateOnline()">
-                    <div class="spinner"></div>
-                    <i class="fa fa-sync-alt"></i> <span id="updateBtnText">Conferma</span>
-                </button>
+                <div class="market-selector-container">
+                    <select id="marketSelector" onchange="filterByMarket()">
+                        <option value="all">Tutti i mercati</option>
+                    </select>
+                    <button id="updateBtn" class="update-btn" onclick="runUpdateOnline()">
+                        <div class="spinner"></div>
+                        <i class="fa fa-sync-alt"></i> <span id="updateBtnText">Conferma</span>
+                    </button>
+                </div>
             </div>
 
 
@@ -494,6 +537,25 @@
         let lastPortfolioHash = '';
         let lastRenderedData = {}; // TRACKS PREVIOUS STATE FOR DIFF RENDERING
         let lastRenderedColumns = []; // TRACKS COLUMN STRUCTURE
+        let currentMarketFilter = 'all';
+
+        // ========== UTILITY FUNCTIONS ==========
+        function isMarketOpen(tradingHours) {
+            if (!tradingHours) return false;
+            try {
+                const data = typeof tradingHours === 'string' ? JSON.parse(tradingHours) : tradingHours;
+                if (!data.start || !data.end) return false;
+
+                const start = new Date(data.start);
+                const end = new Date(data.end);
+                const now = new Date();
+
+                return now >= start && now <= end;
+            } catch (e) {
+                console.error("Error parsing market_trading_hours:", e);
+                return false;
+            }
+        }
 
         // ========== UTILITY FUNCTIONS ==========
         async function computeHash(obj) {
@@ -562,6 +624,7 @@
             document.getElementById('portfolioTitle').textContent = getTranslation('int.portfolio');
             document.getElementById('closeText').textContent = getTranslation('int.close');
             document.getElementById('updateBtnText').textContent = getTranslation('int.update') || '';
+            document.getElementById('marketSelector').options[0].textContent = getTranslation('int.all_markets') || 'Tutti i mercati';
         }
 
         async function loadLanguageManifest() {
@@ -762,6 +825,37 @@
                 tableColumns = ordered;
             }
 
+            populateMarketSelector();
+            renderTable();
+        }
+
+        function populateMarketSelector() {
+            const selector = document.getElementById('marketSelector');
+            const markets = new Set();
+            portfolioData.forEach(item => {
+                if (item.code_market) markets.add(item.code_market);
+            });
+
+            // Keep "All" option
+            const currentVal = selector.value;
+            selector.innerHTML = '';
+            const allOpt = document.createElement('option');
+            allOpt.value = 'all';
+            allOpt.textContent = getTranslation('int.all_markets') || 'Tutti i mercati';
+            selector.appendChild(allOpt);
+
+            Array.from(markets).sort().forEach(mkt => {
+                const opt = document.createElement('option');
+                opt.value = mkt;
+                opt.textContent = getTranslation(mkt) || mkt;
+                selector.appendChild(opt);
+            });
+            selector.value = currentVal;
+            if (selector.selectedIndex === -1) selector.value = 'all';
+        }
+
+        function filterByMarket() {
+            currentMarketFilter = document.getElementById('marketSelector').value;
             renderTable();
         }
 
@@ -816,10 +910,14 @@
             let displayData = portfolioData;
 
             if (!isHistoricalActive) {
-                displayData = portfolioData.filter(item => {
+                displayData = displayData.filter(item => {
                     const qty = parseFloat(item['quantity'] ?? item['Quantità'] ?? item['qta'] ?? 0);
                     return !isNaN(qty) && Math.abs(qty) > 0.000001;
                 });
+            }
+
+            if (currentMarketFilter !== 'all') {
+                displayData = displayData.filter(item => item.code_market === currentMarketFilter);
             }
 
             displayData.forEach(item => {
@@ -857,6 +955,16 @@
                         }
                     }
 
+                    if (col === 'code_market') {
+                        const isOpen = isMarketOpen(item.market_trading_hours);
+                        // User requested RED if open (within range), GREEN otherwise.
+                        const statusClass = isOpen ? 'status-closed' : 'status-open'; // Re-reading: "rosso accanto al mercato (se compreso), altrimenti verde"
+                        // Wait, RED implies "Occupato/Attivo" or "Chiuso"? 
+                        // Prompt: "Se compresa... allora disegna un cerchio rosso... altrimenti un cerchio verde"
+                        const indicator = `<span class="status-circle ${isOpen ? 'status-closed' : 'status-open'}"></span>`;
+                        displayVal = indicator + displayVal;
+                    }
+
                     // Differential update
                     const prevVal = lastRenderedData[ticker] ? lastRenderedData[ticker][col] : undefined;
                     const isPriceOrExchangePrev = col.toLowerCase().includes('price') || col.toLowerCase().includes('exchange') || col === '$price_cost' || col === '$price_mkt' || col === '$exchange_cost';
@@ -876,6 +984,8 @@
                                 openInstrumentDetails(code);
                             };
                             td.appendChild(span);
+                        } else if (col === 'code_market') {
+                            td.innerHTML = displayVal;
                         } else {
                             td.textContent = displayVal;
                             if (typeof val === 'number') td.style.textAlign = 'right';
@@ -893,6 +1003,8 @@
                         if (displayVal !== td.textContent && normalizedPrev !== displayVal) {
                             if (index === 0) {
                                 td.querySelector('span').textContent = displayVal;
+                            } else if (col === 'code_market') {
+                                td.innerHTML = displayVal;
                             } else {
                                 td.textContent = displayVal;
                             }
