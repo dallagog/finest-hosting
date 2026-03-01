@@ -408,7 +408,7 @@
             width: 10px;
             height: 10px;
             border-radius: 50%;
-            margin-right: 8px;
+            margin-left: 8px;
             vertical-align: middle;
         }
 
@@ -878,7 +878,8 @@
                 // Headers
                 tableColumns.forEach(col => {
                     const th = document.createElement('th');
-                    let label = getTranslation(col) || col;
+                    let translationKey = col === 'market_trading_hours' ? 'int.market_trading_hours' : col;
+                    let label = getTranslation(translationKey) || col;
                     // Split label on space or slash to put on two rows
                     if (label.includes(' ')) {
                         label = label.replace(' ', '<br>');
@@ -957,12 +958,20 @@
 
                     if (col === 'code_market') {
                         const isOpen = isMarketOpen(item.market_trading_hours);
-                        // User requested RED if open (within range), GREEN otherwise.
-                        const statusClass = isOpen ? 'status-closed' : 'status-open'; // Re-reading: "rosso accanto al mercato (se compreso), altrimenti verde"
-                        // Wait, RED implies "Occupato/Attivo" or "Chiuso"? 
-                        // Prompt: "Se compresa... allora disegna un cerchio rosso... altrimenti un cerchio verde"
                         const indicator = `<span class="status-circle ${isOpen ? 'status-closed' : 'status-open'}"></span>`;
-                        displayVal = indicator + displayVal;
+                        displayVal = displayVal + indicator;
+                    }
+
+                    if (col === 'market_trading_hours' && val && typeof val === 'object') {
+                        try {
+                            // Format as "HH:mm - HH:mm"
+                            const start = new Date(val.start);
+                            const end = new Date(val.end);
+                            const pad = (n) => String(n).padStart(2, '0');
+                            displayVal = `${pad(start.getHours())}:${pad(start.getMinutes())} - ${pad(end.getHours())}:${pad(end.getMinutes())}`;
+                        } catch (e) {
+                            displayVal = 'Error';
+                        }
                     }
 
                     // Differential update
