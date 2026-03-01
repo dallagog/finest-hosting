@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Financial Estimates 0.2 alfa</title>
+    <title>Financial Estimates 0.8 alfa</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <link rel="icon" type="image/png" href="images/icon-finest.png">
     <style>
@@ -1123,10 +1123,13 @@
                     }
 
                     if (col === 'code_market') {
-                        const isOpen = isMarketOpen(item.market_trading_hours);
-                        // Green if open, Red if closed
+                        const th = item.market_trading_hours;
+                        const isOpen = isMarketOpen(th);
+                        // Log raw data to diagnose color inversion
+                        console.warn(`[CIRCLE] ${item.id_instrument} | raw:`, JSON.stringify(th), '| isOpen:', isOpen);
+                        // Green if open (now BETWEEN start and end), Red if closed
                         const statusClass = isOpen ? 'status-open' : 'status-closed';
-                        const indicator = `<span class="status-circle ${statusClass}"></span>`;
+                        const indicator = `<span class="status-circle ${statusClass}" title="${isOpen ? 'Aperto' : 'Chiuso'}"></span>`;
                         displayVal = displayVal + indicator;
                     }
 
