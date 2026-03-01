@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Financial Estimates 0.2 alfa</title>
+    <title>Financial Estimates 0.5 alfa</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <link rel="icon" type="image/png" href="images/icon-finest.png">
     <style>
@@ -357,6 +357,24 @@
             opacity: 1 !important;
         }
 
+        @keyframes btnBlink {
+
+            0%,
+            100% {
+                background-color: #000;
+                box-shadow: none;
+            }
+
+            50% {
+                background-color: #444;
+                box-shadow: 0 0 12px rgba(0, 0, 0, 0.5);
+            }
+        }
+
+        .update-btn.blink {
+            animation: btnBlink 0.5s ease-in-out infinite;
+        }
+
         /* Differential Rendering Highlight */
         @keyframes highlightChange {
             0% {
@@ -639,6 +657,9 @@
                 const start = new Date(data.start);
                 const end = new Date(data.end);
                 const now = new Date();
+
+                // Validate dates
+                if (isNaN(start.getTime()) || isNaN(end.getTime())) return false;
 
                 return now >= start && now <= end;
             } catch (e) {
@@ -1592,6 +1613,14 @@
         // ========== INITIALIZATION ==========
         window.addEventListener('load', async () => {
             console.log('--- Window Load Event Fired ---');
+
+            // Blink the update button for 5 seconds on page load
+            const updateBtn = document.getElementById('updateBtn');
+            if (updateBtn) {
+                updateBtn.classList.add('blink');
+                setTimeout(() => updateBtn.classList.remove('blink'), 5000);
+            }
+
             if (getCredentialsFromURL()) {
                 console.log('Credentials obtained, starting initialization...');
 
