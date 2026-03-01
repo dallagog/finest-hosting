@@ -439,6 +439,83 @@
             background: #fff;
             cursor: pointer;
         }
+
+        /* Multi-selection dropdown styles */
+        .dropdown-check-list {
+            display: inline-block;
+            position: relative;
+        }
+
+        .dropdown-check-list .anchor {
+            position: relative;
+            cursor: pointer;
+            display: inline-block;
+            padding: 8px 30px 8px 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background: #fff;
+            font-size: 14px;
+            min-width: 180px;
+            text-align: left;
+        }
+
+        .dropdown-check-list .anchor:after {
+            position: absolute;
+            content: "";
+            border-left: 5px solid transparent;
+            border-right: 5px solid transparent;
+            border-top: 5px solid #000;
+            right: 10px;
+            top: 45%;
+        }
+
+        .dropdown-check-list .items {
+            padding: 8px;
+            display: none;
+            position: absolute;
+            z-index: 1001;
+            background: #fff;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .dropdown-check-list.visible .items {
+            display: block;
+        }
+
+        .dropdown-check-list .items label {
+            display: block;
+            padding: 5px;
+            cursor: pointer;
+            font-size: 13px;
+        }
+
+        .dropdown-check-list .items label:hover {
+            background-color: #f0f0f0;
+        }
+
+        .dropdown-check-list input[type="checkbox"] {
+            margin-right: 8px;
+        }
+
+        .filter-controls {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .checkbox-container {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            cursor: pointer;
+            user-select: none;
+        }
     </style>
 </head>
 
@@ -472,9 +549,21 @@
                 <h2 style="font-size: 18px; font-weight: 600; color: #000; margin: 0;" id="portfolioTitle">Portafoglio
                 </h2>
                 <div class="market-selector-container">
-                    <select id="marketSelector" onchange="filterByMarket()">
-                        <option value="all">Tutti i mercati</option>
-                    </select>
+                    <div class="filter-controls">
+                        <label class="checkbox-container">
+                            <input type="checkbox" id="openOnlyCheckbox" onchange="filterByMarket()">
+                            <span id="openOnlyLabel">Solo aperti</span>
+                        </label>
+
+                        <div id="marketSelectorContainer" class="dropdown-check-list">
+                            <span class="anchor" onclick="toggleMarketDropdown()" id="marketSelectorAnchor">Seleziona
+                                mercati</span>
+                            <div id="marketSelectorItems" class="items">
+                                <!-- Checkboxes will be injected here -->
+                            </div>
+                        </div>
+                    </div>
+
                     <button id="updateBtn" class="update-btn" onclick="runUpdateOnline()">
                         <div class="spinner"></div>
                         <i class="fa fa-sync-alt"></i> <span id="updateBtnText">Conferma</span>
@@ -537,7 +626,8 @@
         let lastPortfolioHash = '';
         let lastRenderedData = {}; // TRACKS PREVIOUS STATE FOR DIFF RENDERING
         let lastRenderedColumns = []; // TRACKS COLUMN STRUCTURE
-        let currentMarketFilter = 'all';
+        let currentMarketFilters = []; // Array of selected code_market
+        let showOpenOnly = false;
 
         // ========== UTILITY FUNCTIONS ==========
         function isMarketOpen(tradingHours) {
@@ -624,7 +714,8 @@
             document.getElementById('portfolioTitle').textContent = getTranslation('int.portfolio');
             document.getElementById('closeText').textContent = getTranslation('int.close');
             document.getElementById('updateBtnText').textContent = getTranslation('int.update') || '';
-            document.getElementById('marketSelector').options[0].textContent = getTranslation('int.all_markets') || 'Tutti i mercati';
+            document.getElementById('openOnlyLabel').textContent = getTranslation('int.open_only') || 'Solo aperti';
+            document.getElementById('marketSelectorAnchor').textContent = getTranslation('int.select_markets') || 'Seleziona mercati';
         }
 
         async function loadLanguageManifest() {
@@ -830,32 +921,72 @@
         }
 
         function populateMarketSelector() {
-            const selector = document.getElementById('marketSelector');
+            const itemsContainer = document.getElementById('marketSelectorItems');
             const markets = new Set();
             portfolioData.forEach(item => {
                 if (item.code_market) markets.add(item.code_market);
             });
 
-            // Keep "All" option
-            const currentVal = selector.value;
-            selector.innerHTML = '';
-            const allOpt = document.createElement('option');
-            allOpt.value = 'all';
-            allOpt.textContent = getTranslation('int.all_markets') || 'Tutti i mercati';
-            selector.appendChild(allOpt);
+            const sortedMarkets = Array.from(markets).sort();
 
-            Array.from(markets).sort().forEach(mkt => {
-                const opt = document.createElement('option');
-                opt.value = mkt;
-                opt.textContent = getTranslation(mkt) || mkt;
-                selector.appendChild(opt);
+            // Prune stale filters
+            currentMarketFilters = currentMarketFilters.filter(f => markets.has(f));
+
+            itemsContainer.innerHTML = '';
+
+            // Add "Select All" / "Deselect All" logic if needed, but for now just markets
+            sortedMarkets.forEach(mkt => {
+                const label = document.createElement('label');
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.value = mkt;
+                checkbox.checked = currentMarketFilters.includes(mkt);
+                checkbox.onchange = (e) => {
+                    if (e.target.checked) {
+                        if (!currentMarketFilters.includes(mkt)) currentMarketFilters.push(mkt);
+                    } else {
+                        currentMarketFilters = currentMarketFilters.filter(f => f !== mkt);
+                    }
+                    updateMarketAnchorText();
+                    filterByMarket();
+                };
+
+                label.appendChild(checkbox);
+                label.appendChild(document.createTextNode(getTranslation(mkt) || mkt));
+                itemsContainer.appendChild(label);
             });
-            selector.value = currentVal;
-            if (selector.selectedIndex === -1) selector.value = 'all';
+            updateMarketAnchorText();
+        }
+
+        function updateMarketAnchorText() {
+            const anchor = document.getElementById('marketSelectorAnchor');
+            if (currentMarketFilters.length === 0) {
+                anchor.textContent = getTranslation('int.select_markets') || 'Seleziona mercati';
+            } else if (currentMarketFilters.length === 1) {
+                anchor.textContent = getTranslation(currentMarketFilters[0]) || currentMarketFilters[0];
+            } else {
+                anchor.textContent = `${currentMarketFilters.length} ${getTranslation('int.selected') || 'selezionati'}`;
+            }
+        }
+
+        function toggleMarketDropdown() {
+            const container = document.getElementById('marketSelectorContainer');
+            container.classList.toggle('visible');
+
+            // Close when clicking outside
+            if (container.classList.contains('visible')) {
+                const closeHandler = (e) => {
+                    if (!container.contains(e.target)) {
+                        container.classList.remove('visible');
+                        document.removeEventListener('click', closeHandler);
+                    }
+                };
+                setTimeout(() => document.addEventListener('click', closeHandler), 10);
+            }
         }
 
         function filterByMarket() {
-            currentMarketFilter = document.getElementById('marketSelector').value;
+            showOpenOnly = document.getElementById('openOnlyCheckbox').checked;
             renderTable();
         }
 
@@ -917,8 +1048,12 @@
                 });
             }
 
-            if (currentMarketFilter !== 'all') {
-                displayData = displayData.filter(item => item.code_market === currentMarketFilter);
+            if (currentMarketFilters.length > 0) {
+                displayData = displayData.filter(item => currentMarketFilters.includes(item.code_market));
+            }
+
+            if (showOpenOnly) {
+                displayData = displayData.filter(item => isMarketOpen(item.market_trading_hours));
             }
 
             displayData.forEach(item => {
