@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Financial Estimates 0.2 alfa</title>
+    <title>Financial Estimates 0.3 alfa</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <link rel="icon" type="image/png" href="images/icon-finest.png">
     <style>
@@ -420,7 +420,7 @@
             animation: highlightDown 2s ease-out;
         }
 
-        /* Market Status Circle */
+        /* Market Status Circles */
         .status-circle {
             display: inline-block;
             width: 10px;
@@ -432,14 +432,20 @@
 
         .status-open {
             background-color: #e74c3c;
-            /* Red */
+            /* Rosso per APERTO */
             box-shadow: 0 0 5px #e74c3c;
         }
 
         .status-closed {
             background-color: #2ecc71;
-            /* Green */
+            /* Verde per CHIUSO */
             box-shadow: 0 0 5px #2ecc71;
+        }
+
+        .status-unknown {
+            background-color: #f1c40f;
+            /* Giallo per dati mancanti */
+            box-shadow: 0 0 5px #f1c40f;
         }
 
         .market-selector-container {
@@ -570,7 +576,8 @@
                     <div class="filter-controls">
                         <label class="checkbox-container">
                             <input type="checkbox" id="openOnlyCheckbox" onchange="filterByMarket()">
-                            <span id="openOnlyLabel">Solo aperti</span>
+                            <span id="openOnlyLabel">Solo chiusi</span>
+                            <!-- Testo cambiato da "Solo aperti" a "Solo chiusi" -->
                         </label>
 
                         <div id="marketSelectorContainer" class="dropdown-check-list">
@@ -645,7 +652,7 @@
         let lastRenderedData = {}; // TRACKS PREVIOUS STATE FOR DIFF RENDERING
         let lastRenderedColumns = []; // TRACKS COLUMN STRUCTURE
         let currentMarketFilters = []; // Array of selected code_market
-        let showOpenOnly = false;
+        let showClosedOnly = false; // Rinominato da showOpenOnly a showClosedOnly
 
         // ========== UTILITY FUNCTIONS ==========
         function isMarketOpen(tradingHours) {
@@ -745,7 +752,7 @@
             document.getElementById('portfolioTitle').textContent = getTranslation('int.portfolio');
             document.getElementById('closeText').textContent = getTranslation('int.close');
             document.getElementById('updateBtnText').textContent = getTranslation('int.update') || '';
-            document.getElementById('openOnlyLabel').textContent = getTranslation('int.open_only') || 'Solo aperti';
+            document.getElementById('openOnlyLabel').textContent = getTranslation('int.closed_only') || 'Solo chiusi'; // Modificato
             document.getElementById('marketSelectorAnchor').textContent = getTranslation('int.select_markets') || 'Seleziona mercati';
         }
 
@@ -1017,7 +1024,7 @@
         }
 
         function filterByMarket() {
-            showOpenOnly = document.getElementById('openOnlyCheckbox').checked;
+            showClosedOnly = document.getElementById('openOnlyCheckbox').checked; // Rinominato da showOpenOnly a showClosedOnly
             renderTable();
         }
 
@@ -1083,8 +1090,14 @@
                 displayData = displayData.filter(item => currentMarketFilters.includes(item.code_market));
             }
 
-            if (showOpenOnly) {
-                displayData = displayData.filter(item => !isMarketOpen(item.market_trading_hours));
+            // Modificato: ora filtra per mercati CHIUSI se showClosedOnly è true
+            if (showClosedOnly) {
+                displayData = displayData.filter(item => {
+                    // Se non ci sono orari di trading, considera come CHIUSO (quindi incluso nel filtro)
+                    if (!item.market_trading_hours) return true;
+                    // Altrimenti, include solo se il mercato è CHIUSO (NON aperto)
+                    return !isMarketOpen(item.market_trading_hours);
+                });
             }
 
             displayData.forEach(item => {
@@ -1124,12 +1137,19 @@
 
                     if (col === 'code_market') {
                         const th = item.market_trading_hours;
-                        const isOpen = isMarketOpen(th);
-                        // Log raw data to diagnose color inversion
-                        console.warn(`[CIRCLE] ${item.id_instrument} | raw:`, JSON.stringify(th), '| isOpen:', isOpen);
-                        // Green if open (now BETWEEN start and end), Red if closed
-                        const statusClass = isOpen ? 'status-open' : 'status-closed';
-                        const indicator = `<span class="status-circle ${statusClass}" title="${isOpen ? 'Aperto' : 'Chiuso'}"></span>`;
+
+                        // Determina lo stato del mercato
+                        let statusClass = 'status-unknown'; // Default giallo per dati mancanti
+                        let statusTitle = 'Dati non disponibili';
+
+                        if (th) {
+                            const isOpen = isMarketOpen(th);
+                            // Colori invertiti: rosso = aperto, verde = chiuso
+                            statusClass = isOpen ? 'status-open' : 'status-closed';
+                            statusTitle = isOpen ? 'Aperto' : 'Chiuso';
+                        }
+
+                        const indicator = `<span class="status-circle ${statusClass}" title="${statusTitle}"></span>`;
                         displayVal = displayVal + indicator;
                     }
 
