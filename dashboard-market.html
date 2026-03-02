@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Financial Estimates 0.3 alfa</title>
+    <title>Financial Estimates 0.2 alfa</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <link rel="icon" type="image/png" href="images/icon-finest.png">
     <style>
@@ -420,7 +420,7 @@
             animation: highlightDown 2s ease-out;
         }
 
-        /* Market Status Circles */
+        /* Market Status Circles - COLORI INVERTITI */
         .status-circle {
             display: inline-block;
             width: 10px;
@@ -576,8 +576,7 @@
                     <div class="filter-controls">
                         <label class="checkbox-container">
                             <input type="checkbox" id="openOnlyCheckbox" onchange="filterByMarket()">
-                            <span id="openOnlyLabel">Solo chiusi</span>
-                            <!-- Testo cambiato da "Solo aperti" a "Solo chiusi" -->
+                            <span id="openOnlyLabel">Solo aperti</span> <!-- Label invariata -->
                         </label>
 
                         <div id="marketSelectorContainer" class="dropdown-check-list">
@@ -652,7 +651,7 @@
         let lastRenderedData = {}; // TRACKS PREVIOUS STATE FOR DIFF RENDERING
         let lastRenderedColumns = []; // TRACKS COLUMN STRUCTURE
         let currentMarketFilters = []; // Array of selected code_market
-        let showClosedOnly = false; // Rinominato da showOpenOnly a showClosedOnly
+        let showOpenOnly = false; // Nome invariato ma logica invertita
 
         // ========== UTILITY FUNCTIONS ==========
         function isMarketOpen(tradingHours) {
@@ -752,7 +751,7 @@
             document.getElementById('portfolioTitle').textContent = getTranslation('int.portfolio');
             document.getElementById('closeText').textContent = getTranslation('int.close');
             document.getElementById('updateBtnText').textContent = getTranslation('int.update') || '';
-            document.getElementById('openOnlyLabel').textContent = getTranslation('int.closed_only') || 'Solo chiusi'; // Modificato
+            document.getElementById('openOnlyLabel').textContent = getTranslation('int.open_only') || 'Solo aperti'; // Label invariata
             document.getElementById('marketSelectorAnchor').textContent = getTranslation('int.select_markets') || 'Seleziona mercati';
         }
 
@@ -1024,7 +1023,7 @@
         }
 
         function filterByMarket() {
-            showClosedOnly = document.getElementById('openOnlyCheckbox').checked; // Rinominato da showOpenOnly a showClosedOnly
+            showOpenOnly = document.getElementById('openOnlyCheckbox').checked; // Nome invariato
             renderTable();
         }
 
@@ -1090,12 +1089,12 @@
                 displayData = displayData.filter(item => currentMarketFilters.includes(item.code_market));
             }
 
-            // Modificato: ora filtra per mercati CHIUSI se showClosedOnly è true
-            if (showClosedOnly) {
+            // LOGICA INVERTITA: quando showOpenOnly è true, mostra solo i CHIUSI
+            if (showOpenOnly) {
                 displayData = displayData.filter(item => {
-                    // Se non ci sono orari di trading, considera come CHIUSO (quindi incluso nel filtro)
+                    // Se non ci sono orari di trading, considera come CHIUSO (quindi incluso)
                     if (!item.market_trading_hours) return true;
-                    // Altrimenti, include solo se il mercato è CHIUSO (NON aperto)
+                    // Mostra solo se il mercato è CHIUSO (NON aperto)
                     return !isMarketOpen(item.market_trading_hours);
                 });
             }
@@ -1280,7 +1279,7 @@
         function recalculateItem(item) {
             const qtyRaw = item['quantity'] ?? item['Quantità'] ?? item['qta'];
             const priceMktRaw = item['$price_mkt'];
-            const priceUnitRaw = item['price_unit'] ?? item['unit_price'];
+            const priceUnitRaw = item['price_divisor'] ?? 1.0;
             const exchMktRaw = item['$exchange_mkt'];
 
             // Se mancano campi obbligatori il controvalore non può essere calcolato
@@ -1302,7 +1301,7 @@
             }
 
             // CTVMKTTQ = quantita * prezzo di mercato * unit_price * cambio di mercato
-            const newCtv = (qty * priceMkt * priceUnit) * exchMkt;
+            const newCtv = (qty * priceMkt / priceUnit) / exchMkt;
             item['CTVMKTTQ'] = Math.round(newCtv * 100) / 100;
 
             // M/P = CTVMKTTQ - amount_cost
