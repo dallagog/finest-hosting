@@ -428,6 +428,7 @@
         let currencies = [];
         let patternFields = [];
         let forceFields = [];
+        let rsiFields = [];
         let selectedPatterns = new Set();
         let selectedForceField = null;
         let forceFieldOptions = [];
@@ -560,9 +561,11 @@
 
             patternFields = Array.from(allKeys).filter(k => k.startsWith('pattern@'));
             forceFields = Array.from(allKeys).filter(k => k.startsWith('forza@'));
+            rsiFields = Array.from(allKeys).filter(k => k.startsWith('RSI@'));
 
             console.log('Pattern fields found:', patternFields);
             console.log('Force fields found:', forceFields);
+            console.log('RSI fields found:', rsiFields);
 
             const layersOptionsList = document.getElementById('layers-options-list');
             console.log('layersOptionsList:', layersOptionsList);
@@ -774,43 +777,86 @@
             }
         };
 
-        async function loadPrices() {
-            console.log('===== loadPrices START =====');
-            document.getElementById('loading').style.display = 'flex';
-            const startDate = document.getElementById('start-date').value;
-            const endDate = document.getElementById('end-date').value;
+        const rsiSymbolsPlugin = {
+            id: 'rsiSymbols',
+            afterDatasetsDraw(chart) {
+                if (!document.getElementById('layer-rsi')?.checked) return;
 
-            try {
-                const response = await fetch(`${API_URL}/getprices`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        username,
-                        token,
-                        language,
-                        currency: targetCurrency,
-                        instrument: {
-                            id_instrument: idInstrument,
-                            id_account: idAccount,
-                            date_start: startDate,
-                            date_end: endDate
-                        }
-                    })
+                const { ctx, chartArea } = chart;
+                const dataset = chart.data.datasets[0];
+                if (!dataset || !dataset.rsiFieldValues) {
+                    return;
+                }
+
+                const meta = chart.getDatasetMeta(0);
+                if (!meta || meta.hidden) return;
+
+                ctx.save();
+
+                const yBase = chartArea.bottom + 8;
+
+                meta.data.forEach((point, index) => {
+                    const rsiFieldObj = dataset.rsiFieldValues[index];
+                    if (!rsiFieldObj) return;
+
+                    Object.entries(rsiFieldObj).forEach(([field, desc], idx) => {
+                        if (!desc) return;
+                        const descLower = (desc || '').toLowerCase();
+                        const isOverbought = descLower.includes('overbought') || descLower.includes('ipercomprato');
+                        const isOversold = descLower.includes('oversold') || descLower.includes('ipervenduto');
+
+                        if (!isOverbought && !isOversold) return;
+
+                        const symbol = isOverbought ? '+' : '−';
+                        const color = isOverbought ? '#e53935' : '#1e88e5';
+
+                        ctx.font = 'bold 13px Orbitron, sans-serif';
+                        ctx.fillStyle = color;
+                        ctx.textAlign = 'center';
+                        ctx.textBaseline = 'top';
+                        ctx.fillText(symbol, point.x, yBase + (idx * 14));
+                    });
                 });
 
-                const data = await response.json();
-                trendDataRaw = data.prices || (Array.isArray(data) ? data : []);
-                trendDataRaw.sort((a, b) => new Date(a.date_start || a.date) - new Date(b.date_start || b.date));
-
-                extractFieldsFromData();
-                renderChart();
-                document.getElementById('loading').style.display = 'none';
-            } catch (error) {
-                console.error('Error loading prices:', error);
-                document.getElementById('loadingText').textContent = "Error loading data from server";
-                document.getElementById('loading').style.display = 'none';
+                ctx.restore();
             }
+        };
+        console.log('===== loadPrices START =====');
+        document.getElementById('loading').style.display = 'flex';
+        const startDate = document.getElementById('start-date').value;
+        const endDate = document.getElementById('end-date').value;
+
+        try {
+            const response = await fetch(`${API_URL}/getprices`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    username,
+                    token,
+                    language,
+                    currency: targetCurrency,
+                    instrument: {
+                        id_instrument: idInstrument,
+                        id_account: idAccount,
+                        date_start: startDate,
+                        date_end: endDate
+                    }
+                })
+            });
+
+            const data = await response.json();
+            trendDataRaw = data.prices || (Array.isArray(data) ? data : []);
+            trendDataRaw.sort((a, b) => new Date(a.date_start || a.date) - new Date(b.date_start || b.date));
+
+            extractFieldsFromData();
+            renderChart();
+            document.getElementById('loading').style.display = 'none';
+        } catch (error) {
+            console.error('Error loading prices:', error);
+            document.getElementById('loadingText').textContent = "Error loading data from server";
+            document.getElementById('loading').style.display = 'none';
         }
+
 
         function parseValue(v) {
             if (v === null || v === undefined) return 0;
@@ -847,6 +893,7 @@
             const forces = [];
             const rsiValues = [];
             const rsiDescriptions = [];
+            const rsiFieldValues = [];
             const patternValues = [];
             const shorts = [];
             const exchanges = [];
@@ -863,6 +910,7 @@
                         forces: {},
                         rsi: [],
                         rsiDescription: null,
+                        rsiFields: {},
                         patterns: [],
                         shorts: [],
                         exchanges: []
@@ -890,6 +938,13 @@
                 if (item['description_RSI'] !== undefined && item['description_RSI'] !== null) {
                     aggregatedData[date].rsiDescription = item['description_RSI'];
                 }
+
+                // Gestione campi RSI@ (analoga a forza@)
+                rsiFields.forEach(field => {
+                    if (item[field] !== undefined && item[field] !== null) {
+                        aggregatedData[date].rsiFields[field] = item[field];
+                    }
+                });
 
                 patternFieldList.forEach(field => {
                     if (item[field] !== undefined && item[field] !== null && item[field] !== '') {
@@ -921,6 +976,7 @@
                 forces.push(data.forces);
                 rsiValues.push(data.rsi.length ? data.rsi.reduce((a, b) => a + b, 0) / data.rsi.length : null);
                 rsiDescriptions.push(data.rsiDescription || null);
+                rsiFieldValues.push(Object.keys(data.rsiFields).length > 0 ? data.rsiFields : null);
                 patternValues.push(data.patterns.length > 0 ? data.patterns : []);
                 shorts.push(data.shorts.length ? data.shorts.reduce((a, b) => a + b, 0) / data.shorts.length : 0);
                 exchanges.push(data.exchanges.length ? data.exchanges.reduce((a, b) => a + b, 0) / data.exchanges.length : 0);
@@ -941,6 +997,7 @@
                             forceValues: forces,
                             rsiValues: rsiValues,
                             rsiDescriptions: rsiDescriptions,
+                            rsiFieldValues: rsiFieldValues,
                             patternValues: patternValues,
                             borderColor: 'rgba(75, 192, 192, 1)',
                             backgroundColor: gradient,
@@ -1018,7 +1075,7 @@
                         }
                     ]
                 },
-                plugins: [forceArrowsPlugin, patternLinesPlugin],
+                plugins: [forceArrowsPlugin, patternLinesPlugin, rsiSymbolsPlugin],
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
@@ -1150,6 +1207,20 @@
                                             const descTranslated = descKey ? (getTranslation(`int.${descKey}`) || descKey) : '';
                                             const descLabel = descTranslated ? ` — ${descTranslated}` : '';
                                             lines.push(`📊 RSI: ${rsiVal.toFixed(2)}${descLabel}`);
+                                        }
+
+                                        // Campi RSI@ (analoghi a forza@)
+                                        const rsiFieldObj = priceDS.rsiFieldValues ? priceDS.rsiFieldValues[index] : null;
+                                        if (rsiFieldObj && Object.keys(rsiFieldObj).length > 0) {
+                                            Object.entries(rsiFieldObj).forEach(([field, desc]) => {
+                                                if (!desc) return;
+                                                const descLower = (desc || '').toLowerCase();
+                                                const isOverbought = descLower.includes('overbought') || descLower.includes('ipercomprato');
+                                                const isOversold = descLower.includes('oversold') || descLower.includes('ipervenduto');
+                                                const symbol = isOverbought ? '➕' : isOversold ? '➖' : '•';
+                                                const descTranslated = getTranslation(`int.${desc}`) || desc;
+                                                lines.push(`${symbol} RSI@ ${field.replace('RSI@', '')}: ${descTranslated}`);
+                                            });
                                         }
                                     }
 
