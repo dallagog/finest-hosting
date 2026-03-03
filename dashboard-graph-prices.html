@@ -4,8 +4,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Financial Estimates 0.3 alfa</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+    <title>Financial Estimates 0.8 alfa</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <link rel="icon" type="image/png" href="images/icon-finest.png">
     <script src="js/dashboard-shared.js"></script>
@@ -432,6 +432,8 @@
         let selectedPatterns = new Set();
         let selectedForceField = null;
         let forceFieldOptions = [];
+        let selectedRsiField = null;
+        let rsiFieldOptions = [];
 
         const urlParams = new URLSearchParams(window.location.search);
         const username = urlParams.get('username') || '';
@@ -534,7 +536,7 @@
         }
 
         window.addEventListener('click', function (e) {
-            ['layers', 'patterns', 'force'].forEach(id => {
+            ['layers', 'patterns', 'force', 'rsi'].forEach(id => {
                 const container = document.getElementById(`${id}-container`);
                 if (container && !container.contains(e.target)) {
                     const list = document.getElementById(`${id}-options-list`);
@@ -581,6 +583,12 @@
                 selectedForceField = null;
             }
 
+            if (rsiFields.length > 0) {
+                selectedRsiField = rsiFields[0];
+            } else {
+                selectedRsiField = null;
+            }
+
             if (layersOptionsList) {
                 // I pattern sono gestiti con la singola checkbox 'Pattern' (layer-pattern)
                 // selectedPatterns contiene sempre tutti i pattern disponibili
@@ -589,6 +597,9 @@
                 // selectedForceField è già impostato al primo campo disponibile
                 if (forceFields.length > 0) {
                     forceFieldOptions = forceFields;
+                }
+                if (rsiFields.length > 0) {
+                    rsiFieldOptions = rsiFields;
                 }
             } else {
                 console.log('layersOptionsList not found!');
@@ -619,6 +630,15 @@
             if (selected) {
                 selectedForceField = selected.value;
                 console.log('Force field changed to:', selectedForceField);
+                renderChart();
+            }
+        }
+
+        function onRsiFieldChange() {
+            const selected = document.querySelector('input[name="rsiField"]:checked');
+            if (selected) {
+                selectedRsiField = selected.value;
+                console.log('RSI field changed to:', selectedRsiField);
                 renderChart();
             }
         }
@@ -732,6 +752,54 @@
             }
         };
 
+        const rsiSymbolsPlugin = {
+            id: 'rsiSymbols',
+            afterDatasetsDraw(chart) {
+                if (!document.getElementById('layer-rsi')?.checked) return;
+
+                const { ctx, chartArea } = chart;
+                const dataset = chart.data.datasets[0];
+                if (!dataset || !dataset.rsiValues) return;
+
+                const meta = chart.getDatasetMeta(0);
+                if (!meta || meta.hidden) return;
+
+                ctx.save();
+                ctx.font = 'bold 14px Orbitron, sans-serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'bottom';
+
+                meta.data.forEach((point, index) => {
+                    const rsiObj = dataset.rsiValues[index];
+                    if (!rsiObj) return;
+
+                    // Determina quale campo RSI usare
+                    let rsiEntry = null;
+                    if (selectedRsiField && rsiObj[selectedRsiField] !== undefined) {
+                        rsiEntry = { field: selectedRsiField, desc: rsiObj[selectedRsiField] };
+                    } else {
+                        const firstKey = Object.keys(rsiObj)[0];
+                        if (firstKey) rsiEntry = { field: firstKey, desc: rsiObj[firstKey] };
+                    }
+                    if (!rsiEntry || !rsiEntry.desc) return;
+
+                    const descLower = rsiEntry.desc.toLowerCase();
+                    const isOverbought = descLower.includes('overbought') || descLower.includes('ipercomprato');
+                    const isOversold = descLower.includes('oversold') || descLower.includes('ipervenduto');
+                    if (!isOverbought && !isOversold) return;
+
+                    const symbol = isOverbought ? '+' : '−';
+                    const color = isOverbought ? '#e53935' : '#1e88e5';
+
+                    ctx.fillStyle = color;
+                    // Disegna il simbolo appena sopra l'asse delle X (bottom del chartArea)
+                    ctx.fillText(symbol, point.x, chartArea.bottom - 4);
+                });
+
+                ctx.restore();
+            }
+        };
+
         const patternLinesPlugin = {
             id: 'patternLines',
             afterDatasetsDraw(chart) {
@@ -777,50 +845,6 @@
             }
         };
 
-        const rsiSymbolsPlugin = {
-            id: 'rsiSymbols',
-            afterDatasetsDraw(chart) {
-                if (!document.getElementById('layer-rsi')?.checked) return;
-
-                const { ctx, chartArea } = chart;
-                const dataset = chart.data.datasets[0];
-                if (!dataset || !dataset.rsiFieldValues) {
-                    return;
-                }
-
-                const meta = chart.getDatasetMeta(0);
-                if (!meta || meta.hidden) return;
-
-                ctx.save();
-
-                const yBase = chartArea.bottom + 8;
-
-                meta.data.forEach((point, index) => {
-                    const rsiFieldObj = dataset.rsiFieldValues[index];
-                    if (!rsiFieldObj) return;
-
-                    Object.entries(rsiFieldObj).forEach(([field, desc], idx) => {
-                        if (!desc) return;
-                        const descLower = (desc || '').toLowerCase();
-                        const isOverbought = descLower.includes('overbought') || descLower.includes('ipercomprato');
-                        const isOversold = descLower.includes('oversold') || descLower.includes('ipervenduto');
-
-                        if (!isOverbought && !isOversold) return;
-
-                        const symbol = isOverbought ? '+' : '−';
-                        const color = isOverbought ? '#e53935' : '#1e88e5';
-
-                        ctx.font = 'bold 13px Orbitron, sans-serif';
-                        ctx.fillStyle = color;
-                        ctx.textAlign = 'center';
-                        ctx.textBaseline = 'top';
-                        ctx.fillText(symbol, point.x, yBase + (idx * 14));
-                    });
-                });
-
-                ctx.restore();
-            }
-        };
         async function loadPrices() {
             console.log('===== loadPrices START =====');
             document.getElementById('loading').style.display = 'flex';
@@ -857,8 +881,7 @@
                 document.getElementById('loadingText').textContent = "Error loading data from server";
                 document.getElementById('loading').style.display = 'none';
             }
-        } // end loadPrices
-
+        }
 
         function parseValue(v) {
             if (v === null || v === undefined) return 0;
@@ -894,8 +917,6 @@
             const priceCurrencies = [];
             const forces = [];
             const rsiValues = [];
-            const rsiDescriptions = [];
-            const rsiFieldValues = [];
             const patternValues = [];
             const shorts = [];
             const exchanges = [];
@@ -910,9 +931,7 @@
                         prices: [],
                         priceCurrencies: [],
                         forces: {},
-                        rsi: [],
-                        rsiDescription: null,
-                        rsiFields: {},
+                        rsis: {},
                         patterns: [],
                         shorts: [],
                         exchanges: []
@@ -934,17 +953,9 @@
                     }
                 });
 
-                if (item['indice_RSI'] !== undefined && item['indice_RSI'] !== null) {
-                    aggregatedData[date].rsi.push(parseValue(item['indice_RSI']));
-                }
-                if (item['description_RSI'] !== undefined && item['description_RSI'] !== null) {
-                    aggregatedData[date].rsiDescription = item['description_RSI'];
-                }
-
-                // Gestione campi RSI@ (analoga a forza@)
                 rsiFields.forEach(field => {
-                    if (item[field] !== undefined && item[field] !== null) {
-                        aggregatedData[date].rsiFields[field] = item[field];
+                    if (item[field] !== undefined && item[field] !== null && item[field] !== '') {
+                        aggregatedData[date].rsis[field] = item[field]; // stringa descrittiva es. "overbought"
                     }
                 });
 
@@ -976,9 +987,7 @@
                 prices.push(avgPrice);
                 priceCurrencies.push(avgPriceCurrency);
                 forces.push(data.forces);
-                rsiValues.push(data.rsi.length ? data.rsi.reduce((a, b) => a + b, 0) / data.rsi.length : null);
-                rsiDescriptions.push(data.rsiDescription || null);
-                rsiFieldValues.push(Object.keys(data.rsiFields).length > 0 ? data.rsiFields : null);
+                rsiValues.push(Object.keys(data.rsis).length > 0 ? data.rsis : null);
                 patternValues.push(data.patterns.length > 0 ? data.patterns : []);
                 shorts.push(data.shorts.length ? data.shorts.reduce((a, b) => a + b, 0) / data.shorts.length : 0);
                 exchanges.push(data.exchanges.length ? data.exchanges.reduce((a, b) => a + b, 0) / data.exchanges.length : 0);
@@ -998,8 +1007,6 @@
                             data: prices,
                             forceValues: forces,
                             rsiValues: rsiValues,
-                            rsiDescriptions: rsiDescriptions,
-                            rsiFieldValues: rsiFieldValues,
                             patternValues: patternValues,
                             borderColor: 'rgba(75, 192, 192, 1)',
                             backgroundColor: gradient,
@@ -1063,17 +1070,6 @@
                             pointRadius: 0,
                             yAxisID: 'y',
                             hidden: !document.getElementById('layer-short')?.checked || shorts.every(v => v === 0)
-                        },
-                        {
-                            label: 'RSI',
-                            data: rsiValues,
-                            borderColor: 'rgba(153, 102, 255, 1)',
-                            backgroundColor: 'transparent',
-                            borderWidth: 2,
-                            tension: 0.1,
-                            pointRadius: 0,
-                            yAxisID: 'yRsi',
-                            hidden: !document.getElementById('layer-rsi')?.checked || rsiValues.every(v => v === null)
                         }
                     ]
                 },
@@ -1119,25 +1115,6 @@
                             },
                             title: {
                                 display: false
-                            }
-                        },
-                        yRsi: {
-                            type: 'linear',
-                            display: !!document.getElementById('layer-rsi')?.checked && rsiValues.some(v => v !== null),
-                            position: 'left',
-                            min: 0,
-                            max: 100,
-                            ticks: {
-                                callback: function (value) {
-                                    return value.toFixed(0);
-                                }
-                            },
-                            grid: {
-                                drawOnChartArea: false
-                            },
-                            title: {
-                                display: true,
-                                text: 'RSI'
                             }
                         },
                         x: {
@@ -1203,26 +1180,27 @@
                                     }
 
                                     if (document.getElementById('layer-rsi')?.checked) {
-                                        const rsiVal = priceDS.rsiValues ? priceDS.rsiValues[index] : null;
-                                        if (rsiVal !== null && rsiVal !== undefined) {
-                                            const descKey = priceDS.rsiDescriptions ? priceDS.rsiDescriptions[index] : null;
-                                            const descTranslated = descKey ? (getTranslation(`int.${descKey}`) || descKey) : '';
-                                            const descLabel = descTranslated ? ` — ${descTranslated}` : '';
-                                            lines.push(`📊 RSI: ${rsiVal.toFixed(2)}${descLabel}`);
-                                        }
-
-                                        // Campi RSI@ (analoghi a forza@)
-                                        const rsiFieldObj = priceDS.rsiFieldValues ? priceDS.rsiFieldValues[index] : null;
-                                        if (rsiFieldObj && Object.keys(rsiFieldObj).length > 0) {
-                                            Object.entries(rsiFieldObj).forEach(([field, desc]) => {
-                                                if (!desc) return;
-                                                const descLower = (desc || '').toLowerCase();
-                                                const isOverbought = descLower.includes('overbought') || descLower.includes('ipercomprato');
-                                                const isOversold = descLower.includes('oversold') || descLower.includes('ipervenduto');
-                                                const symbol = isOverbought ? '➕' : isOversold ? '➖' : '•';
-                                                const descTranslated = getTranslation(`int.${desc}`) || desc;
-                                                lines.push(`${symbol} RSI@ ${field.replace('RSI@', '')}: ${descTranslated}`);
-                                            });
+                                        const rsiObj = priceDS.rsiValues ? priceDS.rsiValues[index] : null;
+                                        if (rsiObj && Object.keys(rsiObj).length > 0) {
+                                            if (selectedRsiField && rsiObj[selectedRsiField] !== undefined) {
+                                                const desc = rsiObj[selectedRsiField];
+                                                if (desc) {
+                                                    const descLower = desc.toLowerCase();
+                                                    const isOverbought = descLower.includes('overbought') || descLower.includes('ipercomprato');
+                                                    const isOversold = descLower.includes('oversold') || descLower.includes('ipervenduto');
+                                                    const symbol = isOverbought ? '➕' : isOversold ? '➖' : '•';
+                                                    lines.push(`${symbol} RSI ${selectedRsiField.replace('RSI@', '')}: ${desc}`);
+                                                }
+                                            } else {
+                                                Object.entries(rsiObj).forEach(([field, desc]) => {
+                                                    if (!desc) return;
+                                                    const descLower = desc.toLowerCase();
+                                                    const isOverbought = descLower.includes('overbought') || descLower.includes('ipercomprato');
+                                                    const isOversold = descLower.includes('oversold') || descLower.includes('ipervenduto');
+                                                    const symbol = isOverbought ? '➕' : isOversold ? '➖' : '•';
+                                                    lines.push(`${symbol} RSI ${field.replace('RSI@', '')}: ${desc}`);
+                                                });
+                                            }
                                         }
                                     }
 
