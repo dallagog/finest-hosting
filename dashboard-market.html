@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Financial Estimates 0.5 alfa</title>
+    <title>Financial Estimates 0.7 alfa</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <link rel="icon" type="image/png" href="images/icon-finest.png">
     <style>
@@ -875,7 +875,7 @@
             portfolioData = [];
 
             // Colonne da escludere dalla tabella (campi interni/tecnici)
-            const EXCLUDED_COLS = new Set(['id_account', 'price_divisor', 'divisor_price']);
+            const EXCLUDED_COLS = new Set(['id_account', 'price_divisor', 'divisor_price', 'unit_price']);
 
             const parseVal = (val) => {
                 if (val === null || val === undefined) return val;
@@ -1133,6 +1133,12 @@
                         }
                     }
 
+                    if (col === '$price_mkt' && val !== undefined && val !== null && val !== '') {
+                        const tooltipText = getTranslation('int.priceincent') || 'int.priceincent';
+                        td.title = tooltipText;
+                        td.style.cursor = 'help';
+                    }
+
                     if (col === 'code_market') {
                         const th = item.market_trading_hours;
 
@@ -1223,7 +1229,7 @@
                                 } else {
                                     td.classList.add('cell-changed');
                                 }
-                            } else {
+                            } else if (col !== 'code_market') {
                                 td.classList.add('cell-changed');
                             }
                             console.log(`[Diff] Updated ${ticker}.${col}: ${normalizedPrev} -> ${displayVal}`);
