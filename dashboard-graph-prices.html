@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Financial Estimates 0.1 alfa</title>
+    <title>Financial Estimates 0.3 alfa</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <link rel="icon" type="image/png" href="images/icon-finest.png">
@@ -400,6 +400,10 @@
                         <div class="option-item">
                             <input type="checkbox" id="layer-force" value="force" checked onchange="onLayerChange()">
                             <label for="layer-force">Forza</label>
+                        </div>
+                        <div class="option-item">
+                            <input type="checkbox" id="layer-rsi" value="rsi" checked onchange="onLayerChange()">
+                            <label for="layer-rsi">RSI</label>
                         </div>
                     </div>
                 </div>
@@ -841,6 +845,7 @@
             const prices = [];
             const priceCurrencies = [];
             const forces = [];
+            const rsiValues = [];
             const patternValues = [];
             const shorts = [];
             const exchanges = [];
@@ -855,6 +860,7 @@
                         prices: [],
                         priceCurrencies: [],
                         forces: {},
+                        rsi: [],
                         patterns: [],
                         shorts: [],
                         exchanges: []
@@ -875,6 +881,10 @@
                         aggregatedData[date].forces[field] = parseValue(item[field]);
                     }
                 });
+
+                if (item['index_RSI'] !== undefined && item['index_RSI'] !== null) {
+                    aggregatedData[date].rsi.push(parseValue(item['index_RSI']));
+                }
 
                 patternFieldList.forEach(field => {
                     if (item[field] !== undefined && item[field] !== null && item[field] !== '') {
@@ -904,6 +914,7 @@
                 prices.push(avgPrice);
                 priceCurrencies.push(avgPriceCurrency);
                 forces.push(data.forces);
+                rsiValues.push(data.rsi.length ? data.rsi.reduce((a, b) => a + b, 0) / data.rsi.length : null);
                 patternValues.push(data.patterns.length > 0 ? data.patterns : []);
                 shorts.push(data.shorts.length ? data.shorts.reduce((a, b) => a + b, 0) / data.shorts.length : 0);
                 exchanges.push(data.exchanges.length ? data.exchanges.reduce((a, b) => a + b, 0) / data.exchanges.length : 0);
@@ -922,6 +933,7 @@
                             label: document.getElementById('page-title-input').value || 'Prezzi',
                             data: prices,
                             forceValues: forces,
+                            rsiValues: rsiValues,
                             patternValues: patternValues,
                             borderColor: 'rgba(75, 192, 192, 1)',
                             backgroundColor: gradient,
@@ -985,6 +997,17 @@
                             pointRadius: 0,
                             yAxisID: 'y',
                             hidden: !document.getElementById('layer-short')?.checked || shorts.every(v => v === 0)
+                        },
+                        {
+                            label: 'RSI',
+                            data: rsiValues,
+                            borderColor: 'rgba(153, 102, 255, 1)',
+                            backgroundColor: 'transparent',
+                            borderWidth: 2,
+                            tension: 0.1,
+                            pointRadius: 0,
+                            yAxisID: 'yRsi',
+                            hidden: !document.getElementById('layer-rsi')?.checked || rsiValues.every(v => v === null)
                         }
                     ]
                 },
@@ -1030,6 +1053,25 @@
                             },
                             title: {
                                 display: false
+                            }
+                        },
+                        yRsi: {
+                            type: 'linear',
+                            display: !!document.getElementById('layer-rsi')?.checked && rsiValues.some(v => v !== null),
+                            position: 'left',
+                            min: 0,
+                            max: 100,
+                            ticks: {
+                                callback: function (value) {
+                                    return value.toFixed(0);
+                                }
+                            },
+                            grid: {
+                                drawOnChartArea: false
+                            },
+                            title: {
+                                display: true,
+                                text: 'RSI'
                             }
                         },
                         x: {
@@ -1091,6 +1133,16 @@
                                         const shortVal = shortDS.data[index];
                                         if (shortVal !== 0 && shortVal !== null && shortVal !== undefined) {
                                             lines.push(`📉 Short: ${shortVal.toFixed(2)}%`);
+                                        }
+                                    }
+
+                                    if (document.getElementById('layer-rsi')?.checked) {
+                                        const rsiVal = priceDS.rsiValues ? priceDS.rsiValues[index] : null;
+                                        if (rsiVal !== null && rsiVal !== undefined) {
+                                            let rsiLabel = '';
+                                            if (rsiVal >= 70) rsiLabel = ' ⬆ Ipercomprato';
+                                            else if (rsiVal <= 30) rsiLabel = ' ⬇ Ipervenduto';
+                                            lines.push(`📊 RSI: ${rsiVal.toFixed(2)}${rsiLabel}`);
                                         }
                                     }
 
