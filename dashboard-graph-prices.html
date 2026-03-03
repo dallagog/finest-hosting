@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Financial Estimates 0.1 alfa</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <link rel="icon" type="image/png" href="images/icon-finest.png">
     <script src="js/dashboard-shared.js"></script>
@@ -821,41 +821,43 @@
                 ctx.restore();
             }
         };
-        console.log('===== loadPrices START =====');
-        document.getElementById('loading').style.display = 'flex';
-        const startDate = document.getElementById('start-date').value;
-        const endDate = document.getElementById('end-date').value;
+        async function loadPrices() {
+            console.log('===== loadPrices START =====');
+            document.getElementById('loading').style.display = 'flex';
+            const startDate = document.getElementById('start-date').value;
+            const endDate = document.getElementById('end-date').value;
 
-        try {
-            const response = await fetch(`${API_URL}/getprices`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    username,
-                    token,
-                    language,
-                    currency: targetCurrency,
-                    instrument: {
-                        id_instrument: idInstrument,
-                        id_account: idAccount,
-                        date_start: startDate,
-                        date_end: endDate
-                    }
-                })
-            });
+            try {
+                const response = await fetch(`${API_URL}/getprices`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        username,
+                        token,
+                        language,
+                        currency: targetCurrency,
+                        instrument: {
+                            id_instrument: idInstrument,
+                            id_account: idAccount,
+                            date_start: startDate,
+                            date_end: endDate
+                        }
+                    })
+                });
 
-            const data = await response.json();
-            trendDataRaw = data.prices || (Array.isArray(data) ? data : []);
-            trendDataRaw.sort((a, b) => new Date(a.date_start || a.date) - new Date(b.date_start || b.date));
+                const data = await response.json();
+                trendDataRaw = data.prices || (Array.isArray(data) ? data : []);
+                trendDataRaw.sort((a, b) => new Date(a.date_start || a.date) - new Date(b.date_start || b.date));
 
-            extractFieldsFromData();
-            renderChart();
-            document.getElementById('loading').style.display = 'none';
-        } catch (error) {
-            console.error('Error loading prices:', error);
-            document.getElementById('loadingText').textContent = "Error loading data from server";
-            document.getElementById('loading').style.display = 'none';
-        }
+                extractFieldsFromData();
+                renderChart();
+                document.getElementById('loading').style.display = 'none';
+            } catch (error) {
+                console.error('Error loading prices:', error);
+                document.getElementById('loadingText').textContent = "Error loading data from server";
+                document.getElementById('loading').style.display = 'none';
+            }
+        } // end loadPrices
 
 
         function parseValue(v) {
