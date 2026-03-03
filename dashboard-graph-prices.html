@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Financial Estimates 0.11 alfa</title>
+    <title>Financial Estimates 0.1 alfa</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <link rel="icon" type="image/png" href="images/icon-finest.png">
@@ -401,10 +401,6 @@
                             <input type="checkbox" id="layer-force" value="force" checked onchange="onLayerChange()">
                             <label for="layer-force">Forza</label>
                         </div>
-                        <div class="option-item">
-                            <input type="checkbox" id="layer-rsi" value="rsi" checked onchange="onLayerChange()">
-                            <label for="layer-rsi">RSI</label>
-                        </div>
                     </div>
                 </div>
             </div>
@@ -428,11 +424,9 @@
         let currencies = [];
         let patternFields = [];
         let forceFields = [];
-        let rsiFields = [];
         let selectedPatterns = new Set();
         let selectedForceField = null;
         let forceFieldOptions = [];
-        let selectedRsiField = null;
 
         const urlParams = new URLSearchParams(window.location.search);
         const username = urlParams.get('username') || '';
@@ -562,11 +556,9 @@
 
             patternFields = Array.from(allKeys).filter(k => k.startsWith('pattern@'));
             forceFields = Array.from(allKeys).filter(k => k.startsWith('forza@'));
-            rsiFields = Array.from(allKeys).filter(k => k.startsWith('RSI@'));
 
             console.log('Pattern fields found:', patternFields);
             console.log('Force fields found:', forceFields);
-            console.log('RSI fields found:', rsiFields);
 
             const layersOptionsList = document.getElementById('layers-options-list');
             console.log('layersOptionsList:', layersOptionsList);
@@ -580,12 +572,6 @@
                 selectedForceField = forceFields[0];
             } else {
                 selectedForceField = null;
-            }
-
-            if (rsiFields.length > 0) {
-                selectedRsiField = rsiFields[0];
-            } else {
-                selectedRsiField = null;
             }
 
             if (layersOptionsList) {
@@ -739,41 +725,6 @@
             }
         };
 
-        const rsiSymbolsPlugin = {
-            id: 'rsiSymbols',
-            afterDatasetsDraw(chart) {
-                if (!document.getElementById('layer-rsi')?.checked) return;
-                const { ctx, chartArea } = chart;
-                const dataset = chart.data.datasets[0];
-                if (!dataset || !dataset.rsiValues) return;
-                const meta = chart.getDatasetMeta(0);
-                if (!meta || meta.hidden) return;
-                ctx.save();
-                ctx.font = 'bold 14px Orbitron, sans-serif';
-                ctx.textAlign = 'center';
-                ctx.textBaseline = 'bottom';
-                meta.data.forEach((point, index) => {
-                    const rsiObj = dataset.rsiValues[index];
-                    if (!rsiObj) return;
-                    let desc = null;
-                    if (selectedRsiField && rsiObj[selectedRsiField] !== undefined) {
-                        desc = rsiObj[selectedRsiField];
-                    } else {
-                        const firstKey = Object.keys(rsiObj)[0];
-                        if (firstKey) desc = rsiObj[firstKey];
-                    }
-                    if (!desc) return;
-                    const dl = desc.toLowerCase();
-                    const isOver = dl.includes('overbought') || dl.includes('ipercomprato');
-                    const isUnder = dl.includes('oversold') || dl.includes('ipervenduto');
-                    if (!isOver && !isUnder) return;
-                    ctx.fillStyle = isOver ? '#e53935' : '#1e88e5';
-                    ctx.fillText(isOver ? '+' : '−', point.x, chartArea.bottom - 4);
-                });
-                ctx.restore();
-            }
-        };
-
         const patternLinesPlugin = {
             id: 'patternLines',
             afterDatasetsDraw(chart) {
@@ -877,34 +828,26 @@
 
             document.getElementById('instrument-name-display').textContent = `${instrumentNameFromUrl || idInstrument}`;
 
-            const firstRow = filteredData[0];
+            const firstRow = trendDataRaw[0];
             const priceField = Object.keys(firstRow).find(k => k.startsWith('price@')) || 'price_mkt';
             const priceCurrencyField = `price_mkt@${targetCurrency}`;
-            const hasPriceCurrency = filteredData.some(item => item[priceCurrencyField] !== undefined);
+            const hasPriceCurrency = trendDataRaw.some(item => item[priceCurrencyField] !== undefined);
             // Scansiona TUTTI i record per trovare i campi pattern@* (non solo il primo)
             const patternFieldSet = new Set();
-            filteredData.forEach(item => Object.keys(item).filter(k => k.startsWith('pattern@')).forEach(k => patternFieldSet.add(k)));
+            trendDataRaw.forEach(item => Object.keys(item).filter(k => k.startsWith('pattern@')).forEach(k => patternFieldSet.add(k)));
             const patternFieldList = Array.from(patternFieldSet);
 
             const labels = [];
             const prices = [];
             const priceCurrencies = [];
             const forces = [];
-            const rsiValues = [];
             const patternValues = [];
             const shorts = [];
             const exchanges = [];
             let dualExchangeLabel = "";
 
-            const startDate = document.getElementById('start-date').value;
-            const endDate = document.getElementById('end-date').value;
-            const filteredData = trendDataRaw.filter(item => {
-                const d = item.date_start || item.date;
-                return (!startDate || d >= startDate) && (!endDate || d <= endDate);
-            });
-
             const aggregatedData = {};
-            filteredData.forEach(item => {
+            trendDataRaw.forEach(item => {
                 const date = item.date_start || item.date;
                 if (!aggregatedData[date]) {
                     aggregatedData[date] = {
@@ -912,7 +855,6 @@
                         prices: [],
                         priceCurrencies: [],
                         forces: {},
-                        rsis: {},
                         patterns: [],
                         shorts: [],
                         exchanges: []
@@ -931,12 +873,6 @@
                 forceFields.forEach(field => {
                     if (item[field] !== undefined && item[field] !== null) {
                         aggregatedData[date].forces[field] = parseValue(item[field]);
-                    }
-                });
-
-                rsiFields.forEach(field => {
-                    if (item[field] !== undefined && item[field] !== null && item[field] !== '') {
-                        aggregatedData[date].rsis[field] = item[field];
                     }
                 });
 
@@ -968,7 +904,6 @@
                 prices.push(avgPrice);
                 priceCurrencies.push(avgPriceCurrency);
                 forces.push(data.forces);
-                rsiValues.push(Object.keys(data.rsis).length > 0 ? data.rsis : null);
                 patternValues.push(data.patterns.length > 0 ? data.patterns : []);
                 shorts.push(data.shorts.length ? data.shorts.reduce((a, b) => a + b, 0) / data.shorts.length : 0);
                 exchanges.push(data.exchanges.length ? data.exchanges.reduce((a, b) => a + b, 0) / data.exchanges.length : 0);
@@ -987,7 +922,6 @@
                             label: document.getElementById('page-title-input').value || 'Prezzi',
                             data: prices,
                             forceValues: forces,
-                            rsiValues: rsiValues,
                             patternValues: patternValues,
                             borderColor: 'rgba(75, 192, 192, 1)',
                             backgroundColor: gradient,
@@ -1054,7 +988,7 @@
                         }
                     ]
                 },
-                plugins: [forceArrowsPlugin, patternLinesPlugin, rsiSymbolsPlugin],
+                plugins: [forceArrowsPlugin, patternLinesPlugin],
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
@@ -1157,22 +1091,6 @@
                                         const shortVal = shortDS.data[index];
                                         if (shortVal !== 0 && shortVal !== null && shortVal !== undefined) {
                                             lines.push(`📉 Short: ${shortVal.toFixed(2)}%`);
-                                        }
-                                    }
-
-                                    if (document.getElementById('layer-rsi')?.checked) {
-                                        const rsiObj = priceDS.rsiValues ? priceDS.rsiValues[index] : null;
-                                        if (rsiObj && Object.keys(rsiObj).length > 0) {
-                                            const field = selectedRsiField && rsiObj[selectedRsiField] !== undefined
-                                                ? selectedRsiField : Object.keys(rsiObj)[0];
-                                            const desc = rsiObj[field];
-                                            if (desc) {
-                                                const dl = desc.toLowerCase();
-                                                const isOver = dl.includes('overbought') || dl.includes('ipercomprato');
-                                                const isUnder = dl.includes('oversold') || dl.includes('ipervenduto');
-                                                const sym = isOver ? '➕' : isUnder ? '➖' : '•';
-                                                lines.push(`${sym} RSI ${field.replace('RSI@', '')}: ${desc}`);
-                                            }
                                         }
                                     }
 
