@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Financial Estimates 0.3 alfa</title>
+    <title>Financial Estimates 0.1 alfa</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <link rel="icon" type="image/png" href="images/icon-finest.png">
@@ -846,6 +846,7 @@
             const priceCurrencies = [];
             const forces = [];
             const rsiValues = [];
+            const rsiDescriptions = [];
             const patternValues = [];
             const shorts = [];
             const exchanges = [];
@@ -861,6 +862,7 @@
                         priceCurrencies: [],
                         forces: {},
                         rsi: [],
+                        rsiDescription: null,
                         patterns: [],
                         shorts: [],
                         exchanges: []
@@ -882,8 +884,11 @@
                     }
                 });
 
-                if (item['index_RSI'] !== undefined && item['index_RSI'] !== null) {
-                    aggregatedData[date].rsi.push(parseValue(item['index_RSI']));
+                if (item['indice_RSI'] !== undefined && item['indice_RSI'] !== null) {
+                    aggregatedData[date].rsi.push(parseValue(item['indice_RSI']));
+                }
+                if (item['description_RSI'] !== undefined && item['description_RSI'] !== null) {
+                    aggregatedData[date].rsiDescription = item['description_RSI'];
                 }
 
                 patternFieldList.forEach(field => {
@@ -915,6 +920,7 @@
                 priceCurrencies.push(avgPriceCurrency);
                 forces.push(data.forces);
                 rsiValues.push(data.rsi.length ? data.rsi.reduce((a, b) => a + b, 0) / data.rsi.length : null);
+                rsiDescriptions.push(data.rsiDescription || null);
                 patternValues.push(data.patterns.length > 0 ? data.patterns : []);
                 shorts.push(data.shorts.length ? data.shorts.reduce((a, b) => a + b, 0) / data.shorts.length : 0);
                 exchanges.push(data.exchanges.length ? data.exchanges.reduce((a, b) => a + b, 0) / data.exchanges.length : 0);
@@ -934,6 +940,7 @@
                             data: prices,
                             forceValues: forces,
                             rsiValues: rsiValues,
+                            rsiDescriptions: rsiDescriptions,
                             patternValues: patternValues,
                             borderColor: 'rgba(75, 192, 192, 1)',
                             backgroundColor: gradient,
@@ -1139,10 +1146,10 @@
                                     if (document.getElementById('layer-rsi')?.checked) {
                                         const rsiVal = priceDS.rsiValues ? priceDS.rsiValues[index] : null;
                                         if (rsiVal !== null && rsiVal !== undefined) {
-                                            let rsiLabel = '';
-                                            if (rsiVal >= 70) rsiLabel = ' ⬆ Ipercomprato';
-                                            else if (rsiVal <= 30) rsiLabel = ' ⬇ Ipervenduto';
-                                            lines.push(`📊 RSI: ${rsiVal.toFixed(2)}${rsiLabel}`);
+                                            const descKey = priceDS.rsiDescriptions ? priceDS.rsiDescriptions[index] : null;
+                                            const descTranslated = descKey ? (getTranslation(`int.${descKey}`) || descKey) : '';
+                                            const descLabel = descTranslated ? ` — ${descTranslated}` : '';
+                                            lines.push(`📊 RSI: ${rsiVal.toFixed(2)}${descLabel}`);
                                         }
                                     }
 
