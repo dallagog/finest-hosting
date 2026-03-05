@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Financial Estimates 0.8 alfa</title>
+    <title>Financial Estimates 0.21 alfa</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <link rel="icon" type="image/png" href="images/icon-finest.png">
     <style>
@@ -1108,6 +1108,9 @@
                     tr.id = `row-${ticker}`;
                 }
 
+                // Append/move row to maintain sort order in DOM
+                tbody.appendChild(tr);
+
                 tableColumns.forEach((col, index) => {
                     let td = isNewRow ? document.createElement('td') : tr.cells[index];
                     let val = item[col];
@@ -1236,8 +1239,6 @@
                         }
                     }
                 });
-
-                if (isNewRow) tbody.appendChild(tr);
 
                 // Track state
                 if (!lastRenderedData[ticker]) lastRenderedData[ticker] = {};

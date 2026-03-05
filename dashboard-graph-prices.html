@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Financial Estimates 0.3 alfa</title>
+    <title>Financial Estimates 0.21 alfa</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <link rel="icon" type="image/png" href="images/icon-finest.png">
@@ -158,6 +158,29 @@
             border: 1px solid #ccc;
             border-radius: 4px;
             font-family: inherit;
+        }
+
+        .time-filter-btn {
+            padding: 8px 12px;
+            background: #f0f0f0;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            margin-right: 5px;
+            transition: all 0.2s;
+            font-family: inherit;
+            color: #333;
+        }
+
+        .time-filter-btn:hover {
+            background: #e0e0e0;
+        }
+
+        .time-filter-btn.active {
+            background: rgba(75, 192, 192, 1);
+            color: #fff;
+            border-color: rgba(75, 192, 192, 1);
         }
 
         .confirm-btn {
@@ -358,6 +381,16 @@
         </div>
 
         <div class="header-right">
+            <div class="control-group">
+                <button class="time-filter-btn" onclick="setTimeFilter('M01')"
+                    data-i18n="dom.timenode.price:M01">M01</button>
+                <button class="time-filter-btn" onclick="setTimeFilter('M03')"
+                    data-i18n="dom.timenode.price:M03">M03</button>
+                <button class="time-filter-btn" onclick="setTimeFilter('M06')"
+                    data-i18n="dom.timenode.price:M06">M06</button>
+                <button class="time-filter-btn active" onclick="setTimeFilter('M12')"
+                    data-i18n="dom.timenode.price:M12">M12</button>
+            </div>
             <div class="control-group">
                 <label for="start-date" id="label-start-date">Start:</label>
                 <input type="date" id="start-date" class="date-input">
@@ -1238,6 +1271,28 @@
             });
         }
 
+        function setTimeFilter(months, reload = true) {
+            document.querySelectorAll('.time-filter-btn').forEach(btn => {
+                btn.classList.remove('active');
+                if (btn.getAttribute('onclick').includes(months)) {
+                    btn.classList.add('active');
+                }
+            });
+
+            const today = new Date();
+            const start = new Date(today.getTime());
+
+            const m = parseInt(months.replace('M', ''), 10);
+            start.setMonth(today.getMonth() - m);
+
+            document.getElementById('end-date').value = today.toISOString().split('T')[0];
+            document.getElementById('start-date').value = start.toISOString().split('T')[0];
+
+            if (reload) {
+                loadPrices();
+            }
+        }
+
         async function init() {
             document.getElementById('username-display').textContent = username;
 
@@ -1246,12 +1301,7 @@
                 return;
             }
 
-            const today = new Date();
-            const oneYearAgo = new Date();
-            oneYearAgo.setFullYear(today.getFullYear() - 1);
-
-            document.getElementById('end-date').value = today.toISOString().split('T')[0];
-            document.getElementById('start-date').value = oneYearAgo.toISOString().split('T')[0];
+            setTimeFilter('M12', false);
 
             await Promise.all([
                 initializeLanguages(),
@@ -1267,6 +1317,13 @@
             if (document.getElementById('user-label-text')) document.getElementById('user-label-text').textContent = (getTranslation('int.user') || 'User') + ':';
             if (document.getElementById('label-start-date')) document.getElementById('label-start-date').textContent = (getTranslation('int.date.start') || 'Start') + ':';
             if (document.getElementById('label-end-date')) document.getElementById('label-end-date').textContent = (getTranslation('int.date.end') || 'End') + ':';
+
+            document.querySelectorAll('.time-filter-btn').forEach(btn => {
+                const key = btn.getAttribute('data-i18n');
+                if (key) {
+                    btn.textContent = getTranslation(key) || btn.textContent;
+                }
+            });
 
             const layerPriceLabel = document.querySelector('[for="layer-price"]');
             if (layerPriceLabel) layerPriceLabel.textContent = getTranslation('int.prices') || 'Prices';
