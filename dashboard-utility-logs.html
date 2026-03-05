@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Financial Estimates 0.1 alfa - Log Viewer</title>
+    <title>Financial Estimates - Log Viewer</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <link rel="icon" type="image/png" href="images/icon-finest.png">
 
@@ -309,17 +309,15 @@
             word-break: break-all;
         }
 
-        /* Single-line mode */
+        /* Single-line mode: solo la colonna message viene troncata */
         .single-line .log-table td {
             white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            max-width: 0;
-            /* triggers ellipsis in table cells */
         }
 
         .single-line .log-table td:last-child {
-            max-width: 400px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 0;
         }
 
         .lvl-info {
@@ -378,6 +376,125 @@
 
         body.is-expanded .content-area {
             height: calc(100vh - 100px);
+        }
+
+        /* ── DETAIL PANEL (non-modale, scorrevole dal basso) ── */
+        #detailPanel {
+            position: fixed;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%) translateY(100%);
+            width: 780px;
+            max-width: calc(100vw - 40px);
+            background: #1a1a1a;
+            border: 1px solid #555;
+            border-bottom: none;
+            border-radius: 10px 10px 0 0;
+            box-shadow: 0 -6px 32px rgba(0, 0, 0, 0.55);
+            z-index: 200;
+            display: flex;
+            flex-direction: column;
+            transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+            font-family: 'Consolas', 'Courier New', monospace;
+        }
+
+        #detailPanel.open {
+            transform: translateX(-50%) translateY(0);
+        }
+
+        .detail-handle {
+            background: #2e2e2e;
+            border-bottom: 1px solid #444;
+            padding: 10px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-radius: 10px 10px 0 0;
+            cursor: default;
+            user-select: none;
+        }
+
+        .detail-handle-title {
+            font-size: 0.78rem;
+            color: #aaa;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .detail-handle-title .badge {
+            font-size: 0.72rem;
+            padding: 2px 7px;
+            border-radius: 3px;
+            font-weight: bold;
+        }
+
+        .detail-close {
+            background: none;
+            border: 1px solid #555;
+            color: #aaa;
+            border-radius: 4px;
+            padding: 3px 8px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: background 0.15s;
+        }
+
+        .detail-close:hover {
+            background: #444;
+            color: #fff;
+        }
+
+        .detail-meta {
+            display: flex;
+            gap: 20px;
+            padding: 10px 16px;
+            border-bottom: 1px solid #2d2d2d;
+            flex-wrap: wrap;
+        }
+
+        .detail-meta-item {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .detail-meta-label {
+            font-size: 0.65rem;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+        }
+
+        .detail-meta-value {
+            font-size: 0.82rem;
+            color: #ccc;
+        }
+
+        .detail-body {
+            padding: 14px 16px;
+            max-height: 260px;
+            overflow-y: auto;
+            color: #d4d4d4;
+            font-size: 0.85rem;
+            white-space: pre-wrap;
+            word-break: break-word;
+            line-height: 1.6;
+        }
+
+        /* cursore pointer sulle righe */
+        .log-table tbody tr {
+            cursor: pointer;
+        }
+
+        .log-table tbody tr:hover td {
+            background: rgba(255, 255, 255, 0.04);
+        }
+
+        .log-table tbody tr.row-selected td {
+            background: rgba(255, 255, 255, 0.08);
         }
     </style>
 </head>
@@ -485,6 +602,33 @@
                 </div>
             </div>
         </div>
+    </div>
+
+    <!-- ── DETAIL PANEL ── -->
+    <div id="detailPanel">
+        <div class="detail-handle">
+            <div class="detail-handle-title">
+                <i class="fa fa-file-lines"></i>
+                Dettaglio voce log
+                <span class="badge" id="detailLevelBadge"></span>
+            </div>
+            <button class="detail-close" onclick="closeDetail()"><i class="fa fa-times"></i> Chiudi</button>
+        </div>
+        <div class="detail-meta">
+            <div class="detail-meta-item">
+                <span class="detail-meta-label">Timestamp</span>
+                <span class="detail-meta-value" id="detailTimestamp">—</span>
+            </div>
+            <div class="detail-meta-item">
+                <span class="detail-meta-label">Level</span>
+                <span class="detail-meta-value" id="detailLevel">—</span>
+            </div>
+            <div class="detail-meta-item">
+                <span class="detail-meta-label">Module</span>
+                <span class="detail-meta-value" id="detailModule">—</span>
+            </div>
+        </div>
+        <div class="detail-body" id="detailMessage"></div>
     </div>
 
     <script>
@@ -645,6 +789,7 @@
                     <td style="color:#ce9178;">${escHtml(log.module)}</td>
                     <td>${msgHtml}</td>
                 `;
+                tr.addEventListener('click', () => openDetail(log, tr));
                 tbody.appendChild(tr);
             });
         }
@@ -652,6 +797,38 @@
         function escHtml(str) {
             if (!str) return '';
             return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        }
+
+        /* ────────────────────────── DETAIL PANEL ────────────────────────── */
+        let selectedRow = null;
+
+        function openDetail(log, tr) {
+            // Deseleziona riga precedente
+            if (selectedRow) selectedRow.classList.remove('row-selected');
+            selectedRow = tr;
+            tr.classList.add('row-selected');
+
+            // Colori badge level
+            const lv = log.level.toLowerCase();
+            const badge = document.getElementById('detailLevelBadge');
+            badge.textContent = log.level;
+            badge.style.background = lv.includes('error') ? '#f44747' :
+                lv.includes('warning') ? '#ce9178' :
+                    lv.includes('info') ? '#569cd6' :
+                        lv.includes('debug') ? '#b5cea8' : '#888';
+            badge.style.color = '#000';
+
+            document.getElementById('detailTimestamp').textContent = log.timestamp || '—';
+            document.getElementById('detailLevel').textContent = log.level || '—';
+            document.getElementById('detailModule').textContent = log.module || '—';
+            document.getElementById('detailMessage').textContent = log.message || '—';
+
+            document.getElementById('detailPanel').classList.add('open');
+        }
+
+        function closeDetail() {
+            document.getElementById('detailPanel').classList.remove('open');
+            if (selectedRow) { selectedRow.classList.remove('row-selected'); selectedRow = null; }
         }
 
         /* ────────────────────────── SINGLE LINE ────────────────────────── */
