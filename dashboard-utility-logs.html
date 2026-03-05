@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Financial Estimates 0.2 alfa - Log Viewer</title>
+    <title>Financial Estimates 0.3 alfa - Log Viewer</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <link rel="icon" type="image/png" href="images/icon-finest.png">
 
@@ -378,49 +378,51 @@
             height: calc(100vh - 100px);
         }
 
-        /* ── DETAIL PANEL ── */
+        /* ── MODAL OVERLAY ── */
+        #detailOverlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(2px);
+            z-index: 199;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.25s ease;
+        }
+
+        #detailOverlay.open {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        /* ── DETAIL PANEL (modale centrato) ── */
         #detailPanel {
             position: fixed;
-            bottom: 0;
+            top: 50%;
             left: 50%;
-            transform: translateX(-50%) translateY(100%);
+            transform: translate(-50%, -48%) scale(0.96);
             width: 820px;
             max-width: calc(100vw - 40px);
             min-width: 360px;
+            max-height: calc(100vh - 60px);
             background: #1a1a1a;
             border: 1px solid #555;
-            border-bottom: none;
-            border-radius: 10px 10px 0 0;
-            box-shadow: 0 -8px 40px rgba(0, 0, 0, 0.7);
+            border-radius: 10px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
             z-index: 200;
             display: flex;
             flex-direction: column;
-            transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+            opacity: 0;
+            pointer-events: none;
+            transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+                opacity 0.25s ease;
             font-family: 'Consolas', 'Courier New', monospace;
-            /* resize orizzontale tramite js; altezza gestita da resize-bar */
         }
 
         #detailPanel.open {
-            transform: translateX(-50%) translateY(0);
-        }
-
-        /* Barra di resize in alto */
-        .detail-resize-bar {
-            height: 6px;
-            background: #2a2a2a;
-            border-radius: 10px 10px 0 0;
-            cursor: ns-resize;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .detail-resize-bar::after {
-            content: '';
-            width: 40px;
-            height: 3px;
-            background: #555;
-            border-radius: 2px;
+            transform: translate(-50%, -50%) scale(1);
+            opacity: 1;
+            pointer-events: all;
         }
 
         .detail-handle {
@@ -591,6 +593,7 @@
             word-break: break-word;
             line-height: 1.65;
             min-height: 80px;
+            max-height: 52vh;
         }
 
         /* highlight ricerca nel detail */
@@ -726,11 +729,11 @@
         </div>
     </div>
 
+    <!-- ── MODAL OVERLAY ── -->
+    <div id="detailOverlay" onclick="closeDetail()"></div>
+
     <!-- ── DETAIL PANEL ── -->
     <div id="detailPanel">
-        <!-- Resize handle in cima -->
-        <div class="detail-resize-bar" id="detailResizeBar"></div>
-
         <!-- Header: titolo + ricerca + azioni -->
         <div class="detail-handle">
             <div class="detail-handle-title">
@@ -985,12 +988,15 @@
             document.getElementById('detailMessage').innerHTML = escHtml(log.message || '—');
 
             document.getElementById('detailPanel').classList.add('open');
+            document.getElementById('detailOverlay').classList.add('open');
+            document.body.style.overflow = 'hidden';
         }
 
         function closeDetail() {
             document.getElementById('detailPanel').classList.remove('open');
+            document.getElementById('detailOverlay').classList.remove('open');
+            document.body.style.overflow = '';
             if (selectedRow) { selectedRow.classList.remove('row-selected'); selectedRow = null; }
-            // reset expanded
             if (detailIsExpanded) toggleDetailExpand();
         }
 
@@ -1002,15 +1008,22 @@
             if (detailIsExpanded) {
                 panel.style.width = 'calc(100vw - 40px)';
                 panel.style.maxWidth = 'calc(100vw - 40px)';
+                panel.style.maxHeight = 'calc(100vh - 40px)';
                 btn.innerHTML = '<i class="fa fa-compress-alt"></i> Riduci';
                 btn.classList.add('active-btn');
             } else {
                 panel.style.width = '820px';
                 panel.style.maxWidth = 'calc(100vw - 40px)';
+                panel.style.maxHeight = 'calc(100vh - 60px)';
                 btn.innerHTML = '<i class="fa fa-expand-alt"></i> Allarga';
                 btn.classList.remove('active-btn');
             }
         }
+
+        // Chiudi con tasto Escape
+        document.addEventListener('keydown', e => {
+            if (e.key === 'Escape') closeDetail();
+        });
 
         /* ── Ricerca interna ── */
         function detailSearch() {
@@ -1063,32 +1076,6 @@
             document.getElementById('btnPrev').disabled = !has;
             document.getElementById('btnNext').disabled = !has;
         }
-
-        /* ── Resize verticale con drag ── */
-        (function initDetailResize() {
-            const bar = document.getElementById('detailResizeBar');
-            const panel = document.getElementById('detailPanel');
-            let startY, startH;
-
-            bar.addEventListener('mousedown', e => {
-                startY = e.clientY;
-                startH = panel.offsetHeight;
-                document.body.style.userSelect = 'none';
-
-                const onMove = ev => {
-                    const delta = startY - ev.clientY;
-                    const newH = Math.max(140, Math.min(window.innerHeight - 60, startH + delta));
-                    panel.style.height = newH + 'px';
-                };
-                const onUp = () => {
-                    document.removeEventListener('mousemove', onMove);
-                    document.removeEventListener('mouseup', onUp);
-                    document.body.style.userSelect = '';
-                };
-                document.addEventListener('mousemove', onMove);
-                document.addEventListener('mouseup', onUp);
-            });
-        })();
 
         /* ────────────────────────── SINGLE LINE ────────────────────────── */
         function toggleSingleLine() {
