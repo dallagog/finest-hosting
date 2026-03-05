@@ -1279,13 +1279,20 @@
                 }
             });
 
-            const today = new Date();
-            const start = new Date(today.getTime());
+            const endDateInput = document.getElementById('end-date').value;
+            let end = new Date(endDateInput);
+
+            // Fallback a oggi se il campo end-date è vuoto o invalido
+            if (isNaN(end.getTime())) {
+                end = new Date();
+                document.getElementById('end-date').value = end.toISOString().split('T')[0];
+            }
+
+            const start = new Date(end.getTime());
 
             const m = parseInt(months.replace('M', ''), 10);
-            start.setMonth(today.getMonth() - m);
+            start.setMonth(end.getMonth() - m);
 
-            document.getElementById('end-date').value = today.toISOString().split('T')[0];
             document.getElementById('start-date').value = start.toISOString().split('T')[0];
 
             if (reload) {

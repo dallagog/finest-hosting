@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Financial Estimates 0.21 alfa</title>
+    <title>Financial Estimates 0.31 alfa</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <link rel="icon" type="image/png" href="images/icon-finest.png">
     <style>
@@ -940,7 +940,8 @@
                     'CTVMKTTQ',
                     '$price_mkt',
                     'unit_price',
-                    'M/P'
+                    'M/P',
+                    'M/P%'
                 ];
                 const allKeys = new Set();
                 portfolioData.forEach(item => Object.keys(item).forEach(k => allKeys.add(k)));
@@ -1128,7 +1129,8 @@
                                 displayVal = '--';
                             } else {
                                 const isPriceOrExchange = col.toLowerCase().includes('price') || col.toLowerCase().includes('exchange') || col === '$price_cost' || col === '$price_mkt' || col === '$exchange_cost';
-                                const decimals = isPriceOrExchange ? 3 : 2;
+                                const isMinusPlusPercent = col === 'M/P%';
+                                const decimals = (isMinusPlusPercent || isPriceOrExchange) ? 3 : 2;
                                 displayVal = val.toLocaleString(undefined, { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
                             }
                         } else {
@@ -1316,11 +1318,19 @@
                 const amountCost = parseFloat(amountCostRaw);
                 if (!isNaN(amountCost)) {
                     item['M/P'] = Math.round((item['CTVMKTTQ'] - amountCost) * 100) / 100;
+                    // M/P% = (M/P / cost_amount) * 100, con 3 decimali
+                    if (amountCost !== 0) {
+                        item['M/P%'] = Math.round((item['M/P'] / amountCost) * 100 * 1000) / 1000;
+                    } else {
+                        item['M/P%'] = null;
+                    }
                 } else {
                     item['M/P'] = null;
+                    item['M/P%'] = null;
                 }
             } else {
                 item['M/P'] = null;
+                item['M/P%'] = null;
             }
         }
 
