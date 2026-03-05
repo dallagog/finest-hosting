@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Financial Estimates - Log Viewer</title>
+    <title>Financial Estimates 0.2 alfa - Log Viewer</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <link rel="icon" type="image/png" href="images/icon-finest.png">
 
@@ -378,81 +378,189 @@
             height: calc(100vh - 100px);
         }
 
-        /* ── DETAIL PANEL (non-modale, scorrevole dal basso) ── */
+        /* ── DETAIL PANEL ── */
         #detailPanel {
             position: fixed;
             bottom: 0;
             left: 50%;
             transform: translateX(-50%) translateY(100%);
-            width: 780px;
+            width: 820px;
             max-width: calc(100vw - 40px);
+            min-width: 360px;
             background: #1a1a1a;
             border: 1px solid #555;
             border-bottom: none;
             border-radius: 10px 10px 0 0;
-            box-shadow: 0 -6px 32px rgba(0, 0, 0, 0.55);
+            box-shadow: 0 -8px 40px rgba(0, 0, 0, 0.7);
             z-index: 200;
             display: flex;
             flex-direction: column;
             transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
             font-family: 'Consolas', 'Courier New', monospace;
+            /* resize orizzontale tramite js; altezza gestita da resize-bar */
         }
 
         #detailPanel.open {
             transform: translateX(-50%) translateY(0);
         }
 
+        /* Barra di resize in alto */
+        .detail-resize-bar {
+            height: 6px;
+            background: #2a2a2a;
+            border-radius: 10px 10px 0 0;
+            cursor: ns-resize;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .detail-resize-bar::after {
+            content: '';
+            width: 40px;
+            height: 3px;
+            background: #555;
+            border-radius: 2px;
+        }
+
         .detail-handle {
-            background: #2e2e2e;
-            border-bottom: 1px solid #444;
-            padding: 10px 16px;
+            background: #2a2a2a;
+            border-bottom: 1px solid #3a3a3a;
+            padding: 8px 14px;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            border-radius: 10px 10px 0 0;
-            cursor: default;
             user-select: none;
+            gap: 10px;
         }
 
         .detail-handle-title {
-            font-size: 0.78rem;
+            font-size: 0.76rem;
             color: #aaa;
             text-transform: uppercase;
             letter-spacing: 0.08em;
             display: flex;
             align-items: center;
             gap: 8px;
+            flex-shrink: 0;
         }
 
         .detail-handle-title .badge {
-            font-size: 0.72rem;
+            font-size: 0.7rem;
             padding: 2px 7px;
             border-radius: 3px;
             font-weight: bold;
         }
 
-        .detail-close {
+        /* Barra ricerca interna */
+        .detail-search-bar {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex: 1;
+            max-width: 380px;
+            background: #111;
+            border: 1px solid #444;
+            border-radius: 5px;
+            padding: 3px 8px;
+        }
+
+        .detail-search-bar i {
+            color: #666;
+            font-size: 0.75rem;
+        }
+
+        #detailSearchInput {
+            background: none;
+            border: none;
+            outline: none;
+            color: #d4d4d4;
+            font-family: 'Consolas', monospace;
+            font-size: 0.8rem;
+            flex: 1;
+            min-width: 0;
+        }
+
+        #detailSearchInput::placeholder {
+            color: #555;
+        }
+
+        .detail-search-nav {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .detail-search-count {
+            font-size: 0.72rem;
+            color: #777;
+            white-space: nowrap;
+            min-width: 48px;
+            text-align: center;
+        }
+
+        .btn-nav {
+            background: none;
+            border: 1px solid #444;
+            color: #aaa;
+            border-radius: 3px;
+            width: 22px;
+            height: 22px;
+            cursor: pointer;
+            font-size: 0.7rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.12s;
+        }
+
+        .btn-nav:hover {
+            background: #3a3a3a;
+            color: #fff;
+        }
+
+        .btn-nav:disabled {
+            opacity: 0.3;
+            cursor: default;
+        }
+
+        .detail-handle-actions {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-shrink: 0;
+        }
+
+        .detail-btn {
             background: none;
             border: 1px solid #555;
             color: #aaa;
             border-radius: 4px;
             padding: 3px 8px;
             cursor: pointer;
-            font-size: 0.8rem;
+            font-size: 0.75rem;
             transition: background 0.15s;
+            white-space: nowrap;
         }
 
-        .detail-close:hover {
+        .detail-btn:hover {
+            background: #3a3a3a;
+            color: #fff;
+        }
+
+        .detail-btn.active-btn {
             background: #444;
             color: #fff;
+            border-color: #777;
         }
 
         .detail-meta {
             display: flex;
-            gap: 20px;
-            padding: 10px 16px;
-            border-bottom: 1px solid #2d2d2d;
+            gap: 24px;
+            padding: 8px 14px;
+            border-bottom: 1px solid #252525;
             flex-wrap: wrap;
+            background: #1e1e1e;
         }
 
         .detail-meta-item {
@@ -462,26 +570,40 @@
         }
 
         .detail-meta-label {
-            font-size: 0.65rem;
-            color: #666;
+            font-size: 0.62rem;
+            color: #555;
             text-transform: uppercase;
             letter-spacing: 0.06em;
         }
 
         .detail-meta-value {
-            font-size: 0.82rem;
+            font-size: 0.8rem;
             color: #ccc;
         }
 
         .detail-body {
             padding: 14px 16px;
-            max-height: 260px;
+            flex: 1;
             overflow-y: auto;
             color: #d4d4d4;
             font-size: 0.85rem;
             white-space: pre-wrap;
             word-break: break-word;
-            line-height: 1.6;
+            line-height: 1.65;
+            min-height: 80px;
+        }
+
+        /* highlight ricerca nel detail */
+        .detail-body .d-hi {
+            background: #ffcc00;
+            color: #000;
+            border-radius: 2px;
+            padding: 0 1px;
+        }
+
+        .detail-body .d-hi.d-hi-current {
+            background: #ff8c00;
+            color: #fff;
         }
 
         /* cursore pointer sulle righe */
@@ -606,14 +728,40 @@
 
     <!-- ── DETAIL PANEL ── -->
     <div id="detailPanel">
+        <!-- Resize handle in cima -->
+        <div class="detail-resize-bar" id="detailResizeBar"></div>
+
+        <!-- Header: titolo + ricerca + azioni -->
         <div class="detail-handle">
             <div class="detail-handle-title">
                 <i class="fa fa-file-lines"></i>
-                Dettaglio voce log
+                Dettaglio log
                 <span class="badge" id="detailLevelBadge"></span>
             </div>
-            <button class="detail-close" onclick="closeDetail()"><i class="fa fa-times"></i> Chiudi</button>
+
+            <!-- Ricerca interna -->
+            <div class="detail-search-bar">
+                <i class="fa fa-search"></i>
+                <input type="text" id="detailSearchInput" placeholder="Cerca nel messaggio…" oninput="detailSearch()">
+                <div class="detail-search-nav">
+                    <span class="detail-search-count" id="detailSearchCount"></span>
+                    <button class="btn-nav" id="btnPrev" onclick="detailSearchNav(-1)" title="Precedente"><i
+                            class="fa fa-chevron-up"></i></button>
+                    <button class="btn-nav" id="btnNext" onclick="detailSearchNav(+1)" title="Successivo"><i
+                            class="fa fa-chevron-down"></i></button>
+                </div>
+            </div>
+
+            <div class="detail-handle-actions">
+                <button class="detail-btn" id="btnDetailExpand" onclick="toggleDetailExpand()"
+                    title="Allarga / Riduci pannello">
+                    <i class="fa fa-expand-alt"></i> Allarga
+                </button>
+                <button class="detail-btn" onclick="closeDetail()"><i class="fa fa-times"></i> Chiudi</button>
+            </div>
         </div>
+
+        <!-- Meta -->
         <div class="detail-meta">
             <div class="detail-meta-item">
                 <span class="detail-meta-label">Timestamp</span>
@@ -628,6 +776,8 @@
                 <span class="detail-meta-value" id="detailModule">—</span>
             </div>
         </div>
+
+        <!-- Corpo messaggio -->
         <div class="detail-body" id="detailMessage"></div>
     </div>
 
@@ -801,14 +951,19 @@
 
         /* ────────────────────────── DETAIL PANEL ────────────────────────── */
         let selectedRow = null;
+        let currentLogData = null;
+        let detailMatches = [];
+        let detailMatchIdx = -1;
+        let detailIsExpanded = false;
 
         function openDetail(log, tr) {
-            // Deseleziona riga precedente
             if (selectedRow) selectedRow.classList.remove('row-selected');
             selectedRow = tr;
             tr.classList.add('row-selected');
 
-            // Colori badge level
+            currentLogData = log;
+
+            // Badge level
             const lv = log.level.toLowerCase();
             const badge = document.getElementById('detailLevelBadge');
             badge.textContent = log.level;
@@ -821,7 +976,13 @@
             document.getElementById('detailTimestamp').textContent = log.timestamp || '—';
             document.getElementById('detailLevel').textContent = log.level || '—';
             document.getElementById('detailModule').textContent = log.module || '—';
-            document.getElementById('detailMessage').textContent = log.message || '—';
+
+            // Svuota ricerca interna e mostra testo
+            document.getElementById('detailSearchInput').value = '';
+            detailMatches = [];
+            detailMatchIdx = -1;
+            document.getElementById('detailSearchCount').textContent = '';
+            document.getElementById('detailMessage').innerHTML = escHtml(log.message || '—');
 
             document.getElementById('detailPanel').classList.add('open');
         }
@@ -829,7 +990,105 @@
         function closeDetail() {
             document.getElementById('detailPanel').classList.remove('open');
             if (selectedRow) { selectedRow.classList.remove('row-selected'); selectedRow = null; }
+            // reset expanded
+            if (detailIsExpanded) toggleDetailExpand();
         }
+
+        /* ── Allarga / riduci il pannello ── */
+        function toggleDetailExpand() {
+            detailIsExpanded = !detailIsExpanded;
+            const panel = document.getElementById('detailPanel');
+            const btn = document.getElementById('btnDetailExpand');
+            if (detailIsExpanded) {
+                panel.style.width = 'calc(100vw - 40px)';
+                panel.style.maxWidth = 'calc(100vw - 40px)';
+                btn.innerHTML = '<i class="fa fa-compress-alt"></i> Riduci';
+                btn.classList.add('active-btn');
+            } else {
+                panel.style.width = '820px';
+                panel.style.maxWidth = 'calc(100vw - 40px)';
+                btn.innerHTML = '<i class="fa fa-expand-alt"></i> Allarga';
+                btn.classList.remove('active-btn');
+            }
+        }
+
+        /* ── Ricerca interna ── */
+        function detailSearch() {
+            const term = document.getElementById('detailSearchInput').value;
+            const body = document.getElementById('detailMessage');
+            const raw = currentLogData ? (currentLogData.message || '') : '';
+
+            if (!term) {
+                body.innerHTML = escHtml(raw);
+                detailMatches = [];
+                detailMatchIdx = -1;
+                document.getElementById('detailSearchCount').textContent = '';
+                updateDetailNavBtns();
+                return;
+            }
+
+            // Costruisci HTML con mark
+            const escRe = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            const re = new RegExp(`(${escRe})`, 'gi');
+            body.innerHTML = escHtml(raw).replace(re, '<mark class="d-hi">$1</mark>');
+
+            detailMatches = Array.from(body.querySelectorAll('mark.d-hi'));
+            detailMatchIdx = detailMatches.length > 0 ? 0 : -1;
+
+            applyDetailMatchCurrent();
+            updateDetailNavBtns();
+        }
+
+        function detailSearchNav(dir) {
+            if (!detailMatches.length) return;
+            detailMatchIdx = (detailMatchIdx + dir + detailMatches.length) % detailMatches.length;
+            applyDetailMatchCurrent();
+        }
+
+        function applyDetailMatchCurrent() {
+            detailMatches.forEach((m, i) => {
+                m.classList.toggle('d-hi-current', i === detailMatchIdx);
+            });
+            if (detailMatchIdx >= 0 && detailMatches[detailMatchIdx]) {
+                detailMatches[detailMatchIdx].scrollIntoView({ block: 'nearest' });
+            }
+            const count = document.getElementById('detailSearchCount');
+            count.textContent = detailMatches.length
+                ? `${detailMatchIdx + 1}/${detailMatches.length}`
+                : '0 ris.';
+        }
+
+        function updateDetailNavBtns() {
+            const has = detailMatches.length > 0;
+            document.getElementById('btnPrev').disabled = !has;
+            document.getElementById('btnNext').disabled = !has;
+        }
+
+        /* ── Resize verticale con drag ── */
+        (function initDetailResize() {
+            const bar = document.getElementById('detailResizeBar');
+            const panel = document.getElementById('detailPanel');
+            let startY, startH;
+
+            bar.addEventListener('mousedown', e => {
+                startY = e.clientY;
+                startH = panel.offsetHeight;
+                document.body.style.userSelect = 'none';
+
+                const onMove = ev => {
+                    const delta = startY - ev.clientY;
+                    const newH = Math.max(140, Math.min(window.innerHeight - 60, startH + delta));
+                    panel.style.height = newH + 'px';
+                };
+                const onUp = () => {
+                    document.removeEventListener('mousemove', onMove);
+                    document.removeEventListener('mouseup', onUp);
+                    document.body.style.userSelect = '';
+                };
+                document.addEventListener('mousemove', onMove);
+                document.addEventListener('mouseup', onUp);
+            });
+        })();
 
         /* ────────────────────────── SINGLE LINE ────────────────────────── */
         function toggleSingleLine() {
