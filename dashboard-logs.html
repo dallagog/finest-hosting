@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="it">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Financial Estimates - Log Viewer</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link rel="icon" type="image/png" href="images/icon-finest.png">
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&display=swap');
+
+        :root {
+            --bg-color: #f5f5f0;
+            --neon-cyan: #000000;
+            --neon-blue: #333333;
+            --glass-bg: #ffffff;
+            --text-color: #333333;
+            --border-color: #000000;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Orbitron', sans-serif;
+            background-color: var(--bg-color);
+            padding: 20px;
+            color: var(--text-color);
+            min-height: 100vh;
+        }
+
+        .main-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .header-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px;
+            background: var(--glass-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+        }
+
+        .user-info-left {
+            font-size: 14px;
+            color: var(--neon-cyan);
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        h1 {
+            text-align: center;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            font-size: 1.5em;
+        }
+
+        .content-area {
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            gap: 20px;
+            height: calc(100vh - 150px);
+        }
+
+        .files-panel {
+            background: var(--glass-bg);
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            overflow-y: auto;
+            padding: 15px;
+        }
+
+        .log-list {
+            list-style: none;
+        }
+
+        .log-item {
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: background 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .log-item:hover {
+            background: #f0f0f0;
+        }
+
+        .log-item.active {
+            background: #333;
+            color: #fff;
+        }
+
+        .log-viewer {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .viewer-header {
+            background: #333;
+            padding: 10px 20px;
+            font-size: 0.9rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #000;
+        }
+
+        .log-table-container {
+            flex: 1;
+            overflow: auto;
+            padding: 10px;
+        }
+
+        .log-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-family: 'Consolas', 'Courier New', monospace;
+            font-size: 0.85rem;
+        }
+
+        .log-table th {
+            text-align: left;
+            padding: 8px;
+            border-bottom: 1px solid #444;
+            color: #aaa;
+            position: sticky;
+            top: 0;
+            background: #1e1e1e;
+        }
+
+        .log-table td {
+            padding: 8px;
+            border-bottom: 1px solid #2d2d2d;
+            vertical-align: top;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+
+        .lvl-info {
+            color: #569cd6;
+            font-weight: bold;
+        }
+
+        .lvl-debug {
+            color: #b5cea8;
+            font-weight: bold;
+        }
+
+        .lvl-error {
+            color: #f44747;
+            font-weight: bold;
+        }
+
+        .lvl-warning {
+            color: #ce9178;
+            font-weight: bold;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(255, 255, 255, .3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        #loadingOverlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="main-container">
+        <div class="header-bar">
+            <div class="user-info-left">
+                <div><strong>Utente:</strong> <span id="usernameDisplay">-</span></div>
+            </div>
+            <h1>Log Viewer</h1>
+            <div class="logout-container">
+                <button onclick="window.location.href='dashboard.html'"
+                    style="padding: 8px 16px; background: #000; color: #fff; border: 1px solid #000; border-radius: 4px; cursor: pointer;">Chiudi</button>
+            </div>
+        </div>
+
+        <div class="content-area">
+            <div class="files-panel">
+                <h3 style="margin-bottom: 15px; font-size: 1rem; border-bottom: 2px solid #000; padding-bottom: 5px;">
+                    File Log</h3>
+                <ul id="logFileList" class="log-list">
+                    <p style="color: #666; font-size: 0.9rem;">Caricamento...</p>
+                </ul>
+            </div>
+
+            <div class="log-viewer" style="position: relative;">
+                <div id="loadingOverlay">
+                    <div class="spinner"></div>
+                </div>
+                <div class="viewer-header">
+                    <span id="currentFileName">Nessun file selezionato</span>
+                    <span id="logCount"></span>
+                </div>
+                <div class="log-table-container">
+                    <table class="log-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 180px;">Timestamp</th>
+                                <th style="width: 80px;">Level</th>
+                                <th style="width: 150px;">Module</th>
+                                <th>Message</th>
+                            </tr>
+                        </thead>
+                        <tbody id="logContent">
+                            <tr>
+                                <td colspan="4" style="text-align: center; color: #666; padding: 40px;">Seleziona un
+                                    file dalla lista a sinistra</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL_MARKET = "https://market-tunnel.fe-web.eu";
+        const credentials = {
+            username: localStorage.getItem('username'),
+            token: localStorage.getItem('token'),
+            language: localStorage.getItem('language') || 'it_IT'
+        };
+
+        async function init() {
+            if (!credentials.username) {
+                window.location.href = 'index.html';
+                return;
+            }
+            document.getElementById('usernameDisplay').textContent = credentials.username;
+            await fetchLogList();
+        }
+
+        async function fetchLogList() {
+            const listEl = document.getElementById('logFileList');
+            try {
+                const response = await fetch(`${API_URL_MARKET}/getloglist`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        username: credentials.username,
+                        token: credentials.token,
+                        language: credentials.language
+                    })
+                });
+
+                const result = await response.json();
+                if (result.status === 'ok') {
+                    renderLogList(result.data);
+                } else {
+                    listEl.innerHTML = `<p style="color: red;">Errore: ${result.msg}</p>`;
+                }
+            } catch (err) {
+                listEl.innerHTML = `<p style="color: red;">Errore connessione</p>`;
+            }
+        }
+
+        function renderLogList(files) {
+            const listEl = document.getElementById('logFileList');
+            if (files.length === 0) {
+                listEl.innerHTML = '<p style="color: #666;">Nessun file log trovato.</p>';
+                return;
+            }
+
+            listEl.innerHTML = '';
+            files.forEach(file => {
+                const li = document.createElement('li');
+                li.className = 'log-item';
+                li.innerHTML = `<i class="fa-regular fa-file-lines"></i> <span>${file}</span>`;
+                li.onclick = () => loadLogFile(file, li);
+                listEl.appendChild(li);
+            });
+        }
+
+        async function loadLogFile(filename, element) {
+            // UI Selection
+            document.querySelectorAll('.log-item').forEach(el => el.classList.remove('active'));
+            element.classList.add('active');
+
+            const overlay = document.getElementById('loadingOverlay');
+            overlay.style.display = 'flex';
+            document.getElementById('currentFileName').textContent = filename;
+
+            try {
+                const response = await fetch(`${API_URL_MARKET}/getlogfile`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        username: credentials.username,
+                        token: credentials.token,
+                        language: credentials.language,
+                        filename: filename
+                    })
+                });
+
+                const result = await response.json();
+                if (result.status === 'ok') {
+                    renderLogs(result.data);
+                } else {
+                    document.getElementById('logContent').innerHTML = `<tr><td colspan="4" style="color: red; padding: 20px;">${result.msg}</td></tr>`;
+                }
+            } catch (err) {
+                document.getElementById('logContent').innerHTML = `<tr><td colspan="4" style="color: red; padding: 20px;">Errore caricamento file</td></tr>`;
+            } finally {
+                overlay.style.display = 'none';
+            }
+        }
+
+        function renderLogs(logs) {
+            const tbody = document.getElementById('logContent');
+            const countEl = document.getElementById('logCount');
+            tbody.innerHTML = '';
+            countEl.textContent = `Voci: ${logs.length}`;
+
+            logs.forEach(log => {
+                const tr = document.createElement('tr');
+
+                let levelClass = '';
+                const level = log.level.toLowerCase();
+                if (level.includes('info')) levelClass = 'lvl-info';
+                else if (level.includes('debug')) levelClass = 'lvl-debug';
+                else if (level.includes('error')) levelClass = 'lvl-error';
+                else if (level.includes('warning')) levelClass = 'lvl-warning';
+
+                tr.innerHTML = `
+                    <td style="color: #888;">${log.timestamp}</td>
+                    <td class="${levelClass}">${log.level}</td>
+                    <td style="color: #ce9178;">${log.module}</td>
+                    <td>${log.message}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        window.onload = init;
+    </script>
+</body>
+
+</html>
