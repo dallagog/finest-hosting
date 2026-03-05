@@ -1409,14 +1409,17 @@
             }
 
             portfolioData.sort((a, b) => {
-                const valA = a[column];
-                const valB = b[column];
-
-                if (valA === undefined || valA === null) return 1;
-                if (valB === undefined || valB === null) return -1;
-
-                if (typeof valA === 'number' && typeof valB === 'number') {
-                    return sortAscending ? valA - valB : valB - valA;
+                const rawA = a[column];
+                const rawB = b[column];
+                // Treat missing/empty values as 0 for sorting
+                const valA = (rawA === undefined || rawA === null || rawA === '') ? 0 : rawA;
+                const valB = (rawB === undefined || rawB === null || rawB === '') ? 0 : rawB;
+                // Try numeric comparison if both can be parsed as numbers
+                const numA = parseFloat(valA);
+                const numB = parseFloat(valB);
+                const bothNumbers = !isNaN(numA) && !isNaN(numB);
+                if (bothNumbers) {
+                    return sortAscending ? numA - numB : numB - numA;
                 } else {
                     const strA = String(valA);
                     const strB = String(valB);

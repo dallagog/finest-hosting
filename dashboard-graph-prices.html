@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Financial Estimates 0.13 alfa</title>
+    <title>Financial Estimates 0.9 alfa</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <link rel="icon" type="image/png" href="images/icon-finest.png">
@@ -893,8 +893,18 @@
                     })
                 });
 
-                const data = await response.json();
-                trendDataRaw = data.prices || (Array.isArray(data) ? data : []);
+                const jsonResponse = await response.json();
+
+                // Get the prices array either from jsonResponse.prices (backend wraps it) or directly if array
+                let targetPrices = jsonResponse.prices || (Array.isArray(jsonResponse) ? jsonResponse : []);
+
+                // If it's wrapped in the new structure {"filter": {}, "data": []}
+                if (targetPrices.data && Array.isArray(targetPrices.data)) {
+                    trendDataRaw = targetPrices.data;
+                } else {
+                    trendDataRaw = targetPrices;
+                }
+
                 trendDataRaw.sort((a, b) => new Date(a.date_start || a.date) - new Date(b.date_start || b.date));
 
                 extractFieldsFromData();
