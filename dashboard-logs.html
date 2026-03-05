@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Financial Estimates - Log Viewer</title>
+    <title>Financial Estimates 0.1 alfa - Log Viewer</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <link rel="icon" type="image/png" href="images/icon-finest.png">
 
@@ -40,6 +40,10 @@
             display: flex;
             flex-direction: column;
             gap: 20px;
+        }
+
+        .main-container.expanded {
+            max-width: 100%;
         }
 
         .header-bar {
@@ -125,6 +129,153 @@
             justify-content: space-between;
             align-items: center;
             border-bottom: 1px solid #000;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .viewer-header-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .viewer-header-right {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        /* ── TOOLBAR FILTRI ── */
+        .filter-toolbar {
+            background: #2a2a2a;
+            padding: 10px 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+            border-bottom: 1px solid #444;
+        }
+
+        .filter-toolbar label {
+            font-size: 0.75rem;
+            color: #aaa;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            white-space: nowrap;
+        }
+
+        .filter-input {
+            background: #1e1e1e;
+            border: 1px solid #555;
+            color: #d4d4d4;
+            border-radius: 4px;
+            padding: 5px 10px;
+            font-family: 'Consolas', monospace;
+            font-size: 0.82rem;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .filter-input:focus {
+            border-color: #888;
+        }
+
+        .filter-input::placeholder {
+            color: #666;
+        }
+
+        #searchInput {
+            width: 220px;
+        }
+
+        #moduleFilter {
+            width: 160px;
+        }
+
+        #levelFilter {
+            background: #1e1e1e;
+            border: 1px solid #555;
+            color: #d4d4d4;
+            border-radius: 4px;
+            padding: 5px 8px;
+            font-family: 'Consolas', monospace;
+            font-size: 0.82rem;
+            outline: none;
+            cursor: pointer;
+        }
+
+        #levelFilter option {
+            background: #1e1e1e;
+        }
+
+        .filter-divider {
+            width: 1px;
+            height: 20px;
+            background: #444;
+        }
+
+        /* Checkbox "una riga" */
+        .toggle-wrap {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .toggle-wrap input[type="checkbox"] {
+            accent-color: #aaa;
+            width: 14px;
+            height: 14px;
+            cursor: pointer;
+        }
+
+        .toggle-wrap span {
+            font-size: 0.75rem;
+            color: #aaa;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            white-space: nowrap;
+        }
+
+        /* Pulsante espandi */
+        .btn-icon {
+            background: none;
+            border: 1px solid #555;
+            color: #aaa;
+            border-radius: 4px;
+            padding: 5px 9px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: background 0.15s, color 0.15s;
+            white-space: nowrap;
+        }
+
+        .btn-icon:hover {
+            background: #444;
+            color: #fff;
+        }
+
+        .btn-icon.active-btn {
+            background: #555;
+            color: #fff;
+            border-color: #888;
+        }
+
+        /* Contatore risultati filtrati */
+        #filteredCount {
+            font-size: 0.75rem;
+            color: #888;
+        }
+
+        /* Highlight ricerca */
+        .highlight {
+            background: #ffcc00;
+            color: #000;
+            border-radius: 2px;
+            padding: 0 1px;
         }
 
         .log-table-container {
@@ -156,6 +307,19 @@
             vertical-align: top;
             white-space: pre-wrap;
             word-break: break-all;
+        }
+
+        /* Single-line mode */
+        .single-line .log-table td {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 0;
+            /* triggers ellipsis in table cells */
+        }
+
+        .single-line .log-table td:last-child {
+            max-width: 400px;
         }
 
         .lvl-info {
@@ -206,11 +370,20 @@
             align-items: center;
             z-index: 100;
         }
+
+        /* Expanded layout */
+        body.is-expanded .main-container {
+            max-width: 100%;
+        }
+
+        body.is-expanded .content-area {
+            height: calc(100vh - 100px);
+        }
     </style>
 </head>
 
 <body>
-    <div class="main-container">
+    <div class="main-container" id="mainContainer">
         <div class="header-bar">
             <div class="user-info-left">
                 <div><strong>Utente:</strong> <span id="usernameDisplay">-</span></div>
@@ -218,41 +391,94 @@
             <h1>Log Viewer</h1>
             <div class="logout-container">
                 <button onclick="window.location.href='dashboard.html'"
-                    style="padding: 8px 16px; background: #000; color: #fff; border: 1px solid #000; border-radius: 4px; cursor: pointer;">Chiudi</button>
+                    style="padding:8px 16px;background:#000;color:#fff;border:1px solid #000;border-radius:4px;cursor:pointer;">Chiudi</button>
             </div>
         </div>
 
         <div class="content-area">
+            <!-- Pannello file -->
             <div class="files-panel">
-                <h3 style="margin-bottom: 15px; font-size: 1rem; border-bottom: 2px solid #000; padding-bottom: 5px;">
-                    File Log</h3>
+                <h3 style="margin-bottom:15px;font-size:1rem;border-bottom:2px solid #000;padding-bottom:5px;">File Log
+                </h3>
                 <ul id="logFileList" class="log-list">
-                    <p style="color: #666; font-size: 0.9rem;">Caricamento...</p>
+                    <p style="color:#666;font-size:0.9rem;">Caricamento...</p>
                 </ul>
             </div>
 
-            <div class="log-viewer" style="position: relative;">
+            <!-- Viewer -->
+            <div class="log-viewer" style="position:relative;">
                 <div id="loadingOverlay">
                     <div class="spinner"></div>
                 </div>
+
+                <!-- Header: nome file + contatori + pulsante espandi -->
                 <div class="viewer-header">
-                    <span id="currentFileName">Nessun file selezionato</span>
-                    <span id="logCount"></span>
+                    <div class="viewer-header-left">
+                        <span id="currentFileName">Nessun file selezionato</span>
+                        <span id="logCount"></span>
+                        <span id="filteredCount"></span>
+                    </div>
+                    <div class="viewer-header-right">
+                        <button class="btn-icon" id="btnExpand" title="Espandi / Comprimi" onclick="toggleExpand()">
+                            <i class="fa fa-expand"></i> Espandi
+                        </button>
+                    </div>
                 </div>
-                <div class="log-table-container">
+
+                <!-- Toolbar filtri -->
+                <div class="filter-toolbar">
+                    <!-- Ricerca testo -->
+                    <label for="searchInput"><i class="fa fa-search"></i>&nbsp;Cerca</label>
+                    <input id="searchInput" class="filter-input" type="text" placeholder="Testo nel messaggio…"
+                        oninput="applyFilters()">
+
+                    <div class="filter-divider"></div>
+
+                    <!-- Filtro level -->
+                    <label for="levelFilter"><i class="fa fa-tag"></i>&nbsp;Level</label>
+                    <select id="levelFilter" onchange="applyFilters()">
+                        <option value="">Tutti</option>
+                        <option value="info">INFO</option>
+                        <option value="debug">DEBUG</option>
+                        <option value="warning">WARNING</option>
+                        <option value="error">ERROR</option>
+                    </select>
+
+                    <div class="filter-divider"></div>
+
+                    <!-- Filtro modulo -->
+                    <label for="moduleFilter"><i class="fa fa-cube"></i>&nbsp;Modulo</label>
+                    <input id="moduleFilter" class="filter-input" type="text" placeholder="Nome modulo…"
+                        oninput="applyFilters()">
+
+                    <div class="filter-divider"></div>
+
+                    <!-- Checkbox singola riga -->
+                    <label class="toggle-wrap" title="Mostra ogni messaggio su una sola riga">
+                        <input type="checkbox" id="singleLineCheck" onchange="toggleSingleLine()">
+                        <span><i class="fa fa-minus"></i>&nbsp;Riga singola</span>
+                    </label>
+
+                    <!-- Reset filtri -->
+                    <button class="btn-icon" onclick="resetFilters()" title="Azzera filtri" style="margin-left:auto;">
+                        <i class="fa fa-times"></i> Reset
+                    </button>
+                </div>
+
+                <div class="log-table-container" id="logTableContainer">
                     <table class="log-table">
                         <thead>
                             <tr>
-                                <th style="width: 180px;">Timestamp</th>
-                                <th style="width: 80px;">Level</th>
-                                <th style="width: 150px;">Module</th>
+                                <th style="width:180px;">Timestamp</th>
+                                <th style="width:80px;">Level</th>
+                                <th style="width:150px;">Module</th>
                                 <th>Message</th>
                             </tr>
                         </thead>
                         <tbody id="logContent">
                             <tr>
-                                <td colspan="4" style="text-align: center; color: #666; padding: 40px;">Seleziona un
-                                    file dalla lista a sinistra</td>
+                                <td colspan="4" style="text-align:center;color:#666;padding:40px;">Seleziona un file
+                                    dalla lista a sinistra</td>
                             </tr>
                         </tbody>
                     </table>
@@ -269,46 +495,36 @@
             language: localStorage.getItem('language') || 'it_IT'
         };
 
+        let allLogs = [];      // tutti i log del file corrente
+        let isExpanded = false;
+
+        /* ────────────────────────── INIT ────────────────────────── */
         async function init() {
-            if (!credentials.username) {
-                window.location.href = 'index.html';
-                return;
-            }
+            if (!credentials.username) { window.location.href = 'index.html'; return; }
             document.getElementById('usernameDisplay').textContent = credentials.username;
             await fetchLogList();
         }
 
+        /* ────────────────────────── LISTA FILE ────────────────────────── */
         async function fetchLogList() {
             const listEl = document.getElementById('logFileList');
             try {
                 const response = await fetch(`${API_URL_MARKET}/getloglist`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        username: credentials.username,
-                        token: credentials.token,
-                        language: credentials.language
-                    })
+                    body: JSON.stringify({ username: credentials.username, token: credentials.token, language: credentials.language })
                 });
-
                 const result = await response.json();
-                if (result.status === 'ok') {
-                    renderLogList(result.data);
-                } else {
-                    listEl.innerHTML = `<p style="color: red;">Errore: ${result.msg}</p>`;
-                }
-            } catch (err) {
-                listEl.innerHTML = `<p style="color: red;">Errore connessione</p>`;
+                if (result.status === 'ok') renderLogList(result.data);
+                else listEl.innerHTML = `<p style="color:red;">Errore: ${result.msg}</p>`;
+            } catch {
+                listEl.innerHTML = `<p style="color:red;">Errore connessione</p>`;
             }
         }
 
         function renderLogList(files) {
             const listEl = document.getElementById('logFileList');
-            if (files.length === 0) {
-                listEl.innerHTML = '<p style="color: #666;">Nessun file log trovato.</p>';
-                return;
-            }
-
+            if (!files.length) { listEl.innerHTML = '<p style="color:#666;">Nessun file log trovato.</p>'; return; }
             listEl.innerHTML = '';
             files.forEach(file => {
                 const li = document.createElement('li');
@@ -319,64 +535,143 @@
             });
         }
 
+        /* ────────────────────────── CARICA FILE ────────────────────────── */
         async function loadLogFile(filename, element) {
-            // UI Selection
             document.querySelectorAll('.log-item').forEach(el => el.classList.remove('active'));
             element.classList.add('active');
-
-            const overlay = document.getElementById('loadingOverlay');
-            overlay.style.display = 'flex';
+            document.getElementById('loadingOverlay').style.display = 'flex';
             document.getElementById('currentFileName').textContent = filename;
+            resetFilters(false); // reset silenzioso
 
             try {
                 const response = await fetch(`${API_URL_MARKET}/getlogfile`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        username: credentials.username,
-                        token: credentials.token,
-                        language: credentials.language,
-                        filename: filename
-                    })
+                    body: JSON.stringify({ username: credentials.username, token: credentials.token, language: credentials.language, filename })
                 });
-
                 const result = await response.json();
                 if (result.status === 'ok') {
-                    renderLogs(result.data);
+                    allLogs = result.data;
+                    document.getElementById('logCount').textContent = `Voci: ${allLogs.length}`;
+                    populateModuleSuggestions(allLogs);
+                    applyFilters();
                 } else {
-                    document.getElementById('logContent').innerHTML = `<tr><td colspan="4" style="color: red; padding: 20px;">${result.msg}</td></tr>`;
+                    document.getElementById('logContent').innerHTML =
+                        `<tr><td colspan="4" style="color:red;padding:20px;">${result.msg}</td></tr>`;
                 }
-            } catch (err) {
-                document.getElementById('logContent').innerHTML = `<tr><td colspan="4" style="color: red; padding: 20px;">Errore caricamento file</td></tr>`;
+            } catch {
+                document.getElementById('logContent').innerHTML =
+                    `<tr><td colspan="4" style="color:red;padding:20px;">Errore caricamento file</td></tr>`;
             } finally {
-                overlay.style.display = 'none';
+                document.getElementById('loadingOverlay').style.display = 'none';
             }
         }
 
-        function renderLogs(logs) {
+        /* ────────────────────────── SUGGERIMENTI MODULO ────────────────────────── */
+        function populateModuleSuggestions(logs) {
+            const datalist = document.getElementById('moduleSuggestions') || (() => {
+                const dl = document.createElement('datalist');
+                dl.id = 'moduleSuggestions';
+                document.body.appendChild(dl);
+                document.getElementById('moduleFilter').setAttribute('list', 'moduleSuggestions');
+                return dl;
+            })();
+            const modules = [...new Set(logs.map(l => l.module).filter(Boolean))].sort();
+            datalist.innerHTML = modules.map(m => `<option value="${m}">`).join('');
+        }
+
+        /* ────────────────────────── FILTRI ────────────────────────── */
+        function applyFilters() {
+            const search = document.getElementById('searchInput').value.trim().toLowerCase();
+            const level = document.getElementById('levelFilter').value.toLowerCase();
+            const module = document.getElementById('moduleFilter').value.trim().toLowerCase();
+
+            const filtered = allLogs.filter(log => {
+                const lvlMatch = !level || log.level.toLowerCase().includes(level);
+                const modMatch = !module || log.module.toLowerCase().includes(module);
+                const searchMatch = !search || log.message.toLowerCase().includes(search) ||
+                    log.module.toLowerCase().includes(search) ||
+                    log.timestamp.toLowerCase().includes(search);
+                return lvlMatch && modMatch && searchMatch;
+            });
+
+            renderLogs(filtered, search);
+
+            const fc = document.getElementById('filteredCount');
+            if (filtered.length !== allLogs.length) {
+                fc.textContent = `(${filtered.length} filtrati)`;
+                fc.style.color = '#ce9178';
+            } else {
+                fc.textContent = '';
+            }
+        }
+
+        function resetFilters(rerender = true) {
+            document.getElementById('searchInput').value = '';
+            document.getElementById('levelFilter').value = '';
+            document.getElementById('moduleFilter').value = '';
+            if (rerender && allLogs.length) applyFilters();
+        }
+
+        /* ────────────────────────── RENDERING RIGHE ────────────────────────── */
+        function renderLogs(logs, searchTerm = '') {
             const tbody = document.getElementById('logContent');
-            const countEl = document.getElementById('logCount');
             tbody.innerHTML = '';
-            countEl.textContent = `Voci: ${logs.length}`;
+
+            if (!logs.length) {
+                tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:#666;padding:30px;">Nessun risultato trovato.</td></tr>';
+                return;
+            }
+
+            const escRe = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            const hiRe = searchTerm ? new RegExp(`(${escRe(searchTerm)})`, 'gi') : null;
 
             logs.forEach(log => {
                 const tr = document.createElement('tr');
-
                 let levelClass = '';
-                const level = log.level.toLowerCase();
-                if (level.includes('info')) levelClass = 'lvl-info';
-                else if (level.includes('debug')) levelClass = 'lvl-debug';
-                else if (level.includes('error')) levelClass = 'lvl-error';
-                else if (level.includes('warning')) levelClass = 'lvl-warning';
+                const lv = log.level.toLowerCase();
+                if (lv.includes('info')) levelClass = 'lvl-info';
+                else if (lv.includes('debug')) levelClass = 'lvl-debug';
+                else if (lv.includes('error')) levelClass = 'lvl-error';
+                else if (lv.includes('warning')) levelClass = 'lvl-warning';
+
+                const msgHtml = hiRe
+                    ? escHtml(log.message).replace(hiRe, '<span class="highlight">$1</span>')
+                    : escHtml(log.message);
 
                 tr.innerHTML = `
-                    <td style="color: #888;">${log.timestamp}</td>
-                    <td class="${levelClass}">${log.level}</td>
-                    <td style="color: #ce9178;">${log.module}</td>
-                    <td>${log.message}</td>
+                    <td style="color:#888;">${escHtml(log.timestamp)}</td>
+                    <td class="${levelClass}">${escHtml(log.level)}</td>
+                    <td style="color:#ce9178;">${escHtml(log.module)}</td>
+                    <td>${msgHtml}</td>
                 `;
                 tbody.appendChild(tr);
             });
+        }
+
+        function escHtml(str) {
+            if (!str) return '';
+            return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        }
+
+        /* ────────────────────────── SINGLE LINE ────────────────────────── */
+        function toggleSingleLine() {
+            const container = document.getElementById('logTableContainer');
+            container.classList.toggle('single-line', document.getElementById('singleLineCheck').checked);
+        }
+
+        /* ────────────────────────── ESPANDI ────────────────────────── */
+        function toggleExpand() {
+            isExpanded = !isExpanded;
+            document.body.classList.toggle('is-expanded', isExpanded);
+            const btn = document.getElementById('btnExpand');
+            if (isExpanded) {
+                btn.innerHTML = '<i class="fa fa-compress"></i> Comprimi';
+                btn.classList.add('active-btn');
+            } else {
+                btn.innerHTML = '<i class="fa fa-expand"></i> Espandi';
+                btn.classList.remove('active-btn');
+            }
         }
 
         window.onload = init;
