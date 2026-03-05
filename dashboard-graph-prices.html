@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Financial Estimates 0.9 alfa</title>
+    <title>Financial Estimates 0.3 alfa</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <link rel="icon" type="image/png" href="images/icon-finest.png">
@@ -774,21 +774,15 @@
                         const offset = 40; // Above or below Force arrows
 
                         if (field === 'RSI@overbought') {
-                            // Freccia in alto per overbought (come richiesto)
+                            // Triangolo in alto per overbought
                             const color = '#e67300'; // Dark orange
                             ctx.beginPath();
-                            ctx.lineWidth = 3;
                             ctx.strokeStyle = color;
                             ctx.fillStyle = color;
 
-                            ctx.moveTo(x, y - offset);
-                            ctx.lineTo(x, y - offset - arrowSize);
-                            ctx.stroke();
-
-                            ctx.beginPath();
                             ctx.moveTo(x, y - offset - arrowSize);
-                            ctx.lineTo(x - 6, y - offset - arrowSize + 6);
-                            ctx.lineTo(x + 6, y - offset - arrowSize + 6);
+                            ctx.lineTo(x - 8, y - offset);
+                            ctx.lineTo(x + 8, y - offset);
                             ctx.closePath();
                             ctx.fill();
 
@@ -796,21 +790,15 @@
                             ctx.textAlign = 'center';
                             ctx.fillText(parseFloat(value).toFixed(2), x, y - offset - arrowSize - 5);
                         } else if (field === 'RSI@oversold') {
-                            // Freccia in basso per oversold (come richiesto)
+                            // Triangolo in basso per oversold
                             const color = '#3498db'; // Bright blue
                             ctx.beginPath();
-                            ctx.lineWidth = 3;
                             ctx.strokeStyle = color;
                             ctx.fillStyle = color;
 
-                            ctx.moveTo(x, y + offset);
-                            ctx.lineTo(x, y + offset + arrowSize);
-                            ctx.stroke();
-
-                            ctx.beginPath();
                             ctx.moveTo(x, y + offset + arrowSize);
-                            ctx.lineTo(x - 6, y + offset + arrowSize - 6);
-                            ctx.lineTo(x + 6, y + offset + arrowSize - 6);
+                            ctx.lineTo(x - 8, y + offset);
+                            ctx.lineTo(x + 8, y + offset);
                             ctx.closePath();
                             ctx.fill();
 
@@ -895,14 +883,14 @@
 
                 const jsonResponse = await response.json();
 
-                // Get the prices array either from jsonResponse.prices (backend wraps it) or directly if array
-                let targetPrices = jsonResponse.prices || (Array.isArray(jsonResponse) ? jsonResponse : []);
-
-                // If it's wrapped in the new structure {"filter": {}, "data": []}
-                if (targetPrices.data && Array.isArray(targetPrices.data)) {
-                    trendDataRaw = targetPrices.data;
+                if (jsonResponse.data && Array.isArray(jsonResponse.data)) {
+                    trendDataRaw = jsonResponse.data;
+                } else if (jsonResponse.prices && Array.isArray(jsonResponse.prices)) {
+                    trendDataRaw = jsonResponse.prices;
+                } else if (Array.isArray(jsonResponse)) {
+                    trendDataRaw = jsonResponse;
                 } else {
-                    trendDataRaw = targetPrices;
+                    trendDataRaw = [];
                 }
 
                 trendDataRaw.sort((a, b) => new Date(a.date_start || a.date) - new Date(b.date_start || b.date));
