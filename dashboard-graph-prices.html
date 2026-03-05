@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Financial Estimates 0.21 alfa</title>
+    <title>Financial Estimates 0.22 alfa</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <link rel="icon" type="image/png" href="images/icon-finest.png">
@@ -976,8 +976,23 @@
             const exchanges = [];
             let dualExchangeLabel = "";
 
+            // Filtra i dati per intervallo di date selezionato
+            const filterStartDate = document.getElementById('start-date').value;
+            const filterEndDate = document.getElementById('end-date').value;
+            const filterStart = filterStartDate ? new Date(filterStartDate) : null;
+            const filterEnd = filterEndDate ? new Date(filterEndDate) : null;
+
+            const filteredData = trendDataRaw.filter(item => {
+                const dateStr = item.date_start || item.date;
+                if (!dateStr) return true;
+                const d = new Date(dateStr);
+                if (filterStart && d < filterStart) return false;
+                if (filterEnd && d > filterEnd) return false;
+                return true;
+            });
+
             const aggregatedData = {};
-            trendDataRaw.forEach(item => {
+            filteredData.forEach(item => {
                 const date = item.date_start || item.date;
                 if (!aggregatedData[date]) {
                     aggregatedData[date] = {
