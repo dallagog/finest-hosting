@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Financial Estimates - Market Dashboard</title>
+    <title>Financial Estimates 0.1 alfa - Market Dashboard</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <script src="js/dashboard-shared.js"></script>
     <link rel="icon" type="image/png" href="images/icon-finest.png">
@@ -190,6 +190,13 @@
                     <label>Valore max:</label>
                     <input type="number" id="value-max" step="0.01">
                 </div>
+                <div class="filter-group" style="flex: 1; min-width: 150px;">
+                    <label>Strumento:</label>
+                    <select id="instrument-filter"
+                        style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; font-family: inherit; background: #fff;">
+                        <option value="">— Tutti —</option>
+                    </select>
+                </div>
                 <div class="filter-group">
                     <button onclick="fetchMarketData()" data-translate="int.apply">Applica selezione</button>
                 </div>
@@ -224,6 +231,7 @@
             document.getElementById('currencyDisplay').textContent = credentials.currency;
 
             setDefaultDates();
+            document.getElementById('instrument-filter').addEventListener('change', applyFiltersAndRender);
             await fetchMarketData();
         }
 
@@ -289,10 +297,34 @@
             }
         }
 
+        let _lastData = [];
+
+        function populateInstrumentSelector(data) {
+            const select = document.getElementById('instrument-filter');
+            const current = select.value;
+            const instruments = [...new Set(data.map(r => r.id_instrument).filter(Boolean))].sort();
+            select.innerHTML = '<option value="">— Tutti —</option>';
+            instruments.forEach(id => {
+                const opt = document.createElement('option');
+                opt.value = id;
+                opt.textContent = id;
+                if (id === current) opt.selected = true;
+                select.appendChild(opt);
+            });
+        }
+
         function renderTable(data) {
+            _lastData = data;
+            populateInstrumentSelector(data);
+            applyFiltersAndRender();
+        }
+
+        function applyFiltersAndRender() {
+            const data = _lastData;
             const container = document.getElementById('table-container');
             const vMin = parseFloat(document.getElementById('value-min').value);
             const vMax = parseFloat(document.getElementById('value-max').value);
+            const instrumentFilter = document.getElementById('instrument-filter').value.trim().toLowerCase();
 
             let filtered = data.filter(row => {
                 const val = parseFloat(row.value);
@@ -300,6 +332,7 @@
                 const absVal = Math.abs(val);
                 if (!isNaN(vMin) && absVal < vMin) return false;
                 if (!isNaN(vMax) && absVal > vMax) return false;
+                if (instrumentFilter && (row.id_instrument || '').toLowerCase() !== instrumentFilter) return false;
                 return true;
             });
 
