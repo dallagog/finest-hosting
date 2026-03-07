@@ -481,6 +481,7 @@
 
         const API_URL = "https://feweb-tunnel.fe-web.eu";
         let trendDataRaw = [];
+        let filterData = {}; // Global filter data
         let chartInstance = null;
 
         async function loadLanguageManifest() {
@@ -929,6 +930,10 @@
                 trendDataRaw.sort((a, b) => new Date(a.date_start || a.date) - new Date(b.date_start || b.date));
 
                 extractFieldsFromData();
+                if (jsonResponse.filter) {
+                    filterData = jsonResponse.filter;
+                    console.log('Filter data received:', filterData);
+                }
                 renderChart();
                 document.getElementById('loading').style.display = 'none';
             } catch (error) {
@@ -956,7 +961,20 @@
 
             if (!trendDataRaw || trendDataRaw.length === 0) return;
 
-            document.getElementById('instrument-name-display').textContent = `${instrumentNameFromUrl || idInstrument}`;
+            let displayName = instrumentNameFromUrl || idInstrument;
+            if (filterData) {
+                const isin = filterData.code_isin || '';
+                const desc = filterData.instrument_description || '';
+                const curr = filterData.currency || '';
+
+                let extra = '';
+                if (isin) extra += ` (${isin})`;
+                if (desc) extra += ` - ${desc}`;
+                if (curr) extra += ` [${curr}]`;
+
+                displayName += extra;
+            }
+            document.getElementById('instrument-name-display').textContent = displayName;
 
             const firstRow = trendDataRaw[0];
             const priceField = Object.keys(firstRow).find(k => k.startsWith('price@')) || 'price_mkt';
