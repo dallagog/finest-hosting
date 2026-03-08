@@ -438,6 +438,16 @@
                             <input type="checkbox" id="layer-rsi" value="rsi" checked onchange="onLayerChange()">
                             <label for="layer-rsi">RSI</label>
                         </div>
+                        <div class="option-item">
+                            <input type="checkbox" id="layer-invariance-delta" value="invariance-delta" checked
+                                onchange="onLayerChange()">
+                            <label for="layer-invariance-delta">Invariance Delta</label>
+                        </div>
+                        <div class="option-item">
+                            <input type="checkbox" id="layer-invariance-regime" value="invariance-regime"
+                                onchange="onLayerChange()">
+                            <label for="layer-invariance-regime">Invariance Regime</label>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -466,6 +476,7 @@
         let selectedRsiField = null;
         let forceFieldOptions = [];
         let rsiFieldOptions = [];
+        let invFieldOptions = [];
 
         const urlParams = new URLSearchParams(window.location.search);
         const username = urlParams.get('username') || '';
@@ -624,6 +635,10 @@
             } else {
                 selectedRsiField = null;
             }
+
+            invFields = Array.from(allKeys).filter(k => k.startsWith('invariance@'));
+            console.log('Invariance fields found:', invFields);
+            invFieldOptions = invFields;
 
             if (layersOptionsList) {
                 // I pattern sono gestiti con la singola checkbox 'Pattern' (layer-pattern)
@@ -891,6 +906,55 @@
             }
         };
 
+        const invariancePointsPlugin = {
+            id: 'invariancePoints',
+            afterDatasetsDraw(chart) {
+                if (!document.getElementById('layer-invariance-delta')?.checked) return;
+
+                const { ctx, chartArea } = chart;
+                ctx.save();
+
+                const dataset = chart.data.datasets[0];
+                if (!dataset || !dataset.invValues) {
+                    ctx.restore();
+                    return;
+                }
+
+                const meta = chart.getDatasetMeta(0);
+                if (!meta || meta.hidden) {
+                    ctx.restore();
+                    return;
+                }
+
+                const invValues = dataset.invValues;
+
+                meta.data.forEach((point, index) => {
+                    const invObj = invValues[index];
+                    if (!invObj) return;
+
+                    const delta = invObj['invariance@delta'];
+                    if (delta !== undefined && delta !== null) {
+                        const { x } = point;
+                        // Disegna il punto in fondo all'area del grafico
+                        const y = chartArea.bottom - 10;
+                        const radius = 3;
+                        const color = delta >= 0 ? 'blue' : 'red';
+
+                        ctx.beginPath();
+                        ctx.arc(x, y, radius, 0, 2 * Math.PI);
+                        ctx.fillStyle = color;
+                        ctx.fill();
+
+                        // Opzionale: bordo sottile
+                        ctx.strokeStyle = 'white';
+                        ctx.lineWidth = 0.5;
+                        ctx.stroke();
+                    }
+                });
+                ctx.restore();
+            }
+        };
+
         async function loadPrices() {
             console.log('===== loadPrices START =====');
             document.getElementById('loading').style.display = 'flex';
@@ -1020,6 +1084,7 @@
                         forces: {},
                         patterns: [],
                         rsi: {},
+                        inv: {},
                         shorts: [],
                         exchanges: []
                     };
@@ -1043,6 +1108,12 @@
                 rsiFieldOptions.forEach(field => {
                     if (item[field] !== undefined && item[field] !== null) {
                         aggregatedData[date].rsi[field] = parseValue(item[field]);
+                    }
+                });
+
+                invFieldOptions.forEach(field => {
+                    if (item[field] !== undefined && item[field] !== null) {
+                        aggregatedData[date].inv[field] = item[field];
                     }
                 });
 
@@ -1083,6 +1154,12 @@
                 rsiValuesArr.push(data.rsi && Object.keys(data.rsi).length > 0 ? data.rsi : null);
             });
 
+            const invValuesArr = [];
+            sortedDates.forEach(date => {
+                const data = aggregatedData[date];
+                invValuesArr.push(data.inv && Object.keys(data.inv).length > 0 ? data.inv : null);
+            });
+
             const gradient = ctx.createLinearGradient(0, 0, 0, 400);
             gradient.addColorStop(0, 'rgba(75, 192, 192, 0.4)');
             gradient.addColorStop(1, 'rgba(75, 192, 192, 0.05)');
@@ -1097,6 +1174,7 @@
                             data: prices,
                             forceValues: forces,
                             rsiValues: rsiValuesArr,
+                            invValues: invValuesArr,
                             patternValues: patternValues,
                             borderColor: 'rgba(75, 192, 192, 1)',
                             backgroundColor: gradient,
@@ -1163,7 +1241,7 @@
                         }
                     ]
                 },
-                plugins: [forceArrowsPlugin, rsiArrowsPlugin, patternLinesPlugin],
+                plugins: [forceArrowsPlugin, rsiArrowsPlugin, patternLinesPlugin, invariancePointsPlugin],
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
@@ -1273,6 +1351,20 @@
                                     }
 
                                     const patternArray = priceDS.patternValues ? priceDS.patternValues[index] : null;
+
+                                    const invObj = priceDS.invValues ? priceDS.invValues[index] : null;
+                                    if (invObj && Object.keys(invObj).length > 0) {
+                                        const delta = invObj['invariance@delta'];
+                                        const regime = invObj['invariance@regime'];
+
+                                        if (delta !== undefined && delta !== null && document.getElementById('layer-invariance-delta')?.checked) {
+                                            lines.push(`Δ Invariance: ${delta.toFixed(6)}`);
+                                        }
+                                        if (regime && document.getElementById('layer-invariance-regime')?.checked) {
+                                            lines.push(`👁 Regime: ${regime}`);
+                                        }
+                                    }
+
                                     if (patternArray && patternArray.length > 0 && document.getElementById('layer-pattern')?.checked) {
                                         const filteredPatterns = patternArray.filter(p => {
                                             const key = Object.keys(p)[0];
