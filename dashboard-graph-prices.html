@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Financial Estimates 0.24 alfa</title>
+    <title>Financial Estimates 0.25 alfa</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <link rel="icon" type="image/png" href="images/icon-finest.png">
@@ -1177,10 +1177,10 @@
                 labels.push(date);
                 prices.push(avgPrice);
                 priceCurrencies.push(avgPriceCurrency);
-                forces.push(data.forces);
+                forces.push(Object.keys(data.forces).length > 0 ? data.forces : null);
                 patternValues.push(data.patterns.length > 0 ? data.patterns : []);
-                shorts.push(data.shorts.length ? data.shorts.reduce((a, b) => a + b, 0) / data.shorts.length : 0);
-                exchanges.push(data.exchanges.length ? data.exchanges.reduce((a, b) => a + b, 0) / data.exchanges.length : 0);
+                shorts.push(data.shorts.length ? data.shorts.reduce((a, b) => a + b, 0) / data.shorts.length : null);
+                exchanges.push(data.exchanges.length ? data.exchanges.reduce((a, b) => a + b, 0) / data.exchanges.length : null);
 
                 rsiValuesArr.push(data.rsi && Object.keys(data.rsi).length > 0 ? data.rsi : null);
             });
@@ -1290,6 +1290,18 @@
                                 ctx.moveTo(x, chartArea.top);
                                 ctx.lineTo(x, chartArea.bottom);
                                 ctx.stroke();
+
+                                // Disegna simbolo news (cerchietto con N) in alto
+                                ctx.fillStyle = 'red';
+                                ctx.beginPath();
+                                ctx.arc(x, chartArea.top + 10, 8, 0, 2 * Math.PI);
+                                ctx.fill();
+
+                                ctx.fillStyle = 'white';
+                                ctx.font = 'bold 10px Arial';
+                                ctx.textAlign = 'center';
+                                ctx.textBaseline = 'middle';
+                                ctx.fillText('N', x, chartArea.top + 10);
                             }
                         });
                         ctx.restore();
