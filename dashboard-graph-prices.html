@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Financial Estimates 0.25 alfa</title>
+    <title>Financial Estimates 0.26 alfa</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <link rel="icon" type="image/png" href="images/icon-finest.png">
@@ -351,6 +351,42 @@
             display: inline-block;
             margin-right: 5px;
         }
+
+        /* News Tooltip Style */
+        .news-tooltip {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.95);
+            border: 2px solid red;
+            border-radius: 6px;
+            padding: 10px;
+            pointer-events: none;
+            display: none;
+            z-index: 1000;
+            box-shadow: 0 4px 15px rgba(255, 0, 0, 0.2);
+            color: #333;
+            font-family: Arial, sans-serif;
+            font-size: 12px;
+            max-width: 300px;
+            line-height: 1.4;
+        }
+
+        .news-tooltip b {
+            color: red;
+            display: block;
+            margin-bottom: 4px;
+            font-size: 13px;
+            border-bottom: 1px solid #ffcccc;
+            padding-bottom: 2px;
+        }
+
+        .news-tooltip div {
+            margin-bottom: 4px;
+        }
+
+        .news-tooltip .news-label {
+            font-weight: bold;
+            color: #666;
+        }
     </style>
 </head>
 
@@ -464,6 +500,7 @@
     <div class="chart-wrapper">
         <div id="chartContainerInner">
             <canvas id="chartCanvas"></canvas>
+            <div id="news-tooltip" class="news-tooltip"></div>
         </div>
     </div>
 
@@ -497,6 +534,7 @@
         const API_URL = "https://feweb-tunnel.fe-web.eu";
         let trendDataRaw = [];
         let eventDataRaw = {}; // New: store news events
+        let newsSymbols = []; // New: store coordinates for news tooltips
         let filterData = {}; // Global filter data
         let chartInstance = null;
 
@@ -1282,10 +1320,14 @@
                         ctx.save();
                         ctx.strokeStyle = 'red';
                         ctx.lineWidth = 1;
+                        newsSymbols = []; // Reset symbols for this draw
 
                         xLabels.forEach((label, index) => {
                             if (eventDataRaw[label]) {
                                 const x = scales.x.getPixelForValue(label);
+                                const y = chartArea.top + 10;
+                                const radius = 8;
+
                                 ctx.beginPath();
                                 ctx.moveTo(x, chartArea.top);
                                 ctx.lineTo(x, chartArea.bottom);
@@ -1294,14 +1336,17 @@
                                 // Disegna simbolo news (cerchietto con N) in alto
                                 ctx.fillStyle = 'red';
                                 ctx.beginPath();
-                                ctx.arc(x, chartArea.top + 10, 8, 0, 2 * Math.PI);
+                                ctx.arc(x, y, radius, 0, 2 * Math.PI);
                                 ctx.fill();
 
                                 ctx.fillStyle = 'white';
                                 ctx.font = 'bold 10px Arial';
                                 ctx.textAlign = 'center';
                                 ctx.textBaseline = 'middle';
-                                ctx.fillText('N', x, chartArea.top + 10);
+                                ctx.fillText('N', x, y);
+
+                                // Store for tooltip hit testing
+                                newsSymbols.push({ x, y, radius, label });
                             }
                         });
                         ctx.restore();
@@ -1470,6 +1515,59 @@
                     }
                 }
             });
+
+            // News Tooltip hover detection
+            const newsTooltipElement = document.getElementById('news-tooltip');
+
+            canvas.onmousemove = (e) => {
+                if (!document.getElementById('layer-event')?.checked) {
+                    newsTooltipElement.style.display = 'none';
+                    return;
+                }
+                const rect = canvas.getBoundingClientRect();
+                const mouseX = e.clientX - rect.left;
+                const mouseY = e.clientY - rect.top;
+
+                let hoveredSymbol = null;
+                for (const symbol of newsSymbols) {
+                    const dist = Math.sqrt((mouseX - symbol.x) ** 2 + (mouseY - symbol.y) ** 2);
+                    if (dist <= symbol.radius + 5) { // Add some padding for easier hovering
+                        hoveredSymbol = symbol;
+                        break;
+                    }
+                }
+
+                if (hoveredSymbol) {
+                    const event = eventDataRaw[hoveredSymbol.label];
+                    if (event) {
+                        let html = `<b>🚩 NEWS: ${hoveredSymbol.label}</b>`;
+                        if (event.title) html += `<div><span class="news-label">Title:</span> ${event.title}</div>`;
+                        if (event.summary) html += `<div><span class="news-label">Summary:</span> ${event.summary}</div>`;
+                        if (event.source) html += `<div><span class="news-label">Source:</span> ${event.source}</div>`;
+                        if (event.location) html += `<div><span class="news-label">Location:</span> ${event.location}</div>`;
+
+                        newsTooltipElement.innerHTML = html;
+                        newsTooltipElement.style.display = 'block';
+
+                        // Position tooltip near the symbol
+                        const tooltipWidth = newsTooltipElement.offsetWidth;
+                        let leftPos = hoveredSymbol.x + 15;
+                        if (leftPos + tooltipWidth > rect.width) {
+                            leftPos = hoveredSymbol.x - tooltipWidth - 15;
+                        }
+                        newsTooltipElement.style.left = leftPos + 'px';
+                        newsTooltipElement.style.top = (hoveredSymbol.y + 10) + 'px';
+                        canvas.style.cursor = 'help';
+                    }
+                } else {
+                    newsTooltipElement.style.display = 'none';
+                    canvas.style.cursor = 'default';
+                }
+            };
+
+            canvas.onmouseleave = () => {
+                newsTooltipElement.style.display = 'none';
+            };
         }
 
         function setTimeFilter(months, reload = true) {
