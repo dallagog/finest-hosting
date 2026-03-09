@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Financial Estimates 0.23 alfa</title>
+    <title>Financial Estimates 0.24 alfa</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <link rel="icon" type="image/png" href="images/icon-finest.png">
@@ -1146,13 +1146,33 @@
                 }
             });
 
+            // Ensure event dates are included in labels (even without price data)
+            Object.keys(eventDataRaw).forEach(date => {
+                const d = new Date(date);
+                if ((!filterStart || d >= filterStart) && (!filterEnd || d <= filterEnd)) {
+                    if (!aggregatedData[date]) {
+                        aggregatedData[date] = {
+                            date,
+                            prices: [],
+                            priceCurrencies: [],
+                            forces: {},
+                            patterns: [],
+                            rsi: {},
+                            inv: {},
+                            shorts: [],
+                            exchanges: []
+                        };
+                    }
+                }
+            });
+
             const rsiValuesArr = [];
 
             const sortedDates = Object.keys(aggregatedData).sort((a, b) => new Date(a) - new Date(b));
 
             sortedDates.forEach(date => {
                 const data = aggregatedData[date];
-                const avgPrice = data.prices.length ? data.prices.reduce((a, b) => a + b, 0) / data.prices.length : 0;
+                const avgPrice = data.prices.length ? data.prices.reduce((a, b) => a + b, 0) / data.prices.length : null;
                 const avgPriceCurrency = data.priceCurrencies.length ? data.priceCurrencies.reduce((a, b) => a + b, 0) / data.priceCurrencies.length : null;
                 labels.push(date);
                 prices.push(avgPrice);
@@ -1261,8 +1281,7 @@
 
                         ctx.save();
                         ctx.strokeStyle = 'red';
-                        ctx.lineWidth = 2;
-                        ctx.setLineDash([5, 5]);
+                        ctx.lineWidth = 1;
 
                         xLabels.forEach((label, index) => {
                             if (eventDataRaw[label]) {
