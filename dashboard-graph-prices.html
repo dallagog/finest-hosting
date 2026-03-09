@@ -448,6 +448,10 @@
                                 onchange="onLayerChange()">
                             <label for="layer-invariance-regime">Invariance Regime</label>
                         </div>
+                        <div class="option-item">
+                            <input type="checkbox" id="layer-event" value="event" checked onchange="onLayerChange()">
+                            <label for="layer-event">Event</label>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -492,6 +496,7 @@
 
         const API_URL = "https://feweb-tunnel.fe-web.eu";
         let trendDataRaw = [];
+        let eventDataRaw = {}; // New: store news events
         let filterData = {}; // Global filter data
         let chartInstance = null;
 
@@ -991,6 +996,12 @@
                     trendDataRaw = [];
                 }
 
+                if (jsonResponse.event) {
+                    eventDataRaw = jsonResponse.event;
+                } else {
+                    eventDataRaw = {};
+                }
+
                 trendDataRaw.sort((a, b) => new Date(a.date_start || a.date) - new Date(b.date_start || b.date));
 
                 extractFieldsFromData();
@@ -1241,7 +1252,30 @@
                         }
                     ]
                 },
-                plugins: [forceArrowsPlugin, rsiArrowsPlugin, patternLinesPlugin, invariancePointsPlugin],
+                plugins: [forceArrowsPlugin, rsiArrowsPlugin, patternLinesPlugin, invariancePointsPlugin, {
+                    id: 'eventsPlugin',
+                    afterDatasetsDraw(chart) {
+                        if (!document.getElementById('layer-event')?.checked) return;
+                        const { ctx, chartArea, scales } = chart;
+                        const xLabels = chart.data.labels;
+                        
+                        ctx.save();
+                        ctx.strokeStyle = 'red';
+                        ctx.lineWidth = 2;
+                        ctx.setLineDash([5, 5]);
+
+                        xLabels.forEach((label, index) => {
+                            if (eventDataRaw[label]) {
+                                const x = scales.x.getPixelForValue(label);
+                                ctx.beginPath();
+                                ctx.moveTo(x, chartArea.top);
+                                ctx.lineTo(x, chartArea.bottom);
+                                ctx.stroke();
+                            }
+                        });
+                        ctx.restore();
+                    }
+                }],
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
@@ -1351,6 +1385,15 @@
                                     }
 
                                     const patternArray = priceDS.patternValues ? priceDS.patternValues[index] : null;
+
+                                    const eventObj = eventDataRaw[labels[index]];
+                                    if (eventObj && document.getElementById('layer-event')?.checked) {
+                                        lines.push(`🚩 EVENT:`);
+                                        if (eventObj.title) lines.push(`  • Title: ${eventObj.title}`);
+                                        if (eventObj.summary) lines.push(`  • Summary: ${eventObj.summary}`);
+                                        if (eventObj.source) lines.push(`  • Source: ${eventObj.source}`);
+                                        if (eventObj.location) lines.push(`  • Location: ${eventObj.location}`);
+                                    }
 
                                     const invObj = priceDS.invValues ? priceDS.invValues[index] : null;
                                     if (invObj && Object.keys(invObj).length > 0) {
