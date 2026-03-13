@@ -2787,6 +2787,7 @@
                 // Determine if we need to make this cell clickable
                 let isClickableAccount = (col === 'id_account') && !isTotal;
                 let isClickableDescription = (col === 'instrument_description' || col === 'description') && !isTotal;
+                let isClickableCode = (col === 'id_instrument' || col === 'Ticker') && !isTotal;
 
                 if (isClickableAccount) {
                     const span = document.createElement('span');
@@ -2796,6 +2797,22 @@
                         e.stopPropagation();
                         // Open Trades (Portfolio Details)
                         if (item.id_instrument && item.id_account) openPortfolioDetails(item.id_account, item.id_instrument);
+                    };
+                    td.appendChild(span);
+                } else if (isClickableCode) {
+                    const span = document.createElement('span');
+                    span.textContent = val !== undefined ? val : '';
+                    span.style.cursor = 'pointer'; span.style.color = '#000'; span.style.textDecoration = 'underline';
+                    span.onclick = (e) => {
+                        e.stopPropagation();
+                        // Open Instrument Graph
+                        const params = new URLSearchParams();
+                        params.set('username', credentials.username || '');
+                        params.set('token', credentials.token || '');
+                        params.set('language', credentials.language || '');
+                        params.set('id_instrument', item.id_instrument || val);
+                        params.set('currency', localStorage.getItem('currency') || 'EUR');
+                        window.open(`dashboard-graph-prices.html?${params.toString()}`, '_blank');
                     };
                     td.appendChild(span);
                 } else if (isClickableDescription) {
@@ -3159,6 +3176,7 @@
 
                 let isClickableAccount = (col === 'id_account') && !isTotal;
                 let isClickableDescription = (col === 'instrument_description' || col === 'description') && !isTotal;
+                let isClickableCode = (col === 'id_instrument' || col === 'Ticker') && !isTotal;
 
                 if (isClickableAccount) {
                     const span = document.createElement('span');
@@ -3178,6 +3196,22 @@
                         }
                     };
                     td.appendChild(span);
+                } else if (isClickableCode) {
+                    const span = document.createElement('span');
+                    span.textContent = val !== undefined ? val : '';
+                    span.style.cursor = 'pointer'; span.style.color = '#000'; span.style.textDecoration = 'underline';
+                    span.onclick = (e) => {
+                        e.stopPropagation();
+                        // Open Instrument Graph
+                        const params = new URLSearchParams();
+                        params.set('username', credentials.username || '');
+                        params.set('token', credentials.token || '');
+                        params.set('language', credentials.language || '');
+                        params.set('id_instrument', item.id_instrument || item.Ticker || val);
+                        params.set('currency', localStorage.getItem('currency') || 'EUR');
+                        window.open(`dashboard-graph-prices.html?${params.toString()}`, '_blank');
+                    };
+                    td.appendChild(span);
                 } else if (isClickableDescription) {
                     const span = document.createElement('span');
                     span.textContent = val !== undefined ? val : '';
@@ -3190,6 +3224,7 @@
                         params.set('token', credentials.token || '');
                         params.set('language', credentials.language || '');
                         params.set('id_instrument', item.id_instrument || item.Ticker || val);
+                        params.set('currency', localStorage.getItem('currency') || 'EUR');
                         window.open(`dashboard-detail-instrument.html?${params.toString()}`, '_blank');
                     };
                     td.appendChild(span);
