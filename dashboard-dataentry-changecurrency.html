@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="it">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title id="pageTitle">Change Currency</title>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+        crossorigin="anonymous">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #f5f5f0;
+            --neon-cyan: #000000;
+            --glass-bg: #ffffff;
+            --text-color: #333333;
+            --border-color: #000000;
+            --error-color: #ef4444;
+            --success-color: #10b981;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Cormorant Garamond', 'Times New Roman', serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 500px;
+            margin: 40px auto;
+            background: var(--glass-bg);
+            padding: 40px;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+        }
+
+        h1 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.5rem;
+            text-align: center;
+            margin-bottom: 30px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            font-size: 0.9rem;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid var(--border-color);
+            font-family: inherit;
+            font-size: 1rem;
+            outline: none;
+        }
+
+        .btn-group {
+            margin-top: 30px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid var(--border-color);
+            background: #000;
+            color: #fff;
+            font-family: inherit;
+            font-size: 1rem;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: all 0.2s;
+        }
+
+        .btn:hover {
+            background: #333;
+        }
+
+        .btn-secondary {
+            background: transparent;
+            color: #000;
+        }
+
+        .btn-secondary:hover {
+            background: #eee;
+        }
+
+        .status-msg {
+            margin-top: 20px;
+            padding: 10px;
+            text-align: center;
+            display: none;
+            font-weight: bold;
+        }
+
+        .status-error {
+            color: var(--error-color);
+        }
+
+        .status-success {
+            color: var(--success-color);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1 id="headerTitle">Change Currency</h1>
+        
+        <!-- Step 1: Password Verification -->
+        <div id="step-verify">
+            <div class="form-group">
+                <label class="form-label" id="currentPassLabel">Current Password</label>
+                <input type="password" id="password" class="form-input">
+            </div>
+            <div class="btn-group">
+                <button class="btn" id="verifyBtn" onclick="verifyPassword()">Verify Password</button>
+            </div>
+        </div>
+
+        <!-- Step 2: Resource Update (initially hidden) -->
+        <div id="step-update" style="display: none;">
+            <div class="form-group">
+                <label class="form-label" id="currencyLabel">Select Currency</label>
+                <select id="currency" class="form-input">
+                    <option value="EUR">Euro (EUR)</option>
+                    <option value="USD">US Dollar (USD)</option>
+                    <option value="GBP">British Pound (GBP)</option>
+                    <option value="CHF">Swiss Franc (CHF)</option>
+                </select>
+            </div>
+            <div class="btn-group">
+                <button class="btn" id="submitBtn" onclick="submitChange()">Update Currency</button>
+            </div>
+        </div>
+
+        <div class="btn-group">
+            <button class="btn btn-secondary" id="cancelBtn" onclick="goBack()">Cancel</button>
+        </div>
+
+        <div id="statusMsg" class="status-msg"></div>
+    </div>
+
+    <script>
+        let translations = {};
+        const username = localStorage.getItem('username');
+        const apiBaseUser = "https://user-tunnel.fe-web.eu";
+        let currencies = [];
+
+        async function loadTranslations() {
+            const lang = localStorage.getItem('selectedLanguage') || 'en_UK';
+            try {
+                const response = await fetch(`lang/${lang}.json`);
+                translations = await response.json();
+                applyTranslations();
+                await loadCurrencies(lang);
+            } catch (error) {
+                console.error("Error loading translations:", error);
+            }
+        }
+
+        async function loadCurrencies(lang) {
+            try {
+                const response = await fetch(`currency/${lang}.json`);
+                currencies = await response.json();
+                populateCurrencySelect();
+            } catch (error) {
+                console.error("Error loading currencies:", error);
+                // Fallback to minimal list if fetch fails
+                populateCurrencySelect();
+            }
+        }
+
+        function populateCurrencySelect() {
+            const select = document.getElementById('currency');
+            const currentCurrency = localStorage.getItem('currency') || 'EUR';
+            
+            // If currencies were loaded from JSON, use them. Otherwise, keep existing options or use defaults.
+            if (currencies && currencies.length > 0) {
+                select.innerHTML = '';
+                currencies.forEach(c => {
+                    const opt = document.createElement('option');
+                    opt.value = c.currency;
+                    opt.textContent = `${c['img.currency.flag'] || ''} ${c.description} (${c.currency})`.trim();
+                    select.appendChild(opt);
+                });
+            }
+            select.value = currentCurrency;
+        }
+
+        function getTranslation(key) {
+            return translations[key] || key;
+        }
+
+        function applyTranslations() {
+            document.getElementById('pageTitle').textContent = getTranslation('sel.settings.change.currency');
+            document.getElementById('headerTitle').textContent = getTranslation('sel.settings.change.currency');
+            document.getElementById('currentPassLabel').textContent = getTranslation('int.password.current');
+            document.getElementById('verifyBtn').textContent = getTranslation('int.apply');
+            document.getElementById('currencyLabel').textContent = getTranslation('int.select.currency');
+            document.getElementById('submitBtn').textContent = getTranslation('int.update');
+            document.getElementById('cancelBtn').textContent = getTranslation('int.close');
+        }
+
+        function showStatus(text, type) {
+            const msg = document.getElementById('statusMsg');
+            msg.textContent = text;
+            msg.className = 'status-msg ' + (type === 'success' ? 'status-success' : 'status-error');
+            msg.style.display = 'block';
+        }
+
+        async function verifyPassword() {
+            const password = document.getElementById('password').value;
+            if (!password) {
+                showStatus(getTranslation('int.complete.all.fields'), 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${apiBaseUser}/checkpassword`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+
+                const data = await response.json();
+                if (response.ok && data.status === 'ok') {
+                    document.getElementById('step-verify').style.display = 'none';
+                    document.getElementById('step-update').style.display = 'block';
+                    showStatus(getTranslation('int.info.saved'), 'success');
+                    setTimeout(() => { document.getElementById('statusMsg').style.display = 'none'; }, 2000);
+                } else {
+                    showStatus(data.detail || getTranslation('int.wrong.credentials'), 'error');
+                }
+            } catch (err) {
+                showStatus(getTranslation('int.connection.error'), 'error');
+            }
+        }
+
+        async function submitChange() {
+            const currency = document.getElementById('currency').value;
+            const password = document.getElementById('password').value; // Still available in DOM
+
+            try {
+                const response = await fetch(`${apiBaseUser}/changecurrency`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password, currency })
+                });
+
+                const data = await response.json();
+                if (response.ok && data.status === 'ok') {
+                    // Update local storage so the change is reflected immediately
+                    localStorage.setItem('currency', currency);
+                    showStatus(getTranslation('int.info.saved'), 'success');
+                    setTimeout(() => goBack(), 2000);
+                } else {
+                    showStatus(data.detail || getTranslation('int.failed.update'), 'error');
+                }
+            } catch (err) {
+                showStatus(getTranslation('int.connection.error'), 'error');
+            }
+        }
+
+        function goBack() {
+            if (window.opener || window.history.length > 1) {
+                window.history.back();
+            } else {
+                window.location.href = 'index.html';
+            }
+        }
+
+        loadTranslations();
+    </script>
+</body>
+
+</html>
