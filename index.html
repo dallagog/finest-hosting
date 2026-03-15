@@ -166,6 +166,27 @@
       color: #000;
       text-align: right;
     }
+
+    /* Tron style footer */
+    .tron-footer {
+      position: fixed;
+      bottom: 10px;
+      left: 10px;
+      z-index: 11000;
+      font-family: 'Courier New', Courier, monospace;
+      font-size: 0.85rem;
+      color: #00ffff;
+      /* Neon cyan */
+      text-shadow: 0 0 5px #00ffff, 0 0 10px #00ffff;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      padding: 5px 10px;
+      background: rgba(0, 0, 0, 0.3);
+      border-left: 2px solid #00ffff;
+      display: none;
+      /* hidden by default */
+      pointer-events: none;
+    }
   </style>
 </head>
 
@@ -193,6 +214,8 @@
     <img src="status/images/off-line.svg" alt="Server Offline">
     <div id="maintenance-info" class="maintenance-info" style="display: none;"></div>
   </div>
+
+  <div id="tron-footer" class="tron-footer"></div>
 
   <script>
     let language = 'en_UK';
@@ -409,20 +432,14 @@
       }
 
       if (manifest['show.version'] === "True") {
-        infoHTML += `
-          <p>
-            <span class="label">${getTranslation('int.version')}</span>
-            <span class="value">${manifest['int.version']}</span>
-          </p>
-          <p>
-            <span class="label">${getTranslation('int.date.version')}</span>
-            <span class="value">${manifest['int.date.version']}</span>
-          </p>
-          <p>
-            <span class="label">${getTranslation('int.author')}</span>
-            <span class="value">${manifest['int.author']}</span>
-          </p>
-        `;
+        const tronFooter = document.getElementById('tron-footer');
+        if (tronFooter) {
+          tronFooter.innerHTML = `${getTranslation('int.version')} ${manifest['int.version']} | ${getTranslation('int.date.version')} ${manifest['int.date.version']} | ${getTranslation('int.author')} ${manifest['int.author']}`;
+          tronFooter.style.display = 'block';
+        }
+      } else {
+        const tronFooter = document.getElementById('tron-footer');
+        if (tronFooter) tronFooter.style.display = 'none';
       }
 
       if (infoHTML) {
