@@ -1007,8 +1007,9 @@
                     const invObj = invValues[index];
                     if (!invObj) return;
 
-                    const delta = invObj['invariance@delta'];
-                    if (delta !== undefined && delta !== null) {
+                    const deltaRaw = invObj['invariance@delta'];
+                    if (deltaRaw !== undefined && deltaRaw !== null) {
+                        const delta = parseValue(deltaRaw);
                         const { x } = point;
                         // Disegna il punto in fondo all'area del grafico
                         const y = chartArea.bottom - 10;
@@ -1113,6 +1114,7 @@
                 const curr = filterData.currency || '';
 
                 let extra = '';
+                if (desc) extra += ` ${desc}`;
                 if (isin) extra += ` ${isin}`;
                 if (curr) extra += ` ${curr}`;
 
@@ -1552,7 +1554,8 @@
                                         const regime = invObj['invariance@regime'];
 
                                         if (delta !== undefined && delta !== null && document.getElementById('layer-invariance-delta')?.checked) {
-                                            lines.push(`Δ Invariance: ${delta.toFixed(6)}`);
+                                            const deltaLabel = typeof delta === 'number' ? delta.toFixed(6) : delta;
+                                            lines.push(`Δ Invariance: ${deltaLabel}`);
                                         }
                                         if (regime && document.getElementById('layer-invariance-regime')?.checked) {
                                             lines.push(`👁 Regime: ${regime}`);
