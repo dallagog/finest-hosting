@@ -952,6 +952,9 @@
                 allKeys.forEach(k => { if (!EXCLUDED_COLS.has(k) && !ordered.includes(k)) ordered.push(k); });
 
                 tableColumns = ordered;
+                if (!tableColumns.includes('azioni')) {
+                    tableColumns.push('azioni');
+                }
             }
 
             populateMarketSelector();
@@ -1048,7 +1051,7 @@
                 tableColumns.forEach(col => {
                     const th = document.createElement('th');
                     let translationKey = col === 'market_trading_hours' ? 'int.market_trading_hours' : col;
-                    let label = getTranslation(translationKey) || col;
+                    let label = getTranslation(translationKey) || (col === 'azioni' ? 'Azioni' : col);
                     // Split label on space or slash to put on two rows
                     if (label.includes(' ')) {
                         label = label.replace(' ', '<br>');
@@ -1114,6 +1117,31 @@
 
                 tableColumns.forEach((col, index) => {
                     let td = isNewRow ? document.createElement('td') : tr.cells[index];
+                    
+                    if (col === 'azioni') {
+                        if (isNewRow) {
+                            const btn = document.createElement('button');
+                            btn.className = 'trade-btn buy';
+                            btn.textContent = 'Negozia';
+                            btn.onclick = (e) => {
+                                e.stopPropagation();
+                                openTrade(item, 'buy');
+                            };
+                            td.style.textAlign = 'center';
+                            td.appendChild(btn);
+                            tr.appendChild(td);
+                        } else {
+                            const btn = td.querySelector('button');
+                            if (btn) {
+                                btn.onclick = (e) => {
+                                    e.stopPropagation();
+                                    openTrade(item, 'buy');
+                                };
+                            }
+                        }
+                        return;
+                    }
+
                     let val = item[col];
                     let displayVal = '';
 
@@ -1190,6 +1218,18 @@
                             span.onclick = (e) => {
                                 e.stopPropagation();
                                 const code = item.id_instrument || item.Ticker || val;
+                                openPriceGraph(code);
+                            };
+                            td.appendChild(span);
+                        } else if (col === 'instrument_description') {
+                            const span = document.createElement('span');
+                            span.textContent = displayVal;
+                            span.style.cursor = 'pointer';
+                            span.style.color = '#000';
+                            span.style.textDecoration = 'underline';
+                            span.onclick = (e) => {
+                                e.stopPropagation();
+                                const code = item.id_instrument || item.Ticker || val;
                                 openInstrumentDetails(code);
                             };
                             td.appendChild(span);
@@ -1211,7 +1251,13 @@
                     } else {
                         if (displayVal !== td.textContent && normalizedPrev !== displayVal) {
                             if (index === 0) {
-                                td.querySelector('span').textContent = displayVal;
+                                const span = td.querySelector('span');
+                                if (span) span.textContent = displayVal;
+                                else td.textContent = displayVal;
+                            } else if (col === 'instrument_description') {
+                                const span = td.querySelector('span');
+                                if (span) span.textContent = displayVal;
+                                else td.textContent = displayVal;
                             } else if (col === 'code_market') {
                                 td.innerHTML = displayVal;
                             } else {
@@ -1405,6 +1451,16 @@
                 params.append('exchange', String(item[exchangeKey]));
             }
 
+            // Pass quantity if available
+            const qtyKey = Object.keys(item).find(k => 
+                k.toLowerCase().includes('quantity') || 
+                k.toLowerCase().includes('quantità') || 
+                k.toLowerCase() === 'qta'
+            );
+            if (qtyKey && item[qtyKey]) {
+                params.append('quantity', String(item[qtyKey]));
+            }
+
             // Pass tutti i campi disponibili come JSON per referenza
             params.append('portfolio_data', JSON.stringify(item));
 
@@ -1515,6 +1571,15 @@
             params.set('language', credentials.language || 'it_IT');
             params.set('id_instrument', symbol);
             window.open(`dashboard-detail-instrument.html?${params.toString()}`, '_blank');
+        }
+
+        function openPriceGraph(symbol) {
+            const params = new URLSearchParams();
+            params.set('username', credentials.username);
+            params.set('token', credentials.token);
+            params.set('instrument_currency', credentials.currency || 'EUR');
+            params.set('id_instrument', symbol);
+            window.open(`dashboard-graph-prices.html?${params.toString()}`, '_blank');
         }
 
         function selectSector(sectorValue) {
