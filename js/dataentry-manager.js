@@ -92,18 +92,14 @@ const FormatHelper = {
     // Format instrument code (remove everything after first space or hyphen, handles colons)
     formatInstrumentCode(value) {
         if (!value) return '';
-
-        // Se contiene due punti, prendiamo l'ultima parte (es: ACCOUNT:TICKER -> TICKER)
+        // If it contains a colon, we take the last part (e.g. ACCOUNT:TICKER -> TICKER)
         let code = value;
         if (code.includes(':')) {
             const parts = code.split(':');
             code = parts[parts.length - 1];
         }
-
+        // Extract only the first part before space (if any, e.g. "AAPL Description" -> "AAPL")
         code = code.split(' ')[0];
-        if (code.includes('-')) {
-            code = code.split('-')[0];
-        }
         return code.trim();
     },
 
