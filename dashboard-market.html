@@ -1121,15 +1121,16 @@
 
                     if (col === 'azioni') {
                         if (isNewRow) {
-                            td.style.textAlign = 'center';
+                            td.style.textAlign = 'right';
                             td.style.whiteSpace = 'nowrap';
-                            
+
                             const btnBuy = document.createElement('button');
                             btnBuy.className = 'trade-btn buy';
                             btnBuy.textContent = getTranslation('int.buy') || 'Acquisto';
-                            btnBuy.style.padding = '2px 8px';
-                            btnBuy.style.fontSize = '11px';
-                            btnBuy.style.minHeight = '24px';
+                            btnBuy.style.padding = '1px 6px';
+                            btnBuy.style.fontSize = '10px';
+                            btnBuy.style.minHeight = '18px';
+                            btnBuy.style.lineHeight = '15px';
                             btnBuy.style.marginRight = '4px';
                             btnBuy.onclick = (e) => {
                                 e.stopPropagation();
@@ -1140,9 +1141,10 @@
                             const btnSell = document.createElement('button');
                             btnSell.className = 'trade-btn sell';
                             btnSell.textContent = getTranslation('int.sell') || 'Vendita';
-                            btnSell.style.padding = '2px 8px';
-                            btnSell.style.fontSize = '11px';
-                            btnSell.style.minHeight = '24px';
+                            btnSell.style.padding = '1px 6px';
+                            btnSell.style.fontSize = '10px';
+                            btnSell.style.minHeight = '18px';
+                            btnSell.style.lineHeight = '15px';
                             btnSell.onclick = (e) => {
                                 e.stopPropagation();
                                 openTrade(item, 'sell');
@@ -1447,7 +1449,7 @@
                     instrumentCode = parts[parts.length - 1];
                     console.log('[openTrade] Normalized after colon split:', instrumentCode);
                 }
-                
+
                 params.append('id_instrument', instrumentCode.trim());
             }
 
@@ -1489,7 +1491,11 @@
             }
 
             // Pass tutti i campi disponibili come JSON per referenza
-            params.append('portfolio_data', JSON.stringify(item));
+            const itemClone = Object.assign({}, item);
+            if (instrumentCode) {
+                itemClone.id_instrument = instrumentCode.trim();
+            }
+            params.append('portfolio_data', JSON.stringify(itemClone));
 
             window.open(`dashboard-dataentry-trade.html?${params.toString()}`, '_blank');
         }
