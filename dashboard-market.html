@@ -1051,7 +1051,8 @@
                 tableColumns.forEach(col => {
                     const th = document.createElement('th');
                     let translationKey = col === 'market_trading_hours' ? 'int.market_trading_hours' : col;
-                    let label = getTranslation(translationKey) || (col === 'azioni' ? 'Azioni' : col);
+                    if (col === 'azioni') translationKey = 'int.trading';
+                    let label = getTranslation(translationKey) || (col === 'azioni' ? 'Trading' : col);
                     // Split label on space or slash to put on two rows
                     if (label.includes(' ')) {
                         label = label.replace(' ', '<br>');
@@ -1117,12 +1118,15 @@
 
                 tableColumns.forEach((col, index) => {
                     let td = isNewRow ? document.createElement('td') : tr.cells[index];
-                    
+
                     if (col === 'azioni') {
                         if (isNewRow) {
                             const btn = document.createElement('button');
                             btn.className = 'trade-btn buy';
-                            btn.textContent = 'Negozia';
+                            btn.textContent = getTranslation('int.operation') || 'Operazione';
+                            btn.style.padding = '2px 8px';
+                            btn.style.fontSize = '11px';
+                            btn.style.minHeight = '24px';
                             btn.onclick = (e) => {
                                 e.stopPropagation();
                                 openTrade(item, 'buy');
@@ -1396,16 +1400,13 @@
             renderTable();
         }
 
-        function openTrade(item, action) {
+        function openTrade(item) {
             console.log('[openTrade] Item data:', item);
-            console.log('[openTrade] Action:', action);
 
             const params = new URLSearchParams({
                 username: credentials.username,
                 token: credentials.token,
-                language: credentials.language,
-                action: action,
-                type_event: action === 'buy' ? 'FI-BB' : 'FI-BA'
+                language: credentials.language
             });
 
             // Pass ticker/strumento
@@ -1452,9 +1453,9 @@
             }
 
             // Pass quantity if available
-            const qtyKey = Object.keys(item).find(k => 
-                k.toLowerCase().includes('quantity') || 
-                k.toLowerCase().includes('quantità') || 
+            const qtyKey = Object.keys(item).find(k =>
+                k.toLowerCase().includes('quantity') ||
+                k.toLowerCase().includes('quantità') ||
                 k.toLowerCase() === 'qta'
             );
             if (qtyKey && item[qtyKey]) {
