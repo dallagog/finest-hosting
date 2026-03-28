@@ -1209,7 +1209,7 @@ class SharedDataEntryRenderer {
         const isFixed = field.format.modify === "False" && field.defaultValue;
         const name = field.name;
 
-        if (formatType === 'FE_Instrument' && !isFixed) {
+        if (formatType === 'FE_Instrument') {
             const wrapper = inputElement.querySelector('.instrument-search-box-wrapper') || inputElement;
             if (wrapper) {
                 new InstrumentSearchBox(wrapper, {

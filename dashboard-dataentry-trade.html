@@ -435,11 +435,13 @@
 
             try {
                 urlParams.portfolio_data_obj = JSON.parse(urlParams.portfolio_data);
-                console.log('[getURLParams] Parsed portfolio_data_obj:', urlParams.portfolio_data_obj);
+                console.log('[DEBUG] Parsed portfolio_data_obj:', urlParams.portfolio_data_obj);
             } catch (e) {
-                console.error('[getURLParams] Error parsing portfolio_data:', e);
+                console.error('[DEBUG] Error parsing portfolio_data:', e);
                 urlParams.portfolio_data_obj = {};
             }
+            
+            console.log('[DEBUG] Final urlParams merged:', urlParams);
         }
 
         // ========== LANGUAGE & TRANSLATION SYSTEM ==========
@@ -963,12 +965,15 @@
                     ...urlParams,
                     ...(urlParams.portfolio_data_obj || {})
                 };
+                console.log('[DEBUG] Merged defaultValues for form:', defaultValues);
 
                 // Normalizzazione id_instrument in defaultValues
                 if (defaultValues.id_instrument && typeof FormatHelper !== 'undefined') {
                     const originalStr = defaultValues.id_instrument;
                     defaultValues.id_instrument = FormatHelper.formatInstrumentCode(defaultValues.id_instrument);
                     console.log('[DEBUG] Normalized id_instrument in defaultValues:', originalStr, '->', defaultValues.id_instrument);
+                } else if (!defaultValues.id_instrument) {
+                    console.warn('[DEBUG] id_instrument MISSING in defaultValues!');
                 } else {
                     console.log('[Initialization] id_instrument normalization skipped. instrument:', defaultValues.id_instrument, 'FormatHelper defined:', typeof FormatHelper !== 'undefined');
                 }
