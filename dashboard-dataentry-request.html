@@ -324,7 +324,9 @@
         }
 
         @media (max-width: 1200px) {
-            .request-columns, .selector-columns {
+
+            .request-columns,
+            .selector-columns {
                 grid-template-columns: 1fr;
             }
 
@@ -394,22 +396,24 @@
         <!-- ====== Three-column area ====== -->
         <div class="request-columns">
 
-            <!-- LEFT: Result output -->
+            <!-- LEFT: Variables Input -->
             <div class="column-panel">
                 <div class="panel-header">
-                    <span class="panel-title"><i class="fa fa-poll"></i> <span
-                            id="resultPanelLabel">Risultato</span></span>
-                    <div style="display: flex; gap: 8px;">
-                        <button type="button" class="btn btn-secondary btn-sm" onclick="copyResultToClipboard()"
-                            title="Copia">
-                            <i class="fa fa-copy"></i>
-                        </button>
-                        <button type="button" class="btn btn-secondary btn-sm" onclick="clearResult()">
-                            <i class="fa fa-eraser"></i>
-                        </button>
-                    </div>
+                    <span class="panel-title"><i class="fa fa-list"></i> <span id="paramsPanelLabel">Parametri
+                            Template</span></span>
                 </div>
-                <div id="result-viewer" class="result-viewer">In attesa di una richiesta...</div>
+                <div id="template-variables-area"
+                    style="padding: 15px; flex: 1; border: 1px solid var(--border-color); border-radius: 8px; overflow-y: auto; background: #fafafa;">
+                    <p id="no-params-msg" style="color: #666; font-style: italic;">Seleziona un template per
+                        visualizzare i parametri.</p>
+                    <div id="template-vars-list" style="display: flex; flex-direction: column; gap: 15px;"></div>
+                </div>
+                <div style="margin-top: 15px; display: flex; justify-content: flex-end;">
+                    <button type="button" class="btn btn-primary" id="btnCreateTemplate"
+                        onclick="applyTemplateVariables()" style="display: none; width: 100%;">
+                        <i class="fa fa-check"></i> <span id="lblBtnCreate">Conferma</span>
+                    </button>
+                </div>
             </div>
 
             <!-- CENTER: XML request input -->
@@ -431,20 +435,22 @@
                     placeholder="L'XML compilato apparirà qui..."></textarea>
             </div>
 
-            <!-- RIGHT: Variables Input -->
+            <!-- RIGHT: Result output -->
             <div class="column-panel">
                 <div class="panel-header">
-                    <span class="panel-title"><i class="fa fa-list"></i> <span id="paramsPanelLabel">Parametri Template</span></span>
+                    <span class="panel-title"><i class="fa fa-poll"></i> <span
+                            id="resultPanelLabel">Risultato</span></span>
+                    <div style="display: flex; gap: 8px;">
+                        <button type="button" class="btn btn-secondary btn-sm" onclick="copyResultToClipboard()"
+                            title="Copia">
+                            <i class="fa fa-copy"></i>
+                        </button>
+                        <button type="button" class="btn btn-secondary btn-sm" onclick="clearResult()">
+                            <i class="fa fa-eraser"></i>
+                        </button>
+                    </div>
                 </div>
-                <div id="template-variables-area" style="padding: 15px; flex: 1; border: 1px solid var(--border-color); border-radius: 8px; overflow-y: auto; background: #fafafa;">
-                    <p id="no-params-msg" style="color: #666; font-style: italic;">Seleziona un template per visualizzare i parametri.</p>
-                    <div id="template-vars-list" style="display: flex; flex-direction: column; gap: 15px;"></div>
-                </div>
-                <div style="margin-top: 15px; display: flex; justify-content: flex-end;">
-                    <button type="button" class="btn btn-primary" id="btnCreateTemplate" onclick="applyTemplateVariables()" style="display: none; width: 100%;">
-                        <i class="fa fa-check"></i> <span id="lblBtnCreate">Conferma</span>
-                    </button>
-                </div>
+                <div id="result-viewer" class="result-viewer">In attesa di una richiesta...</div>
             </div>
 
         </div>
@@ -460,7 +466,7 @@
         let availableLanguages = [];
         const API_URL = 'https://feweb-tunnel.fe-web.eu';
         const API_URL_MARKET = 'https://market-tunnel.fe-web.eu';
-        
+
         // ========== INIT ==========
 
         let currentTemplateOriginalXML = '';
@@ -582,12 +588,12 @@
             const varsList = document.getElementById('template-vars-list');
             const btnCreate = document.getElementById('btnCreateTemplate');
             const msgNoParams = document.getElementById('no-params-msg');
-            
+
             varsList.innerHTML = '';
             btnCreate.style.display = 'none';
             msgNoParams.style.display = 'block';
             msgNoParams.textContent = "Seleziona un template per visualizzare i parametri.";
-            
+
             currentTemplateOriginalXML = '';
             currentTemplateVars = [];
 
@@ -595,19 +601,19 @@
                 document.getElementById('xml-request-editor').value = '';
                 return;
             }
-            
+
             try {
                 const response = await fetch(`${API_URL}/getrequesttemplate?template=${selectedTemplate}`);
                 const result = await response.json();
                 if (result.status === 'ok') {
                     currentTemplateOriginalXML = result.data;
-                    
+
                     const regex = /\$\$\{?[A-Za-z0-9_]+\}?/g;
                     const matches = currentTemplateOriginalXML.match(regex);
-                    
+
                     if (matches && matches.length > 0) {
                         currentTemplateVars = [...new Set(matches)];
-                        
+
                         msgNoParams.style.display = 'none';
                         btnCreate.style.display = 'block';
 
@@ -616,26 +622,26 @@
                             const div = document.createElement('div');
                             div.style.display = 'flex';
                             div.style.flexDirection = 'column';
-                            
+
                             const label = document.createElement('label');
                             label.textContent = cleanName;
                             label.style.fontWeight = 'bold';
                             label.style.fontSize = '0.85rem';
                             label.style.marginBottom = '5px';
                             label.style.color = 'var(--text-color)';
-                            
+
                             const input = document.createElement('input');
                             input.type = 'text';
                             input.className = 'selector-select';
                             input.id = `tpl-var-${cleanName}`;
                             input.placeholder = `Inserisci ${cleanName}`;
                             input.style.padding = '8px';
-                            
+
                             div.appendChild(label);
                             div.appendChild(input);
                             varsList.appendChild(div);
                         });
-                        
+
                     } else {
                         msgNoParams.style.display = 'block';
                         msgNoParams.textContent = "Nessun parametro ($$) d'inserimento trovato nel template.";
@@ -653,20 +659,20 @@
 
         function applyTemplateVariables() {
             if (!currentTemplateOriginalXML) return;
-            
+
             let finalXML = currentTemplateOriginalXML;
-            
+
             currentTemplateVars.forEach(variable => {
                 const cleanName = variable.replace(/^\$\$\{?|\}?$/g, '');
                 const inputEl = document.getElementById(`tpl-var-${cleanName}`);
                 const val = inputEl ? inputEl.value : '';
-                
+
                 // Replace all occurrences of the variable
                 const escapedVar = variable.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
                 const regex = new RegExp(escapedVar, 'g');
                 finalXML = finalXML.replace(regex, val);
             });
-            
+
             document.getElementById('xml-request-editor').value = finalXML;
         }
 
