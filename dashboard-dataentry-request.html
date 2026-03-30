@@ -139,10 +139,17 @@
             font-family: inherit;
         }
 
-        /* ====== Two-column layout ====== */
-        .request-columns {
+        /* ====== Columns layout ====== */
+        .selector-columns {
             display: grid;
             grid-template-columns: 1fr 1fr;
+            gap: 25px;
+            margin-bottom: 25px;
+        }
+
+        .request-columns {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
             gap: 25px;
             margin-bottom: 25px;
         }
@@ -316,8 +323,8 @@
             }
         }
 
-        @media (max-width: 900px) {
-            .request-columns {
+        @media (max-width: 1200px) {
+            .request-columns, .selector-columns {
                 grid-template-columns: 1fr;
             }
 
@@ -363,7 +370,7 @@
         <!-- <p class="subtitle" id="pageSubtitle">Request Data Entry</p> -->
 
         <!-- ====== Selectors ====== -->
-        <div class="request-columns" style="margin-bottom: 0;">
+        <div class="selector-columns" style="margin-bottom: 0;">
             <!-- Left Selector -->
             <div class="instrument-selector" style="margin-bottom: 25px;">
                 <label for="request-type-selector" class="selector-label">
@@ -381,40 +388,13 @@
                 <select id="template-selector" class="selector-select" onchange="onTemplateChange()">
                     <option value="">—</option>
                 </select>
-
-                <!-- NEW CONTAINER FOR VARIABLES -->
-                <div id="template-variables-area" style="display: none; margin-top: 20px; border-top: 1px solid var(--border-color); padding-top: 15px;">
-                    <div id="template-vars-list" style="display: flex; flex-direction: column; gap: 10px;"></div>
-                    <button type="button" class="btn btn-primary btn-sm" id="btnCreateTemplate" onclick="applyTemplateVariables()" style="margin-top: 15px; width: 100%;">
-                        <i class="fa fa-magic"></i> <span id="lblBtnCreate">Crea</span>
-                    </button>
-                </div>
             </div>
         </div>
 
-        <!-- ====== Two-column area ====== -->
+        <!-- ====== Three-column area ====== -->
         <div class="request-columns">
 
-            <!-- LEFT: XML request input -->
-            <div class="column-panel">
-                <div class="panel-header">
-                    <span class="panel-title"><i class="fa fa-code"></i> <span id="requestPanelLabel">Richiesta
-                            XML</span></span>
-                    <div style="display: flex; gap: 8px;">
-                        <button type="button" class="btn btn-primary btn-sm" id="btnSendRequest"
-                            onclick="sendRequest()">
-                            <i class="fa fa-paper-plane"></i> <span id="btnSendLabel">Invia Richiesta</span>
-                        </button>
-                        <button type="button" class="btn btn-secondary btn-sm" onclick="clearRequestEditor()">
-                            <i class="fa fa-eraser"></i>
-                        </button>
-                    </div>
-                </div>
-                <textarea id="xml-request-editor" class="xml-editor"
-                    placeholder="Inserisci o incolla qui la richiesta XML..."></textarea>
-            </div>
-
-            <!-- RIGHT: Result output -->
+            <!-- LEFT: Result output -->
             <div class="column-panel">
                 <div class="panel-header">
                     <span class="panel-title"><i class="fa fa-poll"></i> <span
@@ -430,6 +410,41 @@
                     </div>
                 </div>
                 <div id="result-viewer" class="result-viewer">In attesa di una richiesta...</div>
+            </div>
+
+            <!-- CENTER: XML request input -->
+            <div class="column-panel">
+                <div class="panel-header">
+                    <span class="panel-title"><i class="fa fa-code"></i> <span id="requestPanelLabel">Richiesta
+                            XML</span></span>
+                    <div style="display: flex; gap: 8px;">
+                        <button type="button" class="btn btn-primary btn-sm" id="btnSendRequest"
+                            onclick="sendRequest()">
+                            <i class="fa fa-paper-plane"></i> <span id="btnSendLabel">Invia Richiesta</span>
+                        </button>
+                        <button type="button" class="btn btn-secondary btn-sm" onclick="clearRequestEditor()">
+                            <i class="fa fa-eraser"></i>
+                        </button>
+                    </div>
+                </div>
+                <textarea id="xml-request-editor" class="xml-editor"
+                    placeholder="L'XML compilato apparirà qui..."></textarea>
+            </div>
+
+            <!-- RIGHT: Variables Input -->
+            <div class="column-panel">
+                <div class="panel-header">
+                    <span class="panel-title"><i class="fa fa-list"></i> <span id="paramsPanelLabel">Parametri Template</span></span>
+                </div>
+                <div id="template-variables-area" style="padding: 15px; flex: 1; border: 1px solid var(--border-color); border-radius: 8px; overflow-y: auto; background: #fafafa;">
+                    <p id="no-params-msg" style="color: #666; font-style: italic;">Seleziona un template per visualizzare i parametri.</p>
+                    <div id="template-vars-list" style="display: flex; flex-direction: column; gap: 15px;"></div>
+                </div>
+                <div style="margin-top: 15px; display: flex; justify-content: flex-end;">
+                    <button type="button" class="btn btn-primary" id="btnCreateTemplate" onclick="applyTemplateVariables()" style="display: none; width: 100%;">
+                        <i class="fa fa-check"></i> <span id="lblBtnCreate">Conferma</span>
+                    </button>
+                </div>
             </div>
 
         </div>
@@ -565,9 +580,14 @@
             const selectedTemplate = selector.value;
             const varsArea = document.getElementById('template-variables-area');
             const varsList = document.getElementById('template-vars-list');
+            const btnCreate = document.getElementById('btnCreateTemplate');
+            const msgNoParams = document.getElementById('no-params-msg');
             
-            varsArea.style.display = 'none';
             varsList.innerHTML = '';
+            btnCreate.style.display = 'none';
+            msgNoParams.style.display = 'block';
+            msgNoParams.textContent = "Seleziona un template per visualizzare i parametri.";
+            
             currentTemplateOriginalXML = '';
             currentTemplateVars = [];
 
@@ -581,16 +601,18 @@
                 const result = await response.json();
                 if (result.status === 'ok') {
                     currentTemplateOriginalXML = result.data;
-                    document.getElementById('xml-request-editor').value = currentTemplateOriginalXML;
                     
-                    const regex = /\$\$[A-Za-z0-9_]+/g;
+                    const regex = /\$\$\{?[A-Za-z0-9_]+\}?/g;
                     const matches = currentTemplateOriginalXML.match(regex);
                     
                     if (matches && matches.length > 0) {
                         currentTemplateVars = [...new Set(matches)];
                         
+                        msgNoParams.style.display = 'none';
+                        btnCreate.style.display = 'block';
+
                         currentTemplateVars.forEach(variable => {
-                            const cleanName = variable.substring(2);
+                            const cleanName = variable.replace(/^\$\$\{?|\}?$/g, '');
                             const div = document.createElement('div');
                             div.style.display = 'flex';
                             div.style.flexDirection = 'column';
@@ -614,7 +636,11 @@
                             varsList.appendChild(div);
                         });
                         
-                        varsArea.style.display = 'block';
+                    } else {
+                        msgNoParams.style.display = 'block';
+                        msgNoParams.textContent = "Nessun parametro ($$) d'inserimento trovato nel template.";
+                        btnCreate.style.display = 'none';
+                        document.getElementById('xml-request-editor').value = currentTemplateOriginalXML;
                     }
                 } else {
                     showStatus('Errore caricamento template: ' + (result.msg || 'Sconosciuto'), 'error');
@@ -631,12 +657,13 @@
             let finalXML = currentTemplateOriginalXML;
             
             currentTemplateVars.forEach(variable => {
-                const cleanName = variable.substring(2);
+                const cleanName = variable.replace(/^\$\$\{?|\}?$/g, '');
                 const inputEl = document.getElementById(`tpl-var-${cleanName}`);
                 const val = inputEl ? inputEl.value : '';
                 
                 // Replace all occurrences of the variable
-                const regex = new RegExp('\\$\\$' + cleanName + '\\b', 'g');
+                const escapedVar = variable.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                const regex = new RegExp(escapedVar, 'g');
                 finalXML = finalXML.replace(regex, val);
             });
             
