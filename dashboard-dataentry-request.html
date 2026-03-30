@@ -380,9 +380,8 @@
                     <span class="panel-title"><i class="fa fa-code"></i> <span id="requestPanelLabel">Richiesta
                             XML</span></span>
                     <div style="display: flex; gap: 8px;">
-                        <button type="button" class="btn btn-secondary btn-sm" onclick="loadTemplateXml()"
-                            title="Carica template">
-                            <i class="fa fa-file-code"></i> <span id="btnLoadTemplateLabel">Template</span>
+                        <button type="button" class="btn btn-primary btn-sm" id="btnSendRequest" onclick="sendRequest()">
+                            <i class="fa fa-paper-plane"></i> <span id="btnSendLabel">Invia Richiesta</span>
                         </button>
                         <button type="button" class="btn btn-secondary btn-sm" onclick="clearRequestEditor()">
                             <i class="fa fa-eraser"></i>
@@ -413,13 +412,7 @@
 
         </div>
 
-        <!-- ====== Submit button ====== -->
-        <div class="form-actions">
-            <button type="button" class="btn btn-primary" id="btnSendRequest" onclick="sendRequest()"
-                style="min-width: 200px;">
-                <i class="fa fa-paper-plane"></i> <span id="btnSendLabel">Invia Richiesta</span>
-            </button>
-        </div>
+
 
         <div id="statusMessage" class="status-message"></div>
     </div>
@@ -429,6 +422,7 @@
         let translations = {};
         let availableLanguages = [];
         const API_URL = 'https://feweb-tunnel.fe-web.eu';
+        const API_URL_MARKET = 'https://market-tunnel.fe-web.eu';
 
         // ========== INIT ==========
         async function loadAllData() {
@@ -637,7 +631,9 @@
                     request_xml: xmlContent
                 };
 
-                const response = await fetch(`${API_URL}/putrequest`, {
+                const targetApiUrl = (requestType === 'user') ? API_URL : API_URL_MARKET;
+
+                const response = await fetch(`${targetApiUrl}/putrequest`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
