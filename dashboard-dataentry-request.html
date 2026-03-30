@@ -360,15 +360,36 @@
     </div>
 
     <div class="container">
-        <p class="subtitle" id="pageSubtitle">Request Data Entry</p>
+        <!-- <p class="subtitle" id="pageSubtitle">Request Data Entry</p> -->
 
-        <!-- ====== Selector based on dom.request: ====== -->
-        <div class="instrument-selector">
-            <label for="request-type-selector" class="selector-label">
-                <i class="fa fa-list-alt"></i> <span id="requestTypeLabel">Tipo Richiesta:</span>
-            </label>
-            <select id="request-type-selector" class="selector-select" onchange="onRequestTypeChange()">
-            </select>
+        <!-- ====== Selectors ====== -->
+        <div class="request-columns" style="margin-bottom: 0;">
+            <!-- Left Selector -->
+            <div class="instrument-selector" style="margin-bottom: 25px;">
+                <label for="request-type-selector" class="selector-label">
+                    <i class="fa fa-list-alt"></i> <span id="requestTypeLabel">Tipo Richiesta:</span>
+                </label>
+                <select id="request-type-selector" class="selector-select" onchange="onRequestTypeChange()">
+                </select>
+            </div>
+
+            <!-- Right Selector (Templates) -->
+            <div class="instrument-selector" style="margin-bottom: 25px;">
+                <label for="template-selector" class="selector-label">
+                    <i class="fa fa-file-code"></i> <span id="templateLabel">Template:</span>
+                </label>
+                <select id="template-selector" class="selector-select" onchange="onTemplateChange()">
+                    <option value="">—</option>
+                </select>
+
+                <!-- NEW CONTAINER FOR VARIABLES -->
+                <div id="template-variables-area" style="display: none; margin-top: 20px; border-top: 1px solid var(--border-color); padding-top: 15px;">
+                    <div id="template-vars-list" style="display: flex; flex-direction: column; gap: 10px;"></div>
+                    <button type="button" class="btn btn-primary btn-sm" id="btnCreateTemplate" onclick="applyTemplateVariables()" style="margin-top: 15px; width: 100%;">
+                        <i class="fa fa-magic"></i> <span id="lblBtnCreate">Crea</span>
+                    </button>
+                </div>
+            </div>
         </div>
 
         <!-- ====== Two-column area ====== -->
@@ -380,7 +401,8 @@
                     <span class="panel-title"><i class="fa fa-code"></i> <span id="requestPanelLabel">Richiesta
                             XML</span></span>
                     <div style="display: flex; gap: 8px;">
-                        <button type="button" class="btn btn-primary btn-sm" id="btnSendRequest" onclick="sendRequest()">
+                        <button type="button" class="btn btn-primary btn-sm" id="btnSendRequest"
+                            onclick="sendRequest()">
                             <i class="fa fa-paper-plane"></i> <span id="btnSendLabel">Invia Richiesta</span>
                         </button>
                         <button type="button" class="btn btn-secondary btn-sm" onclick="clearRequestEditor()">
@@ -423,14 +445,19 @@
         let availableLanguages = [];
         const API_URL = 'https://feweb-tunnel.fe-web.eu';
         const API_URL_MARKET = 'https://market-tunnel.fe-web.eu';
-
+        
         // ========== INIT ==========
+
+        let currentTemplateOriginalXML = '';
+        let currentTemplateVars = [];
+
         async function loadAllData() {
             getURLParams();
             await initializeLanguages();
             await loadTranslations(credentials.language);
             await updateHeaderWithUserInfo();
             populateRequestTypeSelector();
+            await loadTemplates();
         }
 
         function getURLParams() {
@@ -491,14 +518,14 @@
             const el = (id) => document.getElementById(id);
             el('pageTitle').textContent = getTranslation('int.request') || 'Request Entry';
             el('pageTitleHeader').textContent = getTranslation('int.request') || 'Request Entry';
-            el('pageSubtitle').textContent = getTranslation('int.request') || 'Request Data Entry';
+            //el('pageSubtitle').textContent = getTranslation('int.request') || 'Request Data Entry';
             el('closeText').textContent = getTranslation('int.close') || 'Chiudi';
             el('userLabel').textContent = getTranslation('int.user.label') || 'Utente:';
             el('requestTypeLabel').textContent = getTranslation('int.request.type') || 'Tipo Richiesta:';
             el('requestPanelLabel').textContent = getTranslation('int.request.xml') || 'Richiesta XML';
             el('resultPanelLabel').textContent = getTranslation('int.request.result') || 'Risultato';
             el('btnSendLabel').textContent = getTranslation('int.request.send') || 'Invia Richiesta';
-            el('btnLoadTemplateLabel').textContent = getTranslation('int.template') || 'Template';
+            el('templateLabel').textContent = getTranslation('int.request.template') || 'Template:';
         }
 
         async function updateHeaderWithUserInfo() {
@@ -511,6 +538,109 @@
                 document.getElementById('languageDisplay').textContent =
                     langDescription !== 'int.language.description' ? langDescription : langData.name;
             }
+        }
+
+        // ========== TEMPLATES ==========
+        async function loadTemplates() {
+            try {
+                const response = await fetch(`${API_URL}/getrequesttemplates`);
+                const result = await response.json();
+                const selector = document.getElementById('template-selector');
+                selector.innerHTML = '<option value="">—</option>';
+                if (result.status === 'ok' && result.data) {
+                    result.data.forEach(item => {
+                        const option = document.createElement('option');
+                        option.value = item.name;
+                        option.textContent = item.name.replace('.xml', '');
+                        selector.appendChild(option);
+                    });
+                }
+            } catch (err) {
+                console.error('Error loading templates:', err);
+            }
+        }
+
+        async function onTemplateChange() {
+            const selector = document.getElementById('template-selector');
+            const selectedTemplate = selector.value;
+            const varsArea = document.getElementById('template-variables-area');
+            const varsList = document.getElementById('template-vars-list');
+            
+            varsArea.style.display = 'none';
+            varsList.innerHTML = '';
+            currentTemplateOriginalXML = '';
+            currentTemplateVars = [];
+
+            if (!selectedTemplate) {
+                document.getElementById('xml-request-editor').value = '';
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_URL}/getrequesttemplate?template=${selectedTemplate}`);
+                const result = await response.json();
+                if (result.status === 'ok') {
+                    currentTemplateOriginalXML = result.data;
+                    document.getElementById('xml-request-editor').value = currentTemplateOriginalXML;
+                    
+                    const regex = /\$\$[A-Za-z0-9_]+/g;
+                    const matches = currentTemplateOriginalXML.match(regex);
+                    
+                    if (matches && matches.length > 0) {
+                        currentTemplateVars = [...new Set(matches)];
+                        
+                        currentTemplateVars.forEach(variable => {
+                            const cleanName = variable.substring(2);
+                            const div = document.createElement('div');
+                            div.style.display = 'flex';
+                            div.style.flexDirection = 'column';
+                            
+                            const label = document.createElement('label');
+                            label.textContent = cleanName;
+                            label.style.fontWeight = 'bold';
+                            label.style.fontSize = '0.85rem';
+                            label.style.marginBottom = '5px';
+                            label.style.color = 'var(--text-color)';
+                            
+                            const input = document.createElement('input');
+                            input.type = 'text';
+                            input.className = 'selector-select';
+                            input.id = `tpl-var-${cleanName}`;
+                            input.placeholder = `Inserisci ${cleanName}`;
+                            input.style.padding = '8px';
+                            
+                            div.appendChild(label);
+                            div.appendChild(input);
+                            varsList.appendChild(div);
+                        });
+                        
+                        varsArea.style.display = 'block';
+                    }
+                } else {
+                    showStatus('Errore caricamento template: ' + (result.msg || 'Sconosciuto'), 'error');
+                }
+            } catch (err) {
+                console.error('Error loading template content:', err);
+                showStatus('Errore di connessione durante il caricamento template', 'error');
+            }
+        }
+
+        function applyTemplateVariables() {
+            if (!currentTemplateOriginalXML) return;
+            
+            let finalXML = currentTemplateOriginalXML;
+            
+            currentTemplateVars.forEach(variable => {
+                const cleanName = variable.substring(2);
+                const inputEl = document.getElementById(`tpl-var-${cleanName}`);
+                const val = inputEl ? inputEl.value : '';
+                
+                // Replace all occurrences of the variable
+                const regex = new RegExp('\\$\\$' + cleanName + '\\b', 'g');
+                finalXML = finalXML.replace(regex, val);
+            });
+            
+            document.getElementById('xml-request-editor').value = finalXML;
         }
 
         // ========== REQUEST TYPE SELECTOR (dom.request:) ==========
