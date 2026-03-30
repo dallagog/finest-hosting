@@ -101,7 +101,7 @@
         }
 
         .container {
-            max-width: 1400px;
+            width: 100%;
             margin: 0 auto;
         }
 
@@ -609,7 +609,7 @@
                     currentTemplateOriginalXML = result.data;
                     const regex = /\$\$\{([A-Za-z0-9_]+)\}(?::([A-Za-z0-9_]+))?/g;
                     const rawMatches = [...currentTemplateOriginalXML.matchAll(regex)];
-                    
+
                     const uniqueMap = new Map();
                     rawMatches.forEach(m => {
                         if (!uniqueMap.has(m[0])) {
@@ -623,7 +623,7 @@
 
                     if (uniqueMap.size > 0) {
                         currentTemplateVars = Array.from(uniqueMap.values());
-                        
+
                         msgNoParams.style.display = 'none';
                         btnCreate.style.display = 'block';
 
@@ -631,19 +631,19 @@
                             const div = document.createElement('div');
                             div.style.display = 'flex';
                             div.style.flexDirection = 'column';
-                            
+
                             const label = document.createElement('label');
                             label.textContent = v.name + (v.type ? ` (${v.type})` : '');
                             label.style.fontWeight = 'bold';
                             label.style.fontSize = '0.85rem';
                             label.style.marginBottom = '5px';
                             label.style.color = 'var(--text-color)';
-                            
+
                             const input = document.createElement('input');
                             input.className = 'selector-select';
                             input.id = `tpl-var-${index}`;
                             input.style.padding = '8px';
-                            
+
                             if (v.type === 'FE_Date') {
                                 input.type = 'date';
                             } else if (v.type === 'FE_Number') {
@@ -652,7 +652,7 @@
                                 input.type = 'text';
                                 input.placeholder = `Inserisci ${v.name}`;
                             }
-                            
+
                             div.appendChild(label);
                             div.appendChild(input);
                             varsList.appendChild(div);
@@ -681,7 +681,7 @@
             currentTemplateVars.forEach((v, index) => {
                 const inputEl = document.getElementById(`tpl-var-${index}`);
                 let val = inputEl ? inputEl.value : '';
-                
+
                 // Replace all occurrences of the variable token
                 const escapedVar = v.token.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
                 const regex = new RegExp(escapedVar, 'g');
