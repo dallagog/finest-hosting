@@ -1359,6 +1359,11 @@
                     td.textContent = totalMinusPlus.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
                     td.style.textAlign = 'right';
                     td.style.color = totalMinusPlus >= 0 ? '#1a7a1a' : '#cc0000';
+                } else if (col === 'M/P%') {
+                    const sign = percentualeMP >= 0 ? '+' : '';
+                    td.textContent = sign + percentualeMP.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' %';
+                    td.style.textAlign = 'right';
+                    td.style.color = percentualeMP >= 0 ? '#1a7a1a' : '#cc0000';
                 } else if (index === 0) {
                     td.textContent = 'TOTALE';
                 } else {
@@ -1367,33 +1372,7 @@
                 tfoot.appendChild(td);
             });
 
-            // Riga 2: % M/P su Costo
-            const trPercent = document.createElement('tr');
-            trPercent.id = 'portfolio-footer-percent-row';
-            tableColumns.forEach((col, index) => {
-                const td = document.createElement('td');
-                td.style.fontWeight = 'bold';
-                td.style.background = '#e8e8e8';
-                td.style.borderTop = '1px solid #ccc';
-                td.style.fontSize = '11px';
-                td.style.color = '#555';
 
-                if (index === 0) {
-                    td.textContent = '% M/P / COSTO';
-                    td.style.color = '#555';
-                } else if (col === 'M/P') {
-                    const sign = percentualeMP >= 0 ? '+' : '';
-                    td.textContent = sign + percentualeMP.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' %';
-                    td.style.textAlign = 'right';
-                    td.style.color = percentualeMP >= 0 ? '#1a7a1a' : '#cc0000';
-                    td.style.fontWeight = 'bold';
-                    td.style.fontSize = '12px';
-                } else {
-                    td.textContent = '';
-                }
-                trPercent.appendChild(td);
-            });
-            document.getElementById('portfolio-footer').appendChild(trPercent);
         }
 
         function recalculateItem(item) {
