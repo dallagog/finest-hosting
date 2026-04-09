@@ -736,6 +736,17 @@
             <div id="filter-section" class="collapsible-container">
                 <div class="collapsible-header" onclick="toggleCollapsible(this)">
                     <h2 id="filtersPeriodTitle"></h2>
+                    <div id="header-quick-filters" onclick="event.stopPropagation()"
+                        style="display:flex; align-items:center; gap:8px; flex:1; justify-content:center; flex-wrap:wrap;">
+                        <input type="date" id="header-date-start"
+                            style="padding:4px 8px; border:1px solid #ccc; border-radius:4px; font-family:inherit; font-size:12px; cursor:pointer;">
+                        <input type="date" id="header-date-end"
+                            style="padding:4px 8px; border:1px solid #ccc; border-radius:4px; font-family:inherit; font-size:12px; cursor:pointer;">
+                        <button id="header-apply-btn" onclick="applyHeaderFilters()"
+                            style="padding:4px 14px; margin:0; font-size:12px; line-height:1.4;">
+                            <i class="fa fa-check"></i> <span id="headerApplyText">Applica</span>
+                        </button>
+                    </div>
                     <span id="dateEvaluationInfo"
                         style="font-size: 12px; color: #666; font-weight: 400; letter-spacing: 0; margin-right: 12px;"></span>
                     <span class="toggle-btn">+</span>
@@ -1206,6 +1217,11 @@
 
             const applyFiltersText = getTranslation('int.apply.filters');
             if (applyFiltersText !== 'int.apply.filters') document.getElementById('apply-filters').textContent = applyFiltersText;
+            const headerApplyEl = document.getElementById('headerApplyText');
+            if (headerApplyEl) {
+                const shortApply = getTranslation('int.apply.filters');
+                if (shortApply && shortApply !== 'int.apply.filters') headerApplyEl.textContent = shortApply;
+            }
 
             const selectOpt = getTranslation('int.select.option');
             if (selectOpt !== 'int.select.option') {
@@ -1294,6 +1310,11 @@
             } else {
                 content.classList.add('active');
                 toggleBtn.textContent = '-';
+            }
+            // Show quick-filters bar only when filter section is collapsed
+            const quickFilters = document.getElementById('header-quick-filters');
+            if (quickFilters && header.closest('#filter-section')) {
+                quickFilters.style.display = content.classList.contains('active') ? 'none' : 'flex';
             }
         }
 
@@ -1389,6 +1410,15 @@
             const label = getTranslation('int.date_evaluation');
             const displayLabel = (label && label !== 'int.date_evaluation') ? label : 'int.date_evaluation';
             el.textContent = `${displayLabel}: ${dateEval}`;
+        }
+
+        function applyHeaderFilters() {
+            // Copy header quick-filter dates into the main inputs, then apply
+            const hds = document.getElementById('header-date-start');
+            const hde = document.getElementById('header-date-end');
+            if (hds) document.getElementById('date-start').value = hds.value;
+            if (hde) document.getElementById('date-end').value = hde.value;
+            applyFiltersAndSave();
         }
 
         // ========== MENU ==========
@@ -1891,6 +1921,11 @@
             // Imposta date con fallback ai default
             document.getElementById('date-start').value = f.date_start || defaultDateStart;
             document.getElementById('date-end').value = f.date_end || defaultDateEnd;
+            // Sync header quick-filters date inputs
+            const hds = document.getElementById('header-date-start');
+            const hde = document.getElementById('header-date-end');
+            if (hds) hds.value = f.date_start || defaultDateStart;
+            if (hde) hde.value = f.date_end || defaultDateEnd;
 
             // Popola il dropdown del portafoglio usando domine.json (level_portfolio)
             const portfolioSelect = document.getElementById('portfolio');
