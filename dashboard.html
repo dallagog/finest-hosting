@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Financial Estimates 0.5 alfa</title>
+    <title>Financial Estimates 0.4 alfa</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <script src="js/dashboard-shared.js"></script>
@@ -2318,15 +2318,46 @@
                         // Salva localmente per backup
                         localStorage.setItem('lastFilter', filterDataString);
 
-                        // Cambia il pulsante a sfondo bianco/testo nero (stato "in attesa")
+                        // Riferimenti a entrambi i pulsanti
                         const applyBtn = document.getElementById('apply-filters');
-                        console.log('applyBtn element:', applyBtn);
-                        const originalLabel = applyBtn ? applyBtn.textContent : '';
-                        if (applyBtn) {
-                            applyBtn.setAttribute('style', 'flex: 1; background: #fff !important; color: #000 !important; border: 2px solid #000 !important;');
-                            applyBtn.textContent = getTranslation('int.inprogress') || 'In elaborazione...';
-                            console.log('Button changed to WHITE with label:', applyBtn.textContent);
+                        const headerApplyBtn = document.getElementById('header-apply-btn');
+                        const inProgressLabel = getTranslation('int.inprogress') || 'In elaborazione...';
+                        const originalLabel = applyBtn ? applyBtn.textContent : (getTranslation('int.apply.filters') || 'Applica Filtri');
+
+                        function setApplyBtnState(state) {
+                            if (state === 'inprogress') {
+                                if (applyBtn) {
+                                    applyBtn.setAttribute('style', 'flex: 1; background: #fff !important; color: #000 !important; border: 2px solid #000 !important;');
+                                    applyBtn.textContent = inProgressLabel;
+                                }
+                                if (headerApplyBtn) {
+                                    headerApplyBtn.setAttribute('style', 'padding:4px 14px; margin:0; font-size:12px; line-height:1.4; background: #fff !important; color: #000 !important; border: 2px solid #000 !important;');
+                                    headerApplyBtn.innerHTML = `<i class="fa fa-spinner fa-spin"></i> <span id="headerApplyText">${inProgressLabel}</span>`;
+                                }
+                            } else if (state === 'done') {
+                                if (applyBtn) {
+                                    applyBtn.setAttribute('style', 'flex: 1; background: #28a745 !important; color: #fff !important; border: 2px solid #28a745 !important;');
+                                }
+                                if (headerApplyBtn) {
+                                    headerApplyBtn.setAttribute('style', 'padding:4px 14px; margin:0; font-size:12px; line-height:1.4; background: #28a745 !important; color: #fff !important; border: 2px solid #28a745 !important;');
+                                    headerApplyBtn.innerHTML = `<i class="fa fa-check"></i> <span id="headerApplyText">${inProgressLabel}</span>`;
+                                }
+                            } else { // 'default'
+                                if (applyBtn) {
+                                    applyBtn.setAttribute('style', 'flex: 1; background: #000 !important; color: #fff !important; border: 1px solid #000 !important;');
+                                    applyBtn.textContent = originalLabel || getTranslation('int.apply.filters') || 'Applica Filtri';
+                                }
+                                if (headerApplyBtn) {
+                                    const applyLabel = getTranslation('int.apply.filters') || 'Applica';
+                                    headerApplyBtn.setAttribute('style', 'padding:4px 14px; margin:0; font-size:12px; line-height:1.4;');
+                                    headerApplyBtn.innerHTML = `<i class="fa fa-check"></i> <span id="headerApplyText">${applyLabel}</span>`;
+                                }
+                            }
                         }
+
+                        // Stato: in elaborazione
+                        setApplyBtnState('inprogress');
+                        console.log('Buttons changed to WHITE - in progress');
 
                         // Avvia connessione WebSocket per monitorare lo stato del filtro
                         const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
@@ -2353,20 +2384,15 @@
                                 console.log('WebSocket message received:', data);
 
                                 if (data.ready === true) {
-                                    // Cambia il pulsante a sfondo verde
-                                    console.log('Changing button to GREEN');
-                                    if (applyBtn) {
-                                        applyBtn.setAttribute('style', 'flex: 1; background: #28a745 !important; color: #fff !important; border: 2px solid #28a745 !important;');
-                                    }
+                                    // Stato: completato (verde)
+                                    console.log('Changing buttons to GREEN');
+                                    setApplyBtnState('done');
                                     //showMessage(getTranslation('int.evaluation.complete') || 'Elaborazione completata!', 'success');
 
-                                    // Dopo 3 secondi, ripristina il pulsante e aggiorna i dati
+                                    // Dopo 3 secondi, ripristina i pulsanti e aggiorna i dati
                                     setTimeout(() => {
-                                        console.log('Restoring button to BLACK');
-                                        if (applyBtn) {
-                                            applyBtn.setAttribute('style', 'flex: 1; background: #000 !important; color: #fff !important; border: 1px solid #000 !important;');
-                                            applyBtn.textContent = originalLabel || getTranslation('int.apply.filters') || 'Applica Filtri';
-                                        }
+                                        console.log('Restoring buttons to DEFAULT');
+                                        setApplyBtnState('default');
                                         // Ricarica i dati della dashboard
                                         loadFilter();
                                         loadPortfolio();
@@ -2375,10 +2401,7 @@
 
                                 } else if (data.error) {
                                     console.error('WebSocket error:', data.error);
-                                    // Ripristina il pulsante in caso di errore
-                                    if (applyBtn) {
-                                        applyBtn.setAttribute('style', 'flex: 1; background: #000 !important; color: #fff !important; border: 1px solid #000 !important;');
-                                    }
+                                    setApplyBtnState('default');
                                 }
                             } catch (e) {
                                 console.error('Error parsing WebSocket message:', e);
@@ -2387,15 +2410,11 @@
 
                         ws.onerror = (error) => {
                             console.error('WebSocket error:', error);
-                            // Ripristina il pulsante in caso di errore
-                            if (applyBtn) {
-                                applyBtn.setAttribute('style', 'flex: 1; background: #000 !important; color: #fff !important; border: 1px solid #000 !important;');
-                            }
+                            setApplyBtnState('default');
                         };
 
                         ws.onclose = () => {
                             console.log('WebSocket connection closed');
-
                         };
 
                     } else {
