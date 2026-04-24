@@ -431,9 +431,22 @@
         }
 
         function parseNumericValue(value) {
-            if (!value || value === '-') return 0;
-            const cleaned = String(value).replace(/[^\d.,-]/g, '').replace(',', '.');
-            return parseFloat(cleaned) || 0;
+            if (value === null || value === undefined || value === '-') return -Infinity;
+            
+            let valStr = String(value);
+            
+            // Gestione oggetti "valore divisa"
+            if (typeof value === 'object') {
+                if (value.valore !== undefined) valStr = String(value.valore);
+                else if (value.value !== undefined) valStr = String(value.value);
+            } else if (typeof value === 'string' && value.includes(':')) {
+                // Gestione formato stringa "100.00:EUR"
+                valStr = value.split(':')[0];
+            }
+            
+            const cleaned = valStr.replace(/[^\d.,-]/g, '').replace(',', '.');
+            const num = parseFloat(cleaned);
+            return isNaN(num) ? -Infinity : num;
         }
 
         function sortData(data, column, direction) {
@@ -446,8 +459,8 @@
                         valB = b.date_evaluation || '';
                         break;
                     case 'event':
-                        valA = a.event?.event_description || a.id_event || '';
-                        valB = b.event?.event_description || b.id_event || '';
+                        valA = String(a.event?.event_description || a.id_event || '').toLowerCase();
+                        valB = String(b.event?.event_description || b.id_event || '').toLowerCase();
                         break;
                     case 'quantity':
                         valA = parseNumericValue(a.quantity);
