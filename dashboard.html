@@ -3352,6 +3352,11 @@
 
         // ========== LOGOUT ==========
         async function logout() {
+            const performLocalLogout = () => {
+                localStorage.clear();
+                window.location.href = 'login.html';
+            };
+
             try {
                 const payload = {
                     username: credentials.username || "",
@@ -3360,18 +3365,25 @@
                     filter: credentials.filter || "",
                     code: ""
                 };
+
+                // Tenta il logout sul server
                 const response = await fetch(`${API_URL}/logout`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
+                }).catch(err => {
+                    console.warn('Network or CORS error during logout:', err);
+                    return { ok: false };
                 });
-                const data = await response.json().catch(() => null);
-                if (data && data.status === 'ok') {
-                    //showMessage(getTranslation('int.logout.success') || 'Logout successo', 'success');
-                    localStorage.clear();
-                    setTimeout(() => { window.location.href = 'login.html'; }, 1000);
-                } else showMessage('Logout error', 'error');
-            } catch (error) { console.error('logout error', error); }
+
+                // Indipendentemente dal successo del server (anche in caso di 500 o CORS),
+                // eseguiamo il logout locale per non bloccare l'utente.
+                performLocalLogout();
+
+            } catch (error) {
+                console.error('Logout script error:', error);
+                performLocalLogout();
+            }
         }
 
         function openTradingDashboard() {
