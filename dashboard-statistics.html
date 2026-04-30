@@ -36,8 +36,8 @@
         }
 
         .main-container {
-            max-width: 1200px;
-            margin: 0 auto;
+            width: 100%;
+            margin: 0;
         }
 
         .header-bar {
@@ -248,11 +248,11 @@
                     <input type="date" id="date-end">
                 </div>
                 <div class="filter-group" style="flex: 1; min-width: 150px;">
-                    <label>Valore min:</label>
+                    <label>Forza min:</label>
                     <input type="number" id="value-min" step="0.01">
                 </div>
                 <div class="filter-group" style="flex: 1; min-width: 150px;">
-                    <label>Valore max:</label>
+                    <label>Forza max:</label>
                     <input type="number" id="value-max" step="0.01">
                 </div>
                 <div class="filter-group" style="flex: 1; min-width: 150px;">
@@ -473,7 +473,7 @@
             const instrumentFilter = document.getElementById('instrument-filter').value.trim().toLowerCase();
 
             let filtered = data.filter(row => {
-                const val = parseFloat(row.value);
+                const val = parseFloat(row.forza);
                 if (isNaN(val)) return false;
                 const absVal = Math.abs(val);
                 if (!isNaN(vMin) && absVal < vMin) return false;
@@ -490,14 +490,16 @@
             }
 
             let html = `<p style="margin-bottom:10px">Record trovati: <strong>${filtered.length}</strong></p>`;
-            html += '<table class="data-table"><thead><tr><th>Strumento</th><th>Settore</th><th>Data</th><th>Valore</th></tr></thead><tbody>';
+            html += '<table class="data-table"><thead><tr><th>Strumento</th><th>Descrizione</th><th>Settore</th><th>Data</th><th>Forza</th><th>Invarianza</th></tr></thead><tbody>';
 
             filtered.forEach(row => {
                 html += `<tr>
                     <td><a href="#" onclick="openPriceGraph('${row.id_instrument}')" style="color:blue; text-decoration:underline;">${row.id_instrument}</a></td>
+                    <td>${row.instrument_description || '-'}</td>
                     <td>${row.sector_description || '-'}</td>
                     <td>${row.date_start}</td>
-                    <td>${row.value}</td>
+                    <td>${row.forza}</td>
+                    <td>${row.invariance_days || 0}</td>
                 </tr>`;
             });
             html += '</tbody></table>';
