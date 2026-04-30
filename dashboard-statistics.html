@@ -293,8 +293,34 @@
             token: localStorage.getItem('token'),
             currency: localStorage.getItem('currency') || 'EUR',
             date_start: localStorage.getItem('date_start') || '',
-            date_end: localStorage.getItem('date_end') || ''
+            date_end: localStorage.getItem('date_end') || '',
+            language: localStorage.getItem('language') || 'it_IT'
         };
+
+        let translations = {};
+
+        async function loadTranslations() {
+            try {
+                const response = await fetch(`lang/${credentials.language}.json`);
+                if (response.ok) {
+                    translations = await response.json();
+                    applyTranslations();
+                }
+            } catch (err) {
+                console.error("Error loading translations:", err);
+            }
+        }
+
+        function t(key) {
+            return translations[key] || key;
+        }
+
+        function applyTranslations() {
+            document.querySelectorAll('[data-translate]').forEach(el => {
+                const key = el.getAttribute('data-translate');
+                el.textContent = t(key);
+            });
+        }
 
         async function init() {
             if (!credentials.username) {
@@ -304,6 +330,7 @@
             document.getElementById('usernameDisplay').textContent = credentials.username;
             document.getElementById('currencyDisplay').textContent = credentials.currency;
 
+            await loadTranslations();
             setDefaultDates();
             document.getElementById('instrument-filter').addEventListener('change', applyFiltersAndRender);
             await fetchMarketData();
@@ -493,13 +520,26 @@
             html += '<table class="data-table"><thead><tr><th>Strumento</th><th>Descrizione</th><th>Settore</th><th>Data</th><th>Forza</th><th>Invarianza</th></tr></thead><tbody>';
 
             filtered.forEach(row => {
+                const forzaVal = parseFloat(row.forza);
+                const forzaStyle = forzaVal < 0 ? 'color: red; font-weight: bold;' : '';
+                
+                const invVal = parseInt(row.invariance_days) || 0;
+                let invDisplay = invVal;
+                let invStyle = '';
+                if (invVal < 0) {
+                    invStyle = 'color: red; font-weight: bold;';
+                    invDisplay = `${invVal} (${t('int.invariance.negative')})`;
+                } else if (invVal > 0) {
+                    invDisplay = `${invVal} (${t('int.invariance.positive')})`;
+                }
+
                 html += `<tr>
                     <td><a href="#" onclick="openPriceGraph('${row.id_instrument}')" style="color:blue; text-decoration:underline;">${row.id_instrument}</a></td>
                     <td>${row.instrument_description || '-'}</td>
                     <td>${row.sector_description || '-'}</td>
                     <td>${row.date_start}</td>
-                    <td>${row.forza}</td>
-                    <td>${row.invariance_days || 0}</td>
+                    <td style="${forzaStyle}">${row.forza}</td>
+                    <td style="${invStyle}">${invDisplay}</td>
                 </tr>`;
             });
             html += '</tbody></table>';
