@@ -1192,10 +1192,15 @@
                         }
                     }
 
-                    if (col === '$price_mkt' && val !== undefined && val !== null && val !== '') {
-                        const tooltipText = getTranslation('int.priceincent') || 'int.priceincent';
-                        td.title = tooltipText;
-                        td.style.cursor = 'help';
+                    if (col === '$price_mkt') {
+                        if (val !== undefined && val !== null && val !== '' && parseFloat(item.unit_price) === 0.02) {
+                            const tooltipText = getTranslation('int.priceincent') || 'int.priceincent';
+                            td.title = tooltipText;
+                            td.style.cursor = 'help';
+                        } else {
+                            td.title = '';
+                            td.style.cursor = '';
+                        }
                     }
 
                     if (col === 'code_market') {
