@@ -542,7 +542,7 @@
 
                 html += `<tr>
                     <td><a href="#" onclick="openPriceGraph('${row.id_instrument}')" style="color:blue; text-decoration:underline;">${row.id_instrument}</a></td>
-                    <td>${row.instrument_description || '-'}</td>
+                    <td><a href="#" onclick="openInstrumentDetail('${row.id_instrument}')" style="color:inherit; text-decoration:none; cursor:pointer; border-bottom: 1px dashed #666;">${row.instrument_description || '-'}</a></td>
                     <td>${row.sector_description || '-'}</td>
                     <td>${row.date_start}</td>
                     <td style="${forzaStyle}">${row.forza}</td>
@@ -572,6 +572,11 @@
         function openPriceGraph(instrumentId) {
             const url = `dashboard-graph-prices.html?id_instrument=${instrumentId}&username=${credentials.username}&token=${credentials.token}&instrument_currency=${credentials.currency}`;
             window.open(url, '_blank');
+        }
+
+        function openInstrumentDetail(instrumentId) {
+            const url = `dashboard-detail-instrument.html?id_instrument=${instrumentId}&username=${credentials.username}&token=${credentials.token}&language=${credentials.language}&currency=${credentials.currency}`;
+            window.open(url, '_blank', 'width=1200,height=800');
         }
 
         window.onload = init;
