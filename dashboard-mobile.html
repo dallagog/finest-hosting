@@ -352,10 +352,54 @@
             transform: translate(1px, 1px);
             box-shadow: 1px 1px 0px rgba(0, 0, 0, 0.2);
         }
+
+        .filter-modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+            backdrop-filter: blur(5px);
+        }
+
+        .filter-modal-content {
+            background: var(--glass-bg);
+            border: 2px solid var(--neon-cyan);
+            border-radius: 8px;
+            padding: 30px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+            color: var(--text-color);
+        }
+
+        .filter-modal-content .face-form {
+            background: transparent;
+            border: none;
+            box-shadow: none;
+            padding: 0;
+        }
+
+        .filter-modal-content label {
+            color: var(--text-color);
+        }
     </style>
 </head>
 
 <body>
+
+    <div id="filterModal" class="filter-modal-overlay" onclick="closeFilterModal(event)">
+        <div class="filter-modal-content" id="filterModalContent" onclick="event.stopPropagation()">
+            <!-- Form injected here -->
+        </div>
+    </div>
 
     <div class="the-grid"></div>
 
@@ -838,8 +882,12 @@
                         accountsHtml += `</div>`;
                     }
 
-                    dataContainer.innerHTML = `
+                    dataContainer.innerHTML = ''; // Lasciamo il contenitore vuoto sulla faccia
+                    
+                    const modalContent = document.getElementById('filterModalContent');
+                    modalContent.innerHTML = `
                         <div class="face-form" onclick="event.stopPropagation()" ontouchstart="event.stopPropagation()" ontouchmove="event.stopPropagation()">
+                            <h2 style="margin-bottom: 20px; text-align: center; color: var(--neon-cyan);">${getTranslation('int.filters.period.title') || "Periodo"}</h2>
                             <label>${getTranslation('int.date.start') || 'Inizio'}</label>
                             <input type="date" id="cube-date-start" value="${f.date_start || ''}">
                             
@@ -854,17 +902,27 @@
 
                             ${accountsHtml}
 
-                            <button onclick="saveFilters(event)" ontouchstart="event.stopPropagation()">${getTranslation('int.confirm') || 'Conferma'}</button>
+                            <div style="display: flex; gap: 10px; margin-top: 20px;">
+                                <button onclick="saveFilters(event)" ontouchstart="event.stopPropagation()" style="flex:1;">${getTranslation('int.confirm') || 'Conferma'}</button>
+                                <button onclick="closeFilterModal(event)" ontouchstart="event.stopPropagation()" style="flex:1; background: #666; border-color: #666;">Annulla</button>
+                            </div>
                         </div>
                     `;
                     
-                    el.onclick = null; // Disabilita navigazione su questa faccia
+                    el.onclick = () => { document.getElementById('filterModal').style.display = 'flex'; };
                 }
             });
         }
 
+        function closeFilterModal(event) {
+            if (event) event.stopPropagation();
+            document.getElementById('filterModal').style.display = 'none';
+        }
+
         async function saveFilters(event) {
             if (event) event.stopPropagation();
+            
+            document.getElementById('filterModal').style.display = 'none';
             
             const ds = document.getElementById('cube-date-start').value;
             const de = document.getElementById('cube-date-end').value;
