@@ -708,11 +708,31 @@
                         marketData.slice(0, 10).forEach(row => {
                             const itemDiv = document.createElement('div');
                             itemDiv.className = 'data-item';
+                            itemDiv.style.flexDirection = 'column';
+                            itemDiv.style.alignItems = 'flex-start';
+                            
                             const forzaVal = parseFloat(row.forza) || 0;
                             const forzaColor = forzaVal < 0 ? '#ff3333' : '#28a745';
+                            
+                            const invVal = parseInt(row.invariance_days) || 0;
+                            let invDisplay = invVal;
+                            let invColor = '#555';
+                            if (invVal < 0) {
+                                invColor = '#ff3333';
+                                invDisplay = `${invVal} (${getTranslation('int.invariance.negative') || 'negative'})`;
+                            } else if (invVal > 0) {
+                                invDisplay = `${invVal} (${getTranslation('int.invariance.positive') || 'positive'})`;
+                            }
+
                             itemDiv.innerHTML = `
-                                <span class="data-item-label">${row.id_instrument}</span>
-                                <span class="data-item-value" style="color: ${forzaColor}">${forzaVal.toFixed(2)}</span>
+                                <div style="display:flex; justify-content:space-between; width:100%;">
+                                    <span class="data-item-label" style="font-weight:bold;">${row.id_instrument}</span>
+                                    <span class="data-item-value" style="color: ${forzaColor}">${forzaVal.toFixed(2)}</span>
+                                </div>
+                                <div style="display:flex; justify-content:space-between; width:100%; font-size:0.65rem;">
+                                    <span style="color:#666;">Inv:</span>
+                                    <span style="color:${invColor}; font-weight:${invVal < 0 ? 'bold' : 'normal'};">${invDisplay}</span>
+                                </div>
                             `;
                             dataContainer.appendChild(itemDiv);
                         });
@@ -854,22 +874,40 @@
             if (!filterData) filterData = { Filter: {} };
             if (!filterData.Filter) filterData.Filter = {};
 
-            filterData.Filter.date_start = ds;
-            filterData.Filter.date_end = de;
+            const today = new Date();
+            const defaultDateEnd = today.toISOString().substring(0, 10);
+            const defaultDateStart = today.getFullYear() + '-01-01';
+
+            filterData.Filter.date_start = ds || filterData.Filter.date_start || defaultDateStart;
+            filterData.Filter.date_end = de || filterData.Filter.date_end || defaultDateEnd;
             
-            // Aggiorna portfolio selection
-            if (Array.isArray(filterData.Filter.portfolio)) {
-                filterData.Filter.portfolio.forEach(p => p.selected = (p.value === port));
-            } else {
-                filterData.Filter.portfolio = [{ value: port, selected: true }];
+            filterData.Filter.username = credentials.username || '';
+            filterData.Filter.language = credentials.language || localStorage.getItem('language') || 'it_IT';
+            filterData.Filter.currency = localStorage.getItem('currency') || 'EUR';
+
+            if (!filterData.Filter.role) {
+                filterData.Filter.role = filterData.Filter.role || 'admin';
             }
 
-            // Aggiorna yield selection
-            if (Array.isArray(filterData.Filter.yield)) {
-                filterData.Filter.yield.forEach(y => y.selected = (y.value === yld));
-            } else {
-                filterData.Filter.yield = [{ value: yld, selected: true }];
+            // MODIFICA CHIAVE 1: Portfolio - mantieni solo selected: true
+            const portfolioArray = [];
+            if (port) {
+                portfolioArray.push({
+                    "value": port,
+                    "selected": true
+                });
             }
+            filterData.Filter.portfolio = portfolioArray;
+
+            // MODIFICA CHIAVE 2: Yield - mantieni solo selected: true
+            const yieldArray = [];
+            if (yld) {
+                yieldArray.push({
+                    "value": yld,
+                    "selected": true
+                });
+            }
+            filterData.Filter.yield = yieldArray;
 
             // Aggiorna Account list
             const accountCBs = document.querySelectorAll('.cube-account-cb');
@@ -882,11 +920,29 @@
                 });
             });
 
+            const now = new Date();
+            const dateRequest = now.getFullYear() + '-' +
+                String(now.getMonth() + 1).padStart(2, '0') + '-' +
+                String(now.getDate()).padStart(2, '0') + ' ' +
+                String(now.getHours()).padStart(2, '0') + ':' +
+                String(now.getMinutes()).padStart(2, '0') + ':' +
+                String(now.getSeconds()).padStart(2, '0');
+            filterData.date_request = dateRequest;
+
+            if (!filterData.Name) {
+                filterData.Name = {
+                    filter: "Default"
+                };
+            }
+
             try {
+                const filterDataString = JSON.stringify(filterData);
                 const payload = {
-                    username: credentials.username,
-                    token: credentials.token,
-                    filter: JSON.stringify(filterData)
+                    username: credentials.username || "",
+                    token: credentials.token || "",
+                    language: credentials.language || "",
+                    filter: filterDataString,
+                    code: ""
                 };
 
                 await fetch(`${API_URL}/putfilter`, {
