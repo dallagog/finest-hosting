@@ -693,12 +693,16 @@
                 // Fetch Market Data for "Go live" face (come in dashboard-statistics.html)
                 let marketData = null;
                 try {
+                    const today = new Date();
+                    const defaultDateEnd = today.toISOString().substring(0, 10);
+                    const defaultDateStart = today.getFullYear() + '-01-01';
+                    
                     const mktPayload = {
                         username: username,
                         token: token,
                         currency: localStorage.getItem('currency') || 'EUR',
-                        date_start: localStorage.getItem('date_start') || '',
-                        date_end: localStorage.getItem('date_end') || '',
+                        date_start: f.date_start || defaultDateStart,
+                        date_end: f.date_end || defaultDateEnd,
                         sector: null
                     };
                     const mktRes = await fetch(`${API_URL_MARKET}/getmarket`, {
