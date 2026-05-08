@@ -303,6 +303,55 @@
                 opacity: 1;
             }
         }
+
+        /* --- FACE FORM STYLES --- */
+        .face-form {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            width: 100%;
+            padding: 5px;
+            transform: translateZ(20px);
+        }
+
+        .face-form label {
+            font-size: 0.7rem;
+            text-align: left;
+            color: #666;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        .face-form input {
+            padding: 6px;
+            border: 1px solid var(--latex-border);
+            font-family: inherit;
+            font-size: 0.8rem;
+            background: #fff;
+            width: 100%;
+            border-radius: 0;
+            box-shadow: 1px 1px 0px rgba(0, 0, 0, 0.1);
+        }
+
+        .face-form button {
+            margin-top: 5px;
+            padding: 8px;
+            background: var(--latex-accent);
+            color: #fff;
+            border: 1px solid var(--latex-accent);
+            cursor: pointer;
+            font-family: inherit;
+            font-weight: bold;
+            text-transform: uppercase;
+            font-size: 0.75rem;
+            box-shadow: 2px 2px 0px rgba(0, 0, 0, 0.2);
+            transition: all 0.2s;
+        }
+
+        .face-form button:active {
+            transform: translate(1px, 1px);
+            box-shadow: 1px 1px 0px rgba(0, 0, 0, 0.2);
+        }
     </style>
 </head>
 
@@ -363,6 +412,7 @@
     <script>
         /* ========== CONFIG & STATE ========== */
         const API_URL = "https://feweb-tunnel.fe-web.eu";
+        const API_URL_MARKET = "https://market-tunnel.fe-web.eu";
 
         // Elementi DOM
         const scene = document.getElementById('touchScene');
@@ -464,7 +514,10 @@
                     username: username,
                     token: token,
                     language: language,
-                    filter: "",
+                    filter: JSON.stringify({
+                        date_start: localStorage.getItem('date_start') || '',
+                        date_end: localStorage.getItem('date_end') || ''
+                    }),
                     code: ""
                 };
 
@@ -487,7 +540,31 @@
                     cubeData = data.groups;
                 }
 
-                populateFacesFromObject(cubeData);
+                // Fetch Market Data for "Go live" face (come in dashboard-statistics.html)
+                let marketData = null;
+                try {
+                    const mktPayload = {
+                        username: username,
+                        token: token,
+                        currency: localStorage.getItem('currency') || 'EUR',
+                        date_start: localStorage.getItem('date_start') || '',
+                        date_end: localStorage.getItem('date_end') || '',
+                        sector: null
+                    };
+                    const mktRes = await fetch(`${API_URL_MARKET}/getmarket`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(mktPayload)
+                    });
+                    if (mktRes.ok) {
+                        const mktJson = await mktRes.json();
+                        if (mktJson.status === 'ok') marketData = mktJson.data;
+                    }
+                } catch (e) { 
+                    console.error("Market fetch error:", e); 
+                }
+
+                populateFacesFromObject(cubeData, marketData);
 
             } catch (error) {
                 console.error("Errore fetch getcube:", error);
@@ -498,7 +575,7 @@
             }
         }
 
-        function populateFacesFromObject(dataObj) {
+        function populateFacesFromObject(dataObj, marketData) {
             const keys = Object.keys(dataObj);
 
             faceMap.forEach(id => {
@@ -532,7 +609,23 @@
                     const dataContainer = el.querySelector('.face-data-container');
                     dataContainer.innerHTML = '';
 
-                    if (itemData && typeof itemData === 'object') {
+                    if (key === "Go live" && marketData && Array.isArray(marketData)) {
+                        // Custom rendering per dati di mercato (come in dashboard-statistics.html)
+                        marketData.slice(0, 10).forEach(row => {
+                            const itemDiv = document.createElement('div');
+                            itemDiv.className = 'data-item';
+                            const forzaVal = parseFloat(row.forza) || 0;
+                            const forzaColor = forzaVal < 0 ? '#ff3333' : '#28a745';
+                            itemDiv.innerHTML = `
+                                <span class="data-item-label">${row.id_instrument}</span>
+                                <span class="data-item-value" style="color: ${forzaColor}">${forzaVal.toFixed(2)}</span>
+                            `;
+                            dataContainer.appendChild(itemDiv);
+                        });
+                        if (marketData.length > 10) {
+                            dataContainer.innerHTML += `<div class="data-item"><span class="data-item-label">... +${marketData.length - 10} strumenti</span></div>`;
+                        }
+                    } else if (itemData && typeof itemData === 'object') {
                         const allKeys = Object.keys(itemData);
                         let count = 0;
                         const MAX_FIELDS = 10;
@@ -579,6 +672,78 @@
                     };
                 }
             });
+
+            // Aggiungi selettore date alla prima faccia vuota se disponibile
+            let emptyFaceFound = false;
+            faceMap.forEach((id, index) => {
+                if (index >= keys.length && !emptyFaceFound) {
+                    emptyFaceFound = true;
+                    const el = document.getElementById(id);
+                    el.classList.remove('disabled');
+                    el.querySelector('i').className = "fa fa-calendar-alt";
+                    el.querySelector('.face-title').innerText = getTranslation('int.filters.period.title') || "Periodo";
+                    
+                    const dataContainer = el.querySelector('.face-data-container');
+                    dataContainer.style.overflow = "visible"; // Permette la visualizzazione del form
+                    dataContainer.innerHTML = `
+                        <div class="face-form" onclick="event.stopPropagation()" ontouchstart="event.stopPropagation()" ontouchmove="event.stopPropagation()">
+                            <label>${getTranslation('int.date.start') || 'Inizio'}</label>
+                            <input type="date" id="cube-date-start">
+                            <label>${getTranslation('int.date.end') || 'Fine'}</label>
+                            <input type="date" id="cube-date-end">
+                            <button onclick="saveCubeDates(event)" ontouchstart="event.stopPropagation()">${getTranslation('int.confirm') || 'Conferma'}</button>
+                        </div>
+                    `;
+                    
+                    // Inizializza valori dalle impostazioni locali
+                    document.getElementById('cube-date-start').value = localStorage.getItem('date_start') || '';
+                    document.getElementById('cube-date-end').value = localStorage.getItem('date_end') || '';
+                    
+                    el.onclick = null; // Disabilita navigazione su questa faccia
+                }
+            });
+        }
+
+        async function saveCubeDates(event) {
+            if (event) event.stopPropagation();
+            
+            const ds = document.getElementById('cube-date-start').value;
+            const de = document.getElementById('cube-date-end').value;
+            
+            localStorage.setItem('date_start', ds);
+            localStorage.setItem('date_end', de);
+
+            const username = localStorage.getItem("username");
+            const token = localStorage.getItem("token");
+            const language = localStorage.getItem("language") || 'it_IT';
+
+            // Prendi spunto da dashboard.html per salvare il filtro sul server
+            try {
+                const filterObj = {
+                    date_start: ds,
+                    date_end: de,
+                    username: username,
+                    language: language
+                };
+
+                const payload = {
+                    username: username,
+                    token: token,
+                    filter: JSON.stringify(filterObj)
+                };
+
+                await fetch(`${API_URL}/putfilter`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                
+                // Ricarica i dati del cubo
+                await loadCubeData();
+                
+            } catch (err) {
+                console.error("Errore salvataggio filtri:", err);
+            }
         }
 
         /* ========== LOGICA 3D (Modificata) ========== */
