@@ -414,6 +414,12 @@
         const API_URL = "https://feweb-tunnel.fe-web.eu";
         const API_URL_MARKET = "https://market-tunnel.fe-web.eu";
 
+        // Stato Filtri e Domine
+        let filterData = null;
+        let domineData = null;
+        let accountsData = [];
+        let credentials = { username: '', token: '', language: '' };
+
         // Elementi DOM
         const scene = document.getElementById('touchScene');
         const tesseract = document.getElementById('tesseract');
@@ -483,14 +489,104 @@
             await TranslationManager.loadTranslations(language);
 
             if (checkAuth()) {
+                credentials.username = localStorage.getItem("username");
+                credentials.token = localStorage.getItem("token");
+                credentials.language = language;
+
                 loadUser();
+                await loadDomine();
+                await loadFilter();
+                await loadAccounts();
                 await loadCubeData();
             }
             updateTranslations();
             animate();
         });
 
-        /* ========== API & DATA HANDLING (Invariato) ========== */
+        /* ========== API & DATA HANDLING ========== */
+
+        async function loadDomine() {
+            try {
+                const response = await fetch('lang/domine.json');
+                if (response.ok) {
+                    domineData = await response.json();
+                }
+            } catch (e) {
+                console.error("Errore caricamento domine.json:", e);
+            }
+        }
+
+        async function loadFilter() {
+            try {
+                const payload = {
+                    username: credentials.username,
+                    token: credentials.token,
+                    language: credentials.language,
+                    filter: "",
+                    code: ""
+                };
+
+                const response = await fetch(`${API_URL}/getfilter`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.status === 'ok' && data.data) {
+                        filterData = data.data;
+                    } else if (data.Filter) {
+                        filterData = data;
+                    } else if (data.filter) {
+                        if (typeof data.filter === 'string') {
+                            filterData = JSON.parse(data.filter);
+                        } else {
+                            filterData = data.filter;
+                        }
+                    }
+                }
+            } catch (e) {
+                console.error("Errore caricamento filtri:", e);
+            }
+        }
+
+        async function loadAccounts() {
+            try {
+                const payload = {
+                    username: credentials.username,
+                    token: credentials.token,
+                    language: credentials.language,
+                    account: ""
+                };
+
+                const response = await fetch(`${API_URL}/getaccounts`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    accountsData = [];
+                    const blocks = Array.isArray(data.accounts) ? data.accounts : [];
+                    blocks.forEach(block => {
+                        if (block && typeof block === 'object') {
+                            Object.values(block).forEach(acc => {
+                                if (acc && acc.id_account) {
+                                    accountsData.push({
+                                        id_account: String(acc.id_account).trim(),
+                                        account_type: acc.account_type || ''
+                                    });
+                                }
+                            });
+                        }
+                    });
+                }
+            } catch (e) {
+                console.error("Errore caricamento accounts:", e);
+            }
+        }
 
         function checkAuth() {
             const token = localStorage.getItem("token");
@@ -502,22 +598,20 @@
         }
 
         async function loadCubeData() {
-            const username = localStorage.getItem("username");
-            const token = localStorage.getItem("token");
-            const language = localStorage.getItem("language") || 'it_IT';
+            const username = credentials.username;
+            const token = credentials.token;
+            const language = credentials.language;
 
             loadingIndicator.innerText = (getTranslation('int.loading') || 'LOADING') + '...';
             loadingIndicator.style.display = 'block';
 
             try {
+                const f = (filterData && filterData.Filter) ? filterData.Filter : {};
                 const payload = {
                     username: username,
                     token: token,
                     language: language,
-                    filter: JSON.stringify({
-                        date_start: localStorage.getItem('date_start') || '',
-                        date_end: localStorage.getItem('date_end') || ''
-                    }),
+                    filter: JSON.stringify(f),
                     code: ""
                 };
 
@@ -684,52 +778,115 @@
                     el.querySelector('.face-title').innerText = getTranslation('int.filters.period.title') || "Periodo";
                     
                     const dataContainer = el.querySelector('.face-data-container');
-                    dataContainer.style.overflow = "visible"; // Permette la visualizzazione del form
+                    dataContainer.style.overflow = "auto"; 
+                    
+                    const f = (filterData && filterData.Filter) ? filterData.Filter : {};
+                    
+                    let portfolioOptions = "";
+                    if (domineData && Array.isArray(domineData.level_portfolio)) {
+                        domineData.level_portfolio.forEach(key => {
+                            const val = key.split(':').pop();
+                            const desc = getTranslation(key);
+                            const selected = (f.portfolio && f.portfolio.some(p => p.value === val && (p.selected === true || p.selected === 'True'))) ? 'selected' : '';
+                            portfolioOptions += `<option value="${val}" ${selected}>${desc || val}</option>`;
+                        });
+                    }
+
+                    let yieldOptions = "";
+                    if (domineData && Array.isArray(domineData.level_yield)) {
+                        domineData.level_yield.forEach(key => {
+                            const val = key.split(':').pop();
+                            const desc = getTranslation(key);
+                            const selected = (f.yield && f.yield.some(y => y.value === val && (y.selected === true || y.selected === 'True'))) ? 'selected' : '';
+                            yieldOptions += `<option value="${val}" ${selected}>${desc || val}</option>`;
+                        });
+                    }
+
+                    let accountsHtml = "";
+                    if (accountsData && accountsData.length > 0) {
+                        accountsHtml = `<div style="margin-top: 10px; border-top: 1px solid #ddd; padding-top: 10px;">
+                            <label>${getTranslation('int.reports.available') || 'Rapporti'}</label>`;
+                        accountsData.forEach(acc => {
+                            const isSelected = (filterData && filterData.Account && filterData.Account.list && filterData.Account.list.find(a => String(a.id_account) === String(acc.id_account) && (a.selected === true || a.selected === 'True')));
+                            accountsHtml += `
+                                <div class="account-item" style="display: flex; align-items: center; gap: 8px; font-size: 0.7rem; margin: 4px 0; text-align: left;">
+                                    <input type="checkbox" class="cube-account-cb" data-id="${acc.id_account}" ${isSelected ? 'checked' : ''} style="width: auto; margin: 0;">
+                                    <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${acc.id_account} - ${acc.account_type}</span>
+                                </div>
+                            `;
+                        });
+                        accountsHtml += `</div>`;
+                    }
+
                     dataContainer.innerHTML = `
                         <div class="face-form" onclick="event.stopPropagation()" ontouchstart="event.stopPropagation()" ontouchmove="event.stopPropagation()">
                             <label>${getTranslation('int.date.start') || 'Inizio'}</label>
-                            <input type="date" id="cube-date-start">
+                            <input type="date" id="cube-date-start" value="${f.date_start || ''}">
+                            
                             <label>${getTranslation('int.date.end') || 'Fine'}</label>
-                            <input type="date" id="cube-date-end">
-                            <button onclick="saveCubeDates(event)" ontouchstart="event.stopPropagation()">${getTranslation('int.confirm') || 'Conferma'}</button>
+                            <input type="date" id="cube-date-end" value="${f.date_end || ''}">
+                            
+                            <label>${getTranslation('int.portfolio') || 'Portafoglio'}</label>
+                            <select id="cube-portfolio">${portfolioOptions}</select>
+
+                            <label>${getTranslation('int.profitability') || 'Redditività'}</label>
+                            <select id="cube-yield">${yieldOptions}</select>
+
+                            ${accountsHtml}
+
+                            <button onclick="saveFilters(event)" ontouchstart="event.stopPropagation()">${getTranslation('int.confirm') || 'Conferma'}</button>
                         </div>
                     `;
-                    
-                    // Inizializza valori dalle impostazioni locali
-                    document.getElementById('cube-date-start').value = localStorage.getItem('date_start') || '';
-                    document.getElementById('cube-date-end').value = localStorage.getItem('date_end') || '';
                     
                     el.onclick = null; // Disabilita navigazione su questa faccia
                 }
             });
         }
 
-        async function saveCubeDates(event) {
+        async function saveFilters(event) {
             if (event) event.stopPropagation();
             
             const ds = document.getElementById('cube-date-start').value;
             const de = document.getElementById('cube-date-end').value;
+            const port = document.getElementById('cube-portfolio').value;
+            const yld = document.getElementById('cube-yield').value;
             
-            localStorage.setItem('date_start', ds);
-            localStorage.setItem('date_end', de);
+            if (!filterData) filterData = { Filter: {} };
+            if (!filterData.Filter) filterData.Filter = {};
 
-            const username = localStorage.getItem("username");
-            const token = localStorage.getItem("token");
-            const language = localStorage.getItem("language") || 'it_IT';
+            filterData.Filter.date_start = ds;
+            filterData.Filter.date_end = de;
+            
+            // Aggiorna portfolio selection
+            if (Array.isArray(filterData.Filter.portfolio)) {
+                filterData.Filter.portfolio.forEach(p => p.selected = (p.value === port));
+            } else {
+                filterData.Filter.portfolio = [{ value: port, selected: true }];
+            }
 
-            // Prendi spunto da dashboard.html per salvare il filtro sul server
+            // Aggiorna yield selection
+            if (Array.isArray(filterData.Filter.yield)) {
+                filterData.Filter.yield.forEach(y => y.selected = (y.value === yld));
+            } else {
+                filterData.Filter.yield = [{ value: yld, selected: true }];
+            }
+
+            // Aggiorna Account list
+            const accountCBs = document.querySelectorAll('.cube-account-cb');
+            if (!filterData.Account) filterData.Account = { list: [] };
+            filterData.Account.list = [];
+            accountCBs.forEach(cb => {
+                filterData.Account.list.push({
+                    id_account: cb.getAttribute('data-id'),
+                    selected: cb.checked
+                });
+            });
+
             try {
-                const filterObj = {
-                    date_start: ds,
-                    date_end: de,
-                    username: username,
-                    language: language
-                };
-
                 const payload = {
-                    username: username,
-                    token: token,
-                    filter: JSON.stringify(filterObj)
+                    username: credentials.username,
+                    token: credentials.token,
+                    filter: JSON.stringify(filterData)
                 };
 
                 await fetch(`${API_URL}/putfilter`, {
@@ -738,7 +895,6 @@
                     body: JSON.stringify(payload)
                 });
                 
-                // Ricarica i dati del cubo
                 await loadCubeData();
                 
             } catch (err) {
