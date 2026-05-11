@@ -736,7 +736,14 @@
                         metricsSet.add(key);
                     } else if (typeof val === 'string') {
                         // Formato: "14.47:EUR" o "5.12%:EUR"
-                        if (val.includes(':') || val.includes('%')) {
+                        if (val.includes(':')) {
+                            const urlCurrency = urlParams.get('currency');
+                            const userCurrency = (urlCurrency || localStorage.getItem('currency') || 'EUR').toUpperCase();
+                            const parts = val.split(':');
+                            if (parts.length > 1 && parts[1].trim().toUpperCase() === userCurrency) {
+                                metricsSet.add(key);
+                            }
+                        } else if (val.includes('%')) {
                             metricsSet.add(key);
                         }
                     }
@@ -858,12 +865,22 @@
                 fieldName.toLowerCase().includes('percent');
         }
 
-        // Funzione per aggregare dati per periodo con tracking degli strumenti
         function aggregateByPeriod(data, metric, period) {
             const aggregated = {};
 
+            const urlCurrency = urlParams.get('currency');
+            const userCurrency = (urlCurrency || localStorage.getItem('currency') || 'EUR').toUpperCase();
+
             data.forEach(item => {
                 if (!item.date_start || !item[metric]) return;
+
+                if (typeof item[metric] === 'string' && item[metric].includes(':')) {
+                    const parts = item[metric].split(':');
+                    if (parts.length > 1) {
+                        const cur = parts[1].trim().toUpperCase();
+                        if (cur !== userCurrency) return;
+                    }
+                }
 
                 const date = new Date(item.date_start);
                 let key;

@@ -1268,7 +1268,12 @@
                             td.innerHTML = displayVal;
                         } else {
                             td.textContent = displayVal;
-                            if (typeof val === 'number') td.style.textAlign = 'right';
+                            if (typeof val === 'number') {
+                                td.style.textAlign = 'right';
+                                if (col === 'M/P' || col === 'M/P%') {
+                                    td.style.color = val >= 0 ? '#1a7a1a' : '#cc0000';
+                                }
+                            }
                             if (col === 'market_trading_hours') td.style.fontFamily = "'Courier New', Courier, monospace";
 
                             // Make price_mkt and exchange_mkt editable
@@ -1294,6 +1299,9 @@
                                 td.innerHTML = displayVal;
                             } else {
                                 td.textContent = displayVal;
+                                if (typeof val === 'number' && (col === 'M/P' || col === 'M/P%')) {
+                                    td.style.color = val >= 0 ? '#1a7a1a' : '#cc0000';
+                                }
                             }
                             td.classList.remove('cell-changed', 'cell-price-up', 'cell-price-down');
                             void td.offsetWidth; // Trigger reflow
