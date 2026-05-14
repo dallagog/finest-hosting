@@ -393,6 +393,14 @@
 
         <div class="header-right">
             <div class="control-group">
+                <label id="date-start-label">Start:</label>
+                <input type="date" id="date-start" onchange="renderChart()" style="padding: 8px 10px; border: 1px solid #ccc; border-radius: 4px; font-family: inherit;">
+            </div>
+            <div class="control-group">
+                <label id="date-end-label">End:</label>
+                <input type="date" id="date-end" onchange="renderChart()" style="padding: 8px 10px; border: 1px solid #ccc; border-radius: 4px; font-family: inherit;">
+            </div>
+            <div class="control-group">
                 <label for="period-select" id="period-label">Period:</label>
                 <select id="period-select" onchange="renderChart()">
                     <option value="daily">Daily</option>
@@ -595,6 +603,30 @@
             updateUserInfoUI();
             updateHeaderTranslations();
 
+            // Fetch filter to set default dates
+            try {
+                const fpayload = { username: username, token: token, language: language, filter: "", code: "" };
+                const fresponse = await fetch(`${API_URL}/getfilter`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(fpayload)
+                });
+                if (fresponse.ok) {
+                    const fdata = await fresponse.json();
+                    let filterData = null;
+                    if (fdata.status === 'ok' && fdata.data) filterData = fdata.data;
+                    else if (fdata.Filter) filterData = fdata;
+                    else if (fdata.filter) filterData = (typeof fdata.filter === 'string') ? JSON.parse(fdata.filter) : fdata.filter;
+                    
+                    if (filterData && filterData.Filter) {
+                        if (filterData.Filter.date_start) document.getElementById('date-start').value = filterData.Filter.date_start;
+                        if (filterData.Filter.date_end) document.getElementById('date-end').value = filterData.Filter.date_end;
+                    }
+                }
+            } catch (e) {
+                console.warn("Could not load default dates from filter", e);
+            }
+
             // Load Trend Data
             await loadTrend();
 
@@ -614,6 +646,11 @@
             document.getElementById('period-label').textContent = (getTranslation('int.period') || "Period") + ":";
             document.getElementById('chart-type-label').textContent = (getTranslation('int.chart_type') || "Chart Type") + ":";
             document.getElementById('close-btn').textContent = getTranslation('int.close') || "Close";
+
+            const startLabel = document.getElementById('date-start-label');
+            if (startLabel) startLabel.textContent = (getTranslation('int.date.start') || "Start") + ":";
+            const endLabel = document.getElementById('date-end-label');
+            if (endLabel) endLabel.textContent = (getTranslation('int.date.end') || "End") + ":";
 
             // User Label
             const userLabel = document.getElementById('user-label-text');
@@ -871,8 +908,16 @@
             const urlCurrency = urlParams.get('currency');
             const userCurrency = (urlCurrency || localStorage.getItem('currency') || 'EUR').toUpperCase();
 
+            const dateStartVal = document.getElementById('date-start') ? document.getElementById('date-start').value : '';
+            const dateEndVal = document.getElementById('date-end') ? document.getElementById('date-end').value : '';
+            const tsStart = dateStartVal ? new Date(dateStartVal).getTime() : 0;
+            const tsEnd = dateEndVal ? new Date(dateEndVal).getTime() + 86400000 : Infinity; // Include the entire end day
+
             data.forEach(item => {
                 if (!item.date_start || !item[metric]) return;
+
+                const itemTs = new Date(item.date_start).getTime();
+                if (itemTs < tsStart || itemTs >= tsEnd) return;
 
                 if (typeof item[metric] === 'string' && item[metric].includes(':')) {
                     const parts = item[metric].split(':');
