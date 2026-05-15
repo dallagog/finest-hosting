@@ -291,7 +291,7 @@
 </head>
 
 <body>
-  <div class="top-controls">
+  <div class="top-controls" style="display: none;">
     <!--
     <button class="close-button" id="closeButton">
       <i class="fa fa-times"></i>
@@ -303,7 +303,7 @@
     </select>
   </div>
 
-  <div class="container" id="app-container">
+  <div class="container" id="app-container" style="display: none;">
     <div class="logo-header">
       <div class="cube-scene">
         <div class="cube">
@@ -602,6 +602,8 @@
 
         if (!resUser.ok || !resNew.ok) throw new Error(getTranslation('int.services.unavailable') || "Services unavailable");
         console.log("✅ " + (getTranslation('int.services.healthy') || "Services healthy"));
+        document.getElementById("app-container").style.display = "block";
+        document.querySelector(".top-controls").style.display = "flex";
       } catch (err) {
         console.error("❌ " + (getTranslation('int.service.check.failed') || "Service check failed") + ":", err);
         document.body.innerHTML = '<div style="display:flex;justify-content:center;align-items:center;height:100vh;"><img src="status/images/off-line.svg" alt="Offline" class="offline"></div>';
@@ -775,7 +777,7 @@
       updatePageTranslations();
 
       // 5. Health check
-      checkHealth();
+      await checkHealth();
 
       console.log("✅ Application initialized successfully");
     }
