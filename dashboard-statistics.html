@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Financial Estimates 0.1 alfa - Market Dashboard</title>
+    <title>Statistics</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <script src="js/dashboard-shared.js"></script>
     <link rel="icon" type="image/png" href="images/icon-finest.png">
@@ -265,7 +265,8 @@
                 <div class="filter-group" style="flex: 1; min-width: 150px;">
                     <label>Settore:</label>
                     <div id="sector-filter-container" class="dropdown-check-list" style="width: 100%;">
-                        <span class="anchor" onclick="toggleSectorDropdown()" id="sectorSelectorAnchor">Tutti i settori</span>
+                        <span class="anchor" onclick="toggleSectorDropdown()" id="sectorSelectorAnchor">Tutti i
+                            settori</span>
                         <div id="sectorSelectorItems" class="items">
                             <!-- Checkboxes injected here -->
                         </div>
@@ -465,10 +466,10 @@
         function populateSectorSelector(data) {
             const container = document.getElementById('sectorSelectorItems');
             const sectors = [...new Set(data.map(r => r.sector_description).filter(Boolean))].sort();
-            
+
             // Keep current selection if possible
             const previousSelection = [..._selectedSectors];
-            
+
             container.innerHTML = '';
             sectors.forEach(sector => {
                 const label = document.createElement('label');
@@ -481,7 +482,7 @@
                 label.appendChild(document.createTextNode(sector));
                 container.appendChild(label);
             });
-            
+
             // Refresh _selectedSectors based on available sectors
             _selectedSectors = _selectedSectors.filter(s => sectors.includes(s));
             updateSectorAnchorText();
@@ -494,7 +495,7 @@
             // But usually we want to see all available sectors from the first broad fetch
             const items = document.getElementById('sectorSelectorItems');
             if (items.children.length === 0 || (_selectedSectors.length === 0)) {
-                 populateSectorSelector(data);
+                populateSectorSelector(data);
             }
             applyFiltersAndRender();
         }
@@ -529,7 +530,7 @@
             filtered.forEach(row => {
                 const forzaVal = parseFloat(row.forza);
                 const forzaStyle = forzaVal < 0 ? 'color: red; font-weight: bold;' : '';
-                
+
                 const invVal = parseInt(row.invariance_days) || 0;
                 let invDisplay = invVal;
                 let invStyle = '';
