@@ -1,31 +1,38 @@
-<svg width="1200" height="600" viewBox="0 0 1200 600" xmlns="http://www.w3.org/2000/svg">
+<svg width="1200" height="800" viewBox="0 0 1200 800" xmlns="http://www.w3.org/2000/svg">
   <defs>
     <style>
       @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&amp;display=swap');
       
       .offline-text {
         font-family: 'Orbitron', sans-serif;
-        font-size: 160px;
+        font-size: 220px;
         font-weight: 900;
-        fill: transparent;
-        stroke: #ff0000;
-        stroke-width: 5px;
+        fill: #ff0000;
+        stroke: none;
         letter-spacing: 12px;
         text-anchor: middle;
         filter: url(#neon-glow);
       }
     </style>
 
-    <!-- Filtro Neon Rosso Stile Tron -->
+    <!-- Filtro Neon Rosso Stile Tron (Nucleo bianco, bagliore rosso) -->
     <filter id="neon-glow" x="-50%" y="-50%" width="200%" height="200%">
-      <feGaussianBlur in="SourceAlpha" stdDeviation="2" result="blur1"/>
-      <feGaussianBlur in="SourceAlpha" stdDeviation="6" result="blur2"/>
-      <feGaussianBlur in="SourceAlpha" stdDeviation="12" result="blur3"/>
+      <!-- Sfocature per il bagliore basate sulla sagoma originale -->
+      <feGaussianBlur in="SourceAlpha" stdDeviation="4" result="blur1"/>
+      <feGaussianBlur in="SourceAlpha" stdDeviation="10" result="blur2"/>
+      <feGaussianBlur in="SourceAlpha" stdDeviation="20" result="blur3"/>
+      <feGaussianBlur in="SourceAlpha" stdDeviation="40" result="blur4"/>
+      
+      <!-- Colora le sfocature di rosso -->
       <feFlood flood-color="#ff0000" result="color"/>
       <feComposite in="color" in2="blur1" operator="in" result="glow1"/>
       <feComposite in="color" in2="blur2" operator="in" result="glow2"/>
       <feComposite in="color" in2="blur3" operator="in" result="glow3"/>
+      <feComposite in="color" in2="blur4" operator="in" result="glow4"/>
+      
+      <!-- Unisci i bagliori e metti il nucleo bianco sopra -->
       <feMerge>
+        <feMergeNode in="glow4"/>
         <feMergeNode in="glow3"/>
         <feMergeNode in="glow2"/>
         <feMergeNode in="glow1"/>
@@ -34,7 +41,7 @@
     </filter>
   </defs>
 
-  <g transform="translate(600, 300)">
+  <g transform="translate(600, 400)">
     <text x="0" y="0" class="offline-text">
         <tspan x="0" dy="-1em">Server</tspan>
         <tspan x="0" dy="1em">OFF</tspan>
