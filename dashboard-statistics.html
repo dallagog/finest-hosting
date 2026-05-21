@@ -140,6 +140,33 @@
             background: #f0f0f0;
         }
 
+        /* RIGHE ALTERNE CHIARO/GRIGIO */
+        .data-table tbody tr {
+            transition: background 0.2s;
+            cursor: pointer;
+        }
+
+        .data-table tbody tr:nth-child(even) {
+            background-color: #f9f9f9;
+            /* Grigio chiaro */
+        }
+
+        .data-table tbody tr:nth-child(odd) {
+            background-color: #ffffff;
+            /* Bianco */
+        }
+
+        .data-table tbody tr:hover {
+            background: #f0f0f0 !important;
+            /* Grigio più scuro al passaggio del mouse */
+        }
+
+        .data-table tbody tr.selected {
+            background: #e0e0e0 !important;
+            /* Grigio per riga selezionata */
+            border-left: 3px solid #000;
+        }
+
         .message {
             padding: 15px;
             margin-bottom: 20px;
@@ -278,6 +305,10 @@
                         style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; font-family: inherit; background: #fff;">
                         <option value="">— Tutti —</option>
                     </select>
+                </div>
+                <div class="filter-group" style="display: flex; align-items: center; gap: 8px; padding-bottom: 12px;">
+                    <input type="checkbox" id="inversion-filter" style="width: 16px; height: 16px; margin: 0; cursor: pointer;">
+                    <label for="inversion-filter" data-translate="int.inversion" style="margin: 0; cursor: pointer; display: inline;">Inversione</label>
                 </div>
                 <div class="filter-group">
                     <button onclick="fetchMarketData()" data-translate="int.apply">Applica selezione</button>
@@ -506,6 +537,7 @@
             const vMin = parseFloat(document.getElementById('value-min').value);
             const vMax = parseFloat(document.getElementById('value-max').value);
             const instrumentFilter = document.getElementById('instrument-filter').value.trim().toLowerCase();
+            const inversionFilter = document.getElementById('inversion-filter').checked;
 
             let filtered = data.filter(row => {
                 const val = parseFloat(row.forza);
@@ -516,6 +548,13 @@
                 if (instrumentFilter && (row.id_instrument || '').toLowerCase() !== instrumentFilter) return false;
                 // Client-side sector filter (as fallback or additional refinement)
                 if (_selectedSectors.length > 0 && !_selectedSectors.includes(row.sector_description)) return false;
+                
+                if (inversionFilter) {
+                    const fVal = parseFloat(row.forza);
+                    const iVal = parseInt(row.invariance_days) || 0;
+                    if (fVal >= 0 || iVal >= 0) return false;
+                }
+
                 return true;
             });
 
