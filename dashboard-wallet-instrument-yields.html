@@ -279,7 +279,7 @@
         let id_instrument = _urlParams.get('id_instrument');
         let account_level = _urlParams.get('account_level');
         let evalCurrency = _urlParams.get('currency') || '';
-        let instrCurrency = '';
+        let instrCurrency = _urlParams.get('instr_currency') || '';
         let currencyMode = 'eval'; // 'eval' | 'instr'
         let code = _urlParams.get('code');
 
@@ -398,7 +398,14 @@
                 const response = await fetch(`${API_URL}/gettradeyield`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ username, token, language, code: currentCode })
+                    body: JSON.stringify({
+                        username,
+                        token,
+                        language,
+                        code: currentCode,
+                        account_level: account_level || '',
+                        currency: evalCurrency || ''
+                    })
                 });
                 const data = await response.json();
                 if (data.status === 'ok' && data.tradeyield) {

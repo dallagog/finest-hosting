@@ -335,6 +335,11 @@
 
             evalCurrency = urlParams.currency || '';
 
+            // Pre-popola la divisa nativa dell'instrument se passata dall'URL
+            if (urlParams.instr_currency) {
+                instrCurrency = urlParams.instr_currency;
+            }
+
             if (!urlParams.code && urlParams.id_account && urlParams.id_instrument) {
                 const account = urlParams.id_account;
                 const level = urlParams.account_level ? `#${urlParams.account_level}` : '';
@@ -498,7 +503,9 @@
                     token: credentials.token || "",
                     language: credentials.language || "",
                     filter: "",
-                    code: urlParams.code || ""
+                    code: urlParams.code || "",
+                    account_level: urlParams.account_level || "",
+                    currency: evalCurrency || ""
                 };
 
                 const response = await fetch(`${API_URL}/gettrade`, {
