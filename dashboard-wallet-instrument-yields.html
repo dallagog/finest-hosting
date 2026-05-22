@@ -195,6 +195,38 @@
             font-style: italic;
             color: #666;
         }
+
+        .currency-toggle {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-top: 4px;
+        }
+
+        .currency-toggle button {
+            padding: 3px 10px;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 11px;
+            font-weight: bold;
+            border-radius: 4px;
+            cursor: pointer;
+            border: 1px solid #999;
+            background: #e0e0e0;
+            color: #333;
+            transition: all 0.2s;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .currency-toggle button.active {
+            background: #000;
+            color: #fff;
+            border-color: #000;
+        }
+
+        .currency-toggle button:hover:not(.active) {
+            background: #ccc;
+        }
     </style>
 </head>
 
@@ -210,7 +242,11 @@
                 <span class="flag-icon" id="languageFlag"></span>
                 <span id="languageDisplay">-</span>
                 <span style="margin: 0 5px;">|</span>
-                <span id="currencyDisplay">EUR</span>
+                <span id="currencyDisplay">-</span>
+            </div>
+            <div class="currency-toggle" id="currencyToggle" style="display:none;">
+                <button id="btnEvalCurrency" class="active" onclick="setCurrencyMode('eval')">-</button>
+                <button id="btnInstrCurrency" onclick="setCurrencyMode('instr')">-</button>
             </div>
         </div>
         <h1 id="pageTitle">Yield Details</h1>
@@ -238,13 +274,23 @@
     <script>
         const API_URL = 'https://feweb-tunnel.fe-web.eu';
 
-        const urlParams = new URLSearchParams(window.location.search);
-        let code = urlParams.get('code');
-        let id_account = urlParams.get('id_account');
-        let id_instrument = urlParams.get('id_instrument');
+        const _urlParams = new URLSearchParams(window.location.search);
+        let id_account = _urlParams.get('id_account');
+        let id_instrument = _urlParams.get('id_instrument');
+        let account_level = _urlParams.get('account_level');
+        let evalCurrency = _urlParams.get('currency') || '';
+        let instrCurrency = '';
+        let currencyMode = 'eval'; // 'eval' | 'instr'
+        let code = _urlParams.get('code');
 
         if (!code && id_account && id_instrument) {
-            code = `${id_account}:${id_instrument}`;
+            const levelStr = account_level ? `#${account_level}` : '';
+            const currStr = evalCurrency ? `#${evalCurrency}` : '';
+            code = `${id_account}${levelStr}:${id_instrument}${currStr}`;
+        } else if (code) {
+            // Estrai evalCurrency dal code se non già presente
+            const m = code.match(/:([^#]+)(?:#(.+))?$/);
+            if (m && m[2]) evalCurrency = evalCurrency || m[2];
         }
 
         const username = localStorage.getItem("username");
@@ -256,6 +302,42 @@
         let tradeYieldColumns = [];
         let currentSort = { column: null, direction: 'asc' };
         let translations = {};
+
+        function buildCode(mode) {
+            if (!id_account && !id_instrument) {
+                // code passato direttamente
+                const base = (code || '').replace(/#[^:]*$/, '');
+                if (mode === 'eval' && evalCurrency) return `${base}#${evalCurrency}`;
+                return base;
+            }
+            const levelStr = account_level ? `#${account_level}` : '';
+            const currStr = (mode === 'eval' && evalCurrency) ? `#${evalCurrency}` : '';
+            return `${id_account}${levelStr}:${id_instrument}${currStr}`;
+        }
+
+        function updateToggleUI() {
+            const btnEval = document.getElementById('btnEvalCurrency');
+            const btnInstr = document.getElementById('btnInstrCurrency');
+            btnEval.textContent = evalCurrency || '?';
+            btnInstr.textContent = instrCurrency || '?';
+            btnEval.classList.toggle('active', currencyMode === 'eval');
+            btnInstr.classList.toggle('active', currencyMode === 'instr');
+            document.getElementById('currencyDisplay').textContent = evalCurrency || '-';
+            const toggle = document.getElementById('currencyToggle');
+            toggle.style.display = (instrCurrency && instrCurrency !== evalCurrency) ? 'flex' : 'none';
+        }
+
+        async function setCurrencyMode(mode) {
+            if (currencyMode === mode) return;
+            currencyMode = mode;
+            code = buildCode(mode);
+            updateToggleUI();
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('tableBody').innerHTML = '';
+            document.getElementById('tableHeader').innerHTML = '';
+            document.getElementById('error').style.display = 'none';
+            await loadData();
+        }
 
         async function loadLanguageManifest() {
             try {
@@ -307,7 +389,8 @@
         }
 
         async function loadData() {
-            if (!code || !username) {
+            const currentCode = buildCode(currencyMode);
+            if (!currentCode || !username) {
                 showError("Missing parameters or authentication.");
                 return;
             }
@@ -315,12 +398,24 @@
                 const response = await fetch(`${API_URL}/gettradeyield`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ username, token, language, code })
+                    body: JSON.stringify({ username, token, language, code: currentCode })
                 });
                 const data = await response.json();
                 if (data.status === 'ok' && data.tradeyield) {
-                    // Mantenuta la logica originale
                     tableData = data.tradeyield.map(item => flattenObject(item)).filter(item => item.event_event_description);
+
+                    // Estrai divisa nativa dell'instrument dal primo record
+                    if (!instrCurrency && data.tradeyield.length > 0) {
+                        const first = data.tradeyield[0];
+                        const raw = first?.instrument?.id_currency
+                            || first?.id_currency
+                            || '';
+                        if (raw) {
+                            instrCurrency = raw.trim();
+                            updateToggleUI();
+                        }
+                    }
+
                     if (tradeYieldColumns.length > 0) {
                         tableColumns = [...tradeYieldColumns];
                     } else {
@@ -460,6 +555,7 @@
             const manifest = await loadLanguageManifest();
             tradeYieldColumns = manifest.columns;
             await loadTranslations(language);
+            updateToggleUI();
             await loadData();
         })();
     </script>

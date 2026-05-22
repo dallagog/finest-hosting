@@ -2893,8 +2893,11 @@
                     span.style.cursor = 'pointer'; span.style.color = '#000'; span.style.textDecoration = 'underline';
                     span.onclick = (e) => {
                         e.stopPropagation();
-                        // Open Trades (Portfolio Details)
-                        if (item.id_instrument && item.id_account) openPortfolioDetails(item.id_account, item.id_instrument);
+                        const idInstrument = item.id_instrument || item.Ticker;
+                        const classObj = classificationMap[idInstrument] || classificationMap[String(idInstrument)] || {};
+                        const accountLevel = item.account_level_portfolio || item.account_level || '';
+                        const currency = item.id_currency || classObj.id_currency || item.currency || '';
+                        if (item.id_instrument && item.id_account) openPortfolioDetails(item.id_account, item.id_instrument, accountLevel, currency);
                     };
                     td.appendChild(span);
                 } else if (isClickableCode) {
@@ -2988,23 +2991,26 @@
             tr.classList.add('selected');
         }
 
-        function openPortfolioDetails(idAccount, idInstrument) {
+        function openPortfolioDetails(idAccount, idInstrument, accountLevel, currency) {
             const params = new URLSearchParams();
             params.set('username', credentials.username || '');
             params.set('token', credentials.token || '');
             params.set('language', credentials.language || '');
             params.set('id_account', idAccount);
             params.set('id_instrument', idInstrument);
+            if (accountLevel) params.set('account_level', accountLevel);
+            if (currency) params.set('currency', currency);
 
             window.open(`dashboard-wallet-instrument-trades.html?${params.toString()}`, '_blank');
         }
 
-        function openTradeYieldDetails(id_account, id_instrument) {
+        function openTradeYieldDetails(id_account, id_instrument, accountLevel, currency) {
             console.log('openTradeYieldDetails called with id_account:', id_account, 'id_instrument:', id_instrument);
             const params = new URLSearchParams();
-            params.set('code', `${id_account}:${id_instrument}` || '');
             params.set('id_account', id_account || '');
             params.set('id_instrument', id_instrument || '');
+            if (accountLevel) params.set('account_level', accountLevel);
+            if (currency) params.set('currency', currency);
             const url = `dashboard-wallet-instrument-yields.html?${params.toString()}`;
             console.log('Opening URL:', url);
             window.open(url, '_blank');
@@ -3286,9 +3292,12 @@
                         console.log('Account clicked:', val, 'Ticker:', item.Ticker, 'id_instrument:', item.id_instrument);
                         const idAccount = val;
                         const idInstrument = item.Ticker || item.id_instrument;
+                        const accountLevel = item.account_level_yield || item.account_level || '';
+                        const classObj = classificationMap[idInstrument] || classificationMap[String(idInstrument)] || {};
+                        const currency = item.id_currency || classObj.id_currency || item.currency || '';
                         if (idAccount && idInstrument) {
                             console.log('Opening yield details with id_account:', idAccount, 'id_instrument:', idInstrument);
-                            openTradeYieldDetails(idAccount, idInstrument);
+                            openTradeYieldDetails(idAccount, idInstrument, accountLevel, currency);
                         } else {
                             console.warn('Missing id_account or id_instrument:', { idAccount, idInstrument });
                         }

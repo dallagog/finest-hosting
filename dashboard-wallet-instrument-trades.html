@@ -234,6 +234,38 @@
         .btn-delete:hover {
             background: #cc0000;
         }
+
+        .currency-toggle {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-top: 4px;
+        }
+
+        .currency-toggle button {
+            padding: 3px 10px;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 11px;
+            font-weight: bold;
+            border-radius: 4px;
+            cursor: pointer;
+            border: 1px solid #999;
+            background: #e0e0e0;
+            color: #333;
+            transition: all 0.2s;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .currency-toggle button.active {
+            background: #000;
+            color: #fff;
+            border-color: #000;
+        }
+
+        .currency-toggle button:hover:not(.active) {
+            background: #ccc;
+        }
     </style>
 </head>
 
@@ -249,6 +281,10 @@
                 <span id="languageDisplay">-</span>
                 <span style="margin: 0 5px;">|</span>
                 <span id="currencyDisplay">-</span>
+            </div>
+            <div class="currency-toggle" id="currencyToggle" style="display:none;">
+                <button id="btnEvalCurrency" class="active" onclick="setCurrencyMode('eval')">-</button>
+                <button id="btnInstrCurrency" onclick="setCurrencyMode('instr')">-</button>
             </div>
         </div>
         <h1 id="pageTitle">Transaction History</h1>
@@ -279,6 +315,9 @@
         let currentWalletData = [];
         let currentSort = { column: null, direction: 'asc' };
         let draggedRowIndex = null;
+        let currencyMode = 'eval'; // 'eval' = divisa valutazione, 'instr' = divisa strumento
+        let evalCurrency = '';    // divisa di valutazione (da URL param)
+        let instrCurrency = '';   // divisa nativa dell'instrument (estratta dai dati)
 
         // Get URL parameters
         function getURLParams() {
@@ -294,8 +333,18 @@
                 language: urlParams.language || 'it_IT'
             };
 
+            evalCurrency = urlParams.currency || '';
+
             if (!urlParams.code && urlParams.id_account && urlParams.id_instrument) {
-                urlParams.code = `${urlParams.id_account}:${urlParams.id_instrument}`;
+                const account = urlParams.id_account;
+                const level = urlParams.account_level ? `#${urlParams.account_level}` : '';
+                const instrument = urlParams.id_instrument;
+                const currency = evalCurrency ? `#${evalCurrency}` : '';
+                urlParams.code = `${account}${level}:${instrument}${currency}`;
+            } else if (urlParams.code) {
+                // Estrai evalCurrency dal code se non già in urlParams
+                const m = urlParams.code.match(/:([^#]+)(?:#(.+))?$/);
+                if (m && m[2]) evalCurrency = evalCurrency || m[2];
             }
         }
 
@@ -383,7 +432,56 @@
                 }
             }
 
-            document.getElementById('currencyDisplay').textContent = 'EUR';
+            document.getElementById('currencyDisplay').textContent = evalCurrency || 'EUR';
+        }
+
+        function buildCode(mode) {
+            const account = urlParams.id_account || '';
+            const level = urlParams.account_level ? `#${urlParams.account_level}` : '';
+            const instrument = urlParams.id_instrument || '';
+
+            if (!account && !instrument) {
+                // code già passato direttamente
+                if (mode === 'eval' && evalCurrency) {
+                    // Assicurati che contenga #currency
+                    const base = urlParams.code.replace(/#[^:]*$/, '');
+                    return `${base}#${evalCurrency}`;
+                } else if (mode === 'instr') {
+                    // Rimuovi il suffisso #currency dall'ultimo segmento
+                    return urlParams.code.replace(/#[^:]*$/, '');
+                }
+                return urlParams.code || '';
+            }
+
+            if (mode === 'eval') {
+                const currency = evalCurrency ? `#${evalCurrency}` : '';
+                return `${account}${level}:${instrument}${currency}`;
+            } else {
+                // Divisa nativa: nessun suffisso #currency
+                return `${account}${level}:${instrument}`;
+            }
+        }
+
+        function updateToggleUI() {
+            const btnEval = document.getElementById('btnEvalCurrency');
+            const btnInstr = document.getElementById('btnInstrCurrency');
+            btnEval.textContent = evalCurrency || '?';
+            btnInstr.textContent = instrCurrency || '?';
+            btnEval.classList.toggle('active', currencyMode === 'eval');
+            btnInstr.classList.toggle('active', currencyMode === 'instr');
+            // Mostra il toggle solo se le due valute sono diverse
+            const toggle = document.getElementById('currencyToggle');
+            toggle.style.display = (instrCurrency && instrCurrency !== evalCurrency) ? 'flex' : 'none';
+        }
+
+        async function setCurrencyMode(mode) {
+            if (currencyMode === mode) return;
+            currencyMode = mode;
+            updateToggleUI();
+            urlParams.code = buildCode(mode);
+            // Mostra spinner
+            document.getElementById('content').innerHTML = `<div class="loading"><div class="spinner"></div><p>${getTranslation('int.loading.data') || 'Caricamento...'}</p></div>`;
+            await loadWalletData();
         }
 
         function updatePageTranslations() {
@@ -415,6 +513,18 @@
                 console.log('Error loading wallet data:', data);
 
                 if (data.status === 'ok' && data.trade) {
+                    // Estrai divisa nativa dell'instrument dal primo trade
+                    if (data.trade.length > 0) {
+                        const firstTrade = data.trade[0];
+                        const rawCurr = firstTrade.instrument?.id_currency
+                            || firstTrade.id_currency
+                            || (firstTrade.price && typeof firstTrade.price === 'string' && firstTrade.price.includes(':') ? firstTrade.price.split(':')[1] : '')
+                            || '';
+                        if (rawCurr && !instrCurrency) {
+                            instrCurrency = rawCurr.trim();
+                            updateToggleUI();
+                        }
+                    }
                     displayWalletData(data.trade);
                 } else {
                     showError('Portfolio details not available');
