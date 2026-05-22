@@ -940,6 +940,7 @@
                     '$cost_amount_curr',
                     'CTVMKTTQ',
                     '$price_mkt',
+                    'break_even',
                     'unit_price',
                     'M/P',
                     'M/P%'
@@ -1051,8 +1052,10 @@
                 // Headers
                 tableColumns.forEach(col => {
                     const th = document.createElement('th');
-                    let translationKey = col === 'market_trading_hours' ? 'int.market_trading_hours' : col;
+                    let translationKey = col;
+                    if (col === 'market_trading_hours') translationKey = 'int.market_trading_hours';
                     if (col === 'azioni') translationKey = 'int.trading';
+                    if (col === 'break_even') translationKey = 'int.breakeven';
                     let label = getTranslation(translationKey) || (col === 'azioni' ? 'Trading' : col);
                     // Split label on space or slash to put on two rows
                     if (label.includes(' ')) {
