@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Financial Estimates 0.1 alfa</title>
+    <title>Instrument Trade Details 0.2</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <link rel="icon" type="image/png" href="images/icon-finest.png">
     <style>
@@ -549,9 +549,9 @@
 
         function parseNumericValue(value) {
             if (value === null || value === undefined || value === '-') return -Infinity;
-            
+
             let valStr = String(value);
-            
+
             // Gestione oggetti "valore divisa"
             if (typeof value === 'object') {
                 if (value.valore !== undefined) valStr = String(value.valore);
@@ -560,7 +560,7 @@
                 // Gestione formato stringa "100.00:EUR"
                 valStr = value.split(':')[0];
             }
-            
+
             const cleaned = valStr.replace(/[^\d.,-]/g, '').replace(',', '.');
             const num = parseFloat(cleaned);
             return isNaN(num) ? -Infinity : num;
@@ -639,7 +639,7 @@
                 const executedTrades = currentWalletData.filter(transaction => transaction.trade === 'True');
                 const row = executedTrades.splice(draggedRowIndex, 1)[0];
                 executedTrades.splice(index, 0, row);
-                
+
                 // Update the full data array
                 currentWalletData = currentWalletData.filter(t => t.trade !== 'True').concat(executedTrades);
                 displayWalletData(currentWalletData, true);
@@ -652,7 +652,7 @@
                 currentSort = { column: null, direction: 'asc' };
             }
             currentWalletData = walletData;
-            
+
             const instrumentCode = urlParams.id_instrument || (walletData[0] && walletData[0].instrument && walletData[0].instrument.id_instrument) || '';
             const instrumentDesc = (walletData[0] && walletData[0].instrument && walletData[0].instrument.instrument_description) || '';
 
@@ -663,7 +663,7 @@
             titleElement.onclick = () => openInstrumentDataEntry(instrumentCode);
 
             let executedTrades = walletData.filter(transaction => transaction.trade === 'True');
-            
+
             if (currentSort.column) {
                 executedTrades = sortData(executedTrades, currentSort.column, currentSort.direction);
             }
