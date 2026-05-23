@@ -244,9 +244,12 @@
                 <span style="margin: 0 5px;">|</span>
                 <span id="currencyDisplay">-</span>
             </div>
-            <div class="currency-toggle" id="currencyToggle" style="display:none;">
-                <button id="btnEvalCurrency" class="active" onclick="setCurrencyMode('eval')">-</button>
-                <button id="btnInstrCurrency" onclick="setCurrencyMode('instr')">-</button>
+            <div class="currency-toggle" id="currencyToggle" style="display:none; align-items: center; gap: 8px;">
+                <label id="currencySelectLabel" for="currencySelect"
+                    style="font-weight: bold; font-size: 13px;"></label>
+                <select id="currencySelect" onchange="handleCurrencySelectChange()"
+                    style="padding: 3px 6px; font-family: 'Orbitron', sans-serif; font-size: 12px; font-weight: bold; border: 1px solid var(--border-color); background: var(--glass-bg); color: var(--text-color); border-radius: 4px; cursor: pointer;">
+                </select>
             </div>
         </div>
         <h1 id="pageTitle">Yield Details</h1>
@@ -281,7 +284,7 @@
         let account_level_yield = _urlParams.get('account_level_yield');
         let evalCurrency = _urlParams.get('currency') || '';
         let instrCurrency = _urlParams.get('instr_currency') || '';
-        let currencyMode = 'eval'; // 'eval' | 'instr'
+        let selectedInstrumentCurrency = instrCurrency; // Divisa scelta per richiamare /gettradeyield
         let code = _urlParams.get('code');
 
         if (!code && id_account && id_instrument) {
@@ -317,22 +320,41 @@
         }
 
         function updateToggleUI() {
-            const btnEval = document.getElementById('btnEvalCurrency');
-            const btnInstr = document.getElementById('btnInstrCurrency');
-            btnEval.textContent = evalCurrency || '?';
-            btnInstr.textContent = instrCurrency || '?';
-            btnEval.classList.toggle('active', currencyMode === 'eval');
-            btnInstr.classList.toggle('active', currencyMode === 'instr');
             document.getElementById('currencyDisplay').textContent = evalCurrency || '-';
             const toggle = document.getElementById('currencyToggle');
-            toggle.style.display = (instrCurrency && instrCurrency !== evalCurrency) ? 'flex' : 'none';
+            const select = document.getElementById('currencySelect');
+            const label = document.getElementById('currencySelectLabel');
+
+            label.textContent = (getTranslation('id_currency') || 'Divisa') + ':';
+
+            if (instrCurrency && evalCurrency && instrCurrency !== evalCurrency) {
+                toggle.style.display = 'flex';
+
+                const currentVal = selectedInstrumentCurrency || instrCurrency;
+
+                select.innerHTML = '';
+
+                const optInstr = document.createElement('option');
+                optInstr.value = instrCurrency;
+                optInstr.textContent = instrCurrency;
+                select.appendChild(optInstr);
+
+                const optEval = document.createElement('option');
+                optEval.value = evalCurrency;
+                optEval.textContent = evalCurrency;
+                select.appendChild(optEval);
+
+                select.value = currentVal;
+                selectedInstrumentCurrency = currentVal;
+            } else {
+                toggle.style.display = 'none';
+            }
         }
 
-        async function setCurrencyMode(mode) {
-            if (currencyMode === mode) return;
-            currencyMode = mode;
-            code = buildCode(mode);
-            updateToggleUI();
+        async function handleCurrencySelectChange() {
+            const select = document.getElementById('currencySelect');
+            selectedInstrumentCurrency = select.value;
+
             document.getElementById('loading').style.display = 'block';
             document.getElementById('tableBody').innerHTML = '';
             document.getElementById('tableHeader').innerHTML = '';
@@ -390,7 +412,8 @@
         }
 
         async function loadData() {
-            const currentCode = buildCode(currencyMode);
+            const mode = (selectedInstrumentCurrency === evalCurrency) ? 'eval' : 'instr';
+            const currentCode = buildCode(mode);
             if (!currentCode || !username) {
                 showError("Missing parameters or authentication.");
                 return;
@@ -408,7 +431,7 @@
                         account_level: account_level || '',
                         account_level_yield: account_level_yield || '',
                         currency: evalCurrency || '',
-                        currency_instrument: instrCurrency || ''
+                        currency_instrument: selectedInstrumentCurrency || instrCurrency || ''
                     })
                 });
                 const data = await response.json();
@@ -423,6 +446,9 @@
                             || '';
                         if (raw) {
                             instrCurrency = raw.trim();
+                            if (!selectedInstrumentCurrency) {
+                                selectedInstrumentCurrency = instrCurrency;
+                            }
                             updateToggleUI();
                         }
                     }
