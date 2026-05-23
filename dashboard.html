@@ -1577,6 +1577,7 @@
                                 account_type: acc.account_type || '',
                                 account_sector: acc.account_sector || '',
                                 account_level: acc.account_level || '',
+                                account_level_yield: acc.account_level_yield || '',
                                 date_accession: acc.date_accession || ''
                             });
                         }
@@ -1604,6 +1605,9 @@
                 accountsData = fAccountList.map(a => ({
                     id_account: String(a.id_account || a.id || '').trim(),
                     account_type: a.account_type || a.type || '',
+                    account_sector: a.account_sector || a.sector || '',
+                    account_level: a.account_level || '',
+                    account_level_yield: a.account_level_yield || a.account_level || '',
                     description: a.description_account || a.description || '',
                     raw: a
                 }));
@@ -1623,6 +1627,9 @@
                         accountsData.push({
                             id_account: String(fdItem.id_account || '').trim(),
                             account_type: fdItem.account_type || '',
+                            account_sector: fdItem.account_sector || '',
+                            account_level: fdItem.account_level || '',
+                            account_level_yield: fdItem.account_level_yield || fdItem.account_level || '',
                             description: fdItem.description_account || fdItem.description || '',
                             selected: !!fdItem.selected,
                             raw: fdItem
@@ -1641,6 +1648,8 @@
                 id_account: a.id_account,
                 account_type: a.account_type,
                 account_sector: a.account_sector || (a.raw && a.raw.account_sector) || '',
+                account_level: a.account_level || (a.raw && a.raw.account_level) || '',
+                account_level_yield: a.account_level_yield || (a.raw && a.raw.account_level_yield) || a.account_level || (a.raw && a.raw.account_level) || '',
                 date_accession: a.date_accession || (a.raw && a.raw.date_accession) || '',
                 description: a.description || (a.raw && (a.raw.description_account || a.raw.description)) || '',
                 selected: !!a.selected
@@ -1653,6 +1662,8 @@
                         id_account: a.id_account || a.id || '',
                         account_type: a.account_type || '',
                         account_sector: a.account_sector || a.sector || '',
+                        account_level: a.account_level || '',
+                        account_level_yield: a.account_level_yield || a.account_level || '',
                         date_accession: a.date_accession || a.accession || '',
                         description: a.description_account || a.description || '',
                         selected: !!a.selected
@@ -2895,10 +2906,12 @@
                         e.stopPropagation();
                         const idInstrument = item.id_instrument || item.Ticker;
                         const classObj = classificationMap[idInstrument] || classificationMap[String(idInstrument)] || {};
-                        const accountLevel = item.account_level_portfolio || item.account_level || '';
+                        const accObj = accountsData.find(a => String(a.id_account) === String(item.id_account)) || {};
+                        const accountLevel = item.account_level_portfolio || item.account_level || accObj.account_level || '';
+                        const accountLevelYield = item.account_level_yield || item.account_level || accObj.account_level_yield || accObj.account_level || '';
                         const instrCurrency = item.id_currency || classObj.id_currency || item.currency || '';
                         const evalCurrency = localStorage.getItem('currency') || '';
-                        if (item.id_instrument && item.id_account) openPortfolioDetails(item.id_account, item.id_instrument, accountLevel, evalCurrency, instrCurrency);
+                        if (item.id_instrument && item.id_account) openPortfolioDetails(item.id_account, item.id_instrument, accountLevel, evalCurrency, instrCurrency, accountLevelYield);
                     };
                     td.appendChild(span);
                 } else if (isClickableCode) {
@@ -2992,7 +3005,7 @@
             tr.classList.add('selected');
         }
 
-        function openPortfolioDetails(idAccount, idInstrument, accountLevel, evalCurrency, instrCurrency) {
+        function openPortfolioDetails(idAccount, idInstrument, accountLevel, evalCurrency, instrCurrency, accountLevelYield) {
             const params = new URLSearchParams();
             params.set('username', credentials.username || '');
             params.set('token', credentials.token || '');
@@ -3000,18 +3013,20 @@
             params.set('id_account', idAccount);
             params.set('id_instrument', idInstrument);
             if (accountLevel) params.set('account_level', accountLevel);
+            if (accountLevelYield) params.set('account_level_yield', accountLevelYield);
             if (evalCurrency) params.set('currency', evalCurrency);
             if (instrCurrency) params.set('instr_currency', instrCurrency);
 
             window.open(`dashboard-wallet-instrument-trades.html?${params.toString()}`, '_blank');
         }
 
-        function openTradeYieldDetails(id_account, id_instrument, yield_level, evalCurrency, instrCurrency) {
+        function openTradeYieldDetails(id_account, id_instrument, yield_level, evalCurrency, instrCurrency, account_level) {
             console.log('openTradeYieldDetails called with id_account:', id_account, 'id_instrument:', id_instrument);
             const params = new URLSearchParams();
             params.set('id_account', id_account || '');
             params.set('id_instrument', id_instrument || '');
             if (yield_level) params.set('yield_level', yield_level);
+            if (account_level) params.set('account_level', account_level);
             if (evalCurrency) params.set('currency', evalCurrency);
             if (instrCurrency) params.set('instr_currency', instrCurrency);
             const url = `dashboard-wallet-instrument-yields.html?${params.toString()}`;
@@ -3295,13 +3310,15 @@
                         console.log('Account clicked:', val, 'Ticker:', item.Ticker, 'id_instrument:', item.id_instrument);
                         const idAccount = val;
                         const idInstrument = item.Ticker || item.id_instrument;
-                        const accountLevel = item.account_level_yield || item.account_level || '';
+                        const accObj = accountsData.find(a => String(a.id_account) === String(idAccount)) || {};
+                        const accountLevelYield = item.account_level_yield || item.account_level || accObj.account_level_yield || accObj.account_level || '';
+                        const accountLevel = item.account_level_portfolio || item.account_level || accObj.account_level || '';
                         const classObj = classificationMap[idInstrument] || classificationMap[String(idInstrument)] || {};
                         const instrCurrency = item.id_currency || classObj.id_currency || item.currency || '';
                         const evalCurrency = localStorage.getItem('currency') || '';
                         if (idAccount && idInstrument) {
                             console.log('Opening yield details with id_account:', idAccount, 'id_instrument:', idInstrument);
-                            openTradeYieldDetails(idAccount, idInstrument, accountLevel, evalCurrency, instrCurrency);
+                            openTradeYieldDetails(idAccount, idInstrument, accountLevelYield, evalCurrency, instrCurrency, accountLevel);
                         } else {
                             console.warn('Missing id_account or id_instrument:', { idAccount, idInstrument });
                         }
