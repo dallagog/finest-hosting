@@ -3012,8 +3012,14 @@
             params.set('language', credentials.language || '');
             params.set('id_account', idAccount);
             params.set('id_instrument', idInstrument);
-            if (accountLevel) params.set('account_level', accountLevel);
-            if (accountLevelYield) params.set('account_level_yield', accountLevelYield);
+            if (accountLevel) {
+                const cleanLevel = accountLevel.split(',')[0];
+                params.set('account_level', cleanLevel);
+            }
+            if (accountLevelYield) {
+                const cleanYield = accountLevelYield.split(',')[1];
+                params.set('account_level_yield', cleanYield);
+            }
             if (evalCurrency) params.set('currency', evalCurrency);
             if (instrCurrency) params.set('instr_currency', instrCurrency);
 
@@ -3025,8 +3031,14 @@
             const params = new URLSearchParams();
             params.set('id_account', id_account || '');
             params.set('id_instrument', id_instrument || '');
-            if (yield_level) params.set('yield_level', yield_level);
-            if (account_level) params.set('account_level', account_level);
+            if (yield_level) {
+                const cleanYield = yield_level.split(',')[0];
+                params.set('yield_level', cleanYield);
+            }
+            if (account_level) {
+                const cleanLevel = account_level.split(',')[0];
+                params.set('account_level', cleanLevel);
+            }
             if (evalCurrency) params.set('currency', evalCurrency);
             if (instrCurrency) params.set('instr_currency', instrCurrency);
             const url = `dashboard-wallet-instrument-yields.html?${params.toString()}`;
