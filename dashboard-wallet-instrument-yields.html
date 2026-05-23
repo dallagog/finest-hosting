@@ -278,13 +278,14 @@
         let id_account = _urlParams.get('id_account');
         let id_instrument = _urlParams.get('id_instrument');
         let account_level = _urlParams.get('account_level');
+        let yield_level = _urlParams.get('yield_level') || _urlParams.get('account_level_yield');
         let evalCurrency = _urlParams.get('currency') || '';
         let instrCurrency = _urlParams.get('instr_currency') || '';
         let currencyMode = 'eval'; // 'eval' | 'instr'
         let code = _urlParams.get('code');
 
         if (!code && id_account && id_instrument) {
-            const levelStr = account_level ? `#${account_level}` : '';
+            const levelStr = yield_level ? `#${yield_level}` : (account_level ? `#${account_level}` : '');
             const currStr = evalCurrency ? `#${evalCurrency}` : '';
             code = `${id_account}${levelStr}:${id_instrument}${currStr}`;
         } else if (code) {
@@ -310,7 +311,7 @@
                 if (mode === 'eval' && evalCurrency) return `${base}#${evalCurrency}`;
                 return base;
             }
-            const levelStr = account_level ? `#${account_level}` : '';
+            const levelStr = yield_level ? `#${yield_level}` : (account_level ? `#${account_level}` : '');
             const currStr = (mode === 'eval' && evalCurrency) ? `#${evalCurrency}` : '';
             return `${id_account}${levelStr}:${id_instrument}${currStr}`;
         }
@@ -402,9 +403,10 @@
                         username,
                         token,
                         language,
-                        code: currentCode,
                         account_level: account_level || '',
+                        account_level_yield: yield_level || '',
                         currency: evalCurrency || ''
+                        currency_instrument: instrCurrency || ''
                     })
                 });
                 const data = await response.json();
