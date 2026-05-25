@@ -104,14 +104,54 @@
             padding: 40px;
         }
 
+        .title-container {
+            position: relative;
+            margin-bottom: 30px;
+            min-height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
         h2 {
             text-align: center;
-            margin-bottom: 30px;
+            margin-bottom: 0;
             font-weight: 700;
             text-transform: uppercase;
             letter-spacing: 2px;
             color: #000;
             font-size: 1.5rem;
+        }
+
+        #breakEvenContainer {
+            display: none;
+            position: absolute;
+            right: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 0.95rem;
+            font-weight: bold;
+            background: rgba(0, 0, 0, 0.04);
+            padding: 6px 12px;
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+            font-family: 'Orbitron', sans-serif;
+            transition: all 0.3s;
+        }
+
+        @media (max-width: 900px) {
+            .title-container {
+                flex-direction: column;
+                gap: 15px;
+                min-height: auto;
+            }
+
+            #breakEvenContainer {
+                position: static;
+                transform: none;
+                margin: 0 auto;
+                text-align: center;
+            }
         }
 
         .loading {
@@ -296,7 +336,14 @@
     </div>
 
     <div class="container">
-        <h2 id="instrumentTitle">Loading...</h2>
+        <div class="title-container">
+            <h2 id="instrumentTitle">Loading...</h2>
+            <div id="breakEvenContainer">
+                <span id="breakEvenLabel"
+                    style="color: #666; font-size: 0.8rem; text-transform: uppercase; margin-right: 8px; font-weight: 500; letter-spacing: 1px;"></span>
+                <span id="breakEvenValue" style="color: #000;"></span>
+            </div>
+        </div>
         <div id="content">
             <div class="loading">
                 <div class="spinner"></div>
@@ -664,6 +711,24 @@
             titleElement.style.cursor = 'pointer';
             titleElement.style.textDecoration = 'underline';
             titleElement.onclick = () => openInstrumentDataEntry(instrumentCode);
+
+            // Find if break_even is present in any transaction's valutazioni
+            let breakEvenVal = null;
+            for (const transaction of walletData) {
+                if (transaction.valutazioni && transaction.valutazioni.break_even) {
+                    breakEvenVal = transaction.valutazioni.break_even;
+                    break;
+                }
+            }
+
+            const breakEvenContainer = document.getElementById('breakEvenContainer');
+            if (breakEvenVal) {
+                document.getElementById('breakEvenLabel').textContent = (getTranslation('int.breakeven') || 'Break even') + ':';
+                document.getElementById('breakEvenValue').textContent = formatCurrency(breakEvenVal);
+                breakEvenContainer.style.display = 'block';
+            } else {
+                breakEvenContainer.style.display = 'none';
+            }
 
             let executedTrades = walletData.filter(transaction => transaction.trade === 'True');
 
