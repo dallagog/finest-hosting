@@ -137,6 +137,8 @@
             border: 1px solid var(--border-color);
             font-family: 'Orbitron', sans-serif;
             transition: all 0.3s;
+            align-items: center;
+            gap: 15px;
         }
 
         @media (max-width: 900px) {
@@ -339,9 +341,16 @@
         <div class="title-container">
             <h2 id="instrumentTitle">Loading...</h2>
             <div id="breakEvenContainer">
-                <span id="breakEvenLabel"
-                    style="color: #666; font-size: 0.8rem; text-transform: uppercase; margin-right: 8px; font-weight: 500; letter-spacing: 1px;"></span>
-                <span id="breakEvenValue" style="color: #000;"></span>
+                <div id="breakEvenSubContainer" style="display: none;">
+                    <span id="breakEvenLabel"
+                        style="color: #666; font-size: 0.8rem; text-transform: uppercase; margin-right: 8px; font-weight: 500; letter-spacing: 1px;"></span>
+                    <span id="breakEvenValue" style="color: #000;"></span>
+                </div>
+                <div id="timeMeanSubContainer" style="display: none; border-left: 1px solid #ccc; padding-left: 15px;">
+                    <span id="timeMeanLabel"
+                        style="color: #666; font-size: 0.8rem; text-transform: uppercase; margin-right: 8px; font-weight: 500; letter-spacing: 1px;"></span>
+                    <span id="timeMeanValue" style="color: #000;"></span>
+                </div>
             </div>
         </div>
         <div id="content">
@@ -712,20 +721,55 @@
             titleElement.style.textDecoration = 'underline';
             titleElement.onclick = () => openInstrumentDataEntry(instrumentCode);
 
-            // Find if break_even is present in any transaction's valutazioni
+            // Find if break_even and time_mean_description are present in any transaction's valutazioni
             let breakEvenVal = null;
+            let timeMeanVal = null;
             for (const transaction of walletData) {
-                if (transaction.valutazioni && transaction.valutazioni.break_even) {
-                    breakEvenVal = transaction.valutazioni.break_even;
-                    break;
+                if (transaction.valutazioni) {
+                    if (transaction.valutazioni.break_even && !breakEvenVal) {
+                        breakEvenVal = transaction.valutazioni.break_even;
+                    }
+                    if (transaction.valutazioni.time_mean_description && !timeMeanVal) {
+                        timeMeanVal = transaction.valutazioni.time_mean_description;
+                    }
                 }
             }
 
             const breakEvenContainer = document.getElementById('breakEvenContainer');
+            const breakEvenSubContainer = document.getElementById('breakEvenSubContainer');
+            const timeMeanSubContainer = document.getElementById('timeMeanSubContainer');
+
+            let showContainer = false;
+
             if (breakEvenVal) {
                 document.getElementById('breakEvenLabel').textContent = (getTranslation('int.breakeven') || 'Break even') + ':';
                 document.getElementById('breakEvenValue').textContent = formatCurrency(breakEvenVal);
-                breakEvenContainer.style.display = 'block';
+                breakEvenSubContainer.style.display = 'inline-block';
+                showContainer = true;
+            } else {
+                breakEvenSubContainer.style.display = 'none';
+            }
+
+            if (timeMeanVal) {
+                document.getElementById('timeMeanLabel').textContent = (getTranslation('int.timemean') || 'Tempo medio') + ':';
+                document.getElementById('timeMeanValue').textContent = timeMeanVal;
+                timeMeanSubContainer.style.display = 'inline-block';
+                showContainer = true;
+            } else {
+                timeMeanSubContainer.style.display = 'none';
+            }
+
+            // Adjust border styling based on whether both are displayed
+            if (breakEvenVal && timeMeanVal) {
+                timeMeanSubContainer.style.borderLeft = '1px solid #ccc';
+                timeMeanSubContainer.style.paddingLeft = '15px';
+            } else {
+                timeMeanSubContainer.style.borderLeft = 'none';
+                timeMeanSubContainer.style.paddingLeft = '0';
+            }
+
+            if (showContainer) {
+                breakEvenContainer.style.display = 'flex';
             } else {
                 breakEvenContainer.style.display = 'none';
             }
