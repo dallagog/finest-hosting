@@ -137,8 +137,22 @@
             border: 1px solid var(--border-color);
             font-family: 'Orbitron', sans-serif;
             transition: all 0.3s;
-            align-items: center;
-            gap: 15px;
+        }
+
+        #timeMeanContainer {
+            display: none;
+            position: absolute;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 0.95rem;
+            font-weight: bold;
+            background: rgba(0, 0, 0, 0.04);
+            padding: 6px 12px;
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+            font-family: 'Orbitron', sans-serif;
+            transition: all 0.3s;
         }
 
         @media (max-width: 900px) {
@@ -148,7 +162,7 @@
                 min-height: auto;
             }
 
-            #breakEvenContainer {
+            #breakEvenContainer, #timeMeanContainer {
                 position: static;
                 transform: none;
                 margin: 0 auto;
@@ -339,18 +353,16 @@
 
     <div class="container">
         <div class="title-container">
+            <div id="timeMeanContainer" style="display: none;">
+                <span id="timeMeanLabel"
+                    style="color: #666; font-size: 0.8rem; text-transform: uppercase; margin-right: 8px; font-weight: 500; letter-spacing: 1px;"></span>
+                <span id="timeMeanValue" style="color: #000;"></span>
+            </div>
             <h2 id="instrumentTitle">Loading...</h2>
-            <div id="breakEvenContainer">
-                <div id="breakEvenSubContainer" style="display: none;">
-                    <span id="breakEvenLabel"
-                        style="color: #666; font-size: 0.8rem; text-transform: uppercase; margin-right: 8px; font-weight: 500; letter-spacing: 1px;"></span>
-                    <span id="breakEvenValue" style="color: #000;"></span>
-                </div>
-                <div id="timeMeanSubContainer" style="display: none; border-left: 1px solid #ccc; padding-left: 15px;">
-                    <span id="timeMeanLabel"
-                        style="color: #666; font-size: 0.8rem; text-transform: uppercase; margin-right: 8px; font-weight: 500; letter-spacing: 1px;"></span>
-                    <span id="timeMeanValue" style="color: #000;"></span>
-                </div>
+            <div id="breakEvenContainer" style="display: none;">
+                <span id="breakEvenLabel"
+                    style="color: #666; font-size: 0.8rem; text-transform: uppercase; margin-right: 8px; font-weight: 500; letter-spacing: 1px;"></span>
+                <span id="breakEvenValue" style="color: #000;"></span>
             </div>
         </div>
         <div id="content">
@@ -736,42 +748,22 @@
             }
 
             const breakEvenContainer = document.getElementById('breakEvenContainer');
-            const breakEvenSubContainer = document.getElementById('breakEvenSubContainer');
-            const timeMeanSubContainer = document.getElementById('timeMeanSubContainer');
-
-            let showContainer = false;
+            const timeMeanContainer = document.getElementById('timeMeanContainer');
 
             if (breakEvenVal) {
                 document.getElementById('breakEvenLabel').textContent = (getTranslation('int.breakeven') || 'Break even') + ':';
                 document.getElementById('breakEvenValue').textContent = formatCurrency(breakEvenVal);
-                breakEvenSubContainer.style.display = 'inline-block';
-                showContainer = true;
+                breakEvenContainer.style.display = 'block';
             } else {
-                breakEvenSubContainer.style.display = 'none';
+                breakEvenContainer.style.display = 'none';
             }
 
             if (timeMeanVal) {
                 document.getElementById('timeMeanLabel').textContent = (getTranslation('int.timemean') || 'Tempo medio') + ':';
                 document.getElementById('timeMeanValue').textContent = timeMeanVal;
-                timeMeanSubContainer.style.display = 'inline-block';
-                showContainer = true;
+                timeMeanContainer.style.display = 'block';
             } else {
-                timeMeanSubContainer.style.display = 'none';
-            }
-
-            // Adjust border styling based on whether both are displayed
-            if (breakEvenVal && timeMeanVal) {
-                timeMeanSubContainer.style.borderLeft = '1px solid #ccc';
-                timeMeanSubContainer.style.paddingLeft = '15px';
-            } else {
-                timeMeanSubContainer.style.borderLeft = 'none';
-                timeMeanSubContainer.style.paddingLeft = '0';
-            }
-
-            if (showContainer) {
-                breakEvenContainer.style.display = 'flex';
-            } else {
-                breakEvenContainer.style.display = 'none';
+                timeMeanContainer.style.display = 'none';
             }
 
             let executedTrades = walletData.filter(transaction => transaction.trade === 'True');
