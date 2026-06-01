@@ -1274,11 +1274,16 @@
                     const yieldClass = yieldP >= 0 ? 'yield-positive' : 'yield-negative';
                     const sign = yieldP >= 0 ? '+' : '';
 
+                    const minPrice = Math.min(...validPrices);
+                    const maxPrice = Math.max(...validPrices);
+
                     const div = document.createElement('div');
                     div.className = 'yield-item';
                     div.innerHTML = `
                         <span class="yield-label">${getTranslation('int.prices') || 'Price'}:</span>
+                        <span class="yield-value" style="font-weight: normal; color: #777; margin-right: 5px;">${getTranslation('int.price.min') || 'Min Price'}: ${minPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 4 })}</span>
                         <span class="yield-value ${yieldClass}">${sign}${yieldP.toFixed(2)}%</span>
+                        <span class="yield-value" style="font-weight: normal; color: #777; margin-left: 5px;">${getTranslation('int.price.max') || 'Max Price'}: ${maxPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 4 })}</span>
                     `;
                     yieldDisplay.appendChild(div);
                 }
@@ -1292,11 +1297,16 @@
                     const yieldClass = yieldE >= 0 ? 'yield-positive' : 'yield-negative';
                     const sign = yieldE >= 0 ? '+' : '';
 
+                    const minExchange = Math.min(...validExchanges);
+                    const maxExchange = Math.max(...validExchanges);
+
                     const div = document.createElement('div');
                     div.className = 'yield-item';
                     div.innerHTML = `
                         <span class="yield-label">${getTranslation('int.exchange') || 'Exchange'}:</span>
+                        <span class="yield-value" style="font-weight: normal; color: #777; margin-right: 5px;">${getTranslation('int.exchange.min') || 'Min Exchange'}: ${minExchange.toFixed(4)}</span>
                         <span class="yield-value ${yieldClass}">${sign}${yieldE.toFixed(2)}%</span>
+                        <span class="yield-value" style="font-weight: normal; color: #777; margin-left: 5px;">${getTranslation('int.exchange.max') || 'Max Exchange'}: ${maxExchange.toFixed(4)}</span>
                     `;
                     yieldDisplay.appendChild(div);
                 }
