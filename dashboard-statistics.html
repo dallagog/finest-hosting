@@ -564,7 +564,17 @@
             }
 
             let html = `<p style="margin-bottom:10px">Record trovati: <strong>${filtered.length}</strong></p>`;
-            html += '<table class="data-table"><thead><tr><th>Strumento</th><th>Descrizione</th><th>Settore</th><th>Data</th><th>Forza</th><th>Invarianza</th></tr></thead><tbody>';
+            html += `<table class="data-table"><thead><tr>
+                <th>${getTranslation('id_instrument')}</th>
+                <th>${getTranslation('instrument_description')}</th>
+                <th>${getTranslation('sector')}</th>
+                <th>${getTranslation('date_start')}</th>
+                <th>${getTranslation('int.force')}</th>
+                <th>${getTranslation('int.invariance')}</th>
+                <th>${getTranslation('int.pe')}</th>
+                <th>${getTranslation('int.eps')}</th>
+                <th>${getTranslation('int.market_cap')}</th>
+            </tr></thead><tbody>`;
 
             filtered.forEach(row => {
                 const forzaVal = parseFloat(row.forza);
@@ -580,6 +590,19 @@
                     invDisplay = `${invVal} (${getTranslation('int.invariance.positive')})`;
                 }
 
+                const fmtNum = (v, decimals = 2) => {
+                    const n = parseFloat(v);
+                    return isNaN(n) ? '-' : n.toLocaleString('it-IT', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
+                };
+                const fmtCap = (v) => {
+                    const n = parseFloat(v);
+                    if (isNaN(n)) return '-';
+                    if (n >= 1e12) return (n / 1e12).toLocaleString('it-IT', { maximumFractionDigits: 2 }) + ' T';
+                    if (n >= 1e9)  return (n / 1e9).toLocaleString('it-IT', { maximumFractionDigits: 2 }) + ' B';
+                    if (n >= 1e6)  return (n / 1e6).toLocaleString('it-IT', { maximumFractionDigits: 2 }) + ' M';
+                    return n.toLocaleString('it-IT');
+                };
+
                 html += `<tr>
                     <td><a href="#" onclick="openPriceGraph('${row.id_instrument}')" style="color:#000; text-decoration:underline;">${row.id_instrument}</a></td>
                     <td><a href="#" onclick="openInstrumentDetail('${row.id_instrument}')" style="color:#000; text-decoration:underline;">${row.instrument_description || '-'}</a></td>
@@ -587,6 +610,9 @@
                     <td>${row.date_start}</td>
                     <td style="${forzaStyle}">${row.forza}</td>
                     <td style="${invStyle}">${invDisplay}</td>
+                    <td>${fmtNum(row.PE)}</td>
+                    <td>${fmtNum(row.EPS)}</td>
+                    <td>${fmtCap(row.market_capitalization)}</td>
                 </tr>`;
             });
             html += '</tbody></table>';
