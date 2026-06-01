@@ -680,17 +680,34 @@
             const resultsHdr = document.getElementById('results-header');
 
             if (filtered.length === 0) {
-                cardList.innerHTML = '<p class="loading-tex                const fmtNum = (v, dec = 2) => {
+                cardList.innerHTML = '<p class="loading-text">Nessun dato corrispondente ai filtri.</p>';
+                resultsHdr.style.display = 'none';
+                return;
+            }
+
+            resultsHdr.style.display = 'block';
+            document.getElementById('results-count').textContent = filtered.length;
+
+            cardList.innerHTML = '';
+            filtered.forEach(row => {
+                const forzaVal = parseFloat(row.forza);
+                const isNegForza = forzaVal < 0;
+
+                const invVal = parseInt(row.invariance_days) || 0;
+                const isNegInv = invVal < 0;
+                let invLabel = '';
+                if (invVal < 0) invLabel = getTranslation('int.invariance.negative');
+                else if (invVal > 0) invLabel = getTranslation('int.invariance.positive');
+
+                const card = document.createElement('div');
+                card.className = 'stat-card';
+
+                const fmtNum = (v, dec = 2) => {
                     const n = parseFloat(v);
                     return isNaN(n) ? '—' : n.toLocaleString('it-IT', { minimumFractionDigits: dec, maximumFractionDigits: dec });
                 };
                 const fmtCap = (v) => {
-                    const n = parseFloat(v);
-                    if (isNaN(n)) return '—';
-                    if (n >= 1e12) return (n / 1e12).toLocaleString('it-IT', { maximumFractionDigits: 2 }) + ' T';
-                    if (n >= 1e9)  return (n / 1e9).toLocaleString('it-IT', { maximumFractionDigits: 2 }) + ' B';
-                    if (n >= 1e6)  return (n / 1e6).toLocaleString('it-IT', { maximumFractionDigits: 2 }) + ' M';
-                    return n.toLocaleString('it-IT');
+                    return v ? String(v) : '—';
                 };
 
                 const hasFund = row.PE != null || row.EPS != null || row.market_capitalization != null;
@@ -732,20 +749,6 @@
                             <span class="fund-value">${fmtCap(row.market_capitalization)}</span>
                         </div>
                     </div>` : ''}`;
-
-                cardList.appendChild(card);      <div class="metric">
-                                <span class="metric-label">Forza</span>
-                                <span class="metric-value ${isNegForza ? 'negative' : ''}">${forzaVal}</span>
-                            </div>
-                            <div class="metric">
-                                <span class="metric-label">Inv.</span>
-                                <span class="metric-value ${isNegInv ? 'negative' : ''}">
-                                    ${invVal}
-                                    ${invLabel ? `<span class="metric-sub">${invLabel}</span>` : ''}
-                                </span>
-                            </div>
-                        </div>
-                    </div>`;
 
                 cardList.appendChild(card);
             });
