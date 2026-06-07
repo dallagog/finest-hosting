@@ -391,6 +391,122 @@
             font-weight: 700;
             color: var(--text);
         }
+
+        /* ── INSTRUMENT SEARCH WIDGET ── */
+        .instrument-search-wrapper {
+            position: relative;
+            width: 100%;
+        }
+
+        .instrument-search-field {
+            width: 100%;
+            padding: 10px 36px 10px 10px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-family: inherit;
+            font-size: 0.8rem;
+            background: var(--white);
+            color: var(--text);
+            box-sizing: border-box;
+            -webkit-appearance: none;
+            appearance: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        .instrument-search-field:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 2px rgba(0,0,0,0.08);
+        }
+
+        .instrument-search-clear {
+            position: absolute;
+            right: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            cursor: pointer;
+            color: var(--muted);
+            font-size: 14px;
+            display: none;
+            background: none;
+            border: none;
+            padding: 2px 4px;
+            line-height: 1;
+            transition: color 0.2s;
+        }
+
+        .instrument-search-clear:hover { color: var(--text); }
+
+        .instrument-search-dropdown {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: var(--white);
+            border: 1px solid var(--accent);
+            border-top: none;
+            z-index: 300;
+            max-height: 280px;
+            overflow-y: auto;
+            box-shadow: 0 6px 16px rgba(0,0,0,0.15);
+            border-radius: 0 0 6px 6px;
+            display: none;
+        }
+
+        .inst-item {
+            padding: 8px 12px;
+            cursor: pointer;
+            border-bottom: 1px solid #f0f0f0;
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+            transition: background 0.15s;
+        }
+
+        .inst-item:last-child { border-bottom: none; }
+        .inst-item:hover, .inst-item.active { background: #f5f5f5; }
+
+        .inst-item-main {
+            display: flex;
+            align-items: baseline;
+            gap: 8px;
+        }
+
+        .inst-item-id {
+            font-weight: 700;
+            color: var(--accent);
+            font-size: 0.82em;
+            min-width: 60px;
+            letter-spacing: 0.5px;
+        }
+
+        .inst-item-desc {
+            font-size: 0.78em;
+            color: var(--muted);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .inst-item-meta { display: flex; gap: 5px; flex-wrap: wrap; }
+
+        .inst-badge {
+            font-size: 0.65em;
+            padding: 1px 5px;
+            border-radius: 3px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+
+        .inst-badge-sector { background: #e3f2fd; color: #1565c0; border: 1px solid #bbdefb; }
+
+        .inst-item-empty {
+            padding: 10px 12px;
+            color: var(--muted);
+            font-style: italic;
+            font-size: 0.82em;
+        }
     </style>
 </head>
 
@@ -448,9 +564,16 @@
 
             <div class="filter-group">
                 <label>Strumento</label>
-                <select id="instrument-filter">
-                    <option value="">— Tutti —</option>
-                </select>
+                <div class="instrument-search-wrapper">
+                    <input type="text"
+                           id="instrument-search-input"
+                           class="instrument-search-field"
+                           placeholder="Cerca per codice o nome..."
+                           autocomplete="off">
+                    <button type="button" class="instrument-search-clear" id="instrument-search-clear" title="Cancella">&#x2715;</button>
+                    <div class="instrument-search-dropdown" id="instrument-search-dropdown"></div>
+                </div>
+                <input type="hidden" id="instrument-filter" value="">
             </div>
 
             <div class="inversion-row">
@@ -517,7 +640,7 @@
 
             await loadTranslations();
             setDefaultDates();
-            document.getElementById('instrument-filter').addEventListener('change', applyFiltersAndRender);
+            initInstrumentSearch();
             await fetchMarketData();
         }
 
@@ -589,18 +712,159 @@
             updateSectorAnchorText();
         }
 
-        function populateInstrumentSelector(data) {
-            const select = document.getElementById('instrument-filter');
-            const current = select.value;
-            const instruments = [...new Set(data.map(r => r.id_instrument).filter(Boolean))].sort();
-            select.innerHTML = '<option value="">— Tutti —</option>';
-            instruments.forEach(id => {
-                const opt = document.createElement('option');
-                opt.value = id;
-                opt.textContent = id;
-                if (id === current) opt.selected = true;
-                select.appendChild(opt);
+        /* ---- Instrument Search Widget ---- */
+        let _instrumentIndex = [];
+        let _instSelIdx = -1;
+        let _instFiltered = [];
+
+        function initInstrumentSearch() {
+            const searchInput = document.getElementById('instrument-search-input');
+            const clearBtn    = document.getElementById('instrument-search-clear');
+            const dropdown    = document.getElementById('instrument-search-dropdown');
+            const hidden      = document.getElementById('instrument-filter');
+
+            searchInput.addEventListener('input', () => {
+                const q = searchInput.value.trim();
+                clearBtn.style.display = q ? 'block' : 'none';
+                renderInstDropdown(q);
             });
+
+            searchInput.addEventListener('focus', () => {
+                renderInstDropdown(searchInput.value.trim());
+            });
+
+            searchInput.addEventListener('keydown', (e) => {
+                if (dropdown.style.display === 'none') return;
+                if (e.key === 'ArrowDown')      { e.preventDefault(); moveInstSel(1); }
+                else if (e.key === 'ArrowUp')   { e.preventDefault(); moveInstSel(-1); }
+                else if (e.key === 'Enter')     {
+                    e.preventDefault();
+                    if (_instSelIdx >= 0 && _instFiltered[_instSelIdx]) selectInstrument(_instFiltered[_instSelIdx]);
+                }
+                else if (e.key === 'Escape')    closeInstDropdown();
+            });
+
+            clearBtn.addEventListener('click', () => {
+                searchInput.value = '';
+                hidden.value = '';
+                clearBtn.style.display = 'none';
+                closeInstDropdown();
+                applyFiltersAndRender();
+            });
+
+            document.addEventListener('click', (e) => {
+                if (!e.target.closest('.instrument-search-wrapper')) closeInstDropdown();
+            });
+        }
+
+        function populateInstrumentSelector(data) {
+            const current = document.getElementById('instrument-filter').value;
+            const seen = new Set();
+            _instrumentIndex = [];
+            data.forEach(r => {
+                if (r.id_instrument && !seen.has(r.id_instrument)) {
+                    seen.add(r.id_instrument);
+                    _instrumentIndex.push({
+                        id: r.id_instrument,
+                        description: r.instrument_description || '',
+                        sector: r.sector_description || ''
+                    });
+                }
+            });
+            _instrumentIndex.sort((a, b) => a.id.localeCompare(b.id));
+
+            // Ripristina la label se la selezione è ancora valida
+            if (current && _instrumentIndex.find(i => i.id === current)) {
+                const inst = _instrumentIndex.find(i => i.id === current);
+                document.getElementById('instrument-search-input').value = inst.description
+                    ? `${inst.id} — ${inst.description}` : inst.id;
+            }
+        }
+
+        function renderInstDropdown(query) {
+            const dropdown = document.getElementById('instrument-search-dropdown');
+            const q = query.toLowerCase();
+            _instFiltered = q
+                ? _instrumentIndex.filter(i =>
+                    i.id.toLowerCase().includes(q) ||
+                    i.description.toLowerCase().includes(q) ||
+                    i.sector.toLowerCase().includes(q)
+                  )
+                : _instrumentIndex;
+            _instFiltered = _instFiltered.slice(0, 60);
+            _instSelIdx = -1;
+
+            if (_instFiltered.length === 0) {
+                dropdown.innerHTML = `<div class="inst-item-empty">Nessun risultato</div>`;
+            } else {
+                dropdown.innerHTML = [
+                    `<div class="inst-item" data-idx="-1">
+                        <div class="inst-item-main">
+                            <span class="inst-item-id">—</span>
+                            <span class="inst-item-desc">Tutti gli strumenti</span>
+                        </div>
+                     </div>`
+                ].concat(_instFiltered.map((inst, i) => {
+                    const sector = inst.sector
+                        ? `<span class="inst-badge inst-badge-sector">${inst.sector}</span>` : '';
+                    return `
+                        <div class="inst-item" data-idx="${i}">
+                            <div class="inst-item-main">
+                                <span class="inst-item-id">${inst.id}</span>
+                                <span class="inst-item-desc">${inst.description}</span>
+                            </div>
+                            <div class="inst-item-meta">${sector}</div>
+                        </div>`;
+                })).join('');
+
+                dropdown.querySelectorAll('.inst-item').forEach(el => {
+                    el.addEventListener('mousedown', (e) => {
+                        e.preventDefault();
+                        const idx = parseInt(el.dataset.idx);
+                        if (idx === -1) clearInstrumentSelection();
+                        else selectInstrument(_instFiltered[idx]);
+                    });
+                });
+            }
+
+            dropdown.style.display = 'block';
+        }
+
+        function moveInstSel(dir) {
+            const dropdown = document.getElementById('instrument-search-dropdown');
+            const items = dropdown.querySelectorAll('.inst-item');
+            if (!items.length) return;
+            _instSelIdx = Math.max(-1, Math.min(_instFiltered.length - 1, _instSelIdx + dir));
+            items.forEach((el, i) => el.classList.toggle('active', i - 1 === _instSelIdx));
+            const activeEl = dropdown.querySelector('.inst-item.active');
+            if (activeEl) activeEl.scrollIntoView({ block: 'nearest' });
+        }
+
+        function selectInstrument(inst) {
+            const searchInput = document.getElementById('instrument-search-input');
+            const hidden      = document.getElementById('instrument-filter');
+            const clearBtn    = document.getElementById('instrument-search-clear');
+            searchInput.value = inst.description ? `${inst.id} — ${inst.description}` : inst.id;
+            hidden.value = inst.id;
+            clearBtn.style.display = 'block';
+            closeInstDropdown();
+            applyFiltersAndRender();
+        }
+
+        function clearInstrumentSelection() {
+            const searchInput = document.getElementById('instrument-search-input');
+            const hidden      = document.getElementById('instrument-filter');
+            const clearBtn    = document.getElementById('instrument-search-clear');
+            searchInput.value = '';
+            hidden.value = '';
+            clearBtn.style.display = 'none';
+            closeInstDropdown();
+            applyFiltersAndRender();
+        }
+
+        function closeInstDropdown() {
+            document.getElementById('instrument-search-dropdown').style.display = 'none';
+            _instSelIdx = -1;
         }
 
         // ── FETCH ─────────────────────────────────────────────────────
