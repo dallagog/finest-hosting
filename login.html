@@ -596,12 +596,16 @@
     });
 
     // Health check
+    // Usa mode:'no-cors' per evitare il blocco CORS quando il reverse proxy
+    // (Cloudflare) restituisce un 502: la risposta è "opaque" ma la fetch
+    // non lancia eccezione, quindi sappiamo che il tunnel è raggiungibile.
+    // Solo un errore di rete reale (tunnel completamente giù) lancia eccezione
+    // e mostra la schermata offline.
     async function checkHealth() {
       try {
-        const resUser = await fetch(`${apiBaseUser}/health`, { cache: "no-cache" });
-        const resNew = await fetch(`${apiBaseNew}/health`, { cache: "no-cache" });
+        await fetch(`${apiBaseUser}/health`, { cache: "no-cache", mode: "no-cors" });
+        await fetch(`${apiBaseNew}/health`,  { cache: "no-cache", mode: "no-cors" });
 
-        if (!resUser.ok || !resNew.ok) throw new Error(getTranslation('int.services.unavailable') || "Services unavailable");
         console.log("✅ " + (getTranslation('int.services.healthy') || "Services healthy"));
         document.getElementById("app-container").style.display = "block";
         document.querySelector(".top-controls").style.display = "flex";
