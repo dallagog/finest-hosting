@@ -2846,7 +2846,29 @@
                     groupTotal['int.weight.percent'] = (_grandTotalMP !== 0) ? parseFloat((groupMP / _grandTotalMP * 100).toFixed(3)) : null;
 
                     // Sovrascrivi la prima colonna con la descrizione del gruppo
-                    const groupDesc = `${getTranslation(group) || group} (${groupItems.length})`;
+                    let groupName = group;
+                    if (currentGroup === 'sector') {
+                        if (group === 'int.other' || group === '---') {
+                            groupName = getTranslation('dom.sector:---') || getTranslation('int.other') || 'Altro';
+                        } else {
+                            groupName = getTranslation('dom.sector:' + group);
+                        }
+                    } else if (currentGroup === 'instrument_type') {
+                        if (group === 'int.other' || group === '---') {
+                            groupName = getTranslation('int.other') || 'Altro';
+                        } else {
+                            groupName = getTranslation('dom.instrument_type:' + group);
+                        }
+                    } else if (currentGroup === 'code_market') {
+                        if (group === 'int.other' || group === '---') {
+                            groupName = getTranslation('int.other') || 'Altro';
+                        } else {
+                            groupName = getTranslation('dom.code_market:' + group);
+                        }
+                    } else {
+                        groupName = getTranslation(group);
+                    }
+                    const groupDesc = `${groupName} (${groupItems.length})`;
                     const firstCol = tableColumns[0];
                     groupTotal[firstCol] = groupDesc;
 
@@ -3273,7 +3295,29 @@
                     const groupTotal = calculateTotals(groupItems, profitabilityTableColumns);
 
                     // Sovrascrivi la prima colonna con la descrizione del gruppo
-                    const groupDesc = `${getTranslation(group) || group} (${groupItems.length})`;
+                    let groupName = group;
+                    if (currentProfitabilityGroup === 'sector') {
+                        if (group === 'int.other' || group === '---') {
+                            groupName = getTranslation('dom.sector:---') || getTranslation('int.other') || 'Altro';
+                        } else {
+                            groupName = getTranslation('dom.sector:' + group);
+                        }
+                    } else if (currentProfitabilityGroup === 'instrument_type') {
+                        if (group === 'int.other' || group === '---') {
+                            groupName = getTranslation('int.other') || 'Altro';
+                        } else {
+                            groupName = getTranslation('dom.instrument_type:' + group);
+                        }
+                    } else if (currentProfitabilityGroup === 'code_market') {
+                        if (group === 'int.other' || group === '---') {
+                            groupName = getTranslation('int.other') || 'Altro';
+                        } else {
+                            groupName = getTranslation('dom.code_market:' + group);
+                        }
+                    } else {
+                        groupName = getTranslation(group);
+                    }
+                    const groupDesc = `${groupName} (${groupItems.length})`;
                     const firstCol = profitabilityTableColumns[0];
                     groupTotal[firstCol] = groupDesc;
 
