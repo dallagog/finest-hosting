@@ -545,11 +545,36 @@
 
 
         /* ================= CHART RENDERING ================= */
+
+        // Traduzione label raggruppamento con dom.sector:*, dom.code_market:*, dom.instrument_type:*
+        function translateGroupLabel(rawLabel, grouping) {
+            if (!rawLabel) return rawLabel;
+            const isOther = rawLabel === 'Other' || rawLabel === 'int.other' || rawLabel === '---';
+            if (grouping === 'sector') {
+                if (isOther) return getTranslation('dom.sector:---') || rawLabel;
+                const t = getTranslation('dom.sector:' + rawLabel);
+                return (t && t !== 'dom.sector:' + rawLabel) ? t : rawLabel;
+            }
+            if (grouping === 'code_market') {
+                if (isOther) return getTranslation('dom.code_market:---') || rawLabel;
+                const t = getTranslation('dom.code_market:' + rawLabel);
+                return (t && t !== 'dom.code_market:' + rawLabel) ? t : rawLabel;
+            }
+            if (grouping === 'instrument_type') {
+                if (isOther) return getTranslation('int.other') || rawLabel;
+                const t = getTranslation('dom.instrument_type:' + rawLabel);
+                return (t && t !== 'dom.instrument_type:' + rawLabel) ? t : rawLabel;
+            }
+            const t = getTranslation(rawLabel);
+            return (t && t !== rawLabel) ? t : rawLabel;
+        }
+
         function generateTronColors(n) {
             // Palette colori Tron
             const c = ['#00F3FF', '#0066FF', '#FF3366', '#00FFAA', '#FFAA00', '#CC00FF', '#00CCFF', '#FF6600', '#00FF66', '#FF00CC', '#0099FF', '#FF0066'];
             return Array.from({ length: n }, (_, i) => c[i % c.length]);
         }
+
 
         function renderChart() {
             const grouping = document.getElementById('grouping-select').value;
