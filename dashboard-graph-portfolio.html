@@ -557,7 +557,27 @@
             // 3. ASSICURA LA TRADUZIONE DELLE LABEL DEL GRAFICO
             grouped.forEach(item => {
                 if (item.label) {
-                    item.label = getTranslation(item.label);
+                    if (grouping === 'sector') {
+                        if (item.label === 'Other' || item.label === 'int.other' || item.label === '---') {
+                            item.label = getTranslation('dom.sector:---') || getTranslation('int.other') || 'Altro';
+                        } else {
+                            item.label = getTranslation('dom.sector:' + item.label);
+                        }
+                    } else if (grouping === 'instrument_type') {
+                        if (item.label === 'Other' || item.label === 'int.other' || item.label === '---') {
+                            item.label = getTranslation('int.other') || 'Altro';
+                        } else {
+                            item.label = getTranslation('dom.instrument_type:' + item.label);
+                        }
+                    } else if (grouping === 'code_market') {
+                        if (item.label === 'Other' || item.label === 'int.other' || item.label === '---') {
+                            item.label = getTranslation('dom.code_market:---') || getTranslation('int.other') || 'Altro';
+                        } else {
+                            item.label = getTranslation('dom.code_market:' + item.label);
+                        }
+                    } else {
+                        item.label = getTranslation(item.label);
+                    }
                 }
             });
 
