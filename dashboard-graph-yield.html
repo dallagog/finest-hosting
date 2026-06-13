@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Yield</title>
+    <title>Yield 0.3</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <link rel="icon" type="image/png" href="images/icon-finest.png">
@@ -478,34 +478,9 @@
             // Limit to top 30
             const slicedData = groupedData.length > 30 ? groupedData.slice(0, 30) : groupedData;
 
-            const labels = slicedData.map(item => {
-                let label = item.label;
-                if (label) {
-                    if (groupValue === 'sector') {
-                        if (label === 'Other' || label === 'int.other' || label === '---') {
-                            label = getTranslation('dom.sector:---') || getTranslation('int.other') || 'Altro';
-                        } else {
-                            label = getTranslation('dom.sector:' + label);
-                        }
-                    } else if (groupValue === 'instrument_type') {
-                        if (label === 'Other' || label === 'int.other' || label === '---') {
-                            label = getTranslation('int.other') || 'Altro';
-                        } else {
-                            label = getTranslation('dom.instrument_type:' + label);
-                        }
-                    } else if (groupValue === 'code_market') {
-                        if (label === 'Other' || label === 'int.other' || label === '---') {
-                            label = getTranslation('dom.code_market:---') || getTranslation('int.other') || 'Altro';
-                        } else {
-                            label = getTranslation('dom.code_market:' + label);
-                        }
-                    } else {
-                        label = getTranslation(label);
-                    }
-                }
-                return label || '';
-            });
+            const labels = slicedData.map(item => translateGroupLabel(item.label, groupValue) || '');
             const dataValues = slicedData.map(item => item.value);
+
 
             const backgroundColors = dataValues.map(v => v >= 0 ? 'rgba(0, 243, 255, 0.6)' : 'rgba(255, 0, 85, 0.6)');
             const borderColors = dataValues.map(v => v >= 0 ? '#00f3ff' : '#ff0055');

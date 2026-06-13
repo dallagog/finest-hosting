@@ -1,5 +1,44 @@
 // Shared logic for Dashboard and Portfolio Graph ver 1.0
 
+/**
+ * Translates a group label based on the grouping key.
+ * Uses dom.sector:*, dom.code_market:*, dom.instrument_type:* translation keys.
+ * Expects a global `getTranslation(key)` function in the calling page.
+ *
+ * @param {string} rawLabel  - Raw value from classificationMap (e.g. "SEC01", "XMIL", "Other")
+ * @param {string} grouping  - Current grouping key (e.g. "sector", "code_market")
+ * @returns {string} Translated label
+ */
+function translateGroupLabel(rawLabel, grouping) {
+    if (!rawLabel) return rawLabel;
+
+    const isOther = rawLabel === 'Other' || rawLabel === 'int.other' || rawLabel === '---';
+
+    if (grouping === 'sector') {
+        if (isOther) return getTranslation('dom.sector:---') || rawLabel;
+        const t = getTranslation('dom.sector:' + rawLabel);
+        // If translation found (key !== returned value), use it; otherwise show raw label
+        return (t && t !== 'dom.sector:' + rawLabel) ? t : rawLabel;
+    }
+
+    if (grouping === 'code_market') {
+        if (isOther) return getTranslation('dom.code_market:---') || rawLabel;
+        const t = getTranslation('dom.code_market:' + rawLabel);
+        return (t && t !== 'dom.code_market:' + rawLabel) ? t : rawLabel;
+    }
+
+    if (grouping === 'instrument_type') {
+        if (isOther) return getTranslation('int.other') || rawLabel;
+        const t = getTranslation('dom.instrument_type:' + rawLabel);
+        return (t && t !== 'dom.instrument_type:' + rawLabel) ? t : rawLabel;
+    }
+
+    // Generic fallback
+    const t = getTranslation(rawLabel);
+    return (t && t !== rawLabel) ? t : rawLabel;
+}
+
+
 function parsePortfolioItems(rawPortfolio) {
     const portfolioData = [];
 

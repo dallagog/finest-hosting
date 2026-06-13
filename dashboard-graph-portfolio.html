@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Portfolio</title>
+    <title>Portfolio 0.3</title>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
@@ -368,6 +368,7 @@
     <script>
         /* ================= GLOBALS ================= */
         const API_URL = "https://feweb-tunnel.fe-web.eu";
+        let translations = {};
         let portfolioData = [];
         let classificationMap = {};
         let pieChart = null;
@@ -554,31 +555,10 @@
             const grouping = document.getElementById('grouping-select').value;
             const grouped = getGroupedData(portfolioData, classificationMap, grouping);
 
-            // 3. ASSICURA LA TRADUZIONE DELLE LABEL DEL GRAFICO
+            // 3. TRADUZIONE DELLE LABEL DEL GRAFICO con dom.*
             grouped.forEach(item => {
-                if (item.label) {
-                    if (grouping === 'sector') {
-                        if (item.label === 'Other' || item.label === 'int.other' || item.label === '---') {
-                            item.label = getTranslation('dom.sector:---') || getTranslation('int.other') || 'Altro';
-                        } else {
-                            item.label = getTranslation('dom.sector:' + item.label);
-                        }
-                    } else if (grouping === 'instrument_type') {
-                        if (item.label === 'Other' || item.label === 'int.other' || item.label === '---') {
-                            item.label = getTranslation('int.other') || 'Altro';
-                        } else {
-                            item.label = getTranslation('dom.instrument_type:' + item.label);
-                        }
-                    } else if (grouping === 'code_market') {
-                        if (item.label === 'Other' || item.label === 'int.other' || item.label === '---') {
-                            item.label = getTranslation('dom.code_market:---') || getTranslation('int.other') || 'Altro';
-                        } else {
-                            item.label = getTranslation('dom.code_market:' + item.label);
-                        }
-                    } else {
-                        item.label = getTranslation(item.label);
-                    }
-                }
+                if (!item.label) return;
+                item.label = translateGroupLabel(item.label, grouping);
             });
 
             chartData = grouped.length > 12 ? grouped.slice(0, 12) : grouped;
