@@ -387,6 +387,7 @@
             <div class="user-info-left">
                 <div><strong>Utente:</strong> <span id="usernameDisplay">-</span></div>
                 <div><strong>Valuta:</strong> <span id="currencyDisplay">-</span></div>
+                <div id="date-creation-container" style="display: none;"><strong>Data creazione:</strong> <span id="dateCreationDisplay">-</span></div>
             </div>
             <h1>Market Dashboard</h1>
             <div class="logout-container">
@@ -503,7 +504,27 @@
             await loadTranslations();
             setDefaultDates();
             initInstrumentSearch();
-            await fetchMarketData();
+            await loadStaticData();
+        }
+
+        async function loadStaticData() {
+            try {
+                const resp = await fetch('statistics.json?_=' + Date.now());
+                if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+                const result = await resp.json();
+                if (result.status === 'ok') {
+                    if (result.date_creation) {
+                        document.getElementById('dateCreationDisplay').textContent = result.date_creation;
+                        document.getElementById('date-creation-container').style.display = 'block';
+                    }
+                    renderTable(result.data);
+                } else {
+                    showMessage('statistics.json non valido: ' + (result.msg || ''), 'warning');
+                }
+            } catch (err) {
+                console.warn('statistics.json non disponibile:', err);
+                showMessage('Dati locali non disponibili. Usare "Applica selezione" per caricare i dati dal server.', 'warning');
+            }
         }
 
         let _selectedSectors = [];
@@ -596,6 +617,12 @@
                 console.log("Result:", result);
 
                 if (result.status === 'ok') {
+                    if (result.date_creation) {
+                        document.getElementById('dateCreationDisplay').textContent = result.date_creation;
+                        document.getElementById('date-creation-container').style.display = 'block';
+                    } else {
+                        document.getElementById('date-creation-container').style.display = 'none';
+                    }
                     renderTable(result.data);
                 } else {
                     showMessage(result.msg || "Errore API", "error");
@@ -612,7 +639,7 @@
         let _lastData = [];
 
         /* ---- Instrument Search Widget ---- */
-        let _instrumentIndex = [];   // [{id, description, sector_description}, ...]
+        let _instrumentIndex = [];   // [{id, description, sector}, ...]
         let _instSelIdx = -1;
         let _instFiltered = [];
 
@@ -667,7 +694,7 @@
                     _instrumentIndex.push({
                         id: r.id_instrument,
                         description: r.instrument_description || '',
-                        sector: r.sector_description || ''
+                        sector: r.sector || ''
                     });
                 }
             });
@@ -708,7 +735,7 @@
                      </div>`
                 ].concat(_instFiltered.map((inst, i) => {
                     const sector = inst.sector
-                        ? `<span class="inst-badge inst-badge-sector">${inst.sector}</span>` : '';
+                        ? `<span class="inst-badge inst-badge-sector">${getSectorLabel(inst.sector)}</span>` : '';
                     return `
                         <div class="inst-item" data-idx="${i}">
                             <div class="inst-item-main">
@@ -772,9 +799,16 @@
             _instSelIdx = -1;
         }
 
+        function getSectorLabel(sector) {
+            const translated = getTranslation('dom.sector:' + sector);
+            return (translated && translated !== 'dom.sector:' + sector)
+                ? `${sector} – ${translated}`
+                : sector;
+        }
+
         function populateSectorSelector(data) {
             const container = document.getElementById('sectorSelectorItems');
-            const sectors = [...new Set(data.map(r => r.sector_description).filter(Boolean))].sort();
+            const sectors = [...new Set(data.map(r => r.sector).filter(Boolean))].sort();
 
             // Keep current selection if possible
             const previousSelection = [..._selectedSectors];
@@ -788,7 +822,7 @@
                 cb.checked = previousSelection.includes(sector);
                 cb.onchange = onSectorChange;
                 label.appendChild(cb);
-                label.appendChild(document.createTextNode(sector));
+                label.appendChild(document.createTextNode(getSectorLabel(sector)));
                 container.appendChild(label);
             });
 
@@ -825,7 +859,7 @@
                 if (!isNaN(vMax) && absVal > vMax) return false;
                 if (instrumentFilter && (row.id_instrument || '').toLowerCase() !== instrumentFilter) return false;
                 // Client-side sector filter (as fallback or additional refinement)
-                if (_selectedSectors.length > 0 && !_selectedSectors.includes(row.sector_description)) return false;
+                if (_selectedSectors.length > 0 && !_selectedSectors.includes(row.sector)) return false;
                 
                 if (inversionFilter) {
                     const fVal = parseFloat(row.forza);
@@ -879,7 +913,7 @@
                 html += `<tr>
                     <td><a href="#" onclick="openPriceGraph('${row.id_instrument}')" style="color:#000; text-decoration:underline;">${row.id_instrument}</a></td>
                     <td><a href="#" onclick="openInstrumentDetail('${row.id_instrument}')" style="color:#000; text-decoration:underline;">${row.instrument_description || '-'}</a></td>
-                    <td>${row.sector_description || '-'}</td>
+                    <td>${row.sector ? getSectorLabel(row.sector) : '-'}</td>
                     <td>${row.date_start}</td>
                     <td style="${forzaStyle}">${row.forza}</td>
                     <td style="${invStyle}">${invDisplay}</td>

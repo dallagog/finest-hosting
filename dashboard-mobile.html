@@ -517,6 +517,7 @@
         <div class="user-badge">
             <span><strong id="usernameDisplay">-</strong></span>
             <span id="currencyDisplay">-</span>
+            <span id="dateCreationDisplay" style="font-size: 0.55rem; display: none;"></span>
         </div>
         <h1>Statistics</h1>
         <button class="close-btn" onclick="closeDashboard()">Chiudi</button>
@@ -641,7 +642,28 @@
             await loadTranslations();
             setDefaultDates();
             initInstrumentSearch();
-            await fetchMarketData();
+            await loadStaticData();
+        }
+
+        async function loadStaticData() {
+            try {
+                const resp = await fetch('statistics.json?_=' + Date.now());
+                if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+                const result = await resp.json();
+                if (result.status === 'ok') {
+                    if (result.date_creation) {
+                        const dateEl = document.getElementById('dateCreationDisplay');
+                        dateEl.textContent = result.date_creation;
+                        dateEl.style.display = 'inline';
+                    }
+                    renderCards(result.data);
+                } else {
+                    showMessage('statistics.json non valido: ' + (result.msg || ''), 'warning');
+                }
+            } catch (err) {
+                console.warn('statistics.json non disponibile:', err);
+                showMessage('Dati locali non disponibili. Usare "Applica selezione" per caricare i dati dal server.', 'warning');
+            }
         }
 
         // ── DATES ─────────────────────────────────────────────────────
@@ -692,9 +714,16 @@
             if (_lastData.length > 0) applyFiltersAndRender();
         }
 
+        function getSectorLabel(sector) {
+            const translated = getTranslation('dom.sector:' + sector);
+            return (translated && translated !== 'dom.sector:' + sector)
+                ? `${sector} – ${translated}`
+                : sector;
+        }
+
         function populateSectorSelector(data) {
             const container = document.getElementById('sectorSelectorItems');
-            const sectors = [...new Set(data.map(r => r.sector_description).filter(Boolean))].sort();
+            const sectors = [...new Set(data.map(r => r.sector).filter(Boolean))].sort();
             const prev = [..._selectedSectors];
             container.innerHTML = '';
             sectors.forEach(sector => {
@@ -705,7 +734,7 @@
                 cb.checked = prev.includes(sector);
                 cb.onchange = onSectorChange;
                 label.appendChild(cb);
-                label.appendChild(document.createTextNode(' ' + sector));
+                label.appendChild(document.createTextNode(' ' + getSectorLabel(sector)));
                 container.appendChild(label);
             });
             _selectedSectors = _selectedSectors.filter(s => sectors.includes(s));
@@ -767,7 +796,7 @@
                     _instrumentIndex.push({
                         id: r.id_instrument,
                         description: r.instrument_description || '',
-                        sector: r.sector_description || ''
+                        sector: r.sector || ''
                     });
                 }
             });
@@ -806,7 +835,7 @@
                      </div>`
                 ].concat(_instFiltered.map((inst, i) => {
                     const sector = inst.sector
-                        ? `<span class="inst-badge inst-badge-sector">${inst.sector}</span>` : '';
+                        ? `<span class="inst-badge inst-badge-sector">${getSectorLabel(inst.sector)}</span>` : '';
                     return `
                         <div class="inst-item" data-idx="${i}">
                             <div class="inst-item-main">
@@ -897,6 +926,11 @@
                 });
                 const result = await resp.json();
                 if (result.status === 'ok') {
+                    if (result.date_creation) {
+                        const dateEl = document.getElementById('dateCreationDisplay');
+                        dateEl.textContent = result.date_creation;
+                        dateEl.style.display = 'inline';
+                    }
                     renderCards(result.data);
                 } else {
                     showMessage(result.msg || 'Errore API', 'error');
@@ -932,7 +966,7 @@
                 if (!isNaN(vMin) && abs < vMin) return false;
                 if (!isNaN(vMax) && abs > vMax) return false;
                 if (instrFilter && (row.id_instrument || '').toLowerCase() !== instrFilter) return false;
-                if (_selectedSectors.length > 0 && !_selectedSectors.includes(row.sector_description)) return false;
+                if (_selectedSectors.length > 0 && !_selectedSectors.includes(row.sector)) return false;
                 if (invFilter) {
                     const iVal = parseInt(row.invariance_days) || 0;
                     if (val >= 0 || iVal >= 0) return false;
@@ -983,7 +1017,7 @@
                     </div>
                     <div class="card-desc" onclick="openInstrumentDetail('${row.id_instrument}')">${row.instrument_description || '—'}</div>
                     <div class="card-bottom">
-                        <span class="card-sector">${row.sector_description || '—'}</span>
+                        <span class="card-sector">${row.sector ? getSectorLabel(row.sector) : '—'}</span>
                         <div class="card-metrics">
                             <div class="metric">
                                 <span class="metric-label">Forza</span>
