@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Market 0.1</title>
+    <title>Market 0.3</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <link rel="icon" type="image/png" href="images/icon-finest.png">
     <style>
@@ -577,7 +577,7 @@
                     <div class="filter-controls">
                         <label class="checkbox-container">
                             <input type="checkbox" id="openOnlyCheckbox" onchange="filterByMarket()">
-                            <span id="openOnlyLabel">Solo aperti</span> <!-- Label invariata -->
+                            <span id="openOnlyLabel">Solo aperti</span>
                         </label>
 
                         <div id="marketSelectorContainer" class="dropdown-check-list">
@@ -653,6 +653,7 @@
         let lastRenderedColumns = []; // TRACKS COLUMN STRUCTURE
         let currentMarketFilters = []; // Array of selected code_market
         let showOpenOnly = false; // Nome invariato ma logica invertita
+        let ws = null; // WebSocket reference
 
         // ========== UTILITY FUNCTIONS ==========
         function isMarketOpen(tradingHours) {
@@ -707,6 +708,7 @@
         }
 
         function getTranslation(key) {
+            if (!key) return key;
             return translations[key] || key;
         }
 
@@ -752,7 +754,7 @@
             document.getElementById('portfolioTitle').textContent = getTranslation('int.portfolio');
             document.getElementById('closeText').textContent = getTranslation('int.close');
             document.getElementById('updateBtnText').textContent = getTranslation('int.update') || '';
-            document.getElementById('openOnlyLabel').textContent = getTranslation('int.open_only') || 'Solo aperti'; // Label invariata
+            document.getElementById('openOnlyLabel').textContent = getTranslation('int.open_only') || 'Solo aperti';
             document.getElementById('marketSelectorAnchor').textContent = getTranslation('int.select_markets') || 'Seleziona mercati';
         }
 
@@ -994,7 +996,9 @@
                 };
 
                 label.appendChild(checkbox);
-                label.appendChild(document.createTextNode(getTranslation(mkt) || mkt));
+                // Traduci il nome del mercato usando il dominio dom.code_market:
+                const translatedMarket = getTranslation(`dom.code_market:${mkt}`) || mkt;
+                label.appendChild(document.createTextNode(translatedMarket));
                 itemsContainer.appendChild(label);
             });
             updateMarketAnchorText();
@@ -1005,7 +1009,8 @@
             if (currentMarketFilters.length === 0) {
                 anchor.textContent = getTranslation('int.select_markets') || 'Seleziona mercati';
             } else if (currentMarketFilters.length === 1) {
-                anchor.textContent = getTranslation(currentMarketFilters[0]) || currentMarketFilters[0];
+                const mkt = currentMarketFilters[0];
+                anchor.textContent = getTranslation(`dom.code_market:${mkt}`) || mkt;
             } else {
                 anchor.textContent = `${currentMarketFilters.length} ${getTranslation('int.selected') || 'selezionati'}`;
             }
@@ -1028,7 +1033,7 @@
         }
 
         function filterByMarket() {
-            showOpenOnly = document.getElementById('openOnlyCheckbox').checked; // Nome invariato
+            showOpenOnly = document.getElementById('openOnlyCheckbox').checked;
             renderTable();
         }
 
@@ -1192,18 +1197,11 @@
                         }
                     }
 
-                    if (col === '$price_mkt') {
-                        if (val !== undefined && val !== null && val !== '' && parseFloat(item.unit_price) === 0.01) {
-                            const tooltipText = getTranslation('tooltip.priceincent') || 'tooltip.priceincent';
-                            td.title = tooltipText;
-                            td.style.cursor = 'help';
-                        } else {
-                            td.title = '';
-                            td.style.cursor = '';
-                        }
-                    }
-
+                    // Traduzione per code_market usando dom.code_market:
                     if (col === 'code_market') {
+                        const translatedMarket = getTranslation(`dom.code_market:${val}`) || val;
+                        displayVal = translatedMarket;
+
                         const th = item.market_trading_hours;
 
                         // Determina lo stato del mercato
@@ -1219,6 +1217,11 @@
 
                         const indicator = `<span class="status-circle ${statusClass}" title="${statusTitle}"></span>`;
                         displayVal = displayVal + indicator;
+                    }
+
+                    // Traduzione per price_mkt_type usando getTranslation diretta
+                    if (col === 'price_mkt_type' && val) {
+                        displayVal = getTranslation(val) || val;
                     }
 
                     if (col === 'market_trading_hours' && val && typeof val === 'object') {
@@ -1264,7 +1267,7 @@
                                 openInstrumentDetails(code);
                             };
                             td.appendChild(span);
-                        } else if (col === 'code_market') {
+                        } else if (col === 'code_market' || col === 'price_mkt_type') {
                             td.innerHTML = displayVal;
                         } else {
                             td.textContent = displayVal;
@@ -1295,7 +1298,7 @@
                                 const span = td.querySelector('span');
                                 if (span) span.textContent = displayVal;
                                 else td.textContent = displayVal;
-                            } else if (col === 'code_market') {
+                            } else if (col === 'code_market' || col === 'price_mkt_type') {
                                 td.innerHTML = displayVal;
                             } else {
                                 td.textContent = displayVal;
@@ -1320,7 +1323,7 @@
                                 } else {
                                     td.classList.add('cell-changed');
                                 }
-                            } else if (col !== 'code_market') {
+                            } else if (col !== 'code_market' && col !== 'price_mkt_type') {
                                 td.classList.add('cell-changed');
                             }
                             console.log(`[Diff] Updated ${ticker}.${col}: ${normalizedPrev} -> ${displayVal}`);
@@ -1720,6 +1723,9 @@
                 const wsUrl = `${wsProtocol}//feweb-tunnel.fe-web.eu/ws/updateportfolioonline/${credentials.username}/${currency}`;
                 console.log('WebSocket connecting to:', wsUrl);
 
+                if (ws && ws.readyState === WebSocket.OPEN) {
+                    ws.close();
+                }
 
                 ws = new WebSocket(wsUrl);
             } catch (err) {
