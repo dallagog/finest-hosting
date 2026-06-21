@@ -647,9 +647,13 @@
 
         async function loadStaticData() {
             try {
-                const resp = await fetch('statistics.json?_=' + Date.now());
+                const resp = await fetch('statistics.json.gz?_=' + Date.now());
                 if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-                const result = await resp.json();
+                // Decomprimi con DecompressionStream (nativo nei browser moderni)
+                const ds = new DecompressionStream('gzip');
+                const decompressed = resp.body.pipeThrough(ds);
+                const text = await new Response(decompressed).text();
+                const result = JSON.parse(text);
                 if (result.status === 'ok') {
                     if (result.date_creation) {
                         const dateEl = document.getElementById('dateCreationDisplay');
@@ -658,10 +662,10 @@
                     }
                     renderCards(result.data);
                 } else {
-                    showMessage('statistics.json non valido: ' + (result.msg || ''), 'warning');
+                    showMessage('statistics.json.gz non valido: ' + (result.msg || ''), 'warning');
                 }
             } catch (err) {
-                console.warn('statistics.json non disponibile:', err);
+                console.warn('statistics.json.gz non disponibile:', err);
                 showMessage('Dati locali non disponibili. Usare "Applica selezione" per caricare i dati dal server.', 'warning');
             }
         }
@@ -702,7 +706,7 @@
         function updateSectorAnchorText() {
             const anchor = document.getElementById('sectorSelectorAnchor');
             if (_selectedSectors.length === 0) anchor.textContent = 'Tutti i settori';
-            else if (_selectedSectors.length === 1) anchor.textContent = _selectedSectors[0];
+            else if (_selectedSectors.length === 1) anchor.textContent = getSectorLabel(_selectedSectors[0]);
             else anchor.textContent = `${_selectedSectors.length} selezionati`;
         }
 
@@ -1001,6 +1005,7 @@
                 card.className = 'stat-card';
 
                 const fmtNum = (v, dec = 2) => {
+                    if (v === null || v === undefined || v === 'None') return '—';
                     const n = parseFloat(v);
                     return isNaN(n) ? '—' : n.toLocaleString('it-IT', { minimumFractionDigits: dec, maximumFractionDigits: dec });
                 };
