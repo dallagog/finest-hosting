@@ -438,6 +438,15 @@
                     </div>
                 </div>
                 <div class="filter-group" style="flex: 1; min-width: 150px;">
+                    <label>Mercato:</label>
+                    <div id="market-filter-container" class="dropdown-check-list" style="width: 100%;">
+                        <span class="anchor" onclick="toggleMarketDropdown()" id="marketSelectorAnchor">Tutti i mercati</span>
+                        <div id="marketSelectorItems" class="items">
+                            <!-- Checkboxes injected here -->
+                        </div>
+                    </div>
+                </div>
+                <div class="filter-group" style="flex: 1; min-width: 150px;">
                     <label>Strumento:</label>
                     <div class="instrument-search-wrapper">
                         <input type="text" id="instrument-search-input" class="instrument-search-field"
@@ -544,9 +553,25 @@
         }
 
         let _selectedSectors = [];
+        let _selectedMarkets = [];
 
         function toggleSectorDropdown() {
             const container = document.getElementById('sector-filter-container');
+            container.classList.toggle('visible');
+
+            if (container.classList.contains('visible')) {
+                const closeHandler = (e) => {
+                    if (!container.contains(e.target)) {
+                        container.classList.remove('visible');
+                        document.removeEventListener('click', closeHandler);
+                    }
+                };
+                setTimeout(() => document.addEventListener('click', closeHandler), 10);
+            }
+        }
+
+        function toggleMarketDropdown() {
+            const container = document.getElementById('market-filter-container');
             container.classList.toggle('visible');
 
             if (container.classList.contains('visible')) {
@@ -571,6 +596,17 @@
             }
         }
 
+        function updateMarketAnchorText() {
+            const anchor = document.getElementById('marketSelectorAnchor');
+            if (_selectedMarkets.length === 0) {
+                anchor.textContent = "Tutti i mercati";
+            } else if (_selectedMarkets.length === 1) {
+                anchor.textContent = _selectedMarkets[0];
+            } else {
+                anchor.textContent = `${_selectedMarkets.length} selezionati`;
+            }
+        }
+
         function onSectorChange() {
             const items = document.getElementById('sectorSelectorItems');
             const checkboxes = items.querySelectorAll('input[type="checkbox"]');
@@ -579,7 +615,17 @@
                 if (cb.checked) _selectedSectors.push(cb.value);
             });
             updateSectorAnchorText();
-            // Optional: auto-apply filters on client side if we already have data
+            if (_lastData.length > 0) applyFiltersAndRender();
+        }
+
+        function onMarketChange() {
+            const items = document.getElementById('marketSelectorItems');
+            const checkboxes = items.querySelectorAll('input[type="checkbox"]');
+            _selectedMarkets = [];
+            checkboxes.forEach(cb => {
+                if (cb.checked) _selectedMarkets.push(cb.value);
+            });
+            updateMarketAnchorText();
             if (_lastData.length > 0) applyFiltersAndRender();
         }
 
@@ -826,7 +872,6 @@
             const container = document.getElementById('sectorSelectorItems');
             const sectors = [...new Set(data.map(r => r.sector).filter(Boolean))].sort();
 
-            // Keep current selection if possible
             const previousSelection = [..._selectedSectors];
 
             container.innerHTML = '';
@@ -842,20 +887,41 @@
                 container.appendChild(label);
             });
 
-            // Refresh _selectedSectors based on available sectors
             _selectedSectors = _selectedSectors.filter(s => sectors.includes(s));
             updateSectorAnchorText();
+        }
+
+        function populateMarketSelector(data) {
+            const container = document.getElementById('marketSelectorItems');
+            const markets = [...new Set(data.map(r => r.code_market).filter(Boolean))].sort();
+
+            const previousSelection = [..._selectedMarkets];
+
+            container.innerHTML = '';
+            markets.forEach(mkt => {
+                const label = document.createElement('label');
+                const cb = document.createElement('input');
+                cb.type = 'checkbox';
+                cb.value = mkt;
+                cb.checked = previousSelection.includes(mkt);
+                cb.onchange = onMarketChange;
+                label.appendChild(cb);
+                label.appendChild(document.createTextNode(mkt));
+                container.appendChild(label);
+            });
+
+            _selectedMarkets = _selectedMarkets.filter(m => markets.includes(m));
+            updateMarketAnchorText();
         }
 
         function renderTable(data) {
             _lastData = data;
             populateInstrumentSelector(data);
-            // We only populate sector selector if it's empty or we want to refresh options
-            // But usually we want to see all available sectors from the first broad fetch
-            const items = document.getElementById('sectorSelectorItems');
-            if (items.children.length === 0 || (_selectedSectors.length === 0)) {
+            const sectorItems = document.getElementById('sectorSelectorItems');
+            if (sectorItems.children.length === 0 || (_selectedSectors.length === 0)) {
                 populateSectorSelector(data);
             }
+            populateMarketSelector(data);
             applyFiltersAndRender();
         }
 
@@ -874,8 +940,8 @@
                 if (!isNaN(vMin) && absVal < vMin) return false;
                 if (!isNaN(vMax) && absVal > vMax) return false;
                 if (instrumentFilter && (row.id_instrument || '').toLowerCase() !== instrumentFilter) return false;
-                // Client-side sector filter (as fallback or additional refinement)
                 if (_selectedSectors.length > 0 && !_selectedSectors.includes(row.sector)) return false;
+                if (_selectedMarkets.length > 0 && !_selectedMarkets.includes(row.code_market)) return false;
 
                 if (inversionFilter) {
                     const fVal = parseFloat(row.forza);
@@ -907,6 +973,7 @@
     <th>${getTranslation('int.pe')}</th>
     <th>${getTranslation('int.eps')}</th>
     <th>${getTranslation('int.market_cap')}</th>
+    <th style="text-align:right">${getTranslation('code_market') !== 'code_market' ? getTranslation('code_market') : 'Mercato'}</th>
 </tr></thead><tbody>`;
 
             filtered.forEach(row => {
@@ -936,15 +1003,16 @@
                     <td><a href="#" onclick="openPriceGraph('${row.id_instrument}')" style="color:#000; text-decoration:underline;">${row.id_instrument}</a></td>
                     <td><a href="#" onclick="openInstrumentDetail('${row.id_instrument}')" style="color:#000; text-decoration:underline;">${row.instrument_description || '-'}</a></td>
                     <td>${row.sector ? getSectorLabel(row.sector) : '-'}</td>
-                    <td>${fmtNum(row['instrument@volume'], 0)}</td>
-                    <td>${fmtNum(row['price@close'])}</td>
-                    <td>${row.currency || '-'}</td>
-                    <td>${row.date_start}</td>
-                    <td style="${forzaStyle}">${row.forza}</td>
-                    <td style="${invStyle}">${invDisplay}</td>
-                    <td>${fmtNum(row.PE)}</td>
-                    <td>${fmtNum(row.EPS)}</td>
-                    <td>${fmtCap(row.market_capitalization)}</td>
+                    <td style="text-align:right">${fmtNum(row['instrument@volume'], 0)}</td>
+                    <td style="text-align:right">${fmtNum(row['price@close'])}</td>
+                    <td style="text-align:right">${row.currency || '-'}</td>
+                    <td style="text-align:right">${row.date_start}</td>
+                    <td style="text-align:right; ${forzaStyle}">${row.forza}</td>
+                    <td style="text-align:right; ${invStyle}">${invDisplay}</td>
+                    <td style="text-align:right">${fmtNum(row.PE)}</td>
+                    <td style="text-align:right">${fmtNum(row.EPS)}</td>
+                    <td style="text-align:right">${fmtCap(row.market_capitalization)}</td>
+                    <td style="text-align:right">${row.code_market || '-'}</td>
                 </tr>`;
             });
             html += '</tbody></table>';
