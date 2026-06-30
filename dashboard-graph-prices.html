@@ -455,7 +455,7 @@
             background: #fff;
             border: 1px solid #000;
             border-radius: 8px;
-            box-shadow: 0 4px 18px rgba(0,0,0,0.15);
+            box-shadow: 0 4px 18px rgba(0, 0, 0, 0.15);
             padding: 10px 14px;
             min-width: 220px;
             font-size: 0.74rem;
@@ -509,10 +509,18 @@
             color: #000;
         }
 
-        .yield-positive { color: #27ae60; }
-        .yield-negative { color: #e74c3c; }
+        .yield-positive {
+            color: #27ae60;
+        }
+
+        .yield-negative {
+            color: #e74c3c;
+        }
+
         /* hidden yield-display kept for backward compat */
-        .yield-container { display: none; }
+        .yield-container {
+            display: none;
+        }
     </style>
 </head>
 
@@ -553,20 +561,32 @@
         <div class="header-right">
             <div class="control-group">
                 <span class="time-filter-wrap">
-                    <button class="time-filter-btn" onclick="setTimeFilter('M01')" data-period="M01" data-i18n="dom.timenode.price:M01">M01</button>
-                    <div class="period-tooltip" id="tooltip-M01"><div class="period-tooltip-title">M01</div></div>
+                    <button class="time-filter-btn" onclick="setTimeFilter('M01')" data-period="M01"
+                        data-i18n="dom.timenode.price:M01">M01</button>
+                    <div class="period-tooltip" id="tooltip-M01">
+                        <div class="period-tooltip-title">M01</div>
+                    </div>
                 </span>
                 <span class="time-filter-wrap">
-                    <button class="time-filter-btn" onclick="setTimeFilter('M03')" data-period="M03" data-i18n="dom.timenode.price:M03">M03</button>
-                    <div class="period-tooltip" id="tooltip-M03"><div class="period-tooltip-title">M03</div></div>
+                    <button class="time-filter-btn" onclick="setTimeFilter('M03')" data-period="M03"
+                        data-i18n="dom.timenode.price:M03">M03</button>
+                    <div class="period-tooltip" id="tooltip-M03">
+                        <div class="period-tooltip-title">M03</div>
+                    </div>
                 </span>
                 <span class="time-filter-wrap">
-                    <button class="time-filter-btn" onclick="setTimeFilter('M06')" data-period="M06" data-i18n="dom.timenode.price:M06">M06</button>
-                    <div class="period-tooltip" id="tooltip-M06"><div class="period-tooltip-title">M06</div></div>
+                    <button class="time-filter-btn" onclick="setTimeFilter('M06')" data-period="M06"
+                        data-i18n="dom.timenode.price:M06">M06</button>
+                    <div class="period-tooltip" id="tooltip-M06">
+                        <div class="period-tooltip-title">M06</div>
+                    </div>
                 </span>
                 <span class="time-filter-wrap">
-                    <button class="time-filter-btn active" onclick="setTimeFilter('M12')" data-period="M12" data-i18n="dom.timenode.price:M12">M12</button>
-                    <div class="period-tooltip" id="tooltip-M12"><div class="period-tooltip-title">M12</div></div>
+                    <button class="time-filter-btn active" onclick="setTimeFilter('M12')" data-period="M12"
+                        data-i18n="dom.timenode.price:M12">M12</button>
+                    <div class="period-tooltip" id="tooltip-M12">
+                        <div class="period-tooltip-title">M12</div>
+                    </div>
                 </span>
             </div>
             <div class="control-group">
@@ -1527,11 +1547,27 @@
                                 const x = scales.x.getPixelForValue(label);
                                 const y = chartArea.top + 10;
                                 const radius = 8;
+                                const event = eventDataRaw[label];
 
-                                ctx.beginPath();
-                                ctx.moveTo(x, chartArea.top);
-                                ctx.lineTo(x, chartArea.bottom);
-                                ctx.stroke();
+                                if (event && event.dividend && event.date_trade) {
+                                    const tradeIndex = xLabels.indexOf(event.date_trade);
+                                    if (tradeIndex !== -1) {
+                                        const xTrade = scales.x.getPixelForValue(event.date_trade);
+                                        const priceValue = chart.data.datasets[0].data[tradeIndex];
+                                        if (priceValue !== undefined && priceValue !== null && scales.y1) {
+                                            const yStart = scales.y1.getPixelForValue(priceValue);
+                                            const yEnd = scales.y1.getPixelForValue(priceValue - event.dividend);
+                                            ctx.save();
+                                            ctx.beginPath();
+                                            ctx.strokeStyle = 'green';
+                                            ctx.lineWidth = 2;
+                                            ctx.moveTo(xTrade, yStart);
+                                            ctx.lineTo(xTrade, yEnd);
+                                            ctx.stroke();
+                                            ctx.restore();
+                                        }
+                                    }
+                                }
 
                                 // Disegna simbolo news (cerchietto con N) in alto
                                 ctx.fillStyle = 'red';
@@ -1543,7 +1579,7 @@
                                 ctx.font = 'bold 10px Arial';
                                 ctx.textAlign = 'center';
                                 ctx.textBaseline = 'middle';
-                                ctx.fillText('N', x, y);
+                                ctx.fillText(event && event.dividend ? 'D' : 'N', x, y);
 
                                 // Store for tooltip hit testing
                                 newsSymbols.push({ x, y, radius, label });
@@ -1669,6 +1705,9 @@
                                         if (eventObj.summary) lines.push(`  • Summary: ${eventObj.summary}`);
                                         if (eventObj.source) lines.push(`  • Source: ${eventObj.source}`);
                                         if (eventObj.location) lines.push(`  • Location: ${eventObj.location}`);
+                                        if (eventObj.date_settlement) lines.push(`  • Settlement: ${eventObj.date_settlement}`);
+                                        if (eventObj.date_trade) lines.push(`  • Trade: ${eventObj.date_trade}`);
+                                        if (eventObj.dividend) lines.push(`  • Dividend: ${eventObj.dividend}`);
                                     }
 
                                     const invObj = priceDS.invValues ? priceDS.invValues[index] : null;
@@ -1746,6 +1785,9 @@
                         if (event.summary) html += `<div><span class="news-label">Summary:</span> ${event.summary}</div>`;
                         if (event.source) html += `<div><span class="news-label">Source:</span> ${event.source}</div>`;
                         if (event.location) html += `<div><span class="news-label">Location:</span> ${event.location}</div>`;
+                        if (event.date_settlement) html += `<div><span class="news-label">Settlement:</span> ${event.date_settlement}</div>`;
+                        if (event.date_trade) html += `<div><span class="news-label">Trade:</span> ${event.date_trade}</div>`;
+                        if (event.dividend) html += `<div><span class="news-label">Dividend:</span> ${event.dividend}</div>`;
 
                         newsTooltipElement.innerHTML = html;
                         newsTooltipElement.style.display = 'block';
