@@ -389,6 +389,60 @@
             font-style: italic;
             font-size: 0.85em;
         }
+
+        /* Instrument tooltip */
+        .inst-tooltip-anchor {
+            position: relative;
+            display: inline-block;
+        }
+
+        .inst-tooltip {
+            visibility: hidden;
+            opacity: 0;
+            pointer-events: none;
+            position: absolute;
+            left: 0;
+            top: 100%;
+            margin-top: 6px;
+            z-index: 2000;
+            background: #fff;
+            border: 1px solid #000;
+            border-radius: 6px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+            padding: 10px 14px;
+            min-width: 200px;
+            font-size: 0.78em;
+            font-family: inherit;
+            white-space: nowrap;
+            transition: opacity 0.15s, visibility 0.15s;
+        }
+
+        .inst-tooltip-anchor:hover .inst-tooltip {
+            visibility: visible;
+            opacity: 1;
+        }
+
+        .inst-tooltip table {
+            border-collapse: collapse;
+            width: 100%;
+        }
+
+        .inst-tooltip td {
+            padding: 2px 6px;
+            border: none;
+            background: transparent !important;
+        }
+
+        .inst-tooltip td:first-child {
+            color: #666;
+            font-weight: 600;
+            padding-right: 10px;
+        }
+
+        .inst-tooltip td:last-child {
+            text-align: right;
+            color: #000;
+        }
     </style>
 </head>
 
@@ -962,17 +1016,10 @@
     <th>${getTranslation('id_instrument')}</th>
     <th>${getTranslation('instrument_description')}</th>
     <th>${getTranslation('sector')}</th>
-
-    <th>${getTranslation('instrument@volume')}</th>
-    <th>${getTranslation('price@close')}</th>
     <th>${getTranslation('currency')}</th>
-
     <th>${getTranslation('date_start')}</th>
     <th>${getTranslation('int.force')}</th>
     <th>${getTranslation('int.invariance')}</th>
-    <th>${getTranslation('int.pe')}</th>
-    <th>${getTranslation('int.eps')}</th>
-    <th>${getTranslation('int.market_cap')}</th>
     <th style="text-align:right">${getTranslation('code_market') !== 'code_market' ? getTranslation('code_market') : 'Mercato'}</th>
 </tr></thead><tbody>`;
 
@@ -999,19 +1046,25 @@
                     return v ? String(v) : '-';
                 };
 
+                const tooltipHtml = `
+                    <div class="inst-tooltip">
+                        <table>
+                            <tr><td>${getTranslation('instrument@volume')}</td><td>${fmtNum(row['instrument@volume'], 0)}</td></tr>
+                            <tr><td>${getTranslation('price@close')}</td><td>${fmtNum(row['price@close'])}</td></tr>
+                            <tr><td>${getTranslation('int.pe')}</td><td>${fmtNum(row.PE)}</td></tr>
+                            <tr><td>${getTranslation('int.eps')}</td><td>${fmtNum(row.EPS)}</td></tr>
+                            <tr><td>${getTranslation('int.market_cap')}</td><td>${fmtCap(row.market_capitalization)}</td></tr>
+                        </table>
+                    </div>`;
+
                 html += `<tr>
-                    <td><a href="#" onclick="openPriceGraph('${row.id_instrument}')" style="color:#000; text-decoration:underline;">${row.id_instrument}</a></td>
+                    <td><span class="inst-tooltip-anchor"><a href="#" onclick="openPriceGraph('${row.id_instrument}')" style="color:#000; text-decoration:underline;">${row.id_instrument}</a>${tooltipHtml}</span></td>
                     <td><a href="#" onclick="openInstrumentDetail('${row.id_instrument}')" style="color:#000; text-decoration:underline;">${row.instrument_description || '-'}</a></td>
                     <td>${row.sector ? getSectorLabel(row.sector) : '-'}</td>
-                    <td style="text-align:right">${fmtNum(row['instrument@volume'], 0)}</td>
-                    <td style="text-align:right">${fmtNum(row['price@close'])}</td>
                     <td style="text-align:right">${row.currency || '-'}</td>
                     <td style="text-align:right">${row.date_start}</td>
                     <td style="text-align:right; ${forzaStyle}">${row.forza}</td>
                     <td style="text-align:right; ${invStyle}">${invDisplay}</td>
-                    <td style="text-align:right">${fmtNum(row.PE)}</td>
-                    <td style="text-align:right">${fmtNum(row.EPS)}</td>
-                    <td style="text-align:right">${fmtCap(row.market_capitalization)}</td>
                     <td style="text-align:right">${row.code_market || '-'}</td>
                 </tr>`;
             });

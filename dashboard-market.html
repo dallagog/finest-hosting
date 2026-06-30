@@ -681,7 +681,7 @@
 
                 return now >= start && now <= end;
             } catch (e) {
-                console.error("Error parsing market_trading_hours:", e);
+                console.error("Error parsing market:", e);
                 return false;
             }
         }
@@ -1056,7 +1056,7 @@
                 // Headers
                 tableColumns.forEach(col => {
                     const th = document.createElement('th');
-                    let translationKey = col === 'market_trading_hours' ? 'int.market_trading_hours' : col;
+                    let translationKey = col === 'market' ? 'int.market' : col;
                     if (col === 'azioni') translationKey = 'int.trading';
                     let label = getTranslation(translationKey) || (col === 'azioni' ? 'Trading' : col);
                     // Split label on space or slash to put on two rows
@@ -1103,9 +1103,9 @@
             if (showOpenOnly) {
                 displayData = displayData.filter(item => {
                     // Se non ci sono orari di trading (giallo - non rosso), incluso
-                    if (!item.market_trading_hours) return true;
+                    if (!item.market) return true;
                     // Mostra solo se il mercato NON è chiuso (cioè rosso).
-                    return isMarketOpen(item.market_trading_hours);
+                    return isMarketOpen(item.market);
                 });
             }
 
@@ -1202,17 +1202,24 @@
                         const translatedMarket = getTranslation(`dom.code_market:${val}`) || val;
                         displayVal = translatedMarket;
 
-                        const th = item.market_trading_hours;
+                        const th = item.market;
 
-                        // Determina lo stato del mercato
+                        // Determina lo stato del mercato dal campo "fase"
                         let statusClass = 'status-unknown'; // Default giallo per dati mancanti
-                        let statusTitle = 'Dati non disponibili';
+                        let statusTitle = getTranslation('int.unknown') || 'Dati non disponibili';
 
-                        if (th) {
-                            const isOpen = isMarketOpen(th);
-                            // Colori: verde = aperto, rosso = chiuso
-                            statusClass = isOpen ? 'status-open' : 'status-closed';
-                            statusTitle = isOpen ? 'Aperto' : 'Chiuso';
+                        if (th && typeof th === 'object' && th.fase) {
+                            if (th.fase === 'int.open') {
+                                statusClass = 'status-open';
+                                statusTitle = getTranslation('int.open') || 'Aperto';
+                            } else if (th.fase === 'int.closed') {
+                                statusClass = 'status-closed';
+                                statusTitle = getTranslation('int.closed') || 'Chiuso';
+                            } else {
+                                // int.unknown o qualsiasi altro valore
+                                statusClass = 'status-unknown';
+                                statusTitle = getTranslation('int.unknown') || 'Sconosciuto';
+                            }
                         }
 
                         const indicator = `<span class="status-circle ${statusClass}" title="${statusTitle}"></span>`;
@@ -1224,7 +1231,7 @@
                         displayVal = getTranslation(val) || val;
                     }
 
-                    if (col === 'market_trading_hours' && val && typeof val === 'object') {
+                    if (col === 'market' && val && typeof val === 'object') {
                         try {
                             // Format as "HH:mm - HH:mm"
                             const start = new Date(val.start);
@@ -1277,7 +1284,7 @@
                                     td.style.color = val >= 0 ? '#1a7a1a' : '#cc0000';
                                 }
                             }
-                            if (col === 'market_trading_hours') td.style.fontFamily = "'Courier New', Courier, monospace";
+                            if (col === 'market') td.style.fontFamily = "'Courier New', Courier, monospace";
 
                             // Make price_mkt and exchange_mkt editable
                             if (col === '$price_mkt' || col === '$exchange_mkt') {

@@ -117,13 +117,62 @@
             border-bottom: 2px solid #000;
         }
 
-        .instrument-subtitle {
-            font-size: 0.9rem;
-            color: #666;
-            margin-top: 5px;
+        /* ── Instrument info card ── */
+        .instrument-card {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            margin-top: 6px;
+        }
+
+        .instrument-title-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .inst-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-size: 0.72rem;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+
+        .inst-chip-code {
+            background: #000;
+            color: #fff;
+        }
+
+        .inst-chip-isin {
+            background: #f0f0f0;
+            color: #444;
+            border: 1px solid #ccc;
+        }
+
+        .inst-chip-currency {
+            background: #e8f5e9;
+            color: #2e7d32;
+            border: 1px solid #a5d6a7;
+        }
+
+        .inst-description {
+            font-size: 0.82rem;
+            color: #555;
             font-weight: 500;
-            letter-spacing: 1px;
+            letter-spacing: 0.3px;
+            max-width: 400px;
             text-align: center;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         .header-title-input::placeholder {
@@ -389,36 +438,81 @@
             color: #666;
         }
 
-        .yield-container {
-            display: flex;
-            justify-content: center;
-            gap: 20px;
-            margin-top: 8px;
-            font-size: 0.85rem;
-            font-weight: 500;
+        /* ── Period button tooltip ── */
+        .time-filter-wrap {
+            position: relative;
+            display: inline-block;
         }
 
-        .yield-item {
+        .period-tooltip {
+            visibility: hidden;
+            opacity: 0;
+            pointer-events: none;
+            position: absolute;
+            bottom: calc(100% + 8px);
+            left: 50%;
+            transform: translateX(-50%);
+            background: #fff;
+            border: 1px solid #000;
+            border-radius: 8px;
+            box-shadow: 0 4px 18px rgba(0,0,0,0.15);
+            padding: 10px 14px;
+            min-width: 220px;
+            font-size: 0.74rem;
+            white-space: nowrap;
+            z-index: 3000;
+            transition: opacity 0.15s, visibility 0.15s;
+            font-family: inherit;
+        }
+
+        .period-tooltip::after {
+            content: '';
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            border: 7px solid transparent;
+            border-top-color: #000;
+        }
+
+        .time-filter-wrap:hover .period-tooltip {
+            visibility: visible;
+            opacity: 1;
+        }
+
+        .period-tooltip-title {
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-bottom: 1px solid #eee;
+            margin-bottom: 7px;
+            padding-bottom: 5px;
+            color: #000;
+            font-size: 0.75rem;
+        }
+
+        .period-tooltip-row {
             display: flex;
+            justify-content: space-between;
             align-items: center;
-            gap: 5px;
+            gap: 16px;
+            padding: 2px 0;
+            color: #444;
         }
 
-        .yield-label {
-            color: #666;
+        .period-tooltip-row .lbl {
+            color: #777;
         }
 
-        .yield-value {
+        .period-tooltip-row .val {
             font-weight: 700;
+            color: #000;
         }
 
-        .yield-positive {
-            color: #27ae60;
-        }
-
-        .yield-negative {
-            color: #e74c3c;
-        }
+        .yield-positive { color: #27ae60; }
+        .yield-negative { color: #e74c3c; }
+        /* hidden yield-display kept for backward compat */
+        .yield-container { display: none; }
     </style>
 </head>
 
@@ -445,20 +539,35 @@
 
         <div class="header-center">
             <input type="text" id="page-title-input" class="header-title-input" placeholder="Titolo Grafico">
-            <div id="instrument-name-display" class="instrument-subtitle"></div>
+            <div class="instrument-card">
+                <div class="instrument-title-row">
+                    <span id="chip-code" class="inst-chip inst-chip-code" style="display:none"></span>
+                    <span id="chip-isin" class="inst-chip inst-chip-isin" style="display:none"></span>
+                    <span id="chip-currency" class="inst-chip inst-chip-currency" style="display:none"></span>
+                </div>
+                <div id="inst-desc" class="inst-description"></div>
+            </div>
             <div id="yield-display" class="yield-container"></div>
         </div>
 
         <div class="header-right">
             <div class="control-group">
-                <button class="time-filter-btn" onclick="setTimeFilter('M01')"
-                    data-i18n="dom.timenode.price:M01">M01</button>
-                <button class="time-filter-btn" onclick="setTimeFilter('M03')"
-                    data-i18n="dom.timenode.price:M03">M03</button>
-                <button class="time-filter-btn" onclick="setTimeFilter('M06')"
-                    data-i18n="dom.timenode.price:M06">M06</button>
-                <button class="time-filter-btn active" onclick="setTimeFilter('M12')"
-                    data-i18n="dom.timenode.price:M12">M12</button>
+                <span class="time-filter-wrap">
+                    <button class="time-filter-btn" onclick="setTimeFilter('M01')" data-period="M01" data-i18n="dom.timenode.price:M01">M01</button>
+                    <div class="period-tooltip" id="tooltip-M01"><div class="period-tooltip-title">M01</div></div>
+                </span>
+                <span class="time-filter-wrap">
+                    <button class="time-filter-btn" onclick="setTimeFilter('M03')" data-period="M03" data-i18n="dom.timenode.price:M03">M03</button>
+                    <div class="period-tooltip" id="tooltip-M03"><div class="period-tooltip-title">M03</div></div>
+                </span>
+                <span class="time-filter-wrap">
+                    <button class="time-filter-btn" onclick="setTimeFilter('M06')" data-period="M06" data-i18n="dom.timenode.price:M06">M06</button>
+                    <div class="period-tooltip" id="tooltip-M06"><div class="period-tooltip-title">M06</div></div>
+                </span>
+                <span class="time-filter-wrap">
+                    <button class="time-filter-btn active" onclick="setTimeFilter('M12')" data-period="M12" data-i18n="dom.timenode.price:M12">M12</button>
+                    <div class="period-tooltip" id="tooltip-M12"><div class="period-tooltip-title">M12</div></div>
+                </span>
             </div>
             <div class="control-group">
                 <label for="start-date" id="label-start-date">Start:</label>
@@ -1104,20 +1213,21 @@
 
             if (!trendDataRaw || trendDataRaw.length === 0) return;
 
-            let displayName = instrumentNameFromUrl || idInstrument;
-            if (filterData) {
-                const isin = filterData.code_isin || '';
-                const desc = filterData.instrument_description || '';
-                const curr = filterData.currency || '';
+            // ── Instrument info chips ──
+            const code = idInstrument || instrumentNameFromUrl || '';
+            const isin = (filterData && filterData.code_isin) || '';
+            const desc = (filterData && filterData.instrument_description) || (instrumentNameFromUrl || '');
+            const curr = (filterData && filterData.currency) || instrumentCurrency || '';
 
-                let extra = '';
-                if (desc) extra += ` ${desc}`;
-                if (isin) extra += ` ${isin}`;
-                if (curr) extra += ` ${curr}`;
+            const chipCode = document.getElementById('chip-code');
+            const chipIsin = document.getElementById('chip-isin');
+            const chipCurr = document.getElementById('chip-currency');
+            const instDesc = document.getElementById('inst-desc');
 
-                displayName += extra;
-            }
-            document.getElementById('instrument-name-display').textContent = displayName;
+            if (code) { chipCode.textContent = code; chipCode.style.display = 'inline-flex'; } else { chipCode.style.display = 'none'; }
+            if (isin) { chipIsin.textContent = isin; chipIsin.style.display = 'inline-flex'; } else { chipIsin.style.display = 'none'; }
+            if (curr) { chipCurr.textContent = curr; chipCurr.style.display = 'inline-flex'; } else { chipCurr.style.display = 'none'; }
+            if (desc && desc !== code) { instDesc.textContent = desc; } else { instDesc.textContent = ''; }
 
             const firstRow = trendDataRaw[0];
             const priceField = Object.keys(firstRow).find(k => k.startsWith('price@')) || 'price_mkt';
@@ -1259,11 +1369,24 @@
                 invValuesArr.push(data.inv && Object.keys(data.inv).length > 0 ? data.inv : null);
             });
 
-            // Calcolo rendimenti
-            const updateYieldUI = () => {
-                const yieldDisplay = document.getElementById('yield-display');
-                if (!yieldDisplay) return;
-                yieldDisplay.innerHTML = '';
+            // ── Calcolo rendimenti → tooltip sui bottoni periodicità ──
+            const activeBtn = document.querySelector('.time-filter-btn.active');
+            const activePeriod = activeBtn ? (activeBtn.getAttribute('data-period') || 'M12') : 'M12';
+
+            const buildPeriodTooltip = (periodId) => {
+                const tooltip = document.getElementById(`tooltip-${periodId}`);
+                if (!tooltip) return;
+
+                // Titolo già presente come primo figlio
+                // Rimuove le righe precedenti (mantiene solo il titolo)
+                while (tooltip.children.length > 1) tooltip.removeChild(tooltip.lastChild);
+
+                const addRow = (label, value, cls = '') => {
+                    const row = document.createElement('div');
+                    row.className = 'period-tooltip-row';
+                    row.innerHTML = `<span class="lbl">${label}</span><span class="val ${cls}">${value}</span>`;
+                    tooltip.appendChild(row);
+                };
 
                 // Prezzo
                 const validPrices = prices.filter(p => p !== null && p !== undefined);
@@ -1271,21 +1394,14 @@
                     const firstP = validPrices[0];
                     const lastP = validPrices[validPrices.length - 1];
                     const yieldP = ((lastP - firstP) / firstP) * 100;
-                    const yieldClass = yieldP >= 0 ? 'yield-positive' : 'yield-negative';
                     const sign = yieldP >= 0 ? '+' : '';
-
+                    const cls = yieldP >= 0 ? 'yield-positive' : 'yield-negative';
                     const minPrice = Math.min(...validPrices);
                     const maxPrice = Math.max(...validPrices);
 
-                    const div = document.createElement('div');
-                    div.className = 'yield-item';
-                    div.innerHTML = `
-                        <span class="yield-label">${getTranslation('int.prices') || 'Price'}:</span>
-                        <span class="yield-value" style="font-weight: normal; color: #777; margin-right: 5px;">${getTranslation('int.price.min') || 'Min Price'}: ${minPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 4 })}</span>
-                        <span class="yield-value ${yieldClass}">${sign}${yieldP.toFixed(2)}%</span>
-                        <span class="yield-value" style="font-weight: normal; color: #777; margin-left: 5px;">${getTranslation('int.price.max') || 'Max Price'}: ${maxPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 4 })}</span>
-                    `;
-                    yieldDisplay.appendChild(div);
+                    addRow(getTranslation('int.prices') || 'Prezzo', `${sign}${yieldP.toFixed(2)}%`, cls);
+                    addRow(getTranslation('int.price.min') || 'Min', minPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 4 }));
+                    addRow(getTranslation('int.price.max') || 'Max', maxPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 4 }));
                 }
 
                 // Cambio
@@ -1294,24 +1410,24 @@
                     const firstE = validExchanges[0];
                     const lastE = validExchanges[validExchanges.length - 1];
                     const yieldE = ((1 / lastE - 1 / firstE) / (1 / firstE)) * 100;
-                    const yieldClass = yieldE >= 0 ? 'yield-positive' : 'yield-negative';
                     const sign = yieldE >= 0 ? '+' : '';
+                    const cls = yieldE >= 0 ? 'yield-positive' : 'yield-negative';
+                    const minEx = Math.min(...validExchanges);
+                    const maxEx = Math.max(...validExchanges);
 
-                    const minExchange = Math.min(...validExchanges);
-                    const maxExchange = Math.max(...validExchanges);
+                    // Separator
+                    const sep = document.createElement('div');
+                    sep.style.cssText = 'border-top:1px solid #eee;margin:5px 0';
+                    tooltip.appendChild(sep);
 
-                    const div = document.createElement('div');
-                    div.className = 'yield-item';
-                    div.innerHTML = `
-                        <span class="yield-label">${getTranslation('int.exchange') || 'Exchange'}:</span>
-                        <span class="yield-value" style="font-weight: normal; color: #777; margin-right: 5px;">${getTranslation('int.exchange.min') || 'Min Exchange'}: ${minExchange.toFixed(4)}</span>
-                        <span class="yield-value ${yieldClass}">${sign}${yieldE.toFixed(2)}%</span>
-                        <span class="yield-value" style="font-weight: normal; color: #777; margin-left: 5px;">${getTranslation('int.exchange.max') || 'Max Exchange'}: ${maxExchange.toFixed(4)}</span>
-                    `;
-                    yieldDisplay.appendChild(div);
+                    addRow(getTranslation('int.exchange') || 'Cambio', `${sign}${yieldE.toFixed(2)}%`, cls);
+                    addRow(getTranslation('int.exchange.min') || 'Min', minEx.toFixed(4));
+                    addRow(getTranslation('int.exchange.max') || 'Max', maxEx.toFixed(4));
                 }
             };
-            updateYieldUI();
+
+            // Aggiorna il tooltip solo per il periodo attivo (gli altri non hanno dati)
+            buildPeriodTooltip(activePeriod);
 
             const gradient = ctx.createLinearGradient(0, 0, 0, 400);
             gradient.addColorStop(0, 'rgba(75, 192, 192, 0.4)');
