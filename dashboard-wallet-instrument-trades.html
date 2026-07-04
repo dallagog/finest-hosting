@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Instrument Trade Details 0.1</title>
+    <title>Instrument Trade Details 0.2</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <link rel="icon" type="image/png" href="images/icon-finest.png">
     <style>
@@ -111,6 +111,8 @@
             display: flex;
             align-items: center;
             justify-content: center;
+            flex-wrap: wrap;
+            gap: 15px 30px;
         }
 
         h2 {
@@ -123,13 +125,8 @@
             font-size: 1.5rem;
         }
 
-        #breakEvenContainer {
-            display: none;
-            position: absolute;
-            right: 0;
-            top: 50%;
-            transform: translateY(-50%);
-            font-size: 0.95rem;
+        .info-badge {
+            font-size: 0.85rem;
             font-weight: bold;
             background: rgba(0, 0, 0, 0.04);
             padding: 6px 12px;
@@ -137,36 +134,39 @@
             border: 1px solid var(--border-color);
             font-family: 'Orbitron', sans-serif;
             transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            white-space: nowrap;
         }
 
-        #timeMeanContainer {
+        .info-badge .label {
+            color: #666;
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            font-weight: 500;
+            letter-spacing: 1px;
+        }
+
+        .info-badge .value {
+            color: #000;
+        }
+
+        #breakEvenContainer,
+        #timeMeanContainer,
+        #dateMeanContainer {
             display: none;
-            position: absolute;
-            left: 0;
-            top: 50%;
-            transform: translateY(-50%);
-            font-size: 0.95rem;
-            font-weight: bold;
-            background: rgba(0, 0, 0, 0.04);
-            padding: 6px 12px;
-            border-radius: 4px;
-            border: 1px solid var(--border-color);
-            font-family: 'Orbitron', sans-serif;
-            transition: all 0.3s;
         }
 
         @media (max-width: 900px) {
             .title-container {
                 flex-direction: column;
-                gap: 15px;
+                gap: 10px;
                 min-height: auto;
             }
 
-            #breakEvenContainer, #timeMeanContainer {
-                position: static;
-                transform: none;
-                margin: 0 auto;
-                text-align: center;
+            .info-badge {
+                white-space: normal;
             }
         }
 
@@ -353,16 +353,18 @@
 
     <div class="container">
         <div class="title-container">
-            <div id="timeMeanContainer" style="display: none;">
-                <span id="timeMeanLabel"
-                    style="color: #666; font-size: 0.8rem; text-transform: uppercase; margin-right: 8px; font-weight: 500; letter-spacing: 1px;"></span>
-                <span id="timeMeanValue" style="color: #000;"></span>
+            <div id="timeMeanContainer" class="info-badge" style="display: none;">
+                <span class="label" id="timeMeanLabel"></span>
+                <span class="value" id="timeMeanValue"></span>
             </div>
             <h2 id="instrumentTitle">Loading...</h2>
-            <div id="breakEvenContainer" style="display: none;">
-                <span id="breakEvenLabel"
-                    style="color: #666; font-size: 0.8rem; text-transform: uppercase; margin-right: 8px; font-weight: 500; letter-spacing: 1px;"></span>
-                <span id="breakEvenValue" style="color: #000;"></span>
+            <div id="dateMeanContainer" class="info-badge" style="display: none;">
+                <span class="label" id="dateMeanLabel"></span>
+                <span class="value" id="dateMeanValue"></span>
+            </div>
+            <div id="breakEvenContainer" class="info-badge" style="display: none;">
+                <span class="label" id="breakEvenLabel"></span>
+                <span class="value" id="breakEvenValue"></span>
             </div>
         </div>
         <div id="content">
@@ -733,9 +735,10 @@
             titleElement.style.textDecoration = 'underline';
             titleElement.onclick = () => openInstrumentDataEntry(instrumentCode);
 
-            // Find if break_even and time_mean_description are present in any transaction's valutazioni
+            // Find if break_even, time_mean_description and data_mean_carico are present in any transaction's valutazioni
             let breakEvenVal = null;
             let timeMeanVal = null;
+            let dateMeanVal = null;
             for (const transaction of walletData) {
                 if (transaction.valutazioni) {
                     if (transaction.valutazioni.break_even && !breakEvenVal) {
@@ -744,16 +747,20 @@
                     if (transaction.valutazioni.time_mean_description && !timeMeanVal) {
                         timeMeanVal = transaction.valutazioni.time_mean_description;
                     }
+                    if (transaction.valutazioni.data_mean_carico && !dateMeanVal) {
+                        dateMeanVal = transaction.valutazioni.data_mean_carico;
+                    }
                 }
             }
 
             const breakEvenContainer = document.getElementById('breakEvenContainer');
             const timeMeanContainer = document.getElementById('timeMeanContainer');
+            const dateMeanContainer = document.getElementById('dateMeanContainer');
 
             if (breakEvenVal) {
                 document.getElementById('breakEvenLabel').textContent = (getTranslation('int.breakeven') || 'Break even') + ':';
                 document.getElementById('breakEvenValue').textContent = formatCurrency(breakEvenVal);
-                breakEvenContainer.style.display = 'block';
+                breakEvenContainer.style.display = 'flex';
             } else {
                 breakEvenContainer.style.display = 'none';
             }
@@ -761,9 +768,17 @@
             if (timeMeanVal) {
                 document.getElementById('timeMeanLabel').textContent = (getTranslation('int.timemean') || 'Tempo medio') + ':';
                 document.getElementById('timeMeanValue').textContent = timeMeanVal;
-                timeMeanContainer.style.display = 'block';
+                timeMeanContainer.style.display = 'flex';
             } else {
                 timeMeanContainer.style.display = 'none';
+            }
+
+            if (dateMeanVal) {
+                document.getElementById('dateMeanLabel').textContent = (getTranslation('int.date_mean') || 'Data media carico') + ':';
+                document.getElementById('dateMeanValue').textContent = dateMeanVal;
+                dateMeanContainer.style.display = 'flex';
+            } else {
+                dateMeanContainer.style.display = 'none';
             }
 
             let executedTrades = walletData.filter(transaction => transaction.trade === 'True');
