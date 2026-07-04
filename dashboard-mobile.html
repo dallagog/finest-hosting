@@ -4,38 +4,65 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>Statistics – Mobile 0.1</title>
+    <title>Statistics – Mobile 0.2</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <script src="js/dashboard-shared.js"></script>
     <link rel="icon" type="image/png" href="images/icon-finest.png">
 
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
 
         :root {
-            --bg: #f2f2ee;
+            --bg: #f5f7fa;
             --white: #ffffff;
-            --border: #cccccc;
-            --text: #222222;
-            --muted: #666666;
-            --red: #cc0000;
-            --accent: #000000;
-            --card-radius: 10px;
-            --header-h: 56px;
+            --border: #e8ecf1;
+            --text: #1a1a2e;
+            --text-secondary: #6b7280;
+            --text-muted: #9ca3af;
+            --accent: #2563eb;
+            --accent-light: #dbeafe;
+            --red: #dc2626;
+            --red-light: #fee2e2;
+            --green: #16a34a;
+            --green-light: #dcfce7;
+            --orange: #f59e0b;
+            --orange-light: #fef3c7;
+            --shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
+            --shadow-hover: 0 8px 32px rgba(0, 0, 0, 0.12);
+            --radius: 16px;
+            --radius-sm: 10px;
+            --header-h: 60px;
+            --safe-bottom: env(safe-area-inset-bottom, 0px);
         }
 
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
         }
 
         body {
-            font-family: 'Orbitron', sans-serif;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
             background: var(--bg);
             color: var(--text);
             min-height: 100vh;
-            padding-bottom: 24px;
+            padding-bottom: calc(20px + var(--safe-bottom));
+            overflow-x: hidden;
+        }
+
+        /* ── SCROLLBAR ── */
+        ::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--text-muted);
+            border-radius: 10px;
         }
 
         /* ── TOP HEADER ── */
@@ -43,109 +70,196 @@
             position: sticky;
             top: 0;
             z-index: 100;
-            background: var(--white);
-            border-bottom: 2px solid var(--accent);
+            background: rgba(255, 255, 255, 0.92);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border);
             height: var(--header-h);
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 0 14px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, .12);
+            padding: 0 16px;
         }
 
-        .top-header h1 {
+        .top-header .brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .top-header .brand .logo {
+            width: 32px;
+            height: 32px;
+            background: var(--accent);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 900;
+            font-size: 14px;
+        }
+
+        .top-header .brand h1 {
             font-size: 0.85rem;
-            font-weight: 700;
-            letter-spacing: 1.5px;
-            text-transform: uppercase;
-            flex: 1;
-            text-align: center;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            background: linear-gradient(135deg, var(--text), var(--accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
         }
 
         .top-header .user-badge {
-            font-size: 0.65rem;
-            color: var(--muted);
             display: flex;
-            flex-direction: column;
-            gap: 1px;
-            min-width: 60px;
+            align-items: center;
+            gap: 8px;
         }
 
-        .top-header .user-badge strong {
+        .top-header .user-badge .avatar {
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            background: var(--accent-light);
+            color: var(--accent);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 14px;
+        }
+
+        .top-header .user-badge .user-info {
+            display: none;
+            flex-direction: column;
+            align-items: flex-end;
+            font-size: 0.65rem;
+            color: var(--text-secondary);
+            line-height: 1.3;
+        }
+
+        .top-header .user-badge .user-info strong {
             color: var(--text);
+            font-size: 0.7rem;
         }
 
         .close-btn {
-            background: rgba(204, 0, 0, .12);
-            border: 1px solid var(--red);
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            background: var(--red-light);
+            border: none;
             color: var(--red);
-            border-radius: 6px;
-            padding: 6px 12px;
-            font-family: inherit;
-            font-size: 0.7rem;
-            font-weight: bold;
+            font-size: 14px;
             cursor: pointer;
-            min-width: 60px;
-            text-align: center;
-            transition: background .2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            flex-shrink: 0;
         }
 
         .close-btn:active {
-            background: rgba(204, 0, 0, .3);
+            transform: scale(0.92);
         }
 
         /* ── MESSAGE ── */
         .message {
-            margin: 12px 14px 0;
-            padding: 12px;
-            border-radius: var(--card-radius);
-            border-left: 4px solid;
-            font-size: 0.75rem;
+            margin: 12px 16px 0;
+            padding: 12px 16px;
+            border-radius: var(--radius-sm);
+            font-size: 0.78rem;
+            font-weight: 500;
             display: none;
+            animation: slideDown 0.3s ease;
         }
 
         .message.error {
-            background: #fee;
-            color: #c00;
-            border-color: #c00;
+            background: var(--red-light);
+            color: var(--red);
             display: block;
         }
 
         .message.warning {
-            background: #fff3cd;
-            color: #856404;
-            border-color: #ffc107;
+            background: var(--orange-light);
+            color: var(--orange);
             display: block;
+        }
+
+        .message.info {
+            background: var(--accent-light);
+            color: var(--accent);
+            display: block;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         /* ── FILTER PANEL ── */
         .filter-panel {
+            margin: 12px 16px 0;
             background: var(--white);
-            border: 1px solid var(--border);
-            border-radius: var(--card-radius);
-            margin: 12px 14px 0;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
             overflow: hidden;
+            transition: all 0.3s ease;
         }
 
         .filter-toggle {
             width: 100%;
             background: none;
             border: none;
-            padding: 14px 16px;
+            padding: 16px 18px;
             display: flex;
             align-items: center;
             justify-content: space-between;
             font-family: inherit;
-            font-size: 0.8rem;
-            font-weight: 700;
-            letter-spacing: .5px;
+            font-size: 0.78rem;
+            font-weight: 600;
             cursor: pointer;
             color: var(--text);
+            transition: background 0.2s;
+        }
+
+        .filter-toggle:active {
+            background: var(--bg);
+        }
+
+        .filter-toggle .left {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .filter-toggle .left i {
+            color: var(--accent);
+            font-size: 14px;
+        }
+
+        .filter-toggle .badge-count {
+            background: var(--accent);
+            color: white;
+            font-size: 0.6rem;
+            font-weight: 700;
+            padding: 1px 8px;
+            border-radius: 12px;
+            min-width: 20px;
+            text-align: center;
         }
 
         .filter-toggle .arrow {
-            transition: transform .25s;
-            font-size: 0.7rem;
+            transition: transform 0.3s ease;
+            font-size: 12px;
+            color: var(--text-secondary);
         }
 
         .filter-toggle.open .arrow {
@@ -154,83 +268,101 @@
 
         .filter-body {
             display: none;
-            padding: 0 16px 16px;
+            padding: 0 18px 18px;
             flex-direction: column;
-            gap: 12px;
+            gap: 14px;
         }
 
         .filter-body.open {
             display: flex;
+            animation: fadeIn 0.25s ease;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-8px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         .filter-group {
             display: flex;
             flex-direction: column;
-            gap: 5px;
+            gap: 4px;
         }
 
         .filter-group label {
-            font-size: 0.72rem;
-            color: var(--muted);
-            letter-spacing: .3px;
+            font-size: 0.68rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            letter-spacing: 0.3px;
+            text-transform: uppercase;
         }
 
         .filter-group input,
         .filter-group select {
             width: 100%;
-            padding: 10px;
-            border: 1px solid var(--border);
-            border-radius: 6px;
+            padding: 10px 12px;
+            border: 1.5px solid var(--border);
+            border-radius: var(--radius-sm);
             font-family: inherit;
-            font-size: 0.8rem;
+            font-size: 0.82rem;
             background: var(--white);
             color: var(--text);
+            transition: border-color 0.2s, box-shadow 0.2s;
             -webkit-appearance: none;
             appearance: none;
         }
 
-        /* date row */
-        .date-row {
-            display: flex;
-            gap: 10px;
+        .filter-group input:focus,
+        .filter-group select:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
         }
 
-        .date-row .filter-group {
-            flex: 1;
-        }
-
-        /* force row */
+        .date-row,
         .force-row {
             display: flex;
             gap: 10px;
         }
 
+        .date-row .filter-group,
         .force-row .filter-group {
             flex: 1;
         }
 
-        /* inversion checkbox */
+        /* Inversion checkbox */
         .inversion-row {
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 12px;
             padding: 4px 0;
         }
 
         .inversion-row input[type="checkbox"] {
             width: 20px;
             height: 20px;
+            accent-color: var(--accent);
             cursor: pointer;
             flex-shrink: 0;
+            border-radius: 4px;
         }
 
         .inversion-row label {
-            font-size: 0.8rem;
+            font-size: 0.78rem;
+            font-weight: 500;
             color: var(--text);
             cursor: pointer;
+            user-select: none;
         }
 
-        /* Sector multi-select */
+        /* Sector dropdown */
         .dropdown-check-list {
             position: relative;
             width: 100%;
@@ -240,19 +372,29 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 10px;
-            border: 1px solid var(--border);
-            border-radius: 6px;
+            padding: 10px 12px;
+            border: 1.5px solid var(--border);
+            border-radius: var(--radius-sm);
             background: var(--white);
             font-family: inherit;
-            font-size: 0.8rem;
+            font-size: 0.82rem;
             cursor: pointer;
+            transition: border-color 0.2s;
+            color: var(--text);
         }
 
-        .dropdown-check-list .anchor::after {
-            content: '▾';
-            font-size: 0.75rem;
-            color: var(--muted);
+        .dropdown-check-list .anchor:active {
+            border-color: var(--accent);
+        }
+
+        .dropdown-check-list .anchor .arrow-down {
+            font-size: 10px;
+            color: var(--text-secondary);
+            transition: transform 0.2s;
+        }
+
+        .dropdown-check-list.visible .anchor .arrow-down {
+            transform: rotate(180deg);
         }
 
         .dropdown-check-list .items {
@@ -263,10 +405,10 @@
             right: 0;
             z-index: 200;
             background: var(--white);
-            border: 1px solid var(--border);
-            border-radius: 6px;
-            box-shadow: 0 6px 16px rgba(0, 0, 0, .15);
-            max-height: 240px;
+            border: 1.5px solid var(--border);
+            border-radius: var(--radius-sm);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+            max-height: 200px;
             overflow-y: auto;
             padding: 6px;
         }
@@ -278,199 +420,32 @@
         .dropdown-check-list .items label {
             display: flex;
             align-items: center;
-            gap: 8px;
-            padding: 8px 6px;
+            gap: 10px;
+            padding: 8px 10px;
             font-size: 0.78rem;
-            border-radius: 4px;
+            border-radius: 6px;
             cursor: pointer;
             color: var(--text);
+            transition: background 0.15s;
         }
 
         .dropdown-check-list .items label:hover {
-            background: #f0f0f0;
+            background: var(--bg);
+        }
+
+        .dropdown-check-list .items label:active {
+            background: var(--accent-light);
         }
 
         .dropdown-check-list input[type="checkbox"] {
             width: 16px;
             height: 16px;
+            accent-color: var(--accent);
             margin: 0;
+            flex-shrink: 0;
         }
 
-        /* Apply button */
-        .apply-btn {
-            width: 100%;
-            padding: 13px;
-            background: var(--accent);
-            color: var(--white);
-            border: none;
-            border-radius: 6px;
-            font-family: inherit;
-            font-size: 0.82rem;
-            font-weight: 700;
-            letter-spacing: .5px;
-            cursor: pointer;
-            transition: opacity .2s;
-        }
-
-        .apply-btn:active {
-            opacity: .75;
-        }
-
-        /* ── RESULTS HEADER ── */
-        .results-header {
-            margin: 14px 14px 0;
-            font-size: 0.72rem;
-            color: var(--muted);
-        }
-
-        .results-header strong {
-            color: var(--text);
-        }
-
-        /* ── CARD LIST ── */
-        .card-list {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            margin: 10px 14px 0;
-        }
-
-        .stat-card {
-            background: var(--white);
-            border: 1px solid var(--border);
-            border-radius: var(--card-radius);
-            padding: 14px;
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            box-shadow: 0 1px 4px rgba(0, 0, 0, .06);
-            cursor: pointer;
-            transition: box-shadow .2s;
-        }
-
-        .stat-card:active {
-            box-shadow: 0 3px 10px rgba(0, 0, 0, .15);
-        }
-
-        .card-top {
-            display: flex;
-            align-items: flex-start;
-            justify-content: space-between;
-            gap: 10px;
-        }
-
-        .card-id {
-            font-size: 0.9rem;
-            font-weight: 700;
-            letter-spacing: .5px;
-            color: var(--accent);
-            text-decoration: underline;
-            cursor: pointer;
-        }
-
-        .card-date {
-            font-size: 0.65rem;
-            color: var(--muted);
-            white-space: nowrap;
-        }
-
-        .card-desc {
-            font-size: 0.72rem;
-            color: var(--muted);
-            line-height: 1.4;
-        }
-
-        .card-bottom {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            border-top: 1px solid #eee;
-            padding-top: 8px;
-            gap: 8px;
-        }
-
-        .card-sector {
-            font-size: 0.65rem;
-            color: var(--muted);
-            flex: 1;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        .card-metrics {
-            display: flex;
-            gap: 12px;
-            align-items: center;
-        }
-
-        .metric {
-            display: flex;
-            flex-direction: column;
-            align-items: flex-end;
-            gap: 1px;
-        }
-
-        .metric-label {
-            font-size: 0.58rem;
-            color: var(--muted);
-            text-transform: uppercase;
-            letter-spacing: .4px;
-        }
-
-        .metric-value {
-            font-size: 0.82rem;
-            font-weight: 700;
-        }
-
-        .metric-value.negative {
-            color: var(--red);
-        }
-
-        .metric-sub {
-            font-size: 0.6rem;
-            font-weight: normal;
-            color: var(--muted);
-        }
-
-        /* loading placeholder */
-        .loading-text {
-            text-align: center;
-            color: var(--muted);
-            font-size: 0.8rem;
-            padding: 40px 0;
-        }
-
-        /* fundamentals row */
-        .card-fundamentals {
-            display: flex;
-            gap: 10px;
-            border-top: 1px solid #eee;
-            padding-top: 8px;
-            justify-content: flex-end;
-        }
-
-        .fund-item {
-            display: flex;
-            flex-direction: column;
-            align-items: flex-end;
-            gap: 1px;
-        }
-
-        .fund-label {
-            font-size: 0.56rem;
-            color: var(--muted);
-            text-transform: uppercase;
-            letter-spacing: .4px;
-        }
-
-        .fund-value {
-            font-size: 0.76rem;
-            font-weight: 700;
-            color: var(--text);
-        }
-
-        /* ── INSTRUMENT SEARCH WIDGET ── */
+        /* Instrument search */
         .instrument-search-wrapper {
             position: relative;
             width: 100%;
@@ -478,37 +453,48 @@
 
         .instrument-search-field {
             width: 100%;
-            padding: 10px 36px 10px 10px;
-            border: 1px solid var(--border);
-            border-radius: 6px;
+            padding: 10px 36px 10px 40px;
+            border: 1.5px solid var(--border);
+            border-radius: var(--radius-sm);
             font-family: inherit;
-            font-size: 0.8rem;
+            font-size: 0.82rem;
             background: var(--white);
             color: var(--text);
-            box-sizing: border-box;
-            -webkit-appearance: none;
-            appearance: none;
             transition: border-color 0.2s, box-shadow 0.2s;
         }
 
         .instrument-search-field:focus {
             outline: none;
             border-color: var(--accent);
-            box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.08);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+
+        .instrument-search-field::placeholder {
+            color: var(--text-muted);
+        }
+
+        .instrument-search-icon {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+            font-size: 14px;
+            pointer-events: none;
         }
 
         .instrument-search-clear {
             position: absolute;
-            right: 8px;
+            right: 10px;
             top: 50%;
             transform: translateY(-50%);
             cursor: pointer;
-            color: var(--muted);
+            color: var(--text-muted);
             font-size: 14px;
             display: none;
             background: none;
             border: none;
-            padding: 2px 4px;
+            padding: 4px;
             line-height: 1;
             transition: color 0.2s;
         }
@@ -519,27 +505,27 @@
 
         .instrument-search-dropdown {
             position: absolute;
-            top: 100%;
+            top: calc(100% + 4px);
             left: 0;
             right: 0;
             background: var(--white);
-            border: 1px solid var(--accent);
+            border: 1.5px solid var(--border);
             border-top: none;
             z-index: 300;
-            max-height: 280px;
+            max-height: 200px;
             overflow-y: auto;
-            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
-            border-radius: 0 0 6px 6px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+            border-radius: 0 0 var(--radius-sm) var(--radius-sm);
             display: none;
         }
 
         .inst-item {
-            padding: 8px 12px;
+            padding: 10px 12px;
             cursor: pointer;
-            border-bottom: 1px solid #f0f0f0;
+            border-bottom: 1px solid var(--border);
             display: flex;
             flex-direction: column;
-            gap: 3px;
+            gap: 2px;
             transition: background 0.15s;
         }
 
@@ -549,7 +535,7 @@
 
         .inst-item:hover,
         .inst-item.active {
-            background: #f5f5f5;
+            background: var(--bg);
         }
 
         .inst-item-main {
@@ -560,46 +546,446 @@
 
         .inst-item-id {
             font-weight: 700;
-            color: var(--accent);
-            font-size: 0.82em;
-            min-width: 60px;
-            letter-spacing: 0.5px;
+            color: var(--text);
+            font-size: 0.82rem;
         }
 
         .inst-item-desc {
-            font-size: 0.78em;
-            color: var(--muted);
+            font-size: 0.72rem;
+            color: var(--text-secondary);
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
         }
 
-        .inst-item-meta {
+        .inst-item-empty {
+            padding: 14px 12px;
+            color: var(--text-muted);
+            font-style: italic;
+            font-size: 0.78rem;
+            text-align: center;
+        }
+
+        /* Apply button */
+        .apply-btn {
+            width: 100%;
+            padding: 14px;
+            background: var(--accent);
+            color: white;
+            border: none;
+            border-radius: var(--radius-sm);
+            font-family: inherit;
+            font-size: 0.82rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
             display: flex;
-            gap: 5px;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 4px;
+        }
+
+        .apply-btn:active {
+            transform: scale(0.97);
+            background: #1d4ed8;
+        }
+
+        /* ── RESULTS HEADER ── */
+        .results-header {
+            margin: 16px 16px 0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 4px;
+        }
+
+        .results-header .count {
+            font-size: 0.78rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+        }
+
+        .results-header .count strong {
+            color: var(--text);
+            font-size: 0.85rem;
+        }
+
+        .results-header .view-options {
+            display: flex;
+            gap: 4px;
+        }
+
+        .results-header .view-options button {
+            padding: 4px 10px;
+            border: 1.5px solid var(--border);
+            border-radius: 6px;
+            background: var(--white);
+            font-size: 0.6rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .results-header .view-options button.active {
+            background: var(--accent);
+            color: white;
+            border-color: var(--accent);
+        }
+
+        .results-header .view-options button:active {
+            transform: scale(0.95);
+        }
+
+        /* ── CARD LIST ── */
+        .card-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin: 10px 16px 0;
+            padding-bottom: 10px;
+        }
+
+        .stat-card {
+            background: var(--white);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            transition: all 0.25s ease;
+            border: 1px solid transparent;
+        }
+
+        .stat-card:active {
+            transform: scale(0.98);
+            box-shadow: var(--shadow-hover);
+        }
+
+        .stat-card .card-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 8px;
+        }
+
+        .stat-card .card-header .left {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            flex: 1;
+            min-width: 0;
+        }
+
+        .stat-card .card-id {
+            font-size: 0.9rem;
+            font-weight: 800;
+            color: var(--text);
+            letter-spacing: -0.3px;
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+
+        .stat-card .card-id:active {
+            color: var(--accent);
+        }
+
+        .stat-card .card-desc {
+            font-size: 0.72rem;
+            color: var(--text-secondary);
+            cursor: pointer;
+            line-height: 1.4;
+            transition: color 0.2s;
+        }
+
+        .stat-card .card-desc:active {
+            color: var(--text);
+        }
+
+        .stat-card .card-date {
+            font-size: 0.6rem;
+            color: var(--text-muted);
+            white-space: nowrap;
+            padding: 2px 8px;
+            background: var(--bg);
+            border-radius: 12px;
+            flex-shrink: 0;
+        }
+
+        /* Badges row */
+        .stat-card .card-badges {
+            display: flex;
+            gap: 6px;
             flex-wrap: wrap;
         }
 
-        .inst-badge {
-            font-size: 0.65em;
-            padding: 1px 5px;
-            border-radius: 3px;
+        .stat-card .badge {
+            font-size: 0.55rem;
             font-weight: 700;
+            padding: 2px 10px;
+            border-radius: 12px;
             text-transform: uppercase;
             letter-spacing: 0.3px;
         }
 
-        .inst-badge-sector {
-            background: #e3f2fd;
-            color: #1565c0;
-            border: 1px solid #bbdefb;
+        .badge-sector {
+            background: var(--accent-light);
+            color: var(--accent);
         }
 
-        .inst-item-empty {
-            padding: 10px 12px;
-            color: var(--muted);
-            font-style: italic;
-            font-size: 0.82em;
+        .badge-market {
+            background: #f3e8ff;
+            color: #7c3aed;
+        }
+
+        .badge-currency {
+            background: #ecfdf5;
+            color: #059669;
+        }
+
+        /* Metrics grid */
+        .stat-card .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(60px, 1fr));
+            gap: 8px;
+            padding-top: 10px;
+            border-top: 1.5px solid var(--border);
+        }
+
+        .stat-card .metric-item {
+            display: flex;
+            flex-direction: column;
+            gap: 1px;
+        }
+
+        .stat-card .metric-item .label {
+            font-size: 0.55rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+
+        .stat-card .metric-item .value {
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: var(--text);
+        }
+
+        .stat-card .metric-item .value.positive {
+            color: var(--green);
+        }
+
+        .stat-card .metric-item .value.negative {
+            color: var(--red);
+        }
+
+        .stat-card .metric-item .value .sub {
+            font-size: 0.55rem;
+            font-weight: 400;
+            color: var(--text-muted);
+            margin-left: 2px;
+        }
+
+        /* Fundamentals row */
+        .stat-card .fundamentals {
+            display: flex;
+            gap: 12px;
+            padding-top: 8px;
+            border-top: 1px solid var(--border);
+            flex-wrap: wrap;
+        }
+
+        .stat-card .fund-item {
+            display: flex;
+            flex-direction: column;
+            gap: 1px;
+        }
+
+        .stat-card .fund-item .label {
+            font-size: 0.5rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+
+        .stat-card .fund-item .value {
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        /* Loading state */
+        .loading-text {
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 0.82rem;
+            padding: 60px 20px;
+        }
+
+        .loading-text i {
+            font-size: 2rem;
+            display: block;
+            margin-bottom: 12px;
+            color: var(--border);
+        }
+
+        .loading-text .spinner {
+            display: inline-block;
+            width: 32px;
+            height: 32px;
+            border: 3px solid var(--border);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-bottom: 12px;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* ── EMPTY STATE ── */
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+        }
+
+        .empty-state i {
+            font-size: 3rem;
+            color: var(--border);
+            margin-bottom: 12px;
+        }
+
+        .empty-state h3 {
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: var(--text);
+            margin-bottom: 4px;
+        }
+
+        .empty-state p {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+
+        /* ── PULL TO REFRESH ── */
+        .pull-indicator {
+            text-align: center;
+            font-size: 0.6rem;
+            color: var(--text-muted);
+            padding: 8px 0;
+            display: none;
+        }
+
+        /* ── RESPONSIVE ── */
+        @media (min-width: 480px) {
+            .stat-card .metrics-grid {
+                grid-template-columns: repeat(4, 1fr);
+            }
+        }
+
+        @media (min-width: 640px) {
+            body {
+                padding: 20px 40px;
+            }
+
+            .top-header .user-badge .user-info {
+                display: flex;
+            }
+
+            .card-list {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 16px;
+            }
+        }
+
+        @media (min-width: 1024px) {
+            body {
+                padding: 24px 60px;
+            }
+
+            .card-list {
+                grid-template-columns: 1fr 1fr 1fr;
+            }
+        }
+
+        /* ── DARK MODE SUPPORT ── */
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg: #0f0f1a;
+                --white: #1a1a2e;
+                --border: #2a2a44;
+                --text: #e8e8f0;
+                --text-secondary: #9ca3af;
+                --text-muted: #6b7280;
+                --shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
+                --shadow-hover: 0 8px 32px rgba(0, 0, 0, 0.4);
+                --accent-light: #1e3a5f;
+            }
+
+            .top-header {
+                background: rgba(26, 26, 46, 0.92);
+            }
+
+            .top-header .brand h1 {
+                background: linear-gradient(135deg, #e8e8f0, #60a5fa);
+                -webkit-background-clip: text;
+                -webkit-text-fill-color: transparent;
+                background-clip: text;
+            }
+
+            .filter-group input,
+            .filter-group select,
+            .dropdown-check-list .anchor,
+            .instrument-search-field {
+                background: #14142a;
+                color: #e8e8f0;
+            }
+
+            .filter-group input::placeholder {
+                color: #4a4a6a;
+            }
+
+            .stat-card .card-date {
+                background: #14142a;
+            }
+
+            .dropdown-check-list .items {
+                background: #1a1a2e;
+                border-color: #2a2a44;
+            }
+
+            .instrument-search-dropdown {
+                background: #1a1a2e;
+                border-color: #2a2a44;
+            }
+
+            .inst-item {
+                border-color: #2a2a44;
+            }
+
+            .inst-item:hover,
+            .inst-item.active {
+                background: #14142a;
+            }
+
+            .results-header .view-options button {
+                background: #14142a;
+                border-color: #2a2a44;
+                color: var(--text-secondary);
+            }
+
+            .results-header .view-options button.active {
+                background: var(--accent);
+                color: white;
+            }
         }
     </style>
 </head>
@@ -608,32 +994,45 @@
 
     <!-- TOP HEADER -->
     <header class="top-header">
-        <div class="user-badge">
-            <span><strong id="usernameDisplay">-</strong></span>
-            <span id="currencyDisplay">-</span>
-            <span id="dateCreationDisplay" style="font-size: 0.55rem; display: none;"></span>
+        <div class="brand">
+            <div class="logo">📊</div>
+            <h1>Statistics</h1>
         </div>
-        <h1>Statistics</h1>
-        <button class="close-btn" onclick="closeDashboard()">Chiudi</button>
+        <div class="user-badge">
+            <div class="user-info">
+                <strong id="usernameDisplay">-</strong>
+                <span id="currencyDisplay">-</span>
+                <span id="dateCreationDisplay"
+                    style="font-size: 0.55rem; color: var(--text-muted); display: none;"></span>
+            </div>
+            <div class="avatar" id="avatarLetter">U</div>
+            <button class="close-btn" onclick="closeDashboard()" aria-label="Chiudi">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
     </header>
 
     <div id="message" class="message"></div>
 
     <!-- FILTER PANEL -->
-    <div class="filter-panel">
+    <div class="filter-panel" id="filterPanel">
         <button class="filter-toggle" id="filterToggleBtn" onclick="toggleFilters()">
-            <span><i class="fa fa-sliders-h" style="margin-right:8px;"></i>Filtri</span>
+            <span class="left">
+                <i class="fas fa-sliders-h"></i>
+                <span>Filtri</span>
+                <span class="badge-count" id="filterBadge" style="display:none;">0</span>
+            </span>
             <span class="arrow">▾</span>
         </button>
         <div class="filter-body open" id="filterBody">
 
             <div class="date-row">
                 <div class="filter-group">
-                    <label>Data iniziale</label>
+                    <label>Dal</label>
                     <input type="date" id="date-start">
                 </div>
                 <div class="filter-group">
-                    <label>Data finale</label>
+                    <label>Al</label>
                     <input type="date" id="date-end">
                 </div>
             </div>
@@ -641,19 +1040,21 @@
             <div class="force-row">
                 <div class="filter-group">
                     <label>Forza min</label>
-                    <input type="number" id="value-min" step="0.01">
+                    <input type="number" id="value-min" step="0.01" placeholder="0">
                 </div>
                 <div class="filter-group">
                     <label>Forza max</label>
-                    <input type="number" id="value-max" step="0.01">
+                    <input type="number" id="value-max" step="0.01" placeholder="∞">
                 </div>
             </div>
 
             <div class="filter-group">
                 <label>Settore</label>
                 <div id="sector-filter-container" class="dropdown-check-list">
-                    <span class="anchor" onclick="toggleSectorDropdown()" id="sectorSelectorAnchor">Tutti i
-                        settori</span>
+                    <span class="anchor" onclick="toggleSectorDropdown()" id="sectorSelectorAnchor">
+                        <span>Tutti i settori</span>
+                        <span class="arrow-down">▾</span>
+                    </span>
                     <div id="sectorSelectorItems" class="items"></div>
                 </div>
             </div>
@@ -661,10 +1062,11 @@
             <div class="filter-group">
                 <label>Strumento</label>
                 <div class="instrument-search-wrapper">
+                    <span class="instrument-search-icon"><i class="fas fa-search"></i></span>
                     <input type="text" id="instrument-search-input" class="instrument-search-field"
                         placeholder="Cerca per codice o nome..." autocomplete="off">
                     <button type="button" class="instrument-search-clear" id="instrument-search-clear"
-                        title="Cancella">&#x2715;</button>
+                        aria-label="Cancella">✕</button>
                     <div class="instrument-search-dropdown" id="instrument-search-dropdown"></div>
                 </div>
                 <input type="hidden" id="instrument-filter" value="">
@@ -672,21 +1074,33 @@
 
             <div class="inversion-row">
                 <input type="checkbox" id="inversion-filter">
-                <label id="inversion-label" for="inversion-filter" data-translate="int.inversion">Inversione</label>
+                <label for="inversion-filter" data-translate="int.inversion">Solo inversione</label>
             </div>
 
-            <button class="apply-btn" onclick="fetchMarketData()" data-translate="int.apply">Applica selezione</button>
+            <button class="apply-btn" onclick="fetchMarketData()">
+                <i class="fas fa-arrow-right"></i>
+                <span data-translate="int.apply">Applica</span>
+            </button>
         </div>
     </div>
 
     <!-- RESULTS -->
-    <div class="results-header" id="results-header" style="display:none;">
-        Record trovati: <strong id="results-count">0</strong>
+    <div class="results-header" id="resultsHeader" style="display:none;">
+        <span class="count"><strong id="resultsCount">0</strong> strumenti</span>
+        <div class="view-options">
+            <button class="active" onclick="setView('cards')" id="viewCards"><i class="fas fa-th"></i></button>
+            <button onclick="setView('list')" id="viewList"><i class="fas fa-list"></i></button>
+        </div>
     </div>
 
-    <div class="card-list" id="card-list">
-        <p class="loading-text">In attesa di caricamento…</p>
+    <div class="card-list" id="cardList">
+        <div class="loading-text">
+            <div class="spinner"></div>
+            Caricamento dati...
+        </div>
     </div>
+
+    <div class="pull-indicator" id="pullIndicator">⬇ Tira per aggiornare</div>
 
     <script>
         const API_URL_MARKET = "https://market-tunnel.fe-web.eu";
@@ -703,6 +1117,8 @@
         let translations = {};
         let _lastData = [];
         let _selectedSectors = [];
+        let _currentView = 'cards';
+        let _filterCount = 0;
 
         // ── TRANSLATIONS ──────────────────────────────────────────────
         async function loadTranslations() {
@@ -719,7 +1135,11 @@
 
         function applyTranslations() {
             document.querySelectorAll('[data-translate]').forEach(el => {
-                el.textContent = getTranslation(el.getAttribute('data-translate'));
+                const key = el.getAttribute('data-translate');
+                const translation = getTranslation(key);
+                if (translation && translation !== key) {
+                    el.textContent = translation;
+                }
             });
         }
 
@@ -729,38 +1149,61 @@
                 window.location.href = 'index.html';
                 return;
             }
+
             document.getElementById('usernameDisplay').textContent = credentials.username;
             document.getElementById('currencyDisplay').textContent = credentials.currency;
+            document.getElementById('avatarLetter').textContent = credentials.username.charAt(0).toUpperCase();
 
             await loadTranslations();
             setDefaultDates();
             initInstrumentSearch();
             await loadStaticData();
+
+            // Pull to refresh
+            setupPullToRefresh();
         }
 
-        async function loadStaticData() {
-            try {
-                const resp = await fetch('statistics.json.gz?_=' + Date.now());
-                if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-                // Decomprimi con DecompressionStream (nativo nei browser moderni)
-                const ds = new DecompressionStream('gzip');
-                const decompressed = resp.body.pipeThrough(ds);
-                const text = await new Response(decompressed).text();
-                const result = JSON.parse(text);
-                if (result.status === 'ok') {
-                    if (result.date_creation) {
-                        const dateEl = document.getElementById('dateCreationDisplay');
-                        dateEl.textContent = result.date_creation;
-                        dateEl.style.display = 'inline';
-                    }
-                    renderCards(result.data);
-                } else {
-                    showMessage('statistics.json.gz non valido: ' + (result.msg || ''), 'warning');
+        // ── PULL TO REFRESH ──
+        let _pullStartY = 0;
+        let _isPulling = false;
+
+        function setupPullToRefresh() {
+            const container = document.getElementById('cardList');
+            let touchStartY = 0;
+
+            document.addEventListener('touchstart', (e) => {
+                if (window.scrollY === 0) {
+                    touchStartY = e.touches[0].clientY;
                 }
-            } catch (err) {
-                console.warn('statistics.json.gz non disponibile:', err);
-                showMessage('Dati locali non disponibili. Usare "Applica selezione" per caricare i dati dal server.', 'warning');
-            }
+            }, { passive: true });
+
+            document.addEventListener('touchmove', (e) => {
+                const pullY = e.touches[0].clientY - touchStartY;
+                const indicator = document.getElementById('pullIndicator');
+                if (pullY > 60 && window.scrollY === 0) {
+                    indicator.style.display = 'block';
+                    indicator.textContent = '⬇ Rilascia per aggiornare';
+                    _isPulling = true;
+                } else if (_isPulling) {
+                    indicator.style.display = 'block';
+                    indicator.textContent = '⬇ Tira per aggiornare';
+                }
+            }, { passive: true });
+
+            document.addEventListener('touchend', (e) => {
+                const indicator = document.getElementById('pullIndicator');
+                if (_isPulling && window.scrollY === 0) {
+                    indicator.textContent = '🔄 Aggiornamento...';
+                    fetchMarketData();
+                    setTimeout(() => {
+                        indicator.style.display = 'none';
+                        _isPulling = false;
+                    }, 1000);
+                } else {
+                    indicator.style.display = 'none';
+                    _isPulling = false;
+                }
+            }, { passive: true });
         }
 
         // ── DATES ─────────────────────────────────────────────────────
@@ -797,10 +1240,15 @@
         }
 
         function updateSectorAnchorText() {
-            const anchor = document.getElementById('sectorSelectorAnchor');
-            if (_selectedSectors.length === 0) anchor.textContent = 'Tutti i settori';
-            else if (_selectedSectors.length === 1) anchor.textContent = getSectorLabel(_selectedSectors[0]);
-            else anchor.textContent = `${_selectedSectors.length} selezionati`;
+            const anchor = document.getElementById('sectorSelectorAnchor').querySelector('span:first-child');
+            if (_selectedSectors.length === 0) {
+                anchor.textContent = 'Tutti i settori';
+            } else if (_selectedSectors.length === 1) {
+                anchor.textContent = getSectorLabel(_selectedSectors[0]);
+            } else {
+                anchor.textContent = `${_selectedSectors.length} settori`;
+            }
+            updateFilterBadge();
         }
 
         function onSectorChange() {
@@ -813,9 +1261,7 @@
 
         function getSectorLabel(sector) {
             const translated = getTranslation('dom.sector:' + sector);
-            return translated && translated !== ('dom.sector:' + sector)
-                ? translated
-                : sector;
+            return translated && translated !== ('dom.sector:' + sector) ? translated : sector;
         }
 
         function populateSectorSelector(data) {
@@ -831,14 +1277,36 @@
                 cb.checked = prev.includes(sector);
                 cb.onchange = onSectorChange;
                 label.appendChild(cb);
-                label.appendChild(document.createTextNode(' ' + getSectorLabel(sector)));
+                const text = document.createTextNode(' ' + getSectorLabel(sector));
+                label.appendChild(text);
                 container.appendChild(label);
             });
             _selectedSectors = _selectedSectors.filter(s => sectors.includes(s));
             updateSectorAnchorText();
         }
 
-        /* ---- Instrument Search Widget ---- */
+        // ── FILTER BADGE ──
+        function updateFilterBadge() {
+            const badge = document.getElementById('filterBadge');
+            let count = 0;
+            if (_selectedSectors.length > 0) count++;
+            if (document.getElementById('instrument-filter').value) count++;
+            if (document.getElementById('inversion-filter').checked) count++;
+            const vMin = document.getElementById('value-min').value;
+            const vMax = document.getElementById('value-max').value;
+            if (vMin && parseFloat(vMin) > 4) count++;
+            if (vMax && parseFloat(vMax) < 9999) count++;
+
+            _filterCount = count;
+            if (count > 0) {
+                badge.textContent = count;
+                badge.style.display = 'inline';
+            } else {
+                badge.style.display = 'none';
+            }
+        }
+
+        // ── INSTRUMENT SEARCH ──
         let _instrumentIndex = [];
         let _instSelIdx = -1;
         let _instFiltered = [];
@@ -853,6 +1321,7 @@
                 const q = searchInput.value.trim();
                 clearBtn.style.display = q ? 'block' : 'none';
                 renderInstDropdown(q);
+                updateFilterBadge();
             });
 
             searchInput.addEventListener('focus', () => {
@@ -865,7 +1334,9 @@
                 else if (e.key === 'ArrowUp') { e.preventDefault(); moveInstSel(-1); }
                 else if (e.key === 'Enter') {
                     e.preventDefault();
-                    if (_instSelIdx >= 0 && _instFiltered[_instSelIdx]) selectInstrument(_instFiltered[_instSelIdx]);
+                    if (_instSelIdx >= 0 && _instFiltered[_instSelIdx]) {
+                        selectInstrument(_instFiltered[_instSelIdx]);
+                    }
                 }
                 else if (e.key === 'Escape') closeInstDropdown();
             });
@@ -875,6 +1346,7 @@
                 hidden.value = '';
                 clearBtn.style.display = 'none';
                 closeInstDropdown();
+                updateFilterBadge();
                 applyFiltersAndRender();
             });
 
@@ -899,7 +1371,6 @@
             });
             _instrumentIndex.sort((a, b) => a.id.localeCompare(b.id));
 
-            // Ripristina la label se la selezione è ancora valida
             if (current && _instrumentIndex.find(i => i.id === current)) {
                 const inst = _instrumentIndex.find(i => i.id === current);
                 document.getElementById('instrument-search-input').value = inst.description
@@ -939,7 +1410,6 @@
                                 <span class="inst-item-id">${inst.id}</span>
                                 <span class="inst-item-desc">${inst.description}</span>
                             </div>
-                            <div class="inst-item-meta">${sector}</div>
                         </div>`;
                 })).join('');
 
@@ -974,6 +1444,7 @@
             hidden.value = inst.id;
             clearBtn.style.display = 'block';
             closeInstDropdown();
+            updateFilterBadge();
             applyFiltersAndRender();
         }
 
@@ -985,6 +1456,7 @@
             hidden.value = '';
             clearBtn.style.display = 'none';
             closeInstDropdown();
+            updateFilterBadge();
             applyFiltersAndRender();
         }
 
@@ -1000,7 +1472,15 @@
             const msgDiv = document.getElementById('message');
             msgDiv.style.display = 'none';
 
-            // health check (non-blocking)
+            // Show loading state
+            const cardList = document.getElementById('cardList');
+            cardList.innerHTML = `
+                <div class="loading-text">
+                    <div class="spinner"></div>
+                    Caricamento dati...
+                </div>
+            `;
+
             try {
                 const h = await fetch(`${API_URL_MARKET}/health`);
                 await h.json();
@@ -1025,16 +1505,63 @@
                 if (result.status === 'ok') {
                     if (result.date_creation) {
                         const dateEl = document.getElementById('dateCreationDisplay');
-                        dateEl.textContent = result.date_creation;
+                        dateEl.textContent = '📅 ' + result.date_creation;
                         dateEl.style.display = 'inline';
                     }
                     renderCards(result.data);
                 } else {
                     showMessage(result.msg || 'Errore API', 'error');
+                    cardList.innerHTML = `
+                        <div class="empty-state">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            <h3>Errore</h3>
+                            <p>${result.msg || 'Errore durante il caricamento'}</p>
+                        </div>
+                    `;
                 }
             } catch (err) {
                 console.error("Fetch error:", err);
-                showMessage('Impossibile raggiungere il server market-tunnel. Verificare la connessione o i record DNS.', 'error');
+                showMessage('Impossibile raggiungere il server. Verifica la connessione.', 'error');
+                cardList.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-wifi-slash"></i>
+                        <h3>Connessione assente</h3>
+                        <p>Verifica la connessione di rete e riprova</p>
+                    </div>
+                `;
+            }
+        }
+
+        // ── LOAD STATIC DATA ──────────────────────────────────────────
+        async function loadStaticData() {
+            try {
+                const resp = await fetch('statistics.json.gz?_=' + Date.now());
+                if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+                const ds = new DecompressionStream('gzip');
+                const decompressed = resp.body.pipeThrough(ds);
+                const text = await new Response(decompressed).text();
+                const result = JSON.parse(text);
+                if (result.status === 'ok') {
+                    if (result.date_creation) {
+                        const dateEl = document.getElementById('dateCreationDisplay');
+                        dateEl.textContent = '📅 ' + result.date_creation;
+                        dateEl.style.display = 'inline';
+                    }
+                    renderCards(result.data);
+                } else {
+                    showMessage('statistics.json.gz non valido: ' + (result.msg || ''), 'warning');
+                }
+            } catch (err) {
+                console.warn('statistics.json.gz non disponibile:', err);
+                showMessage('Usa "Applica" per caricare i dati dal server.', 'info');
+                const cardList = document.getElementById('cardList');
+                cardList.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-cloud-upload-alt"></i>
+                        <h3>Nessun dato locale</h3>
+                        <p>Premi "Applica" per caricare i dati dal server</p>
+                    </div>
+                `;
             }
         }
 
@@ -1071,106 +1598,152 @@
                 return true;
             });
 
-            const cardList = document.getElementById('card-list');
-            const resultsHdr = document.getElementById('results-header');
+            const cardList = document.getElementById('cardList');
+            const resultsHdr = document.getElementById('resultsHeader');
+
+            updateFilterBadge();
 
             if (filtered.length === 0) {
-                cardList.innerHTML = '<p class="loading-text">Nessun dato corrispondente ai filtri.</p>';
+                cardList.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-search"></i>
+                        <h3>Nessun risultato</h3>
+                        <p>Prova a modificare i filtri</p>
+                    </div>
+                `;
                 resultsHdr.style.display = 'none';
                 return;
             }
 
-            resultsHdr.style.display = 'block';
-            document.getElementById('results-count').textContent = filtered.length;
+            resultsHdr.style.display = 'flex';
+            document.getElementById('resultsCount').textContent = filtered.length;
 
+            if (_currentView === 'cards') {
+                renderCardsView(filtered, cardList);
+            } else {
+                renderListView(filtered, cardList);
+            }
+        }
+
+        function renderCardsView(filtered, cardList) {
             cardList.innerHTML = '';
             filtered.forEach(row => {
                 const forzaVal = parseFloat(row.forza);
                 const isNegForza = forzaVal < 0;
+                const isPosForza = forzaVal > 0;
 
                 const invVal = parseInt(row.invariance_days) || 0;
                 const isNegInv = invVal < 0;
-                let invLabel = '';
-                if (invVal < 0) invLabel = getTranslation('int.invariance.negative');
-                else if (invVal > 0) invLabel = getTranslation('int.invariance.positive');
-
-                const card = document.createElement('div');
-                card.className = 'stat-card';
 
                 const fmtNum = (v, dec = 2) => {
                     if (v === null || v === undefined || v === 'None') return '—';
                     const n = parseFloat(v);
                     return isNaN(n) ? '—' : n.toLocaleString('it-IT', { minimumFractionDigits: dec, maximumFractionDigits: dec });
                 };
-                const fmtCap = (v) => {
-                    return v ? String(v) : '—';
-                };
+                const fmtCap = (v) => v ? String(v) : '—';
 
                 const hasFund = row.PE != null || row.EPS != null || row.market_capitalization != null;
 
+                const card = document.createElement('div');
+                card.className = 'stat-card';
                 card.innerHTML = `
-                    <div class="card-top">
-                        <span class="card-id" onclick="openPriceGraph('${row.id_instrument}')">${row.id_instrument}</span>
+                    <div class="card-header">
+                        <div class="left">
+                            <span class="card-id" onclick="openPriceGraph('${row.id_instrument}')">${row.id_instrument}</span>
+                            <span class="card-desc" onclick="openInstrumentDetail('${row.id_instrument}')">${row.instrument_description || '—'}</span>
+                        </div>
                         <span class="card-date">${row.date_start || ''}</span>
                     </div>
-                    <div class="card-desc" onclick="openInstrumentDetail('${row.id_instrument}')">${row.instrument_description || '—'}</div>
-                    <div class="card-bottom">
-                        <span class="card-sector">${row.sector ? getSectorLabel(row.sector) : '—'}</span>
-                        <div class="card-market">
-                            <div class="fund-item">
-                                <span class="fund-label">${getTranslation('instrument@volume')}</span>
-                                <span class="fund-value">${fmtNum(row['instrument@volume'], 0)}</span>
-                            </div>
-
-                            <div class="fund-item">
-                                <span class="fund-label">${getTranslation('price@close')}</span>
-                                <span class="fund-value">${fmtNum(row['price@close'])}</span>
-                            </div>
-                            <div class="fund-item">
-                                <span class="fund-label">${getTranslation('currency')}</span>
-                                <span class="fund-value">${row.currency || '—'}</span>
-                            </div>
+                    <div class="card-badges">
+                        <span class="badge badge-sector">${row.sector ? getSectorLabel(row.sector) : '—'}</span>
+                        <span class="badge badge-market">${row.code_market || '—'}</span>
+                        <span class="badge badge-currency">${row.currency || '—'}</span>
+                    </div>
+                    <div class="metrics-grid">
+                        <div class="metric-item">
+                            <span class="label">Forza</span>
+                            <span class="value ${isNegForza ? 'negative' : isPosForza ? 'positive' : ''}">${forzaVal}</span>
                         </div>
-                        <div class="card-metrics">
-                            <div class="metric">
-                                <span class="metric-label">Forza</span>
-                                <span class="metric-value ${isNegForza ? 'negative' : ''}">${forzaVal}</span>
-                            </div>
-                            <div class="metric">
-                                <span class="metric-label">Inv.</span>
-                                <span class="metric-value ${isNegInv ? 'negative' : ''}">
-                                    ${invVal}
-                                    ${invLabel ? `<span class="metric-sub">${invLabel}</span>` : ''}
-                                </span>
-                            </div>
+                        <div class="metric-item">
+                            <span class="label">Inv. Days</span>
+                            <span class="value ${isNegInv ? 'negative' : ''}">${invVal}</span>
+                        </div>
+                        <div class="metric-item">
+                            <span class="label">Close</span>
+                            <span class="value">${fmtNum(row['price@close'])}</span>
+                        </div>
+                        <div class="metric-item">
+                            <span class="label">Volume</span>
+                            <span class="value">${fmtNum(row['instrument@volume'], 0)}</span>
                         </div>
                     </div>
                     ${hasFund ? `
-                    <div class="card-fundamentals">
-                        <div class="fund-item">
-                            <span class="fund-label">PE</span>
-                            <span class="fund-value">${fmtNum(row.PE)}</span>
-                        </div>
-                        <div class="fund-item">
-                            <span class="fund-label">EPS</span>
-                            <span class="fund-value">${fmtNum(row.EPS)}</span>
-                        </div>
-                        <div class="fund-item">
-                            <span class="fund-label">Mkt Cap</span>
-                            <span class="fund-value">${fmtCap(row.market_capitalization)}</span>
-                        </div>
-                    </div>` : ''}`;
-
+                    <div class="fundamentals">
+                        ${row.PE != null ? `<div class="fund-item"><span class="label">P/E</span><span class="value">${fmtNum(row.PE)}</span></div>` : ''}
+                        ${row.EPS != null ? `<div class="fund-item"><span class="label">EPS</span><span class="value">${fmtNum(row.EPS)}</span></div>` : ''}
+                        ${row.market_capitalization ? `<div class="fund-item"><span class="label">Cap</span><span class="value">${fmtCap(row.market_capitalization)}</span></div>` : ''}
+                    </div>` : ''}
+                `;
                 cardList.appendChild(card);
             });
+        }
 
-            // collapse filter panel after apply on mobile
-            const body = document.getElementById('filterBody');
-            const btn = document.getElementById('filterToggleBtn');
-            if (body.classList.contains('open')) {
-                body.classList.remove('open');
-                btn.classList.remove('open');
-            }
+        function renderListView(filtered, cardList) {
+            cardList.innerHTML = '';
+            const table = document.createElement('table');
+            table.style.cssText = `
+                width: 100%;
+                border-collapse: collapse;
+                font-size: 0.7rem;
+                background: var(--white);
+                border-radius: var(--radius);
+                overflow: hidden;
+                box-shadow: var(--shadow);
+            `;
+
+            const thead = document.createElement('thead');
+            thead.innerHTML = `
+                <tr style="background: var(--bg); border-bottom: 2px solid var(--border);">
+                    <th style="padding: 10px 12px; text-align:left; font-weight:700; color: var(--text-secondary); font-size:0.6rem; text-transform:uppercase; letter-spacing:0.5px;">Strumento</th>
+                    <th style="padding: 10px 12px; text-align:right; font-weight:700; color: var(--text-secondary); font-size:0.6rem; text-transform:uppercase; letter-spacing:0.5px;">Forza</th>
+                    <th style="padding: 10px 12px; text-align:right; font-weight:700; color: var(--text-secondary); font-size:0.6rem; text-transform:uppercase; letter-spacing:0.5px;">Inv.</th>
+                    <th style="padding: 10px 12px; text-align:right; font-weight:700; color: var(--text-secondary); font-size:0.6rem; text-transform:uppercase; letter-spacing:0.5px;">Close</th>
+                </tr>
+            `;
+            table.appendChild(thead);
+
+            const tbody = document.createElement('tbody');
+            filtered.forEach(row => {
+                const forzaVal = parseFloat(row.forza);
+                const isNegForza = forzaVal < 0;
+                const invVal = parseInt(row.invariance_days) || 0;
+                const isNegInv = invVal < 0;
+                const tr = document.createElement('tr');
+                tr.style.cssText = 'border-bottom: 1px solid var(--border); cursor:pointer;';
+                tr.onclick = () => openInstrumentDetail(row.id_instrument);
+                tr.innerHTML = `
+                    <td style="padding: 10px 12px;">
+                        <div style="display:flex; flex-direction:column; gap:1px;">
+                            <span style="font-weight:700; color: var(--text);">${row.id_instrument}</span>
+                            <span style="font-size:0.6rem; color: var(--text-secondary);">${row.instrument_description || ''}</span>
+                        </div>
+                    </td>
+                    <td style="padding: 10px 12px; text-align:right; font-weight:700; color: ${isNegForza ? 'var(--red)' : 'var(--green)'};">${forzaVal}</td>
+                    <td style="padding: 10px 12px; text-align:right; font-weight:700; color: ${isNegInv ? 'var(--red)' : ''};">${invVal}</td>
+                    <td style="padding: 10px 12px; text-align:right; font-weight:600;">${parseFloat(row['price@close']).toFixed(2)}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+            table.appendChild(tbody);
+            cardList.appendChild(table);
+        }
+
+        // ── VIEW SWITCH ──
+        function setView(view) {
+            _currentView = view;
+            document.getElementById('viewCards').classList.toggle('active', view === 'cards');
+            document.getElementById('viewList').classList.toggle('active', view === 'list');
+            if (_lastData.length > 0) applyFiltersAndRender();
         }
 
         // ── HELPERS ───────────────────────────────────────────────────
@@ -1179,6 +1752,10 @@
             d.textContent = text;
             d.className = `message ${type}`;
             d.style.display = 'block';
+            // Auto-hide after 5 seconds
+            setTimeout(() => {
+                d.style.display = 'none';
+            }, 5000);
         }
 
         function closeDashboard() { window.close(); }
@@ -1192,6 +1769,16 @@
             const url = `dashboard-detail-instrument.html?id_instrument=${id}&username=${credentials.username}&token=${credentials.token}&language=${credentials.language}&currency=${credentials.currency}`;
             window.open(url, '_blank');
         }
+
+        // ── INPUT LISTENERS FOR FILTER BADGE ──
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('value-min').addEventListener('input', updateFilterBadge);
+            document.getElementById('value-max').addEventListener('input', updateFilterBadge);
+            document.getElementById('inversion-filter').addEventListener('change', updateFilterBadge);
+            document.getElementById('instrument-filter').addEventListener('change', updateFilterBadge);
+            // Filter badge initial update
+            setTimeout(updateFilterBadge, 100);
+        });
 
         window.onload = init;
     </script>
