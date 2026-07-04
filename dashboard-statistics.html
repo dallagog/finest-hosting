@@ -408,7 +408,7 @@
             background: #fff;
             border: 1px solid #000;
             border-radius: 6px;
-            box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
             padding: 10px 14px;
             min-width: 200px;
             font-size: 0.78em;
@@ -457,6 +457,7 @@
             </div>
             <h1>Market Dashboard</h1>
             <div class="logout-container">
+                <button class="graph-btn" onclick="openStatisticsGraph()">Grafici</button>
                 <button class="close-btn" onclick="closeDashboard()">Chiudi</button>
             </div>
         </div>
@@ -494,7 +495,8 @@
                 <div class="filter-group" style="flex: 1; min-width: 150px;">
                     <label>Mercato:</label>
                     <div id="market-filter-container" class="dropdown-check-list" style="width: 100%;">
-                        <span class="anchor" onclick="toggleMarketDropdown()" id="marketSelectorAnchor">Tutti i mercati</span>
+                        <span class="anchor" onclick="toggleMarketDropdown()" id="marketSelectorAnchor">Tutti i
+                            mercati</span>
                         <div id="marketSelectorItems" class="items">
                             <!-- Checkboxes injected here -->
                         </div>
@@ -555,6 +557,11 @@
             } catch (err) {
                 console.error("Error loading translations:", err);
             }
+        }
+
+        function openStatisticsGraph() {
+            const url = `dashboard-statistics-graph.html?username=${credentials.username}&token=${credentials.token}&currency=${credentials.currency}&date_start=${document.getElementById('date-start').value}&date_end=${document.getElementById('date-end').value}`;
+            window.open(url, '_blank', 'width=1400,height=900');
         }
 
         function getTranslation(key) {

@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="it">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Statistics Graph 0.1</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="icon" type="image/png" href="images/icon-finest.png">
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&display=swap');
+
+        :root {
+            --bg-color: #f5f5f0;
+            --neon-cyan: #000000;
+            --neon-blue: #333333;
+            --glass-bg: #ffffff;
+            --text-color: #333333;
+            --border-color: #000000;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Orbitron', sans-serif;
+            background-color: var(--bg-color);
+            padding: 20px;
+            color: var(--text-color);
+            min-height: 100vh;
+        }
+
+        .main-container {
+            width: 100%;
+            margin: 0;
+        }
+
+        .header-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: var(--glass-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+        }
+
+        .user-info-left {
+            flex: 1;
+            font-size: 14px;
+            color: var(--neon-cyan);
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        h1 {
+            flex: 1;
+            text-align: center;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            font-size: 1.5em;
+        }
+
+        .close-btn,
+        .back-btn {
+            padding: 8px 16px;
+            background: rgba(255, 0, 0, 0.2);
+            border: 1px solid #ff3333;
+            color: #ff3333;
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: inherit;
+            transition: all 0.3s;
+            font-weight: bold;
+        }
+
+        .close-btn:hover,
+        .back-btn:hover {
+            background: rgba(255, 0, 0, 0.4);
+            box-shadow: 0 0 10px #ff3333;
+        }
+
+        .back-btn {
+            background: rgba(0, 0, 0, 0.05);
+            border-color: #666;
+            color: #666;
+            margin-right: 10px;
+        }
+
+        .back-btn:hover {
+            background: rgba(0, 0, 0, 0.15);
+            box-shadow: 0 0 10px #666;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .collapsible-container {
+            background: var(--glass-bg);
+            border: 1px solid #ddd;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+        }
+
+        .message {
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+            display: none;
+            border-left: 5px solid;
+        }
+
+        .message.error {
+            background: #fee;
+            color: #c00;
+            border-color: #c00;
+            display: block;
+        }
+
+        .message.warning {
+            background: #fff3cd;
+            color: #856404;
+            border-color: #ffc107;
+            display: block;
+        }
+
+        .message.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border-color: #17a2b8;
+            display: block;
+        }
+
+        .charts-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .chart-box {
+            background: #fff;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 20px;
+            position: relative;
+        }
+
+        .chart-box h3 {
+            font-size: 0.9em;
+            color: #666;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .chart-box canvas {
+            max-height: 350px;
+            max-width: 100%;
+        }
+
+        .chart-box.full-width {
+            grid-column: 1 / -1;
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            font-size: 0.85em;
+        }
+
+        .data-table th,
+        .data-table td {
+            padding: 4px 8px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+
+        .data-table th {
+            background: #f0f0f0;
+            font-size: 0.8em;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .data-table tbody tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+
+        .data-table tbody tr:nth-child(odd) {
+            background-color: #ffffff;
+        }
+
+        .data-table tbody tr:hover {
+            background: #f0f0f0 !important;
+        }
+
+        .data-table .positive {
+            color: #28a745;
+            font-weight: bold;
+        }
+
+        .data-table .negative {
+            color: #dc3545;
+            font-weight: bold;
+        }
+
+        .stats-summary {
+            display: flex;
+            gap: 30px;
+            flex-wrap: wrap;
+            padding: 15px 0;
+        }
+
+        .stats-item {
+            font-size: 0.85em;
+        }
+
+        .stats-item strong {
+            font-size: 1.2em;
+            color: #000;
+        }
+
+        .loading-spinner {
+            text-align: center;
+            padding: 60px 20px;
+            color: #999;
+            font-size: 0.9em;
+        }
+
+        .loading-spinner i {
+            font-size: 2em;
+            margin-bottom: 15px;
+            display: block;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        @media (max-width: 900px) {
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .header-bar {
+                flex-direction: column;
+                gap: 15px;
+                text-align: center;
+            }
+
+            .user-info-left {
+                align-items: center;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="main-container">
+        <div class="header-bar">
+            <div class="user-info-left">
+                <div><strong>Utente:</strong> <span id="usernameDisplay">-</span></div>
+                <div><strong>Valuta:</strong> <span id="currencyDisplay">-</span></div>
+                <div id="date-creation-container" style="display: none;"><strong>Data creazione:</strong> <span
+                        id="dateCreationDisplay">-</span></div>
+            </div>
+            <h1>📊 Statistics Graphs</h1>
+            <div class="header-actions">
+                <button class="back-btn" onclick="window.close()">✕ Chiudi</button>
+            </div>
+        </div>
+
+        <div id="message" class="message"></div>
+
+        <div class="collapsible-container" id="loading-container">
+            <div class="loading-spinner">
+                <i class="fas fa-spinner"></i>
+                Caricamento dati in corso...
+            </div>
+        </div>
+
+        <div id="content-container" style="display: none;">
+            <!-- Stats Summary -->
+            <div class="collapsible-container" id="stats-summary">
+                <div class="stats-summary" id="statsSummaryContent">
+                    <!-- Injected by JS -->
+                </div>
+            </div>
+
+            <!-- Charts -->
+            <div class="charts-grid">
+                <div class="chart-box">
+                    <h3><i class="fas fa-chart-bar"></i> Forza per Strumento</h3>
+                    <canvas id="forceChart"></canvas>
+                </div>
+                <div class="chart-box">
+                    <h3><i class="fas fa-chart-scatter"></i> Forza vs Invariance Days</h3>
+                    <canvas id="scatterChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Data Table -->
+            <div class="collapsible-container">
+                <h3
+                    style="margin-bottom:15px; font-size:0.9em; color:#666; text-transform:uppercase; letter-spacing:1px;">
+                    <i class="fas fa-table"></i> Dettaglio Dati
+                </h3>
+                <div id="table-container"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // URL Servizio configurato correttamente via Cloudflare Tunnel
+        const API_URL_MARKET = "https://market-tunnel.fe-web.eu";
+
+        const credentials = {
+            username: new URLSearchParams(window.location.search).get('username') || localStorage.getItem('username'),
+            token: new URLSearchParams(window.location.search).get('token') || localStorage.getItem('token'),
+            currency: new URLSearchParams(window.location.search).get('currency') || localStorage.getItem('currency') || 'EUR',
+            language: localStorage.getItem('language') || 'it_IT'
+        };
+
+        let translations = {};
+        let chartInstances = {};
+
+        async function loadTranslations() {
+            try {
+                const response = await fetch(`lang/${credentials.language}.json`);
+                if (response.ok) {
+                    translations = await response.json();
+                    applyTranslations();
+                }
+            } catch (err) {
+                console.error("Error loading translations:", err);
+            }
+        }
+
+        function getTranslation(key) {
+            return translations[key] || key;
+        }
+
+        function applyTranslations() {
+            document.querySelectorAll('[data-translate]').forEach(el => {
+                const key = el.getAttribute('data-translate');
+                el.textContent = getTranslation(key);
+            });
+        }
+
+        function getSectorLabel(sector) {
+            const translated = getTranslation('dom.sector:' + sector);
+            return translated && translated !== ('dom.sector:' + sector) ? translated : sector;
+        }
+
+        async function init() {
+            if (!credentials.username) {
+                window.location.href = 'index.html';
+                return;
+            }
+
+            document.getElementById('usernameDisplay').textContent = credentials.username;
+            document.getElementById('currencyDisplay').textContent = credentials.currency;
+
+            await loadTranslations();
+            await fetchMarketData();
+        }
+
+        async function fetchMarketData() {
+            const msgDiv = document.getElementById('message');
+            msgDiv.style.display = 'none';
+
+            const urlParams = new URLSearchParams(window.location.search);
+            const date_start = urlParams.get('date_start') || localStorage.getItem('date_start') || '';
+            const date_end = urlParams.get('date_end') || localStorage.getItem('date_end') || '';
+
+            const payload = {
+                username: credentials.username,
+                token: credentials.token,
+                currency: credentials.currency,
+                date_start: date_start,
+                date_end: date_end,
+                sector: null
+            };
+
+            console.log("Fetching market data from:", `${API_URL_MARKET}/getmarket`);
+            console.log("Payload:", payload);
+
+            try {
+                const response = await fetch(`${API_URL_MARKET}/getmarket`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await response.json();
+                console.log("Result:", result);
+
+                if (result.status === 'ok') {
+                    if (result.date_creation) {
+                        document.getElementById('dateCreationDisplay').textContent = result.date_creation;
+                        document.getElementById('date-creation-container').style.display = 'block';
+                    }
+                    renderAll(result.data);
+                } else {
+                    showMessage(result.msg || "Errore API", "error");
+                }
+            } catch (err) {
+                console.error("Fetch Error:", err);
+                showMessage("Impossibile raggiungere il server market-tunnel. Verificare la connessione.", "error");
+            }
+        }
+
+        function renderAll(data) {
+            if (!data || data.length === 0) {
+                showMessage("Nessun dato disponibile per i filtri selezionati.", "warning");
+                document.getElementById('loading-container').style.display = 'none';
+                return;
+            }
+
+            document.getElementById('loading-container').style.display = 'none';
+            document.getElementById('content-container').style.display = 'block';
+
+            renderStatsSummary(data);
+            renderForceChart(data);
+            renderScatterChart(data);
+            renderDataTable(data);
+        }
+
+        function renderStatsSummary(data) {
+            const container = document.getElementById('statsSummaryContent');
+            const total = data.length;
+            const positive = data.filter(r => parseFloat(r.forza) > 0).length;
+            const negative = data.filter(r => parseFloat(r.forza) < 0).length;
+            const zero = data.filter(r => parseFloat(r.forza) === 0).length;
+            const avgForce = data.reduce((sum, r) => sum + parseFloat(r.forza || 0), 0) / total;
+            const maxForce = Math.max(...data.map(r => parseFloat(r.forza || 0)));
+            const minForce = Math.min(...data.map(r => parseFloat(r.forza || 0)));
+
+            const sectors = [...new Set(data.map(r => r.sector).filter(Boolean))];
+            const markets = [...new Set(data.map(r => r.code_market).filter(Boolean))];
+
+            container.innerHTML = `
+                <div class="stats-item"><strong>📊 Strumenti</strong><br>${total}</div>
+                <div class="stats-item"><strong>📈 Positivi</strong><br><span class="positive">${positive}</span></div>
+                <div class="stats-item"><strong>📉 Negativi</strong><br><span class="negative">${negative}</span></div>
+                <div class="stats-item"><strong>⚖️ Neutri</strong><br>${zero}</div>
+                <div class="stats-item"><strong>📊 Forza Media</strong><br>${avgForce.toFixed(3)}</div>
+                <div class="stats-item"><strong>⬆️ Max Forza</strong><br><span class="positive">${maxForce.toFixed(3)}</span></div>
+                <div class="stats-item"><strong>⬇️ Min Forza</strong><br><span class="negative">${minForce.toFixed(3)}</span></div>
+                <div class="stats-item"><strong>🏷️ Settori</strong><br>${sectors.length}</div>
+                <div class="stats-item"><strong>🌍 Mercati</strong><br>${markets.length}</div>
+            `;
+        }
+
+        function renderForceChart(data) {
+            const ctx = document.getElementById('forceChart').getContext('2d');
+
+            // Prendi i primi 50 per leggibilità o tutti se meno
+            const displayData = data.length > 50 ? data.slice(0, 50) : data;
+
+            const labels = displayData.map(r => r.id_instrument);
+            const forces = displayData.map(r => parseFloat(r.forza || 0));
+            const colors = forces.map(f => f >= 0 ? '#28a745' : '#dc3545');
+
+            if (chartInstances.force) {
+                chartInstances.force.destroy();
+            }
+
+            chartInstances.force = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Forza',
+                        data: forces,
+                        backgroundColor: colors,
+                        borderColor: colors.map(c => c),
+                        borderWidth: 1,
+                        borderRadius: 2,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            callbacks: {
+                                afterBody: function (context) {
+                                    const index = context[0].dataIndex;
+                                    const row = displayData[index];
+                                    return [
+                                        `Settore: ${getSectorLabel(row.sector || '-')}`,
+                                        `Mercato: ${row.code_market || '-'}`,
+                                        `Invariance: ${row.invariance_days || 0} giorni`
+                                    ];
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: {
+                                color: '#eee'
+                            }
+                        },
+                        x: {
+                            grid: {
+                                display: false
+                            },
+                            ticks: {
+                                maxRotation: 45,
+                                font: {
+                                    size: 9
+                                }
+                            }
+                        }
+                    },
+                    maintainAspectRatio: true
+                }
+            });
+        }
+
+        function renderScatterChart(data) {
+            const ctx = document.getElementById('scatterChart').getContext('2d');
+
+            // Filtra dati con invariance_days valido
+            const scatterData = data.filter(r => {
+                const inv = parseInt(r.invariance_days);
+                return !isNaN(inv) && inv !== null && inv !== undefined;
+            });
+
+            const points = scatterData.map(r => ({
+                x: parseInt(r.invariance_days) || 0,
+                y: parseFloat(r.forza || 0),
+                label: r.id_instrument,
+                sector: r.sector,
+                market: r.code_market
+            }));
+
+            if (chartInstances.scatter) {
+                chartInstances.scatter.destroy();
+            }
+
+            chartInstances.scatter = new Chart(ctx, {
+                type: 'scatter',
+                data: {
+                    datasets: [{
+                        label: 'Strumenti',
+                        data: points,
+                        backgroundColor: points.map(p => p.y >= 0 ? 'rgba(40, 167, 69, 0.7)' : 'rgba(220, 53, 69, 0.7)'),
+                        borderColor: points.map(p => p.y >= 0 ? '#28a745' : '#dc3545'),
+                        borderWidth: 1,
+                        pointRadius: 6,
+                        pointHoverRadius: 9,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function (context) {
+                                    const p = context.raw;
+                                    return [
+                                        `${p.label}`,
+                                        `Forza: ${p.y.toFixed(3)}`,
+                                        `Invariance: ${p.x} giorni`,
+                                        `Settore: ${getSectorLabel(p.sector || '-')}`,
+                                        `Mercato: ${p.market || '-'}`
+                                    ];
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Invariance Days',
+                                font: {
+                                    size: 12,
+                                    weight: 'bold'
+                                }
+                            },
+                            grid: {
+                                color: '#eee'
+                            },
+                            min: 0
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'Forza',
+                                font: {
+                                    size: 12,
+                                    weight: 'bold'
+                                }
+                            },
+                            grid: {
+                                color: '#eee'
+                            },
+                            beginAtZero: true
+                        }
+                    },
+                    maintainAspectRatio: true
+                }
+            });
+        }
+
+        function renderDataTable(data) {
+            const container = document.getElementById('table-container');
+
+            const fmtNum = (v, decimals = 2) => {
+                if (v === null || v === undefined || v === 'None') return '-';
+                const n = parseFloat(v);
+                return isNaN(n) ? '-' : n.toLocaleString('it-IT', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
+            };
+
+            let html = `<p style="margin-bottom:10px">Record trovati: <strong>${data.length}</strong></p>`;
+            html += `<table class="data-table"><thead><tr>
+                <th>Strumento</th>
+                <th>Descrizione</th>
+                <th>Settore</th>
+                <th>Forza</th>
+                <th>Invariance</th>
+                <th>Close</th>
+                <th>Volume</th>
+                <th>PE</th>
+                <th>EPS</th>
+                <th>Cap</th>
+                <th>Mercato</th>
+            </tr></thead><tbody>`;
+
+            data.forEach(row => {
+                const forza = parseFloat(row.forza);
+                const forzaClass = forza >= 0 ? 'positive' : 'negative';
+                const invVal = parseInt(row.invariance_days) || 0;
+                const invClass = invVal < 0 ? 'negative' : (invVal > 0 ? 'positive' : '');
+
+                html += `<tr>
+                    <td><strong>${row.id_instrument}</strong></td>
+                    <td>${row.instrument_description || '-'}</td>
+                    <td>${row.sector ? getSectorLabel(row.sector) : '-'}</td>
+                    <td class="${forzaClass}">${fmtNum(row.forza)}</td>
+                    <td class="${invClass}">${invVal}</td>
+                    <td>${fmtNum(row['price@close'])}</td>
+                    <td>${fmtNum(row['instrument@volume'], 0)}</td>
+                    <td>${fmtNum(row.PE)}</td>
+                    <td>${fmtNum(row.EPS)}</td>
+                    <td>${row.market_capitalization || '-'}</td>
+                    <td>${row.code_market || '-'}</td>
+                </tr>`;
+            });
+
+            html += '</tbody></table>';
+            container.innerHTML = html;
+        }
+
+        function showMessage(text, type) {
+            const msgDiv = document.getElementById('message');
+            msgDiv.textContent = text;
+            msgDiv.className = `message ${type}`;
+            msgDiv.style.display = 'block';
+            document.getElementById('loading-container').style.display = 'none';
+        }
+
+        window.onload = init;
+    </script>
+</body>
+
+</html>
