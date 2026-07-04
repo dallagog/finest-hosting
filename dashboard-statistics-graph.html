@@ -4,9 +4,9 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Statistics Graph 0.1</title>
+    <title>Statistics Graph - Network 0.1</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
     <link rel="icon" type="image/png" href="images/icon-finest.png">
 
     <style>
@@ -33,31 +33,35 @@
             padding: 20px;
             color: var(--text-color);
             min-height: 100vh;
+            overflow: hidden;
         }
 
         .main-container {
             width: 100%;
-            margin: 0;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
         }
 
         .header-bar {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 30px;
-            padding: 20px;
+            margin-bottom: 20px;
+            padding: 15px 25px;
             background: var(--glass-bg);
             border: 1px solid var(--border-color);
             border-radius: 8px;
+            flex-shrink: 0;
         }
 
         .user-info-left {
             flex: 1;
-            font-size: 14px;
+            font-size: 13px;
             color: var(--neon-cyan);
             display: flex;
             flex-direction: column;
-            gap: 5px;
+            gap: 3px;
         }
 
         h1 {
@@ -66,13 +70,18 @@
             font-weight: 700;
             text-transform: uppercase;
             letter-spacing: 2px;
-            font-size: 1.5em;
+            font-size: 1.3em;
         }
 
-        .close-btn,
-        .back-btn {
+        .header-actions {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .close-btn {
             padding: 8px 16px;
-            background: rgba(255, 0, 0, 0.2);
+            background: rgba(255, 0, 0, 0.15);
             border: 1px solid #ff3333;
             color: #ff3333;
             border-radius: 4px;
@@ -80,46 +89,217 @@
             font-family: inherit;
             transition: all 0.3s;
             font-weight: bold;
+            font-size: 12px;
         }
 
-        .close-btn:hover,
-        .back-btn:hover {
-            background: rgba(255, 0, 0, 0.4);
+        .close-btn:hover {
+            background: rgba(255, 0, 0, 0.3);
             box-shadow: 0 0 10px #ff3333;
         }
 
-        .back-btn {
-            background: rgba(0, 0, 0, 0.05);
-            border-color: #666;
-            color: #666;
-            margin-right: 10px;
+        .controls-btn {
+            padding: 8px 16px;
+            background: #000;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: inherit;
+            font-weight: bold;
+            font-size: 12px;
+            transition: all 0.3s;
         }
 
-        .back-btn:hover {
-            background: rgba(0, 0, 0, 0.15);
-            box-shadow: 0 0 10px #666;
+        .controls-btn:hover {
+            background: #333;
+            transform: scale(1.02);
         }
 
-        .header-actions {
-            display: flex;
-            gap: 8px;
-            align-items: center;
-        }
-
-        .collapsible-container {
+        .graph-container {
+            flex: 1;
             background: var(--glass-bg);
-            border: 1px solid #ddd;
-            padding: 20px;
-            margin-bottom: 20px;
+            border: 1px solid var(--border-color);
             border-radius: 8px;
+            position: relative;
+            overflow: hidden;
+            min-height: 0;
+        }
+
+        #graph {
+            width: 100%;
+            height: 100%;
+            cursor: grab;
+        }
+
+        #graph:active {
+            cursor: grabbing;
+        }
+
+        /* Tooltip styles */
+        .tooltip {
+            position: absolute;
+            background: rgba(0, 0, 0, 0.9);
+            color: #fff;
+            padding: 12px 16px;
+            border-radius: 6px;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 11px;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.2s;
+            z-index: 1000;
+            max-width: 280px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            line-height: 1.6;
+        }
+
+        .tooltip.visible {
+            opacity: 1;
+        }
+
+        .tooltip .name {
+            font-weight: 700;
+            font-size: 13px;
+            color: #fff;
+            margin-bottom: 4px;
+        }
+
+        .tooltip .detail {
+            color: #aaa;
+            font-size: 10px;
+        }
+
+        .tooltip .value-positive {
+            color: #4caf50;
+            font-weight: bold;
+        }
+
+        .tooltip .value-negative {
+            color: #f44336;
+            font-weight: bold;
+        }
+
+        .tooltip .badge {
+            display: inline-block;
+            padding: 1px 8px;
+            border-radius: 10px;
+            font-size: 9px;
+            font-weight: 700;
+            margin-top: 3px;
+        }
+
+        .badge-sector {
+            background: #e3f2fd;
+            color: #1565c0;
+        }
+
+        .badge-market {
+            background: #f3e5f5;
+            color: #7b1fa2;
+        }
+
+        /* Legend */
+        .legend {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(255, 255, 255, 0.95);
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 12px 16px;
+            font-size: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin: 3px 0;
+        }
+
+        .legend-color {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            border: 1px solid rgba(0, 0, 0, 0.1);
+        }
+
+        .legend-label {
+            color: #555;
+        }
+
+        /* Loading */
+        .loading-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.9);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            font-family: 'Orbitron', sans-serif;
+            color: #999;
+        }
+
+        .loading-overlay i {
+            font-size: 2.5em;
+            margin-bottom: 15px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .loading-overlay .sub {
+            font-size: 11px;
+            color: #bbb;
+            margin-top: 8px;
+        }
+
+        /* Stats counter */
+        .stats-counter {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.92);
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            padding: 8px 14px;
+            font-size: 10px;
+            color: #666;
+            z-index: 10;
+            pointer-events: none;
+            text-align: right;
+            line-height: 1.6;
+        }
+
+        .stats-counter strong {
+            color: #000;
         }
 
         .message {
-            padding: 15px;
-            margin-bottom: 20px;
+            padding: 12px 20px;
+            margin-bottom: 15px;
             border-radius: 4px;
             display: none;
             border-left: 5px solid;
+            font-size: 13px;
+            flex-shrink: 0;
         }
 
         .message.error {
@@ -136,141 +316,45 @@
             display: block;
         }
 
-        .message.info {
-            background: #d1ecf1;
-            color: #0c5460;
-            border-color: #17a2b8;
-            display: block;
-        }
-
-        .charts-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-            margin-bottom: 20px;
-        }
-
-        .chart-box {
-            background: #fff;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            padding: 20px;
-            position: relative;
-        }
-
-        .chart-box h3 {
-            font-size: 0.9em;
-            color: #666;
-            margin-bottom: 15px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-
-        .chart-box canvas {
-            max-height: 350px;
-            max-width: 100%;
-        }
-
-        .chart-box.full-width {
-            grid-column: 1 / -1;
-        }
-
-        .data-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 20px;
-            font-size: 0.85em;
-        }
-
-        .data-table th,
-        .data-table td {
-            padding: 4px 8px;
-            text-align: left;
-            border-bottom: 1px solid #eee;
-        }
-
-        .data-table th {
-            background: #f0f0f0;
-            font-size: 0.8em;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .data-table tbody tr:nth-child(even) {
-            background-color: #f9f9f9;
-        }
-
-        .data-table tbody tr:nth-child(odd) {
-            background-color: #ffffff;
-        }
-
-        .data-table tbody tr:hover {
-            background: #f0f0f0 !important;
-        }
-
-        .data-table .positive {
-            color: #28a745;
-            font-weight: bold;
-        }
-
-        .data-table .negative {
-            color: #dc3545;
-            font-weight: bold;
-        }
-
-        .stats-summary {
-            display: flex;
-            gap: 30px;
-            flex-wrap: wrap;
-            padding: 15px 0;
-        }
-
-        .stats-item {
-            font-size: 0.85em;
-        }
-
-        .stats-item strong {
-            font-size: 1.2em;
-            color: #000;
-        }
-
-        .loading-spinner {
-            text-align: center;
-            padding: 60px 20px;
-            color: #999;
-            font-size: 0.9em;
-        }
-
-        .loading-spinner i {
-            font-size: 2em;
-            margin-bottom: 15px;
-            display: block;
-            animation: spin 1s linear infinite;
-        }
-
-        @keyframes spin {
-            0% {
-                transform: rotate(0deg);
-            }
-
-            100% {
-                transform: rotate(360deg);
-            }
-        }
-
-        @media (max-width: 900px) {
-            .charts-grid {
-                grid-template-columns: 1fr;
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
             }
 
             .header-bar {
                 flex-direction: column;
-                gap: 15px;
+                gap: 10px;
                 text-align: center;
+                padding: 12px;
             }
 
             .user-info-left {
                 align-items: center;
+                font-size: 11px;
+            }
+
+            h1 {
+                font-size: 1em;
+            }
+
+            .legend {
+                bottom: 10px;
+                left: 10px;
+                padding: 8px 12px;
+                font-size: 9px;
+            }
+
+            .stats-counter {
+                top: 10px;
+                right: 10px;
+                font-size: 9px;
+                padding: 6px 10px;
+            }
+
+            .controls-btn,
+            .close-btn {
+                font-size: 10px;
+                padding: 6px 12px;
             }
         }
     </style>
@@ -282,57 +366,67 @@
             <div class="user-info-left">
                 <div><strong>Utente:</strong> <span id="usernameDisplay">-</span></div>
                 <div><strong>Valuta:</strong> <span id="currencyDisplay">-</span></div>
-                <div id="date-creation-container" style="display: none;"><strong>Data creazione:</strong> <span
+                <div id="date-creation-container" style="display: none;"><strong>Data:</strong> <span
                         id="dateCreationDisplay">-</span></div>
             </div>
-            <h1>📊 Statistics Graphs</h1>
+            <h1>🌐 Network Graph</h1>
             <div class="header-actions">
-                <button class="back-btn" onclick="window.close()">✕ Chiudi</button>
+                <button class="controls-btn" onclick="resetGraph()" title="Resetta la visualizzazione">
+                    <i class="fas fa-home"></i> Reset
+                </button>
+                <button class="controls-btn" onclick="toggleForce()" title="Avvia/Ferma simulazione">
+                    <i class="fas fa-play"></i> <span id="forceToggleLabel">Pausa</span>
+                </button>
+                <button class="close-btn" onclick="window.close()">✕ Chiudi</button>
             </div>
         </div>
 
         <div id="message" class="message"></div>
 
-        <div class="collapsible-container" id="loading-container">
-            <div class="loading-spinner">
+        <div class="graph-container" id="graphContainer">
+            <div id="graph"></div>
+
+            <div class="loading-overlay" id="loadingOverlay">
                 <i class="fas fa-spinner"></i>
-                Caricamento dati in corso...
+                <div>Caricamento grafo...</div>
+                <div class="sub" id="loadingStatus">Inizializzazione</div>
+            </div>
+
+            <div class="legend" id="legend">
+                <div class="legend-item">
+                    <span class="legend-color" style="background: #4caf50;"></span>
+                    <span class="legend-label">Forza &gt; 0 (positiva)</span>
+                </div>
+                <div class="legend-item">
+                    <span class="legend-color" style="background: #f44336;"></span>
+                    <span class="legend-label">Forza &lt; 0 (negativa)</span>
+                </div>
+                <div class="legend-item">
+                    <span class="legend-color" style="background: #ff9800;"></span>
+                    <span class="legend-label">Forza ≈ 0 (neutra)</span>
+                </div>
+                <div class="legend-item" style="margin-top:6px; border-top:1px solid #eee; padding-top:6px;">
+                    <span style="font-size:9px; color:#999;">⏺ Dimensione = Volume</span>
+                </div>
+                <div class="legend-item">
+                    <span style="font-size:9px; color:#999;">🔗 Collegamenti = Settore/Mercato</span>
+                </div>
+            </div>
+
+            <div class="stats-counter" id="statsCounter">
+                <div><strong id="nodeCount">0</strong> nodi</div>
+                <div><strong id="linkCount">0</strong> connessioni</div>
             </div>
         </div>
 
-        <div id="content-container" style="display: none;">
-            <!-- Stats Summary -->
-            <div class="collapsible-container" id="stats-summary">
-                <div class="stats-summary" id="statsSummaryContent">
-                    <!-- Injected by JS -->
-                </div>
-            </div>
-
-            <!-- Charts -->
-            <div class="charts-grid">
-                <div class="chart-box">
-                    <h3><i class="fas fa-chart-bar"></i> Forza per Strumento</h3>
-                    <canvas id="forceChart"></canvas>
-                </div>
-                <div class="chart-box">
-                    <h3><i class="fas fa-chart-scatter"></i> Forza vs Invariance Days</h3>
-                    <canvas id="scatterChart"></canvas>
-                </div>
-            </div>
-
-            <!-- Data Table -->
-            <div class="collapsible-container">
-                <h3
-                    style="margin-bottom:15px; font-size:0.9em; color:#666; text-transform:uppercase; letter-spacing:1px;">
-                    <i class="fas fa-table"></i> Dettaglio Dati
-                </h3>
-                <div id="table-container"></div>
-            </div>
-        </div>
+        <!-- Tooltip -->
+        <div class="tooltip" id="tooltip"></div>
     </div>
 
     <script>
-        // URL Servizio configurato correttamente via Cloudflare Tunnel
+        // ============================================================
+        // CONFIGURAZIONE
+        // ============================================================
         const API_URL_MARKET = "https://market-tunnel.fe-web.eu";
 
         const credentials = {
@@ -343,14 +437,18 @@
         };
 
         let translations = {};
-        let chartInstances = {};
+        let graphData = null;
+        let simulation = null;
+        let isSimulationRunning = true;
 
+        // ============================================================
+        // TRADUZIONI
+        // ============================================================
         async function loadTranslations() {
             try {
                 const response = await fetch(`lang/${credentials.language}.json`);
                 if (response.ok) {
                     translations = await response.json();
-                    applyTranslations();
                 }
             } catch (err) {
                 console.error("Error loading translations:", err);
@@ -361,18 +459,14 @@
             return translations[key] || key;
         }
 
-        function applyTranslations() {
-            document.querySelectorAll('[data-translate]').forEach(el => {
-                const key = el.getAttribute('data-translate');
-                el.textContent = getTranslation(key);
-            });
-        }
-
         function getSectorLabel(sector) {
             const translated = getTranslation('dom.sector:' + sector);
             return translated && translated !== ('dom.sector:' + sector) ? translated : sector;
         }
 
+        // ============================================================
+        // INIT
+        // ============================================================
         async function init() {
             if (!credentials.username) {
                 window.location.href = 'index.html';
@@ -386,6 +480,9 @@
             await fetchMarketData();
         }
 
+        // ============================================================
+        // FETCH DATI
+        // ============================================================
         async function fetchMarketData() {
             const msgDiv = document.getElementById('message');
             msgDiv.style.display = 'none';
@@ -403,8 +500,7 @@
                 sector: null
             };
 
-            console.log("Fetching market data from:", `${API_URL_MARKET}/getmarket`);
-            console.log("Payload:", payload);
+            document.getElementById('loadingStatus').textContent = 'Fetching data from server...';
 
             try {
                 const response = await fetch(`${API_URL_MARKET}/getmarket`, {
@@ -414,283 +510,475 @@
                 });
 
                 const result = await response.json();
-                console.log("Result:", result);
 
                 if (result.status === 'ok') {
                     if (result.date_creation) {
                         document.getElementById('dateCreationDisplay').textContent = result.date_creation;
                         document.getElementById('date-creation-container').style.display = 'block';
                     }
-                    renderAll(result.data);
+                    buildGraph(result.data);
                 } else {
                     showMessage(result.msg || "Errore API", "error");
                 }
             } catch (err) {
                 console.error("Fetch Error:", err);
-                showMessage("Impossibile raggiungere il server market-tunnel. Verificare la connessione.", "error");
+                showMessage("Impossibile raggiungere il server. Verificare la connessione.", "error");
             }
         }
 
-        function renderAll(data) {
+        // ============================================================
+        // COSTRUZIONE GRAFO
+        // ============================================================
+        function buildGraph(data) {
             if (!data || data.length === 0) {
                 showMessage("Nessun dato disponibile per i filtri selezionati.", "warning");
-                document.getElementById('loading-container').style.display = 'none';
+                document.getElementById('loadingOverlay').style.display = 'none';
                 return;
             }
 
-            document.getElementById('loading-container').style.display = 'none';
-            document.getElementById('content-container').style.display = 'block';
+            document.getElementById('loadingStatus').textContent = 'Building network...';
 
-            renderStatsSummary(data);
-            renderForceChart(data);
-            renderScatterChart(data);
-            renderDataTable(data);
+            // --- NODI ---
+            const nodes = data.map((row, index) => {
+                const forza = parseFloat(row.forza) || 0;
+                const volume = parseFloat(row['instrument@volume']) || 1000;
+                // Scala il volume per il raggio (log scale per evitare outlier)
+                const radius = Math.max(8, Math.min(35, 5 + Math.log10(volume) * 4));
+
+                return {
+                    id: row.id_instrument,
+                    index: index,
+                    description: row.instrument_description || row.id_instrument,
+                    sector: row.sector || 'unknown',
+                    market: row.code_market || 'unknown',
+                    currency: row.currency || credentials.currency,
+                    forza: forza,
+                    invariance_days: parseInt(row.invariance_days) || 0,
+                    price_close: parseFloat(row['price@close']) || 0,
+                    volume: volume,
+                    pe: parseFloat(row.PE) || null,
+                    eps: parseFloat(row.EPS) || null,
+                    market_cap: row.market_capitalization || null,
+                    radius: radius,
+                    // Colore in base alla forza
+                    color: forza > 0.1 ? '#4caf50' : (forza < -0.1 ? '#f44336' : '#ff9800'),
+                    // Dimensione per il force layout
+                    size: radius * 0.8
+                };
+            });
+
+            // --- LINK (connessioni) ---
+            // Creiamo connessioni basate su:
+            // 1. Stesso settore (peso 2)
+            // 2. Stesso mercato (peso 1)
+            // 3. Forza simile (entro 0.5) (peso 0.5)
+            const links = [];
+            const linkSet = new Set();
+
+            for (let i = 0; i < nodes.length; i++) {
+                for (let j = i + 1; j < nodes.length; j++) {
+                    const a = nodes[i];
+                    const b = nodes[j];
+                    let weight = 0;
+                    let type = [];
+
+                    // Stesso settore
+                    if (a.sector === b.sector && a.sector !== 'unknown') {
+                        weight += 2;
+                        type.push('sector');
+                    }
+
+                    // Stesso mercato
+                    if (a.market === b.market && a.market !== 'unknown') {
+                        weight += 1;
+                        type.push('market');
+                    }
+
+                    // Forza simile (entro 0.5)
+                    if (Math.abs(a.forza - b.forza) < 0.5) {
+                        weight += 0.5;
+                        type.push('similar_force');
+                    }
+
+                    // Se ha almeno una connessione
+                    if (weight > 0) {
+                        const key = [a.id, b.id].sort().join('|');
+                        if (!linkSet.has(key)) {
+                            linkSet.add(key);
+                            links.push({
+                                source: a.id,
+                                target: b.id,
+                                weight: weight,
+                                type: type.join(', ')
+                            });
+                        }
+                    }
+                }
+            }
+
+            // Limita il numero di link per performance (max 500)
+            const maxLinks = 500;
+            let finalLinks = links;
+            if (links.length > maxLinks) {
+                // Ordina per peso e prendi i più significativi
+                links.sort((a, b) => b.weight - a.weight);
+                finalLinks = links.slice(0, maxLinks);
+                console.log(`Links limitati a ${maxLinks} (da ${links.length})`);
+            }
+
+            graphData = { nodes, links: finalLinks };
+
+            document.getElementById('loadingStatus').textContent = `Grafo costruito: ${nodes.length} nodi, ${finalLinks.length} connessioni`;
+
+            // Aggiorna contatori
+            document.getElementById('nodeCount').textContent = nodes.length;
+            document.getElementById('linkCount').textContent = finalLinks.length;
+
+            // Renderizza il grafo
+            renderGraph(graphData);
+
+            document.getElementById('loadingOverlay').style.display = 'none';
         }
 
-        function renderStatsSummary(data) {
-            const container = document.getElementById('statsSummaryContent');
-            const total = data.length;
-            const positive = data.filter(r => parseFloat(r.forza) > 0).length;
-            const negative = data.filter(r => parseFloat(r.forza) < 0).length;
-            const zero = data.filter(r => parseFloat(r.forza) === 0).length;
-            const avgForce = data.reduce((sum, r) => sum + parseFloat(r.forza || 0), 0) / total;
-            const maxForce = Math.max(...data.map(r => parseFloat(r.forza || 0)));
-            const minForce = Math.min(...data.map(r => parseFloat(r.forza || 0)));
+        // ============================================================
+        // RENDERIZZAZIONE GRAFO CON D3.JS
+        // ============================================================
+        function renderGraph(data) {
+            const container = document.getElementById('graph');
+            const width = container.clientWidth || 800;
+            const height = container.clientHeight || 600;
 
-            const sectors = [...new Set(data.map(r => r.sector).filter(Boolean))];
-            const markets = [...new Set(data.map(r => r.code_market).filter(Boolean))];
+            // Pulisci il container
+            container.innerHTML = '';
 
-            container.innerHTML = `
-                <div class="stats-item"><strong>📊 Strumenti</strong><br>${total}</div>
-                <div class="stats-item"><strong>📈 Positivi</strong><br><span class="positive">${positive}</span></div>
-                <div class="stats-item"><strong>📉 Negativi</strong><br><span class="negative">${negative}</span></div>
-                <div class="stats-item"><strong>⚖️ Neutri</strong><br>${zero}</div>
-                <div class="stats-item"><strong>📊 Forza Media</strong><br>${avgForce.toFixed(3)}</div>
-                <div class="stats-item"><strong>⬆️ Max Forza</strong><br><span class="positive">${maxForce.toFixed(3)}</span></div>
-                <div class="stats-item"><strong>⬇️ Min Forza</strong><br><span class="negative">${minForce.toFixed(3)}</span></div>
-                <div class="stats-item"><strong>🏷️ Settori</strong><br>${sectors.length}</div>
-                <div class="stats-item"><strong>🌍 Mercati</strong><br>${markets.length}</div>
+            // Crea SVG
+            const svg = d3.select('#graph')
+                .append('svg')
+                .attr('width', width)
+                .attr('height', height)
+                .style('background', '#fafafa');
+
+            // Definisci gradienti per i nodi
+            const defs = svg.append('defs');
+
+            // Aggiungi gradienti per ogni colore principale
+            ['#4caf50', '#f44336', '#ff9800'].forEach(color => {
+                const grad = defs.append('radialGradient')
+                    .attr('id', `grad-${color.replace('#', '')}`)
+                    .attr('cx', '30%')
+                    .attr('cy', '30%');
+                grad.append('stop')
+                    .attr('offset', '0%')
+                    .attr('stop-color', color)
+                    .attr('stop-opacity', 0.9);
+                grad.append('stop')
+                    .attr('offset', '100%')
+                    .attr('stop-color', color)
+                    .attr('stop-opacity', 0.5);
+            });
+
+            // Crea un gruppo per i link
+            const linkGroup = svg.append('g')
+                .attr('class', 'links');
+
+            // Crea un gruppo per i nodi
+            const nodeGroup = svg.append('g')
+                .attr('class', 'nodes');
+
+            // Crea un gruppo per le etichette
+            const labelGroup = svg.append('g')
+                .attr('class', 'labels');
+
+            // Mappa per lookup rapido
+            const nodeMap = {};
+            data.nodes.forEach(n => nodeMap[n.id] = n);
+
+            // --- FORCE SIMULATION ---
+            simulation = d3.forceSimulation(data.nodes)
+                .force('charge', d3.forceManyBody()
+                    .strength(d => -d.radius * 2.5)
+                    .distanceMax(400)
+                )
+                .force('link', d3.forceLink(data.links)
+                    .id(d => d.id)
+                    .distance(d => {
+                        // Distanza inversamente proporzionale al peso
+                        const base = 120;
+                        return base / (d.weight || 1) + 40;
+                    })
+                    .strength(d => Math.min(0.3, d.weight / 5))
+                )
+                .force('center', d3.forceCenter(width / 2, height / 2))
+                .force('collision', d3.forceCollide()
+                    .radius(d => d.radius + 8)
+                    .strength(0.8)
+                )
+                .force('x', d3.forceX(width / 2).strength(0.02))
+                .force('y', d3.forceY(height / 2).strength(0.02))
+                .alphaDecay(0.02)
+                .velocityDecay(0.4);
+
+            // --- DISEGNA I LINK ---
+            const link = linkGroup.selectAll('line')
+                .data(data.links)
+                .enter()
+                .append('line')
+                .attr('stroke', '#ccc')
+                .attr('stroke-opacity', 0.4)
+                .attr('stroke-width', d => Math.min(3, d.weight * 0.8 + 0.5))
+                .attr('stroke-dasharray', d => d.type.includes('similar_force') ? '4,4' : 'none');
+
+            // --- DISEGNA I NODI ---
+            // Primo passaggio: crea i cerchi
+            const node = nodeGroup.selectAll('circle')
+                .data(data.nodes)
+                .enter()
+                .append('circle')
+                .attr('r', d => d.radius)
+                .attr('fill', d => `url(#grad-${d.color.replace('#', '')})`)
+                .attr('stroke', d => d.color)
+                .attr('stroke-width', 2)
+                .style('cursor', 'pointer')
+                .style('transition', 'stroke-width 0.2s');
+
+            // Aggiungi glow effect sul hover
+            node.on('mouseenter', function (event, d) {
+                d3.select(this)
+                    .transition()
+                    .duration(200)
+                    .attr('stroke-width', 4)
+                    .attr('stroke', '#000');
+
+                // Mostra tooltip
+                showTooltip(event, d);
+            })
+                .on('mouseleave', function () {
+                    d3.select(this)
+                        .transition()
+                        .duration(200)
+                        .attr('stroke-width', 2)
+                        .attr('stroke', d => d.color);
+
+                    hideTooltip();
+                })
+                .on('click', function (event, d) {
+                    // Zoom sul nodo
+                    highlightNode(d.id);
+                });
+
+            // --- DISEGNA LE ETICHETTE ---
+            const label = labelGroup.selectAll('text')
+                .data(data.nodes)
+                .enter()
+                .append('text')
+                .text(d => d.id.length > 10 ? d.id.substring(0, 8) + '…' : d.id)
+                .attr('font-size', d => Math.max(6, Math.min(10, d.radius * 0.4)))
+                .attr('font-family', 'Orbitron, sans-serif')
+                .attr('fill', '#333')
+                .attr('text-anchor', 'middle')
+                .attr('dy', d => d.radius + 12)
+                .style('pointer-events', 'none')
+                .style('opacity', 0.8);
+
+            // --- AGGIORNAMENTO POSIZIONI ---
+            simulation.on('tick', () => {
+                // Aggiorna link
+                link
+                    .attr('x1', d => d.source.x)
+                    .attr('y1', d => d.source.y)
+                    .attr('x2', d => d.target.x)
+                    .attr('y2', d => d.target.y);
+
+                // Aggiorna nodi
+                node
+                    .attr('cx', d => d.x)
+                    .attr('cy', d => d.y);
+
+                // Aggiorna etichette
+                label
+                    .attr('x', d => d.x)
+                    .attr('y', d => d.y);
+            });
+
+            // --- ZOOM & PAN ---
+            const zoom = d3.zoom()
+                .scaleExtent([0.3, 4])
+                .on('zoom', (event) => {
+                    svg.selectAll('g').attr('transform', event.transform);
+                });
+
+            svg.call(zoom);
+
+            // Zoom iniziale per adattare tutto
+            setTimeout(() => {
+                const bounds = svg.node().getBBox();
+                const fullWidth = bounds.width || width;
+                const fullHeight = bounds.height || height;
+                const scale = Math.min(
+                    (width - 40) / fullWidth,
+                    (height - 40) / fullHeight
+                );
+                const centerX = (width - fullWidth * scale) / 2;
+                const centerY = (height - fullHeight * scale) / 2;
+
+                svg.transition()
+                    .duration(800)
+                    .call(
+                        zoom.transform,
+                        d3.zoomIdentity.translate(centerX, centerY).scale(Math.min(1.2, scale * 0.9))
+                    );
+            }, 500);
+
+            // Gestisci resize
+            window.addEventListener('resize', () => {
+                const newWidth = container.clientWidth;
+                const newHeight = container.clientHeight;
+                svg.attr('width', newWidth).attr('height', newHeight);
+                simulation.force('center', d3.forceCenter(newWidth / 2, newHeight / 2));
+                simulation.alpha(0.3).restart();
+            });
+
+            // Salva riferimento per reset
+            window._graphSvg = svg;
+            window._graphZoom = zoom;
+        }
+
+        // ============================================================
+        // TOOLTIP
+        // ============================================================
+        const tooltipEl = document.getElementById('tooltip');
+
+        function showTooltip(event, d) {
+            const forza = d.forza;
+            const forzaClass = forza > 0.1 ? 'value-positive' : (forza < -0.1 ? 'value-negative' : '');
+
+            const sectorLabel = getSectorLabel(d.sector);
+
+            tooltipEl.innerHTML = `
+                <div class="name">${d.id}</div>
+                <div class="detail">${d.description}</div>
+                <div style="margin-top:6px;">
+                    <span class="badge badge-sector">${sectorLabel}</span>
+                    <span class="badge badge-market">${d.market}</span>
+                </div>
+                <div style="margin-top:6px; border-top:1px solid #333; padding-top:6px;">
+                    <div>Forza: <span class="${forzaClass}">${forza.toFixed(3)}</span></div>
+                    <div>Invariance: ${d.invariance_days} giorni</div>
+                    <div>Close: ${d.price_close.toFixed(2)} ${d.currency}</div>
+                    <div>Volume: ${d.volume.toLocaleString()}</div>
+                    ${d.pe ? `<div>P/E: ${d.pe.toFixed(1)}</div>` : ''}
+                    ${d.market_cap ? `<div>Cap: ${d.market_cap}</div>` : ''}
+                </div>
             `;
-        }
 
-        function renderForceChart(data) {
-            const ctx = document.getElementById('forceChart').getContext('2d');
+            const rect = event.target.getBoundingClientRect();
+            const containerRect = document.getElementById('graphContainer').getBoundingClientRect();
 
-            // Prendi i primi 50 per leggibilità o tutti se meno
-            const displayData = data.length > 50 ? data.slice(0, 50) : data;
+            let left = event.clientX - containerRect.left + 15;
+            let top = event.clientY - containerRect.top - 10;
 
-            const labels = displayData.map(r => r.id_instrument);
-            const forces = displayData.map(r => parseFloat(r.forza || 0));
-            const colors = forces.map(f => f >= 0 ? '#28a745' : '#dc3545');
-
-            if (chartInstances.force) {
-                chartInstances.force.destroy();
+            // Evita che esca dai bordi
+            const tooltipWidth = 280;
+            const tooltipHeight = 240;
+            if (left + tooltipWidth > containerRect.width) {
+                left = event.clientX - containerRect.left - tooltipWidth - 15;
             }
-
-            chartInstances.force = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        label: 'Forza',
-                        data: forces,
-                        backgroundColor: colors,
-                        borderColor: colors.map(c => c),
-                        borderWidth: 1,
-                        borderRadius: 2,
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    plugins: {
-                        legend: {
-                            display: false
-                        },
-                        tooltip: {
-                            callbacks: {
-                                afterBody: function (context) {
-                                    const index = context[0].dataIndex;
-                                    const row = displayData[index];
-                                    return [
-                                        `Settore: ${getSectorLabel(row.sector || '-')}`,
-                                        `Mercato: ${row.code_market || '-'}`,
-                                        `Invariance: ${row.invariance_days || 0} giorni`
-                                    ];
-                                }
-                            }
-                        }
-                    },
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            grid: {
-                                color: '#eee'
-                            }
-                        },
-                        x: {
-                            grid: {
-                                display: false
-                            },
-                            ticks: {
-                                maxRotation: 45,
-                                font: {
-                                    size: 9
-                                }
-                            }
-                        }
-                    },
-                    maintainAspectRatio: true
-                }
-            });
-        }
-
-        function renderScatterChart(data) {
-            const ctx = document.getElementById('scatterChart').getContext('2d');
-
-            // Filtra dati con invariance_days valido
-            const scatterData = data.filter(r => {
-                const inv = parseInt(r.invariance_days);
-                return !isNaN(inv) && inv !== null && inv !== undefined;
-            });
-
-            const points = scatterData.map(r => ({
-                x: parseInt(r.invariance_days) || 0,
-                y: parseFloat(r.forza || 0),
-                label: r.id_instrument,
-                sector: r.sector,
-                market: r.code_market
-            }));
-
-            if (chartInstances.scatter) {
-                chartInstances.scatter.destroy();
+            if (top + tooltipHeight > containerRect.height) {
+                top = containerRect.height - tooltipHeight - 10;
             }
+            if (top < 10) top = 10;
+            if (left < 10) left = 10;
 
-            chartInstances.scatter = new Chart(ctx, {
-                type: 'scatter',
-                data: {
-                    datasets: [{
-                        label: 'Strumenti',
-                        data: points,
-                        backgroundColor: points.map(p => p.y >= 0 ? 'rgba(40, 167, 69, 0.7)' : 'rgba(220, 53, 69, 0.7)'),
-                        borderColor: points.map(p => p.y >= 0 ? '#28a745' : '#dc3545'),
-                        borderWidth: 1,
-                        pointRadius: 6,
-                        pointHoverRadius: 9,
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    plugins: {
-                        legend: {
-                            display: false
-                        },
-                        tooltip: {
-                            callbacks: {
-                                label: function (context) {
-                                    const p = context.raw;
-                                    return [
-                                        `${p.label}`,
-                                        `Forza: ${p.y.toFixed(3)}`,
-                                        `Invariance: ${p.x} giorni`,
-                                        `Settore: ${getSectorLabel(p.sector || '-')}`,
-                                        `Mercato: ${p.market || '-'}`
-                                    ];
-                                }
-                            }
-                        }
-                    },
-                    scales: {
-                        x: {
-                            title: {
-                                display: true,
-                                text: 'Invariance Days',
-                                font: {
-                                    size: 12,
-                                    weight: 'bold'
-                                }
-                            },
-                            grid: {
-                                color: '#eee'
-                            },
-                            min: 0
-                        },
-                        y: {
-                            title: {
-                                display: true,
-                                text: 'Forza',
-                                font: {
-                                    size: 12,
-                                    weight: 'bold'
-                                }
-                            },
-                            grid: {
-                                color: '#eee'
-                            },
-                            beginAtZero: true
-                        }
-                    },
-                    maintainAspectRatio: true
+            tooltipEl.style.left = left + 'px';
+            tooltipEl.style.top = top + 'px';
+            tooltipEl.classList.add('visible');
+        }
+
+        function hideTooltip() {
+            tooltipEl.classList.remove('visible');
+        }
+
+        // ============================================================
+        // FUNZIONI DI CONTROLLO
+        // ============================================================
+        function resetGraph() {
+            if (simulation) {
+                // Riavviamo la simulazione con nuovi parametri
+                simulation.alpha(0.5).restart();
+                // Resetta lo zoom
+                const svg = document.querySelector('#graph svg');
+                if (svg && window._graphZoom) {
+                    const width = svg.clientWidth || 800;
+                    const height = svg.clientHeight || 600;
+                    d3.select(svg)
+                        .transition()
+                        .duration(600)
+                        .call(
+                            window._graphZoom.transform,
+                            d3.zoomIdentity.translate(0, 0).scale(1)
+                        );
                 }
-            });
+            }
         }
 
-        function renderDataTable(data) {
-            const container = document.getElementById('table-container');
-
-            const fmtNum = (v, decimals = 2) => {
-                if (v === null || v === undefined || v === 'None') return '-';
-                const n = parseFloat(v);
-                return isNaN(n) ? '-' : n.toLocaleString('it-IT', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
-            };
-
-            let html = `<p style="margin-bottom:10px">Record trovati: <strong>${data.length}</strong></p>`;
-            html += `<table class="data-table"><thead><tr>
-                <th>Strumento</th>
-                <th>Descrizione</th>
-                <th>Settore</th>
-                <th>Forza</th>
-                <th>Invariance</th>
-                <th>Close</th>
-                <th>Volume</th>
-                <th>PE</th>
-                <th>EPS</th>
-                <th>Cap</th>
-                <th>Mercato</th>
-            </tr></thead><tbody>`;
-
-            data.forEach(row => {
-                const forza = parseFloat(row.forza);
-                const forzaClass = forza >= 0 ? 'positive' : 'negative';
-                const invVal = parseInt(row.invariance_days) || 0;
-                const invClass = invVal < 0 ? 'negative' : (invVal > 0 ? 'positive' : '');
-
-                html += `<tr>
-                    <td><strong>${row.id_instrument}</strong></td>
-                    <td>${row.instrument_description || '-'}</td>
-                    <td>${row.sector ? getSectorLabel(row.sector) : '-'}</td>
-                    <td class="${forzaClass}">${fmtNum(row.forza)}</td>
-                    <td class="${invClass}">${invVal}</td>
-                    <td>${fmtNum(row['price@close'])}</td>
-                    <td>${fmtNum(row['instrument@volume'], 0)}</td>
-                    <td>${fmtNum(row.PE)}</td>
-                    <td>${fmtNum(row.EPS)}</td>
-                    <td>${row.market_capitalization || '-'}</td>
-                    <td>${row.code_market || '-'}</td>
-                </tr>`;
-            });
-
-            html += '</tbody></table>';
-            container.innerHTML = html;
+        function toggleForce() {
+            if (!simulation) return;
+            isSimulationRunning = !isSimulationRunning;
+            if (isSimulationRunning) {
+                simulation.alpha(0.3).restart();
+                document.getElementById('forceToggleLabel').textContent = 'Pausa';
+            } else {
+                simulation.stop();
+                document.getElementById('forceToggleLabel').textContent = 'Avvia';
+            }
         }
 
+        function highlightNode(id) {
+            if (!simulation) return;
+            // Trova il nodo
+            const node = graphData.nodes.find(n => n.id === id);
+            if (!node) return;
+
+            // Centro la vista sul nodo
+            const svg = document.querySelector('#graph svg');
+            if (!svg) return;
+
+            const width = svg.clientWidth || 800;
+            const height = svg.clientHeight || 600;
+
+            // Calcola la trasformazione per centrare il nodo
+            const scale = 1.5;
+            const tx = width / 2 - node.x * scale;
+            const ty = height / 2 - node.y * scale;
+
+            d3.select(svg)
+                .transition()
+                .duration(800)
+                .call(
+                    window._graphZoom.transform,
+                    d3.zoomIdentity.translate(tx, ty).scale(scale)
+                );
+
+            // Evidenzia il nodo
+            d3.select(svg).selectAll('circle')
+                .attr('stroke-width', d => d.id === id ? 6 : 2)
+                .attr('stroke', d => d.id === id ? '#000' : d.color);
+        }
+
+        // ============================================================
+        // UTILITY
+        // ============================================================
         function showMessage(text, type) {
             const msgDiv = document.getElementById('message');
             msgDiv.textContent = text;
             msgDiv.className = `message ${type}`;
             msgDiv.style.display = 'block';
-            document.getElementById('loading-container').style.display = 'none';
+            document.getElementById('loadingOverlay').style.display = 'none';
         }
 
+        // ============================================================
+        // AVVIO
+        // ============================================================
         window.onload = init;
     </script>
 </body>
