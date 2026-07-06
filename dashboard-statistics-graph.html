@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Statistics Graph 0.2</title>
+    <title>Statistics Graph 0.1</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <script src="https://d3js.org/d3.v7.min.js"></script>
     <link rel="icon" type="image/png" href="images/icon-finest.png">
@@ -223,18 +223,18 @@
             position: absolute;
             background: rgba(0, 0, 0, 0.92);
             color: #fff;
-            padding: 10px 14px;
-            border-radius: 6px;
+            padding: 12px 16px;
+            border-radius: 8px;
             font-family: 'Orbitron', sans-serif;
             font-size: 10px;
             pointer-events: none;
             opacity: 0;
             transition: opacity 0.15s;
             z-index: 200;
-            max-width: 260px;
+            max-width: 300px;
             border: 1px solid rgba(255, 255, 255, 0.12);
             box-shadow: 0 6px 24px rgba(0, 0, 0, 0.3);
-            line-height: 1.7;
+            line-height: 1.8;
         }
 
         .tooltip.visible {
@@ -243,8 +243,9 @@
 
         .tooltip .tt-id {
             font-weight: 700;
-            font-size: 12px;
+            font-size: 13px;
             margin-bottom: 2px;
+            color: #fff;
         }
 
         .tooltip .tt-desc {
@@ -285,6 +286,22 @@
         .tt-portfolio {
             background: #e8f5e9;
             color: #2e7d32;
+        }
+
+        .tt-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 1px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .tt-row .label {
+            color: #999;
+        }
+
+        .tt-row .value {
+            color: #fff;
+            font-weight: 500;
         }
 
         /* ---- LEGEND ---- */
@@ -556,8 +573,7 @@
         // SHAPE: NUVOLA CON FULMINE
         // ============================================================
         function cloudPath(cx, cy, r) {
-            // Nuvola più grande con fulmine giallo incorporato
-            const s = r * 0.85; // scala più grande per nuvole più visibili
+            const s = r * 0.85;
             const cloud = `M ${cx - s * 1.2} ${cy + s * 0.3}
                     C ${cx - s * 1.6} ${cy + s * 0.8}, ${cx - s * 0.8} ${cy + s * 1.0}, ${cx - s * 0.3} ${cy + s * 0.6}
                     C ${cx - s * 0.6} ${cy + s * 1.2}, ${cx + s * 0.6} ${cy + s * 1.2}, ${cx + s * 0.3} ${cy + s * 0.6}
@@ -568,7 +584,6 @@
                     C ${cx - s * 1.4} ${cy - s * 0.6}, ${cx - s * 1.8} ${cy + s * 0.1}, ${cx - s * 1.2} ${cy + s * 0.3}
                     Z`;
 
-            // Fulmine all'interno della nuvola
             const lightning = `M ${cx - s * 0.25} ${cy - s * 0.5}
                     L ${cx - s * 0.6} ${cy + s * 0.1}
                     L ${cx - s * 0.15} ${cy + s * 0.1}
@@ -727,16 +742,18 @@
             const tooltip = document.getElementById('tooltip');
 
             function nodeMouseEnter(event, d) {
-                d3.select(this)
+                d3.select(this.parentNode || this)
                     .transition().duration(120)
                     .attr('stroke', '#000').attr('stroke-width', 2.5);
                 showTooltip(event, d);
             }
+
             function nodeMouseMove(event, d) {
                 positionTooltip(event);
             }
+
             function nodeMouseLeave(event, d) {
-                d3.select(this)
+                d3.select(this.parentNode || this)
                     .transition().duration(120)
                     .attr('stroke', d.portfolio ? '#2e7d32' : d._color)
                     .attr('stroke-width', d.portfolio ? 2.5 : 1.2);
@@ -781,16 +798,19 @@
             }
 
             // ---- CERCHI ----
-            nodeG.selectAll('circle.node-ball').data(circleData).enter()
+            const circleEnter = nodeG.selectAll('circle.node-ball').data(circleData).enter()
                 .append('circle')
+                .attr('class', d => d.portfolio ? 'node-ball portfolio-node' : 'node-ball')
                 .attr('cx', d => d._cx)
                 .attr('cy', d => d._cy)
                 .attr('r', d => d._r)
                 .attr('fill', d => getGradient(d))
                 .attr('stroke', d => d.portfolio ? '#2e7d32' : d._color)
                 .attr('stroke-width', d => d.portfolio ? 2.5 : 1.2)
-                .attr('class', d => d.portfolio ? 'node-ball portfolio-node' : 'node-ball')
                 .style('cursor', 'pointer')
+                .each(function (d) {
+                    d3.select(this).datum(d);
+                })
                 .on('mouseenter', nodeMouseEnter)
                 .on('mousemove', nodeMouseMove)
                 .on('mouseleave', nodeMouseLeave);
@@ -799,10 +819,12 @@
             cloudData.forEach(d => {
                 const shapes = cloudPath(d._cx, d._cy, d._r);
 
-                // Nuvola
                 const cloudGroup = nodeG.append('g')
                     .attr('class', d.portfolio ? 'node-cloud portfolio-node' : 'node-cloud')
                     .style('cursor', 'pointer')
+                    .each(function () {
+                        d3.select(this).datum(d);
+                    })
                     .on('mouseenter', nodeMouseEnter)
                     .on('mousemove', nodeMouseMove)
                     .on('mouseleave', nodeMouseLeave);
@@ -814,7 +836,6 @@
                     .attr('stroke-width', d.portfolio ? 2.5 : 1.2)
                     .attr('fill-opacity', 0.85);
 
-                // Fulmine giallo
                 cloudGroup.append('path')
                     .attr('d', shapes.lightning)
                     .attr('fill', '#FFD700')
@@ -855,33 +876,99 @@
         }
 
         // ============================================================
-        // TOOLTIP
+        // TOOLTIP - Mostra TUTTI i dati del record JSON
         // ============================================================
         function showTooltip(event, d) {
             const tooltip = document.getElementById('tooltip');
-            const forza = d._forza;
-            const fc = forza < 0 ? 'tt-neg' : 'tt-pos';
-            const pe = d.PE && d.PE !== 'None' ? parseFloat(d.PE).toFixed(1) : '-';
-            const eps = d.EPS && d.EPS !== 'None' ? d.EPS : '-';
 
-            tooltip.innerHTML = `
-        <div class="tt-id">${d.id_instrument || '-'}</div>
-        <div class="tt-desc">${(d.instrument_description || '').substring(0, 40)}</div>
-        <div style="margin-bottom:4px;">
-            <span class="tt-badge tt-sector">${sectorLabel(d._sector)}</span>
-            <span class="tt-badge tt-market">${d.code_market || '-'}</span>
-            ${d.portfolio ? '<span class="tt-badge tt-portfolio">★ Portfolio</span>' : ''}
-        </div>
-        <div style="border-top:1px solid #444; padding-top:5px;">
-            <div>Data: ${d.date_start || '-'}</div>
-            <div>Forza: <span class="${fc}">${forza.toFixed(3)}</span></div>
-            <div>Close: ${d['price@close'] || '-'} ${d.currency || ''}</div>
-            <div>Volume: ${d['instrument@volume'] ? parseFloat(d['instrument@volume']).toLocaleString() : '-'}</div>
-            <div>P/E: ${pe} &nbsp;|&nbsp; EPS: ${eps}</div>
-            <div>Cap: ${d.market_capitalization || '-'}</div>
-            <div>Inv. days: ${d.invariance_days || '-'}</div>
-        </div>
-    `;
+            // Funzione helper per formattare i valori
+            const fmt = (v) => {
+                if (v === undefined || v === null || v === 'None' || v === '') return '-';
+                if (typeof v === 'number') {
+                    if (Number.isInteger(v)) return v.toString();
+                    return v.toFixed(3);
+                }
+                return v.toString();
+            };
+
+            // Elenco di tutti i campi che vogliamo mostrare
+            const fields = [
+                { key: 'id_instrument', label: 'ID Strumento' },
+                { key: 'instrument_description', label: 'Descrizione' },
+                { key: 'sector', label: 'Settore' },
+                { key: 'code_market', label: 'Mercato' },
+                { key: 'date_start', label: 'Data' },
+                { key: 'forza', label: 'Forza' },
+                { key: 'price@close', label: 'Close' },
+                { key: 'currency', label: 'Valuta' },
+                { key: 'instrument@volume', label: 'Volume' },
+                { key: 'PE', label: 'P/E' },
+                { key: 'EPS', label: 'EPS' },
+                { key: 'market_capitalization', label: 'Cap. Mercato' },
+                { key: 'invarianza_vs_market', label: 'Invarianza vs Market' },
+                { key: 'invarianza_vs_sector', label: 'Invarianza vs Sector' },
+                { key: 'invarianza_vs_date', label: 'Invarianza vs Date' },
+                { key: 'invarianza_vs_forecast', label: 'Invarianza vs Forecast' },
+                { key: 'invarianza_vs_portfolio', label: 'Invarianza vs Portfolio' },
+                { key: 'invarianza_vs_currency', label: 'Invarianza vs Currency' },
+                { key: 'invarianza_vs_risk', label: 'Invarianza vs Risk' },
+                { key: 'invariance_days', label: 'Inv. Days' },
+                { key: 'portfolio', label: 'In Portfolio' },
+                { key: 'invested_amount', label: 'Invested Amount' },
+                { key: 'position_pnl', label: 'Position PnL' },
+                { key: 'position_pnl_percent', label: 'PnL %' },
+                { key: 'weight', label: 'Weight' },
+            ];
+
+            // Costruisce il contenuto del tooltip
+            let html = `
+                <div class="tt-id">${d.id_instrument || '-'}</div>
+                <div class="tt-desc">${(d.instrument_description || '').substring(0, 50)}</div>
+                <div style="margin-bottom:4px;">
+                    <span class="tt-badge tt-sector">${sectorLabel(d._sector || d.sector || 'N/D')}</span>
+                    <span class="tt-badge tt-market">${d.code_market || '-'}</span>
+                    ${d.portfolio ? '<span class="tt-badge tt-portfolio">★ Portfolio</span>' : ''}
+                </div>
+                <div style="border-top:1px solid #444; padding-top:5px; max-height:260px; overflow-y:auto;">
+            `;
+
+            // Aggiunge tutte le righe
+            fields.forEach(f => {
+                let val = d[f.key];
+                if (f.key === 'portfolio') {
+                    val = val ? '✓ Sì' : '✗ No';
+                } else if (f.key === 'forza' && typeof val === 'number') {
+                    val = val.toFixed(4);
+                } else if (typeof val === 'number') {
+                    val = val.toFixed(2);
+                } else if (val === undefined || val === null || val === 'None' || val === '') {
+                    val = '-';
+                }
+                html += `
+                    <div class="tt-row">
+                        <span class="label">${f.label}</span>
+                        <span class="value">${val}</span>
+                    </div>
+                `;
+            });
+
+            // Aggiunge informazioni derivate
+            const forzaVal = parseFloat(d.forza) || 0;
+            const fc = forzaVal < 0 ? 'tt-neg' : 'tt-pos';
+            html += `
+                <div class="tt-row">
+                    <span class="label">Forza (colore)</span>
+                    <span class="value ${fc}">${forzaVal.toFixed(4)}</span>
+                </div>
+                <div class="tt-row">
+                    <span class="label">Tipo nodo</span>
+                    <span class="value">${d._isCloud ? '☁️ Nuvola (inv. negativa)' : '⚪ Sfera'}</span>
+                </div>
+            `;
+
+            html += `</div>`;
+
+            tooltip.innerHTML = html;
             tooltip.classList.add('visible');
             positionTooltip(event);
         }
@@ -890,7 +977,8 @@
             const tooltip = document.getElementById('tooltip');
             const wrapper = document.getElementById('graphWrapper');
             const wr = wrapper.getBoundingClientRect();
-            const TW = 260, TH = 230;
+            const TW = 320,
+                TH = 400;
             let left = event.clientX - wr.left + 14;
             let top = event.clientY - wr.top - 10;
             if (left + TW > wr.width) left = event.clientX - wr.left - TW - 14;
