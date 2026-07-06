@@ -317,6 +317,26 @@
             flex-shrink: 0;
         }
 
+        .legend-cloud {
+            width: 14px;
+            height: 10px;
+            flex-shrink: 0;
+            position: relative;
+            opacity: 0.7;
+        }
+
+        .legend-cloud::before {
+            content: '';
+            position: absolute;
+            width: 12px;
+            height: 8px;
+            background: #666;
+            border-radius: 50%;
+            top: 2px;
+            left: 1px;
+            box-shadow: 5px -2px 0 2px #666, 8px 1px 0 1px #666;
+        }
+
         /* ---- STATS ---- */
         .stats-bar {
             position: absolute;
@@ -335,6 +355,30 @@
 
         .stats-bar strong {
             color: #000;
+        }
+
+        /* ---- MODERN BALL STYLES ---- */
+        .node-ball {
+            filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.15));
+            transition: all 0.2s ease;
+        }
+
+        .node-ball:hover {
+            filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.30));
+        }
+
+        .node-cloud {
+            filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.10));
+            transition: all 0.2s ease;
+        }
+
+        .node-cloud:hover {
+            filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.25));
+        }
+
+        /* highlight glow per portfolio */
+        .portfolio-node {
+            filter: drop-shadow(0 0 6px rgba(46, 125, 50, 0.5)) !important;
         }
     </style>
 </head>
@@ -394,7 +438,7 @@
                 </div>
                 <div class="legend-row"><span class="legend-dot"
                         style="background:#fff; border:2px solid #2e7d32;"></span> In portafoglio</div>
-                <div class="legend-row">☁ Nuvola = Invarianza negativa</div>
+                <div class="legend-row"><span class="legend-cloud"></span> Invarianza negativa</div>
                 <div class="legend-row" style="margin-top:4px; border-top:1px solid #eee; padding-top:4px; color:#999;">
                     ⬤ Dim. = Volume &nbsp;|&nbsp; 🖱 Scroll = Zoom
                 </div>
@@ -475,7 +519,6 @@
 
                 if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
 
-                // La risposta è JSON (FileResponse del server)
                 const result = await resp.json();
 
                 if (result.status !== 'ok') {
@@ -507,17 +550,20 @@
         }
 
         // ============================================================
-        // SHAPE: NUVOLA (per invarianza negativa)
+        // SHAPE: NUVOLA MODERNA (più piccola e stilizzata)
         // ============================================================
         function cloudPath(cx, cy, r) {
-            const yBase = cy + r * 0.5;
-            const xLeft = cx - r * 1.4;
-            return `M ${xLeft} ${yBase}
-        a ${r * 0.5} ${r * 0.5} 0 1 1 ${r * 0.15} ${-r * 0.95}
-        a ${r * 0.6} ${r * 0.6} 0 1 1 ${r * 0.95} ${-r * 0.35}
-        a ${r * 0.65} ${r * 0.65} 0 1 1 ${r * 0.95} ${r * 0.35}
-        a ${r * 0.5} ${r * 0.5} 0 1 1 ${r * 0.15} ${r * 0.95}
-        Z`;
+            // Nuvola più compatta e moderna con curve morbide
+            const s = r * 0.6; // scala ridotta per nuvole più piccole
+            return `M ${cx - s * 1.2} ${cy + s * 0.3}
+                    C ${cx - s * 1.6} ${cy + s * 0.8}, ${cx - s * 0.8} ${cy + s * 1.0}, ${cx - s * 0.3} ${cy + s * 0.6}
+                    C ${cx - s * 0.6} ${cy + s * 1.2}, ${cx + s * 0.6} ${cy + s * 1.2}, ${cx + s * 0.3} ${cy + s * 0.6}
+                    C ${cx + s * 0.8} ${cy + s * 1.0}, ${cx + s * 1.6} ${cy + s * 0.8}, ${cx + s * 1.2} ${cy + s * 0.3}
+                    C ${cx + s * 1.8} ${cy + s * 0.1}, ${cx + s * 1.4} ${cy - s * 0.6}, ${cx + s * 0.8} ${cy - s * 0.4}
+                    C ${cx + s * 1.0} ${cy - s * 0.9}, ${cx + s * 0.3} ${cy - s * 1.2}, ${cx} ${cy - s * 0.8}
+                    C ${cx - s * 0.3} ${cy - s * 1.2}, ${cx - s * 1.0} ${cy - s * 0.9}, ${cx - s * 0.8} ${cy - s * 0.4}
+                    C ${cx - s * 1.4} ${cy - s * 0.6}, ${cx - s * 1.8} ${cy + s * 0.1}, ${cx - s * 1.2} ${cy + s * 0.3}
+                    Z`;
         }
 
         // ============================================================
@@ -528,19 +574,16 @@
             const W = wrapper.clientWidth || 1200;
             const H = wrapper.clientHeight || 700;
 
-            // --- Raccolta valori unici ---
             const dateSet = [...new Set(data.map(d => d.date_start).filter(Boolean))].sort();
             const sectorSet = [...new Set(data.map(d => d.sector || 'N/D'))].sort();
 
             const nDates = dateSet.length;
             const nSectors = sectorSet.length;
 
-            // --- Margini ---
             const MARGIN = { top: 50, right: 30, bottom: 50, left: 160 };
             const innerW = Math.max(W - MARGIN.left - MARGIN.right, nDates * 90);
             const innerH = Math.max(H - MARGIN.top - MARGIN.bottom, nSectors * 80);
 
-            // --- Scale ---
             const xScale = d3.scalePoint()
                 .domain(dateSet)
                 .range([0, innerW])
@@ -551,7 +594,6 @@
                 .range([0, innerH])
                 .padding(0.5);
 
-            // --- SVG ---
             const svgEl = document.getElementById('timeline-svg');
             d3.select(svgEl).selectAll('*').remove();
 
@@ -561,18 +603,15 @@
 
             _svgRoot = svg;
 
-            // Sfondo
             svg.append('rect')
                 .attr('width', W).attr('height', H)
                 .attr('fill', '#fafafa');
 
-            // Gruppo principale (zoomabile)
             const g = svg.append('g')
                 .attr('class', 'main-g')
                 .attr('transform', `translate(${MARGIN.left},${MARGIN.top})`);
 
-            // ---- GRIGLIATTURA ----
-            // Linee verticali (date)
+            // Griglia
             g.append('g').attr('class', 'grid-v')
                 .selectAll('line').data(dateSet).enter()
                 .append('line')
@@ -581,7 +620,6 @@
                 .attr('stroke', '#e0e0e0').attr('stroke-width', 1)
                 .attr('stroke-dasharray', '4,4');
 
-            // Bande orizzontali settori (swimlane)
             const bandH = yScale.step();
             g.append('g').attr('class', 'swimlanes')
                 .selectAll('rect').data(sectorSet).enter()
@@ -592,7 +630,7 @@
                 .attr('height', bandH)
                 .attr('fill', (d, i) => i % 2 === 0 ? 'rgba(0,0,0,0.02)' : 'transparent');
 
-            // ---- ASSE X (date) ----
+            // Asse X
             const xAxis = d3.axisTop(xScale)
                 .tickSize(0)
                 .tickFormat(d => d);
@@ -608,7 +646,7 @@
 
             g.select('.axis-x .domain').remove();
 
-            // ---- ASSE Y (settori) ----
+            // Asse Y
             g.append('g').attr('class', 'axis-y')
                 .selectAll('text').data(sectorSet).enter()
                 .append('text')
@@ -622,7 +660,6 @@
                 .attr('font-weight', '600')
                 .text(d => sectorLabel(d).substring(0, 22));
 
-            // Linee orizzontali settore
             g.append('g').attr('class', 'grid-h')
                 .selectAll('line').data(sectorSet).enter()
                 .append('line')
@@ -630,9 +667,7 @@
                 .attr('y1', d => yScale(d)).attr('y2', d => yScale(d))
                 .attr('stroke', '#d0d0d0').attr('stroke-width', 0.8);
 
-            // ---- NODI ----
-            // Calcola posizioni con jitter verticale per evitare sovrapposizioni
-            // Raggruppa per (date_start, sector)
+            // ---- NODI CON RAGGIO PIÙ PICCOLO ----
             const cellMap = {};
             data.forEach(item => {
                 const ds = item.date_start || '';
@@ -642,8 +677,7 @@
                 cellMap[key].push(item);
             });
 
-            // Assegna offset verticale dentro la cella
-            const jitterMax = Math.min(28, bandH * 0.38);
+            const jitterMax = Math.min(20, bandH * 0.30);
             const nodeData = [];
 
             Object.entries(cellMap).forEach(([key, items]) => {
@@ -658,7 +692,8 @@
                     const forza = parseFloat(item.forza) || 0;
                     const invarianza = parseFloat(item.invariance_days) || 0;
                     const vol = parseFloat(item['instrument@volume']) || 1000;
-                    const r = Math.max(5, Math.min(18, 3 + Math.log10(vol + 1) * 3.2));
+                    // Raggio più piccolo: da 4 a 12
+                    const r = Math.max(4, Math.min(12, 3 + Math.log10(vol + 1) * 2.4));
                     const color = forza < 0 ? '#f44336' : '#4caf50';
                     nodeData.push({
                         ...item,
@@ -675,14 +710,13 @@
                 });
             });
 
-            // Gruppo nodi
             const nodeG = g.append('g').attr('class', 'nodes');
             const tooltip = document.getElementById('tooltip');
 
             function nodeMouseEnter(event, d) {
                 d3.select(this)
                     .transition().duration(120)
-                    .attr('stroke', '#000').attr('stroke-width', 3);
+                    .attr('stroke', '#000').attr('stroke-width', 2.5);
                 showTooltip(event, d);
             }
             function nodeMouseMove(event, d) {
@@ -692,57 +726,94 @@
                 d3.select(this)
                     .transition().duration(120)
                     .attr('stroke', d.portfolio ? '#2e7d32' : d._color)
-                    .attr('stroke-width', d.portfolio ? 3 : 1.5);
+                    .attr('stroke-width', d.portfolio ? 2.5 : 1.2);
                 tooltip.classList.remove('visible');
             }
 
             const circleData = nodeData.filter(d => !d._isCloud);
             const cloudData = nodeData.filter(d => d._isCloud);
 
-            // Nodi normali (cerchio)
-            nodeG.selectAll('circle.node').data(circleData).enter()
+            // ---- CERCHI MODERNI CON GRADIENTE ----
+            // Creiamo gradienti per ogni colore
+            const defs = svg.append('defs');
+
+            // Gradiente verde
+            const gradGreen = defs.append('radialGradient')
+                .attr('id', 'gradGreen')
+                .attr('cx', '35%').attr('cy', '35%');
+            gradGreen.append('stop').attr('offset', '0%').attr('stop-color', '#81c784');
+            gradGreen.append('stop').attr('offset', '100%').attr('stop-color', '#388e3c');
+
+            // Gradiente rosso
+            const gradRed = defs.append('radialGradient')
+                .attr('id', 'gradRed')
+                .attr('cx', '35%').attr('cy', '35%');
+            gradRed.append('stop').attr('offset', '0%').attr('stop-color', '#ef9a9a');
+            gradRed.append('stop').attr('offset', '100%').attr('stop-color', '#c62828');
+
+            // Gradiente verde portfolio
+            const gradGreenPort = defs.append('radialGradient')
+                .attr('id', 'gradGreenPort')
+                .attr('cx', '35%').attr('cy', '35%');
+            gradGreenPort.append('stop').attr('offset', '0%').attr('stop-color', '#a5d6a7');
+            gradGreenPort.append('stop').attr('offset', '100%').attr('stop-color', '#2e7d32');
+
+            // Gradiente rosso portfolio
+            const gradRedPort = defs.append('radialGradient')
+                .attr('id', 'gradRedPort')
+                .attr('cx', '35%').attr('cy', '35%');
+            gradRedPort.append('stop').attr('offset', '0%').attr('stop-color', '#ef9a9a');
+            gradRedPort.append('stop').attr('offset', '100%').attr('stop-color', '#b71c1c');
+
+            function getGradient(d) {
+                if (d.portfolio) {
+                    return d._forza < 0 ? 'url(#gradRedPort)' : 'url(#gradGreenPort)';
+                }
+                return d._forza < 0 ? 'url(#gradRed)' : 'url(#gradGreen)';
+            }
+
+            // Nodi normali (cerchio) con gradiente
+            nodeG.selectAll('circle.node-ball').data(circleData).enter()
                 .append('circle')
                 .attr('cx', d => d._cx)
                 .attr('cy', d => d._cy)
                 .attr('r', d => d._r)
-                .attr('fill', d => d._color)
-                .attr('fill-opacity', 0.72)
+                .attr('fill', d => getGradient(d))
                 .attr('stroke', d => d.portfolio ? '#2e7d32' : d._color)
-                .attr('stroke-width', d => d.portfolio ? 3 : 1.5)
-                .attr('class', d => d.portfolio ? 'node portfolio-node' : 'node')
+                .attr('stroke-width', d => d.portfolio ? 2.5 : 1.2)
+                .attr('class', d => d.portfolio ? 'node-ball portfolio-node' : 'node-ball')
                 .style('cursor', 'pointer')
                 .on('mouseenter', nodeMouseEnter)
                 .on('mousemove', nodeMouseMove)
                 .on('mouseleave', nodeMouseLeave);
 
-            // Nodi con invarianza negativa (nuvola)
+            // ---- NUVOLE MODERNE PIÙ PICCOLE ----
             nodeG.selectAll('path.node-cloud').data(cloudData).enter()
                 .append('path')
                 .attr('d', d => cloudPath(d._cx, d._cy, d._r))
-                .attr('fill', d => d._color)
-                .attr('fill-opacity', 0.72)
+                .attr('fill', d => getGradient(d))
                 .attr('stroke', d => d.portfolio ? '#2e7d32' : d._color)
-                .attr('stroke-width', d => d.portfolio ? 3 : 1.5)
-                .attr('class', d => d.portfolio ? 'node node-cloud portfolio-node' : 'node node-cloud')
+                .attr('stroke-width', d => d.portfolio ? 2.5 : 1.2)
+                .attr('class', d => d.portfolio ? 'node-cloud portfolio-node' : 'node-cloud')
                 .style('cursor', 'pointer')
                 .on('mouseenter', nodeMouseEnter)
                 .on('mousemove', nodeMouseMove)
                 .on('mouseleave', nodeMouseLeave);
 
-            // Etichette ticker (solo r >= 9)
-            nodeG.selectAll('text.node-label').data(nodeData.filter(d => d._r >= 9)).enter()
+            // Etichette ticker (solo r >= 7)
+            nodeG.selectAll('text.node-label').data(nodeData.filter(d => d._r >= 7)).enter()
                 .append('text')
                 .attr('class', 'node-label')
                 .attr('x', d => d._cx)
-                .attr('y', d => d._cy + d._r + 9)
+                .attr('y', d => d._cy + d._r + 8)
                 .attr('text-anchor', 'middle')
                 .attr('font-family', 'Orbitron, sans-serif')
-                .attr('font-size', 7)
+                .attr('font-size', 6.5)
                 .attr('fill', '#444')
                 .attr('pointer-events', 'none')
                 .text(d => d.id_instrument);
 
-            // ---- ZOOM & PAN ----
+            // ---- ZOOM ----
             _zoomBehavior = d3.zoom()
                 .scaleExtent([0.2, 6])
                 .on('zoom', event => {
@@ -822,20 +893,18 @@
             const btn = document.getElementById('togglePortfolioBtn');
             btn.style.background = _highlightPortfolio ? '#2e7d32' : '#000';
 
-            d3.selectAll('.node')
+            d3.selectAll('.node-ball, .node-cloud')
                 .transition().duration(200)
                 .attr('fill-opacity', d => {
-                    if (!_highlightPortfolio) return 0.72;
+                    if (!_highlightPortfolio) return 1;
                     return d.portfolio ? 1 : 0.12;
                 });
         }
 
-        // ---- FILTRO: code_market ----
         function populateMarketSelector(data) {
             const select = document.getElementById('marketSelect');
             const markets = [...new Set(data.map(d => d.code_market).filter(Boolean))].sort();
 
-            // Rimuove opzioni precedenti (tranne "Tutti i mercati")
             select.querySelectorAll('option:not([value="ALL"])').forEach(o => o.remove());
 
             markets.forEach(m => {
@@ -853,7 +922,6 @@
             applyFilters();
         }
 
-        // ---- FILTRO: int.inversion (forza negativa + invarianza negativa) ----
         function toggleIntInversion() {
             _intInversionActive = !_intInversionActive;
             const btn = document.getElementById('intInversionBtn');
@@ -861,7 +929,6 @@
             applyFilters();
         }
 
-        // ---- APPLICA TUTTI I FILTRI ATTIVI E RI-RENDERIZZA ----
         function applyFilters() {
             let filtered = _allData;
 
