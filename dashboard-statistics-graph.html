@@ -1,36 +1,29 @@
 <!DOCTYPE html>
 <html lang="it">
-
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Statistics Graph - Network 0.1</title>
+    <title>Statistics Graph - Timeline 1.0</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <script src="https://d3js.org/d3.v7.min.js"></script>
     <link rel="icon" type="image/png" href="images/icon-finest.png">
-
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&display=swap');
 
         :root {
             --bg-color: #f5f5f0;
             --neon-cyan: #000000;
-            --neon-blue: #333333;
             --glass-bg: #ffffff;
             --text-color: #333333;
             --border-color: #000000;
         }
 
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
             font-family: 'Orbitron', sans-serif;
             background-color: var(--bg-color);
-            padding: 20px;
+            padding: 15px;
             color: var(--text-color);
             min-height: 100vh;
             overflow: hidden;
@@ -41,14 +34,15 @@
             height: 100vh;
             display: flex;
             flex-direction: column;
+            gap: 12px;
         }
 
+        /* ---- HEADER ---- */
         .header-bar {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 20px;
-            padding: 15px 25px;
+            padding: 12px 20px;
             background: var(--glass-bg);
             border: 1px solid var(--border-color);
             border-radius: 8px;
@@ -57,7 +51,7 @@
 
         .user-info-left {
             flex: 1;
-            font-size: 13px;
+            font-size: 12px;
             color: var(--neon-cyan);
             display: flex;
             flex-direction: column;
@@ -70,35 +64,33 @@
             font-weight: 700;
             text-transform: uppercase;
             letter-spacing: 2px;
-            font-size: 1.3em;
+            font-size: 1.1em;
         }
 
         .header-actions {
+            flex: 1;
             display: flex;
-            gap: 10px;
+            gap: 8px;
+            justify-content: flex-end;
             align-items: center;
         }
 
         .close-btn {
-            padding: 8px 16px;
-            background: rgba(255, 0, 0, 0.15);
+            padding: 7px 14px;
+            background: rgba(255,0,0,0.12);
             border: 1px solid #ff3333;
             color: #ff3333;
             border-radius: 4px;
             cursor: pointer;
             font-family: inherit;
-            transition: all 0.3s;
             font-weight: bold;
-            font-size: 12px;
+            font-size: 11px;
+            transition: all 0.2s;
         }
+        .close-btn:hover { background: rgba(255,0,0,0.28); box-shadow: 0 0 8px #ff3333; }
 
-        .close-btn:hover {
-            background: rgba(255, 0, 0, 0.3);
-            box-shadow: 0 0 10px #ff3333;
-        }
-
-        .controls-btn {
-            padding: 8px 16px;
+        .ctrl-btn {
+            padding: 7px 14px;
             background: #000;
             color: #fff;
             border: none;
@@ -106,16 +98,26 @@
             cursor: pointer;
             font-family: inherit;
             font-weight: bold;
+            font-size: 11px;
+            transition: all 0.2s;
+        }
+        .ctrl-btn:hover { background: #333; }
+
+        /* ---- MESSAGE ---- */
+        .message {
+            padding: 10px 16px;
+            border-radius: 4px;
+            display: none;
+            border-left: 5px solid;
             font-size: 12px;
-            transition: all 0.3s;
+            flex-shrink: 0;
         }
+        .message.error  { background:#fee; color:#c00; border-color:#c00; display:block; }
+        .message.warning{ background:#fff3cd; color:#856404; border-color:#ffc107; display:block; }
+        .message.info   { background:#e8f4fd; color:#1565c0; border-color:#1565c0; display:block; }
 
-        .controls-btn:hover {
-            background: #333;
-            transform: scale(1.02);
-        }
-
-        .graph-container {
+        /* ---- GRAPH CONTAINER ---- */
+        .graph-wrapper {
             flex: 1;
             background: var(--glass-bg);
             border: 1px solid var(--border-color);
@@ -125,121 +127,18 @@
             min-height: 0;
         }
 
-        #graph {
+        #timeline-svg {
             width: 100%;
             height: 100%;
             cursor: grab;
         }
+        #timeline-svg:active { cursor: grabbing; }
 
-        #graph:active {
-            cursor: grabbing;
-        }
-
-        /* Tooltip styles */
-        .tooltip {
-            position: absolute;
-            background: rgba(0, 0, 0, 0.9);
-            color: #fff;
-            padding: 12px 16px;
-            border-radius: 6px;
-            font-family: 'Orbitron', sans-serif;
-            font-size: 11px;
-            pointer-events: none;
-            opacity: 0;
-            transition: opacity 0.2s;
-            z-index: 1000;
-            max-width: 280px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-            line-height: 1.6;
-        }
-
-        .tooltip.visible {
-            opacity: 1;
-        }
-
-        .tooltip .name {
-            font-weight: 700;
-            font-size: 13px;
-            color: #fff;
-            margin-bottom: 4px;
-        }
-
-        .tooltip .detail {
-            color: #aaa;
-            font-size: 10px;
-        }
-
-        .tooltip .value-positive {
-            color: #4caf50;
-            font-weight: bold;
-        }
-
-        .tooltip .value-negative {
-            color: #f44336;
-            font-weight: bold;
-        }
-
-        .tooltip .badge {
-            display: inline-block;
-            padding: 1px 8px;
-            border-radius: 10px;
-            font-size: 9px;
-            font-weight: 700;
-            margin-top: 3px;
-        }
-
-        .badge-sector {
-            background: #e3f2fd;
-            color: #1565c0;
-        }
-
-        .badge-market {
-            background: #f3e5f5;
-            color: #7b1fa2;
-        }
-
-        /* Legend */
-        .legend {
-            position: absolute;
-            bottom: 20px;
-            left: 20px;
-            background: rgba(255, 255, 255, 0.95);
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            padding: 12px 16px;
-            font-size: 10px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-            pointer-events: none;
-            z-index: 10;
-        }
-
-        .legend-item {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            margin: 3px 0;
-        }
-
-        .legend-color {
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            border: 1px solid rgba(0, 0, 0, 0.1);
-        }
-
-        .legend-label {
-            color: #555;
-        }
-
-        /* Loading */
+        /* ---- LOADING ---- */
         .loading-overlay {
             position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(255, 255, 255, 0.9);
+            inset: 0;
+            background: rgba(255,255,255,0.92);
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -247,740 +146,535 @@
             z-index: 100;
             font-family: 'Orbitron', sans-serif;
             color: #999;
+            gap: 12px;
         }
+        .loading-overlay i { font-size: 2.2em; animation: spin 1s linear infinite; }
+        .loading-sub { font-size: 10px; color: #bbb; }
+        @keyframes spin { to { transform: rotate(360deg); } }
 
-        .loading-overlay i {
-            font-size: 2.5em;
-            margin-bottom: 15px;
-            animation: spin 1s linear infinite;
-        }
-
-        @keyframes spin {
-            0% {
-                transform: rotate(0deg);
-            }
-
-            100% {
-                transform: rotate(360deg);
-            }
-        }
-
-        .loading-overlay .sub {
-            font-size: 11px;
-            color: #bbb;
-            margin-top: 8px;
-        }
-
-        /* Stats counter */
-        .stats-counter {
+        /* ---- TOOLTIP ---- */
+        .tooltip {
             position: absolute;
-            top: 15px;
-            right: 20px;
-            background: rgba(255, 255, 255, 0.92);
+            background: rgba(0,0,0,0.92);
+            color: #fff;
+            padding: 10px 14px;
+            border-radius: 6px;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 10px;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.15s;
+            z-index: 200;
+            max-width: 260px;
+            border: 1px solid rgba(255,255,255,0.12);
+            box-shadow: 0 6px 24px rgba(0,0,0,0.3);
+            line-height: 1.7;
+        }
+        .tooltip.visible { opacity: 1; }
+        .tooltip .tt-id   { font-weight: 700; font-size: 12px; margin-bottom: 2px; }
+        .tooltip .tt-desc { color: #bbb; font-size: 9px; margin-bottom: 5px; }
+        .tt-pos { color: #4caf50; font-weight: bold; }
+        .tt-neg { color: #f44336; font-weight: bold; }
+        .tt-badge {
+            display: inline-block; padding: 1px 7px;
+            border-radius: 10px; font-size: 8px; font-weight: 700; margin-right: 3px;
+        }
+        .tt-sector { background:#e3f2fd; color:#1565c0; }
+        .tt-market { background:#f3e5f5; color:#7b1fa2; }
+        .tt-portfolio { background:#e8f5e9; color:#2e7d32; }
+
+        /* ---- LEGEND ---- */
+        .legend {
+            position: absolute;
+            bottom: 16px;
+            right: 16px;
+            background: rgba(255,255,255,0.96);
             border: 1px solid #ddd;
             border-radius: 6px;
-            padding: 8px 14px;
-            font-size: 10px;
-            color: #666;
-            z-index: 10;
+            padding: 10px 14px;
+            font-size: 9px;
             pointer-events: none;
-            text-align: right;
-            line-height: 1.6;
+            z-index: 10;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.07);
+            line-height: 1.9;
         }
+        .legend-row { display: flex; align-items: center; gap: 6px; }
+        .legend-dot { width: 10px; height: 10px; border-radius: 50%; border: 1px solid rgba(0,0,0,0.15); flex-shrink: 0; }
 
-        .stats-counter strong {
-            color: #000;
+        /* ---- STATS ---- */
+        .stats-bar {
+            position: absolute;
+            top: 12px;
+            left: 14px;
+            background: rgba(255,255,255,0.94);
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 6px 12px;
+            font-size: 9px;
+            color: #666;
+            pointer-events: none;
+            z-index: 10;
+            line-height: 1.8;
         }
-
-        .message {
-            padding: 12px 20px;
-            margin-bottom: 15px;
-            border-radius: 4px;
-            display: none;
-            border-left: 5px solid;
-            font-size: 13px;
-            flex-shrink: 0;
-        }
-
-        .message.error {
-            background: #fee;
-            color: #c00;
-            border-color: #c00;
-            display: block;
-        }
-
-        .message.warning {
-            background: #fff3cd;
-            color: #856404;
-            border-color: #ffc107;
-            display: block;
-        }
-
-        @media (max-width: 768px) {
-            body {
-                padding: 10px;
-            }
-
-            .header-bar {
-                flex-direction: column;
-                gap: 10px;
-                text-align: center;
-                padding: 12px;
-            }
-
-            .user-info-left {
-                align-items: center;
-                font-size: 11px;
-            }
-
-            h1 {
-                font-size: 1em;
-            }
-
-            .legend {
-                bottom: 10px;
-                left: 10px;
-                padding: 8px 12px;
-                font-size: 9px;
-            }
-
-            .stats-counter {
-                top: 10px;
-                right: 10px;
-                font-size: 9px;
-                padding: 6px 10px;
-            }
-
-            .controls-btn,
-            .close-btn {
-                font-size: 10px;
-                padding: 6px 12px;
-            }
-        }
+        .stats-bar strong { color: #000; }
     </style>
 </head>
-
 <body>
-    <div class="main-container">
-        <div class="header-bar">
-            <div class="user-info-left">
-                <div><strong>Utente:</strong> <span id="usernameDisplay">-</span></div>
-                <div><strong>Valuta:</strong> <span id="currencyDisplay">-</span></div>
-                <div id="date-creation-container" style="display: none;"><strong>Data:</strong> <span
-                        id="dateCreationDisplay">-</span></div>
+<div class="main-container">
+
+    <!-- HEADER -->
+    <div class="header-bar">
+        <div class="user-info-left">
+            <div><strong>Utente:</strong> <span id="usernameDisplay">-</span></div>
+            <div><strong>Valuta:</strong> <span id="currencyDisplay">-</span></div>
+            <div id="date-creation-container" style="display:none;">
+                <strong>Dati del:</strong> <span id="dateCreationDisplay">-</span>
             </div>
-            <h1>🌐 Network Graph</h1>
-            <div class="header-actions">
-                <button class="controls-btn" onclick="resetGraph()" title="Resetta la visualizzazione">
-                    <i class="fas fa-home"></i> Reset
-                </button>
-                <button class="controls-btn" onclick="toggleForce()" title="Avvia/Ferma simulazione">
-                    <i class="fas fa-play"></i> <span id="forceToggleLabel">Pausa</span>
-                </button>
-                <button class="close-btn" onclick="window.close()">✕ Chiudi</button>
+        </div>
+        <h1>📊 Statistics Timeline</h1>
+        <div class="header-actions">
+            <button class="ctrl-btn" id="resetBtn" onclick="resetZoom()">
+                <i class="fas fa-compress-alt"></i> Reset
+            </button>
+            <button class="ctrl-btn" id="togglePortfolioBtn" onclick="togglePortfolioHighlight()">
+                <i class="fas fa-star"></i> Portfolio
+            </button>
+            <button class="close-btn" onclick="window.close()">✕ Chiudi</button>
+        </div>
+    </div>
+
+    <div id="message" class="message"></div>
+
+    <!-- GRAPH AREA -->
+    <div class="graph-wrapper" id="graphWrapper">
+        <svg id="timeline-svg"></svg>
+
+        <div class="loading-overlay" id="loadingOverlay">
+            <i class="fas fa-spinner"></i>
+            <div>Caricamento dati...</div>
+            <div class="loading-sub" id="loadingStatus">Connessione al server</div>
+        </div>
+
+        <div class="stats-bar" id="statsBar" style="display:none;">
+            <div>Strumenti: <strong id="statCount">0</strong></div>
+            <div>Settori: <strong id="statSectors">0</strong></div>
+            <div>Date: <strong id="statDates">0</strong></div>
+        </div>
+
+        <div class="legend" id="legend" style="display:none;">
+            <div class="legend-row"><span class="legend-dot" style="background:#4caf50;"></span> Forza positiva</div>
+            <div class="legend-row"><span class="legend-dot" style="background:#f44336;"></span> Forza negativa</div>
+            <div class="legend-row"><span class="legend-dot" style="background:#ff9800;"></span> Forza neutra</div>
+            <div class="legend-row"><span class="legend-dot" style="background:#fff; border:2px solid #2e7d32;"></span> In portafoglio</div>
+            <div class="legend-row" style="margin-top:4px; border-top:1px solid #eee; padding-top:4px; color:#999;">
+                ⬤ Dim. = Volume &nbsp;|&nbsp; 🖱 Scroll = Zoom
             </div>
         </div>
 
-        <div id="message" class="message"></div>
-
-        <div class="graph-container" id="graphContainer">
-            <div id="graph"></div>
-
-            <div class="loading-overlay" id="loadingOverlay">
-                <i class="fas fa-spinner"></i>
-                <div>Caricamento grafo...</div>
-                <div class="sub" id="loadingStatus">Inizializzazione</div>
-            </div>
-
-            <div class="legend" id="legend">
-                <div class="legend-item">
-                    <span class="legend-color" style="background: #4caf50;"></span>
-                    <span class="legend-label">Forza &gt; 0 (positiva)</span>
-                </div>
-                <div class="legend-item">
-                    <span class="legend-color" style="background: #f44336;"></span>
-                    <span class="legend-label">Forza &lt; 0 (negativa)</span>
-                </div>
-                <div class="legend-item">
-                    <span class="legend-color" style="background: #ff9800;"></span>
-                    <span class="legend-label">Forza ≈ 0 (neutra)</span>
-                </div>
-                <div class="legend-item" style="margin-top:6px; border-top:1px solid #eee; padding-top:6px;">
-                    <span style="font-size:9px; color:#999;">⏺ Dimensione = Volume</span>
-                </div>
-                <div class="legend-item">
-                    <span style="font-size:9px; color:#999;">🔗 Collegamenti = Settore/Mercato</span>
-                </div>
-            </div>
-
-            <div class="stats-counter" id="statsCounter">
-                <div><strong id="nodeCount">0</strong> nodi</div>
-                <div><strong id="linkCount">0</strong> connessioni</div>
-            </div>
-        </div>
-
-        <!-- Tooltip -->
         <div class="tooltip" id="tooltip"></div>
     </div>
 
-    <script>
-        // ============================================================
-        // CONFIGURAZIONE
-        // ============================================================
-        const API_URL_MARKET = "https://market-tunnel.fe-web.eu";
+</div>
 
-        const credentials = {
-            username: new URLSearchParams(window.location.search).get('username') || localStorage.getItem('username'),
-            token: new URLSearchParams(window.location.search).get('token') || localStorage.getItem('token'),
-            currency: new URLSearchParams(window.location.search).get('currency') || localStorage.getItem('currency') || 'EUR',
-            language: localStorage.getItem('language') || 'it_IT'
-        };
+<script>
+// ============================================================
+// CONFIG
+// ============================================================
+const API_URL = "https://feweb-tunnel.fe-web.eu";
 
-        let translations = {};
-        let graphData = null;
-        let simulation = null;
-        let isSimulationRunning = true;
+const credentials = {
+    username: new URLSearchParams(window.location.search).get('username') || localStorage.getItem('username'),
+    token:    new URLSearchParams(window.location.search).get('token')    || localStorage.getItem('token'),
+    currency: new URLSearchParams(window.location.search).get('currency') || localStorage.getItem('currency') || 'EUR',
+    language: localStorage.getItem('language') || 'it_IT'
+};
 
-        // ============================================================
-        // TRADUZIONI
-        // ============================================================
-        async function loadTranslations() {
-            try {
-                const response = await fetch(`lang/${credentials.language}.json`);
-                if (response.ok) {
-                    translations = await response.json();
-                }
-            } catch (err) {
-                console.error("Error loading translations:", err);
-            }
-        }
+let translations = {};
+let _allData = [];
+let _highlightPortfolio = false;
+let _svgRoot = null;
+let _zoomBehavior = null;
 
-        function getTranslation(key) {
-            return translations[key] || key;
-        }
+// ============================================================
+// TRADUZIONI
+// ============================================================
+async function loadTranslations() {
+    try {
+        const r = await fetch(`lang/${credentials.language}.json`);
+        if (r.ok) translations = await r.json();
+    } catch(e) { console.warn('translations not loaded', e); }
+}
 
-        function getSectorLabel(sector) {
-            const translated = getTranslation('dom.sector:' + sector);
-            return translated && translated !== ('dom.sector:' + sector) ? translated : sector;
-        }
+function t(key) { return translations[key] || key; }
 
-        // ============================================================
-        // INIT
-        // ============================================================
-        async function init() {
-            if (!credentials.username) {
-                window.location.href = 'index.html';
-                return;
-            }
+function sectorLabel(s) {
+    const k = 'dom.sector:' + s;
+    const v = translations[k];
+    return (v && v !== k) ? v : s;
+}
 
-            document.getElementById('usernameDisplay').textContent = credentials.username;
-            document.getElementById('currencyDisplay').textContent = credentials.currency;
+// ============================================================
+// INIT
+// ============================================================
+async function init() {
+    if (!credentials.username) { window.location.href = 'index.html'; return; }
+    document.getElementById('usernameDisplay').textContent = credentials.username;
+    document.getElementById('currencyDisplay').textContent = credentials.currency;
+    await loadTranslations();
+    await fetchStatistics();
+}
 
-            await loadTranslations();
-            await fetchMarketData();
-        }
-
-        // ============================================================
-        // FETCH DATI
-        // ============================================================
-        async function fetchMarketData() {
-            const msgDiv = document.getElementById('message');
-            msgDiv.style.display = 'none';
-
-            const urlParams = new URLSearchParams(window.location.search);
-            const date_start = urlParams.get('date_start') || localStorage.getItem('date_start') || '';
-            const date_end = urlParams.get('date_end') || localStorage.getItem('date_end') || '';
-
-            const payload = {
+// ============================================================
+// FETCH /getstatistics
+// ============================================================
+async function fetchStatistics() {
+    document.getElementById('loadingStatus').textContent = 'Chiamata /getstatistics...';
+    try {
+        const resp = await fetch(`${API_URL}/getstatistics`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
                 username: credentials.username,
                 token: credentials.token,
                 currency: credentials.currency,
-                date_start: date_start,
-                date_end: date_end,
-                sector: null
-            };
-
-            document.getElementById('loadingStatus').textContent = 'Fetching data from server...';
-
-            try {
-                const response = await fetch(`${API_URL_MARKET}/getmarket`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-
-                const result = await response.json();
-
-                if (result.status === 'ok') {
-                    if (result.date_creation) {
-                        document.getElementById('dateCreationDisplay').textContent = result.date_creation;
-                        document.getElementById('date-creation-container').style.display = 'block';
-                    }
-                    buildGraph(result.data);
-                } else {
-                    showMessage(result.msg || "Errore API", "error");
-                }
-            } catch (err) {
-                console.error("Fetch Error:", err);
-                showMessage("Impossibile raggiungere il server. Verificare la connessione.", "error");
-            }
-        }
-
-        // ============================================================
-        // COSTRUZIONE GRAFO
-        // ============================================================
-        function buildGraph(data) {
-            if (!data || data.length === 0) {
-                showMessage("Nessun dato disponibile per i filtri selezionati.", "warning");
-                document.getElementById('loadingOverlay').style.display = 'none';
-                return;
-            }
-
-            document.getElementById('loadingStatus').textContent = 'Building network...';
-
-            // --- NODI ---
-            const nodes = data.map((row, index) => {
-                const forza = parseFloat(row.forza) || 0;
-                const volume = parseFloat(row['instrument@volume']) || 1000;
-                // Scala il volume per il raggio (log scale per evitare outlier)
-                const radius = Math.max(8, Math.min(35, 5 + Math.log10(volume) * 4));
-
-                return {
-                    id: row.id_instrument,
-                    index: index,
-                    description: row.instrument_description || row.id_instrument,
-                    sector: row.sector || 'unknown',
-                    market: row.code_market || 'unknown',
-                    currency: row.currency || credentials.currency,
-                    forza: forza,
-                    invariance_days: parseInt(row.invariance_days) || 0,
-                    price_close: parseFloat(row['price@close']) || 0,
-                    volume: volume,
-                    pe: parseFloat(row.PE) || null,
-                    eps: parseFloat(row.EPS) || null,
-                    market_cap: row.market_capitalization || null,
-                    radius: radius,
-                    // Colore in base alla forza
-                    color: forza > 0.1 ? '#4caf50' : (forza < -0.1 ? '#f44336' : '#ff9800'),
-                    // Dimensione per il force layout
-                    size: radius * 0.8
-                };
-            });
-
-            // --- LINK (connessioni) ---
-            // Creiamo connessioni basate su:
-            // 1. Stesso settore (peso 2)
-            // 2. Stesso mercato (peso 1)
-            // 3. Forza simile (entro 0.5) (peso 0.5)
-            const links = [];
-            const linkSet = new Set();
-
-            for (let i = 0; i < nodes.length; i++) {
-                for (let j = i + 1; j < nodes.length; j++) {
-                    const a = nodes[i];
-                    const b = nodes[j];
-                    let weight = 0;
-                    let type = [];
-
-                    // Stesso settore
-                    if (a.sector === b.sector && a.sector !== 'unknown') {
-                        weight += 2;
-                        type.push('sector');
-                    }
-
-                    // Stesso mercato
-                    if (a.market === b.market && a.market !== 'unknown') {
-                        weight += 1;
-                        type.push('market');
-                    }
-
-                    // Forza simile (entro 0.5)
-                    if (Math.abs(a.forza - b.forza) < 0.5) {
-                        weight += 0.5;
-                        type.push('similar_force');
-                    }
-
-                    // Se ha almeno una connessione
-                    if (weight > 0) {
-                        const key = [a.id, b.id].sort().join('|');
-                        if (!linkSet.has(key)) {
-                            linkSet.add(key);
-                            links.push({
-                                source: a.id,
-                                target: b.id,
-                                weight: weight,
-                                type: type.join(', ')
-                            });
-                        }
-                    }
-                }
-            }
-
-            // Limita il numero di link per performance (max 500)
-            const maxLinks = 500;
-            let finalLinks = links;
-            if (links.length > maxLinks) {
-                // Ordina per peso e prendi i più significativi
-                links.sort((a, b) => b.weight - a.weight);
-                finalLinks = links.slice(0, maxLinks);
-                console.log(`Links limitati a ${maxLinks} (da ${links.length})`);
-            }
-
-            graphData = { nodes, links: finalLinks };
-
-            document.getElementById('loadingStatus').textContent = `Grafo costruito: ${nodes.length} nodi, ${finalLinks.length} connessioni`;
-
-            // Aggiorna contatori
-            document.getElementById('nodeCount').textContent = nodes.length;
-            document.getElementById('linkCount').textContent = finalLinks.length;
-
-            // Renderizza il grafo
-            renderGraph(graphData);
-
-            document.getElementById('loadingOverlay').style.display = 'none';
-        }
-
-        // ============================================================
-        // RENDERIZZAZIONE GRAFO CON D3.JS
-        // ============================================================
-        function renderGraph(data) {
-            const container = document.getElementById('graph');
-            const width = container.clientWidth || 800;
-            const height = container.clientHeight || 600;
-
-            // Pulisci il container
-            container.innerHTML = '';
-
-            // Crea SVG
-            const svg = d3.select('#graph')
-                .append('svg')
-                .attr('width', width)
-                .attr('height', height)
-                .style('background', '#fafafa');
-
-            // Definisci gradienti per i nodi
-            const defs = svg.append('defs');
-
-            // Aggiungi gradienti per ogni colore principale
-            ['#4caf50', '#f44336', '#ff9800'].forEach(color => {
-                const grad = defs.append('radialGradient')
-                    .attr('id', `grad-${color.replace('#', '')}`)
-                    .attr('cx', '30%')
-                    .attr('cy', '30%');
-                grad.append('stop')
-                    .attr('offset', '0%')
-                    .attr('stop-color', color)
-                    .attr('stop-opacity', 0.9);
-                grad.append('stop')
-                    .attr('offset', '100%')
-                    .attr('stop-color', color)
-                    .attr('stop-opacity', 0.5);
-            });
-
-            // Crea un gruppo per i link
-            const linkGroup = svg.append('g')
-                .attr('class', 'links');
-
-            // Crea un gruppo per i nodi
-            const nodeGroup = svg.append('g')
-                .attr('class', 'nodes');
-
-            // Crea un gruppo per le etichette
-            const labelGroup = svg.append('g')
-                .attr('class', 'labels');
-
-            // Mappa per lookup rapido
-            const nodeMap = {};
-            data.nodes.forEach(n => nodeMap[n.id] = n);
-
-            // --- FORCE SIMULATION ---
-            simulation = d3.forceSimulation(data.nodes)
-                .force('charge', d3.forceManyBody()
-                    .strength(d => -d.radius * 2.5)
-                    .distanceMax(400)
-                )
-                .force('link', d3.forceLink(data.links)
-                    .id(d => d.id)
-                    .distance(d => {
-                        // Distanza inversamente proporzionale al peso
-                        const base = 120;
-                        return base / (d.weight || 1) + 40;
-                    })
-                    .strength(d => Math.min(0.3, d.weight / 5))
-                )
-                .force('center', d3.forceCenter(width / 2, height / 2))
-                .force('collision', d3.forceCollide()
-                    .radius(d => d.radius + 8)
-                    .strength(0.8)
-                )
-                .force('x', d3.forceX(width / 2).strength(0.02))
-                .force('y', d3.forceY(height / 2).strength(0.02))
-                .alphaDecay(0.02)
-                .velocityDecay(0.4);
-
-            // --- DISEGNA I LINK ---
-            const link = linkGroup.selectAll('line')
-                .data(data.links)
-                .enter()
-                .append('line')
-                .attr('stroke', '#ccc')
-                .attr('stroke-opacity', 0.4)
-                .attr('stroke-width', d => Math.min(3, d.weight * 0.8 + 0.5))
-                .attr('stroke-dasharray', d => d.type.includes('similar_force') ? '4,4' : 'none');
-
-            // --- DISEGNA I NODI ---
-            // Primo passaggio: crea i cerchi
-            const node = nodeGroup.selectAll('circle')
-                .data(data.nodes)
-                .enter()
-                .append('circle')
-                .attr('r', d => d.radius)
-                .attr('fill', d => `url(#grad-${d.color.replace('#', '')})`)
-                .attr('stroke', d => d.color)
-                .attr('stroke-width', 2)
-                .style('cursor', 'pointer')
-                .style('transition', 'stroke-width 0.2s');
-
-            // Aggiungi glow effect sul hover
-            node.on('mouseenter', function (event, d) {
-                d3.select(this)
-                    .transition()
-                    .duration(200)
-                    .attr('stroke-width', 4)
-                    .attr('stroke', '#000');
-
-                // Mostra tooltip
-                showTooltip(event, d);
+                language: credentials.language,
+                filter: null
             })
-                .on('mouseleave', function () {
-                    d3.select(this)
-                        .transition()
-                        .duration(200)
-                        .attr('stroke-width', 2)
-                        .attr('stroke', d => d.color);
+        });
 
-                    hideTooltip();
-                })
-                .on('click', function (event, d) {
-                    // Zoom sul nodo
-                    highlightNode(d.id);
-                });
+        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
 
-            // --- DISEGNA LE ETICHETTE ---
-            const label = labelGroup.selectAll('text')
-                .data(data.nodes)
-                .enter()
-                .append('text')
-                .text(d => d.id.length > 10 ? d.id.substring(0, 8) + '…' : d.id)
-                .attr('font-size', d => Math.max(6, Math.min(10, d.radius * 0.4)))
-                .attr('font-family', 'Orbitron, sans-serif')
-                .attr('fill', '#333')
-                .attr('text-anchor', 'middle')
-                .attr('dy', d => d.radius + 12)
-                .style('pointer-events', 'none')
-                .style('opacity', 0.8);
+        // La risposta è JSON (FileResponse del server)
+        const result = await resp.json();
 
-            // --- AGGIORNAMENTO POSIZIONI ---
-            simulation.on('tick', () => {
-                // Aggiorna link
-                link
-                    .attr('x1', d => d.source.x)
-                    .attr('y1', d => d.source.y)
-                    .attr('x2', d => d.target.x)
-                    .attr('y2', d => d.target.y);
-
-                // Aggiorna nodi
-                node
-                    .attr('cx', d => d.x)
-                    .attr('cy', d => d.y);
-
-                // Aggiorna etichette
-                label
-                    .attr('x', d => d.x)
-                    .attr('y', d => d.y);
-            });
-
-            // --- ZOOM & PAN ---
-            const zoom = d3.zoom()
-                .scaleExtent([0.3, 4])
-                .on('zoom', (event) => {
-                    svg.selectAll('g').attr('transform', event.transform);
-                });
-
-            svg.call(zoom);
-
-            // Zoom iniziale per adattare tutto
-            setTimeout(() => {
-                const bounds = svg.node().getBBox();
-                const fullWidth = bounds.width || width;
-                const fullHeight = bounds.height || height;
-                const scale = Math.min(
-                    (width - 40) / fullWidth,
-                    (height - 40) / fullHeight
-                );
-                const centerX = (width - fullWidth * scale) / 2;
-                const centerY = (height - fullHeight * scale) / 2;
-
-                svg.transition()
-                    .duration(800)
-                    .call(
-                        zoom.transform,
-                        d3.zoomIdentity.translate(centerX, centerY).scale(Math.min(1.2, scale * 0.9))
-                    );
-            }, 500);
-
-            // Gestisci resize
-            window.addEventListener('resize', () => {
-                const newWidth = container.clientWidth;
-                const newHeight = container.clientHeight;
-                svg.attr('width', newWidth).attr('height', newHeight);
-                simulation.force('center', d3.forceCenter(newWidth / 2, newHeight / 2));
-                simulation.alpha(0.3).restart();
-            });
-
-            // Salva riferimento per reset
-            window._graphSvg = svg;
-            window._graphZoom = zoom;
+        if (result.status !== 'ok') {
+            showMessage(result.msg || 'Errore API', 'error');
+            return;
         }
 
-        // ============================================================
-        // TOOLTIP
-        // ============================================================
-        const tooltipEl = document.getElementById('tooltip');
-
-        function showTooltip(event, d) {
-            const forza = d.forza;
-            const forzaClass = forza > 0.1 ? 'value-positive' : (forza < -0.1 ? 'value-negative' : '');
-
-            const sectorLabel = getSectorLabel(d.sector);
-
-            tooltipEl.innerHTML = `
-                <div class="name">${d.id}</div>
-                <div class="detail">${d.description}</div>
-                <div style="margin-top:6px;">
-                    <span class="badge badge-sector">${sectorLabel}</span>
-                    <span class="badge badge-market">${d.market}</span>
-                </div>
-                <div style="margin-top:6px; border-top:1px solid #333; padding-top:6px;">
-                    <div>Forza: <span class="${forzaClass}">${forza.toFixed(3)}</span></div>
-                    <div>Invariance: ${d.invariance_days} giorni</div>
-                    <div>Close: ${d.price_close.toFixed(2)} ${d.currency}</div>
-                    <div>Volume: ${d.volume.toLocaleString()}</div>
-                    ${d.pe ? `<div>P/E: ${d.pe.toFixed(1)}</div>` : ''}
-                    ${d.market_cap ? `<div>Cap: ${d.market_cap}</div>` : ''}
-                </div>
-            `;
-
-            const rect = event.target.getBoundingClientRect();
-            const containerRect = document.getElementById('graphContainer').getBoundingClientRect();
-
-            let left = event.clientX - containerRect.left + 15;
-            let top = event.clientY - containerRect.top - 10;
-
-            // Evita che esca dai bordi
-            const tooltipWidth = 280;
-            const tooltipHeight = 240;
-            if (left + tooltipWidth > containerRect.width) {
-                left = event.clientX - containerRect.left - tooltipWidth - 15;
-            }
-            if (top + tooltipHeight > containerRect.height) {
-                top = containerRect.height - tooltipHeight - 10;
-            }
-            if (top < 10) top = 10;
-            if (left < 10) left = 10;
-
-            tooltipEl.style.left = left + 'px';
-            tooltipEl.style.top = top + 'px';
-            tooltipEl.classList.add('visible');
+        if (result.date_creation) {
+            document.getElementById('dateCreationDisplay').textContent = result.date_creation;
+            document.getElementById('date-creation-container').style.display = 'block';
         }
 
-        function hideTooltip() {
-            tooltipEl.classList.remove('visible');
-        }
-
-        // ============================================================
-        // FUNZIONI DI CONTROLLO
-        // ============================================================
-        function resetGraph() {
-            if (simulation) {
-                // Riavviamo la simulazione con nuovi parametri
-                simulation.alpha(0.5).restart();
-                // Resetta lo zoom
-                const svg = document.querySelector('#graph svg');
-                if (svg && window._graphZoom) {
-                    const width = svg.clientWidth || 800;
-                    const height = svg.clientHeight || 600;
-                    d3.select(svg)
-                        .transition()
-                        .duration(600)
-                        .call(
-                            window._graphZoom.transform,
-                            d3.zoomIdentity.translate(0, 0).scale(1)
-                        );
-                }
-            }
-        }
-
-        function toggleForce() {
-            if (!simulation) return;
-            isSimulationRunning = !isSimulationRunning;
-            if (isSimulationRunning) {
-                simulation.alpha(0.3).restart();
-                document.getElementById('forceToggleLabel').textContent = 'Pausa';
-            } else {
-                simulation.stop();
-                document.getElementById('forceToggleLabel').textContent = 'Avvia';
-            }
-        }
-
-        function highlightNode(id) {
-            if (!simulation) return;
-            // Trova il nodo
-            const node = graphData.nodes.find(n => n.id === id);
-            if (!node) return;
-
-            // Centro la vista sul nodo
-            const svg = document.querySelector('#graph svg');
-            if (!svg) return;
-
-            const width = svg.clientWidth || 800;
-            const height = svg.clientHeight || 600;
-
-            // Calcola la trasformazione per centrare il nodo
-            const scale = 1.5;
-            const tx = width / 2 - node.x * scale;
-            const ty = height / 2 - node.y * scale;
-
-            d3.select(svg)
-                .transition()
-                .duration(800)
-                .call(
-                    window._graphZoom.transform,
-                    d3.zoomIdentity.translate(tx, ty).scale(scale)
-                );
-
-            // Evidenzia il nodo
-            d3.select(svg).selectAll('circle')
-                .attr('stroke-width', d => d.id === id ? 6 : 2)
-                .attr('stroke', d => d.id === id ? '#000' : d.color);
-        }
-
-        // ============================================================
-        // UTILITY
-        // ============================================================
-        function showMessage(text, type) {
-            const msgDiv = document.getElementById('message');
-            msgDiv.textContent = text;
-            msgDiv.className = `message ${type}`;
-            msgDiv.style.display = 'block';
+        _allData = result.data || [];
+        if (_allData.length === 0) {
+            showMessage('Nessun dato disponibile (PE 0-20).', 'warning');
             document.getElementById('loadingOverlay').style.display = 'none';
+            return;
         }
 
-        // ============================================================
-        // AVVIO
-        // ============================================================
-        window.onload = init;
-    </script>
-</body>
+        document.getElementById('loadingStatus').textContent = `${_allData.length} strumenti ricevuti. Rendering...`;
+        buildTimeline(_allData);
 
+    } catch(err) {
+        console.error(err);
+        showMessage('Impossibile raggiungere il server: ' + err.message, 'error');
+        document.getElementById('loadingOverlay').style.display = 'none';
+    }
+}
+
+// ============================================================
+// BUILD TIMELINE
+// ============================================================
+function buildTimeline(data) {
+    const wrapper = document.getElementById('graphWrapper');
+    const W = wrapper.clientWidth  || 1200;
+    const H = wrapper.clientHeight || 700;
+
+    // --- Raccolta valori unici ---
+    const dateSet   = [...new Set(data.map(d => d.date_start).filter(Boolean))].sort();
+    const sectorSet = [...new Set(data.map(d => d.sector || 'N/D'))].sort();
+
+    const nDates   = dateSet.length;
+    const nSectors = sectorSet.length;
+
+    // --- Margini ---
+    const MARGIN = { top: 50, right: 30, bottom: 50, left: 160 };
+    const innerW  = Math.max(W  - MARGIN.left - MARGIN.right,  nDates   * 90);
+    const innerH  = Math.max(H  - MARGIN.top  - MARGIN.bottom, nSectors * 80);
+
+    // --- Scale ---
+    const xScale = d3.scalePoint()
+        .domain(dateSet)
+        .range([0, innerW])
+        .padding(0.5);
+
+    const yScale = d3.scalePoint()
+        .domain(sectorSet)
+        .range([0, innerH])
+        .padding(0.5);
+
+    // --- SVG ---
+    const svgEl = document.getElementById('timeline-svg');
+    d3.select(svgEl).selectAll('*').remove();
+
+    const svg = d3.select(svgEl)
+        .attr('width',  W)
+        .attr('height', H);
+
+    _svgRoot = svg;
+
+    // Sfondo
+    svg.append('rect')
+        .attr('width', W).attr('height', H)
+        .attr('fill', '#fafafa');
+
+    // Gruppo principale (zoomabile)
+    const g = svg.append('g')
+        .attr('class', 'main-g')
+        .attr('transform', `translate(${MARGIN.left},${MARGIN.top})`);
+
+    // ---- GRIGLIATTURA ----
+    // Linee verticali (date)
+    g.append('g').attr('class', 'grid-v')
+        .selectAll('line').data(dateSet).enter()
+        .append('line')
+        .attr('x1', d => xScale(d)).attr('x2', d => xScale(d))
+        .attr('y1', -20).attr('y2', innerH + 20)
+        .attr('stroke', '#e0e0e0').attr('stroke-width', 1)
+        .attr('stroke-dasharray', '4,4');
+
+    // Bande orizzontali settori (swimlane)
+    const bandH = yScale.step();
+    g.append('g').attr('class', 'swimlanes')
+        .selectAll('rect').data(sectorSet).enter()
+        .append('rect')
+        .attr('x', -MARGIN.left)
+        .attr('y', d => yScale(d) - bandH / 2)
+        .attr('width',  innerW + MARGIN.left + MARGIN.right)
+        .attr('height', bandH)
+        .attr('fill', (d, i) => i % 2 === 0 ? 'rgba(0,0,0,0.02)' : 'transparent');
+
+    // ---- ASSE X (date) ----
+    const xAxis = d3.axisTop(xScale)
+        .tickSize(0)
+        .tickFormat(d => d);
+
+    g.append('g').attr('class', 'axis-x')
+        .call(xAxis)
+        .selectAll('text')
+        .attr('font-family', 'Orbitron, sans-serif')
+        .attr('font-size', 9)
+        .attr('fill', '#555')
+        .attr('transform', 'rotate(-30)')
+        .attr('text-anchor', 'start');
+
+    g.select('.axis-x .domain').remove();
+
+    // ---- ASSE Y (settori) ----
+    g.append('g').attr('class', 'axis-y')
+        .selectAll('text').data(sectorSet).enter()
+        .append('text')
+        .attr('x', -8)
+        .attr('y', d => yScale(d))
+        .attr('dy', '0.35em')
+        .attr('text-anchor', 'end')
+        .attr('font-family', 'Orbitron, sans-serif')
+        .attr('font-size', 9)
+        .attr('fill', '#333')
+        .attr('font-weight', '600')
+        .text(d => sectorLabel(d).substring(0, 22));
+
+    // Linee orizzontali settore
+    g.append('g').attr('class', 'grid-h')
+        .selectAll('line').data(sectorSet).enter()
+        .append('line')
+        .attr('x1', -MARGIN.left).attr('x2', innerW)
+        .attr('y1', d => yScale(d)).attr('y2', d => yScale(d))
+        .attr('stroke', '#d0d0d0').attr('stroke-width', 0.8);
+
+    // ---- NODI ----
+    // Calcola posizioni con jitter verticale per evitare sovrapposizioni
+    // Raggruppa per (date_start, sector)
+    const cellMap = {};
+    data.forEach(item => {
+        const ds = item.date_start || '';
+        const sc = item.sector || 'N/D';
+        const key = ds + '|' + sc;
+        if (!cellMap[key]) cellMap[key] = [];
+        cellMap[key].push(item);
+    });
+
+    // Assegna offset verticale dentro la cella
+    const jitterMax = Math.min(28, bandH * 0.38);
+    const nodeData = [];
+
+    Object.entries(cellMap).forEach(([key, items]) => {
+        const [ds, sc] = key.split('|');
+        const cx = xScale(ds);
+        const cy = yScale(sc);
+        if (cx === undefined || cy === undefined) return;
+
+        const n = items.length;
+        items.forEach((item, idx) => {
+            const offset = n === 1 ? 0 : (idx / (n - 1) - 0.5) * 2 * jitterMax;
+            const forza = parseFloat(item.forza) || 0;
+            const vol   = parseFloat(item['instrument@volume']) || 1000;
+            const r     = Math.max(5, Math.min(18, 3 + Math.log10(vol + 1) * 3.2));
+            const color = forza >  0.05 ? '#4caf50'
+                        : forza < -0.05 ? '#f44336'
+                        :                  '#ff9800';
+            nodeData.push({
+                ...item,
+                _cx: cx,
+                _cy: cy + offset,
+                _r:  r,
+                _color: color,
+                _sector: sc,
+                _forza: forza,
+                _vol: vol
+            });
+        });
+    });
+
+    // Gruppo nodi
+    const nodeG = g.append('g').attr('class', 'nodes');
+    const tooltip = document.getElementById('tooltip');
+
+    const circles = nodeG.selectAll('circle').data(nodeData).enter()
+        .append('circle')
+        .attr('cx', d => d._cx)
+        .attr('cy', d => d._cy)
+        .attr('r',  d => d._r)
+        .attr('fill', d => d._color)
+        .attr('fill-opacity', 0.72)
+        .attr('stroke', d => d.portfolio ? '#2e7d32' : d._color)
+        .attr('stroke-width', d => d.portfolio ? 3 : 1.5)
+        .attr('class', d => d.portfolio ? 'node portfolio-node' : 'node')
+        .style('cursor', 'pointer')
+        .on('mouseenter', function(event, d) {
+            d3.select(this)
+                .transition().duration(120)
+                .attr('stroke', '#000').attr('stroke-width', 3);
+            showTooltip(event, d);
+        })
+        .on('mousemove', function(event, d) {
+            positionTooltip(event);
+        })
+        .on('mouseleave', function(event, d) {
+            d3.select(this)
+                .transition().duration(120)
+                .attr('stroke', d => d.portfolio ? '#2e7d32' : d._color)
+                .attr('stroke-width', d => d.portfolio ? 3 : 1.5);
+            tooltip.classList.remove('visible');
+        });
+
+    // Etichette ticker (solo r >= 9)
+    nodeG.selectAll('text.node-label').data(nodeData.filter(d => d._r >= 9)).enter()
+        .append('text')
+        .attr('class', 'node-label')
+        .attr('x', d => d._cx)
+        .attr('y', d => d._cy + d._r + 9)
+        .attr('text-anchor', 'middle')
+        .attr('font-family', 'Orbitron, sans-serif')
+        .attr('font-size', 7)
+        .attr('fill', '#444')
+        .attr('pointer-events', 'none')
+        .text(d => d.id_instrument);
+
+    // ---- ZOOM & PAN ----
+    _zoomBehavior = d3.zoom()
+        .scaleExtent([0.2, 6])
+        .on('zoom', event => {
+            g.attr('transform', `translate(${MARGIN.left + event.transform.x},${MARGIN.top + event.transform.y}) scale(${event.transform.k})`);
+        });
+
+    svg.call(_zoomBehavior);
+
+    // ---- FINALIZE ----
+    document.getElementById('statCount').textContent   = data.length;
+    document.getElementById('statSectors').textContent = sectorSet.length;
+    document.getElementById('statDates').textContent   = dateSet.length;
+    document.getElementById('statsBar').style.display  = 'block';
+    document.getElementById('legend').style.display    = 'block';
+    document.getElementById('loadingOverlay').style.display = 'none';
+}
+
+// ============================================================
+// TOOLTIP
+// ============================================================
+function showTooltip(event, d) {
+    const tooltip = document.getElementById('tooltip');
+    const forza = d._forza;
+    const fc = forza > 0.05 ? 'tt-pos' : (forza < -0.05 ? 'tt-neg' : '');
+    const pe  = d.PE && d.PE !== 'None' ? parseFloat(d.PE).toFixed(1) : '-';
+    const eps = d.EPS && d.EPS !== 'None' ? d.EPS : '-';
+
+    tooltip.innerHTML = `
+        <div class="tt-id">${d.id_instrument || '-'}</div>
+        <div class="tt-desc">${(d.instrument_description || '').substring(0, 40)}</div>
+        <div style="margin-bottom:4px;">
+            <span class="tt-badge tt-sector">${sectorLabel(d._sector)}</span>
+            <span class="tt-badge tt-market">${d.code_market || '-'}</span>
+            ${d.portfolio ? '<span class="tt-badge tt-portfolio">★ Portfolio</span>' : ''}
+        </div>
+        <div style="border-top:1px solid #444; padding-top:5px;">
+            <div>Data: ${d.date_start || '-'}</div>
+            <div>Forza: <span class="${fc}">${forza.toFixed(3)}</span></div>
+            <div>Close: ${d['price@close'] || '-'} ${d.currency || ''}</div>
+            <div>Volume: ${d['instrument@volume'] ? parseFloat(d['instrument@volume']).toLocaleString() : '-'}</div>
+            <div>P/E: ${pe} &nbsp;|&nbsp; EPS: ${eps}</div>
+            <div>Cap: ${d.market_capitalization || '-'}</div>
+            <div>Inv. days: ${d.invariance_days || '-'}</div>
+        </div>
+    `;
+    tooltip.classList.add('visible');
+    positionTooltip(event);
+}
+
+function positionTooltip(event) {
+    const tooltip = document.getElementById('tooltip');
+    const wrapper = document.getElementById('graphWrapper');
+    const wr = wrapper.getBoundingClientRect();
+    const TW = 260, TH = 230;
+    let left = event.clientX - wr.left + 14;
+    let top  = event.clientY - wr.top  - 10;
+    if (left + TW > wr.width)  left = event.clientX - wr.left - TW - 14;
+    if (top  + TH > wr.height) top  = wr.height - TH - 10;
+    if (top < 6) top = 6;
+    if (left < 6) left = 6;
+    tooltip.style.left = left + 'px';
+    tooltip.style.top  = top  + 'px';
+}
+
+// ============================================================
+// CONTROLS
+// ============================================================
+function resetZoom() {
+    if (_svgRoot && _zoomBehavior) {
+        _svgRoot.transition().duration(500)
+            .call(_zoomBehavior.transform, d3.zoomIdentity);
+    }
+}
+
+function togglePortfolioHighlight() {
+    _highlightPortfolio = !_highlightPortfolio;
+    const btn = document.getElementById('togglePortfolioBtn');
+    btn.style.background = _highlightPortfolio ? '#2e7d32' : '#000';
+
+    d3.selectAll('circle.node')
+        .transition().duration(200)
+        .attr('fill-opacity', d => {
+            if (!_highlightPortfolio) return 0.72;
+            return d.portfolio ? 1 : 0.12;
+        });
+}
+
+// ============================================================
+// UTILITY
+// ============================================================
+function showMessage(text, type) {
+    const el = document.getElementById('message');
+    el.textContent = text;
+    el.className = `message ${type}`;
+    document.getElementById('loadingOverlay').style.display = 'none';
+}
+
+// ============================================================
+// START
+// ============================================================
+window.onload = init;
+</script>
+</body>
 </html>
