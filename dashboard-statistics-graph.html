@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Statistics Graph 0.3</title>
+    <title>Statistics Graph 0.5</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <script src="https://d3js.org/d3.v7.min.js"></script>
     <link rel="icon" type="image/png" href="images/icon-finest.png">
@@ -31,12 +31,13 @@
             padding: 15px;
             color: var(--text-color);
             min-height: 100vh;
-            overflow: hidden;
+            overflow-y: auto;
+            overflow-x: hidden;
         }
 
         .main-container {
             width: 100%;
-            height: 100vh;
+            min-height: 100vh;
             display: flex;
             flex-direction: column;
             gap: 12px;
@@ -52,6 +53,8 @@
             border: 1px solid var(--border-color);
             border-radius: 8px;
             flex-shrink: 0;
+            flex-wrap: wrap;
+            gap: 8px;
         }
 
         .user-info-left {
@@ -61,6 +64,7 @@
             display: flex;
             flex-direction: column;
             gap: 3px;
+            min-width: 150px;
         }
 
         h1 {
@@ -70,6 +74,7 @@
             text-transform: uppercase;
             letter-spacing: 2px;
             font-size: 1.1em;
+            min-width: 200px;
         }
 
         .header-actions {
@@ -78,6 +83,8 @@
             gap: 8px;
             justify-content: flex-end;
             align-items: center;
+            flex-wrap: wrap;
+            min-width: 200px;
         }
 
         .close-btn {
@@ -249,18 +256,16 @@
             border: 1px solid var(--border-color);
             border-radius: 8px;
             position: relative;
-            overflow: hidden;
-            min-height: 0;
+            overflow: auto;
+            min-height: 800px;
+            height: auto;
         }
 
         #timeline-svg {
             width: 100%;
             height: 100%;
-            cursor: grab;
-        }
-
-        #timeline-svg:active {
-            cursor: grabbing;
+            min-height: 800px;
+            cursor: default;
         }
 
         /* ---- LOADING ---- */
@@ -382,9 +387,11 @@
 
         /* ---- LEGEND ---- */
         .legend {
-            position: absolute;
+            position: sticky;
             bottom: 16px;
             right: 16px;
+            float: right;
+            margin: 10px 16px 16px 0;
             background: rgba(255, 255, 255, 0.96);
             border: 1px solid #ddd;
             border-radius: 6px;
@@ -394,6 +401,7 @@
             z-index: 10;
             box-shadow: 0 3px 10px rgba(0, 0, 0, 0.07);
             line-height: 1.9;
+            clear: both;
         }
 
         .legend-row {
@@ -425,9 +433,11 @@
 
         /* ---- STATS ---- */
         .stats-bar {
-            position: absolute;
+            position: sticky;
             top: 12px;
             left: 14px;
+            float: left;
+            margin: 12px 0 0 14px;
             background: rgba(255, 255, 255, 0.94);
             border: 1px solid #ddd;
             border-radius: 5px;
@@ -469,6 +479,52 @@
         .portfolio-node {
             filter: drop-shadow(0 0 6px rgba(46, 125, 50, 0.5)) !important;
         }
+
+        /* ---- RESPONSIVE ---- */
+        @media (max-width: 768px) {
+            .header-bar {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .user-info-left,
+            h1,
+            .header-actions {
+                flex: none;
+                text-align: center;
+            }
+
+            .header-actions {
+                justify-content: center;
+            }
+
+            .graph-wrapper {
+                min-height: 600px;
+            }
+
+            #timeline-svg {
+                min-height: 600px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .header-actions {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .dropdown-check-list .anchor {
+                min-width: 100%;
+            }
+
+            .graph-wrapper {
+                min-height: 500px;
+            }
+
+            #timeline-svg {
+                min-height: 500px;
+            }
+        }
     </style>
 </head>
 
@@ -494,9 +550,6 @@
                 <select class="market-select" id="marketSelect" onchange="onMarketChange()">
                     <option value="ALL">Tutti i mercati</option>
                 </select>
-                <button class="ctrl-btn" id="resetBtn" onclick="resetZoom()">
-                    <i class="fas fa-compress-alt"></i> Reset
-                </button>
                 <button class="ctrl-btn" id="togglePortfolioBtn" onclick="togglePortfolioHighlight()">
                     <i class="fas fa-star"></i> Portfolio
                 </button>
@@ -545,7 +598,7 @@
                     Invarianza negativa
                 </div>
                 <div class="legend-row" style="margin-top:4px; border-top:1px solid #eee; padding-top:4px; color:#999;">
-                    ⬤ Dim. = Volume &nbsp;|&nbsp; 🖱 Scroll = Zoom
+                    ⬤ Dim. = Volume
                 </div>
                 <div class="legend-row" style="color:#999; font-size:8px; margin-top:2px;">
                     🔍 Click su sfera/nuvola → Grafico prezzi
@@ -574,7 +627,6 @@
         let _allData = [];
         let _highlightPortfolio = false;
         let _svgRoot = null;
-        let _zoomBehavior = null;
         let _marketFilter = 'ALL';
         let _selectedSectors = [];
         let _intInversionActive = false;
@@ -698,8 +750,8 @@
         // ============================================================
         function buildTimeline(data) {
             const wrapper = document.getElementById('graphWrapper');
-            const W = wrapper.clientWidth || 1200;
-            const H = wrapper.clientHeight || 700;
+            const W = Math.max(wrapper.clientWidth || 1200, 1200);
+            const H = Math.max(wrapper.clientHeight || 800, 800);
 
             const dateSet = [...new Set(data.map(d => d.date_start).filter(Boolean))].sort();
             const sectorSet = [...new Set(data.map(d => d.sector || 'N/D'))].sort((a, b) => {
@@ -913,7 +965,6 @@
                 .each(function (d) {
                     d3.select(this).datum(d);
                 })
-                // Evento CLICK per aprire il grafico prezzi
                 .on('click', function (event, d) {
                     event.stopPropagation();
                     if (d.id_instrument) {
@@ -934,7 +985,6 @@
                     .each(function () {
                         d3.select(this).datum(d);
                     })
-                    // Evento CLICK per aprire il grafico prezzi
                     .on('click', function (event, ev) {
                         event.stopPropagation();
                         if (ev.id_instrument) {
@@ -973,15 +1023,6 @@
                 .attr('pointer-events', 'none')
                 .text(d => d.id_instrument);
 
-            // ---- ZOOM ----
-            _zoomBehavior = d3.zoom()
-                .scaleExtent([0.2, 6])
-                .on('zoom', event => {
-                    g.attr('transform', `translate(${MARGIN.left + event.transform.x},${MARGIN.top + event.transform.y}) scale(${event.transform.k})`);
-                });
-
-            svg.call(_zoomBehavior);
-
             // ---- FINALIZE ----
             document.getElementById('statCount').textContent = data.length;
             document.getElementById('statSectors').textContent = sectorSet.length;
@@ -992,20 +1033,10 @@
         }
 
         // ============================================================
-        // TOOLTIP - Mostra TUTTI i dati del record JSON
+        // TOOLTIP - Mostra solo i dati con valori validi
         // ============================================================
         function showTooltip(event, d) {
             const tooltip = document.getElementById('tooltip');
-
-            // Funzione helper per formattare i valori
-            const fmt = (v) => {
-                if (v === undefined || v === null || v === 'None' || v === '') return '-';
-                if (typeof v === 'number') {
-                    if (Number.isInteger(v)) return v.toString();
-                    return v.toFixed(3);
-                }
-                return v.toString();
-            };
 
             // Elenco di tutti i campi che vogliamo mostrare
             const fields = [
@@ -1048,7 +1079,8 @@
                 <div style="border-top:1px solid #444; padding-top:5px;">
             `;
 
-            // Aggiunge tutte le righe
+            // Aggiunge solo le righe che hanno valori validi (non "-")
+            let hasValidRows = false;
             fields.forEach(f => {
                 let val = d[f.key];
                 if (f.key === 'sector') {
@@ -1061,7 +1093,14 @@
                     val = val.toFixed(2);
                 } else if (val === undefined || val === null || val === 'None' || val === '') {
                     val = '-';
+                } else {
+                    val = val.toString();
                 }
+
+                // Salta le righe con valore "-"
+                if (val === '-') return;
+
+                hasValidRows = true;
                 html += `
                     <div class="tt-row">
                         <span class="label">${f.label}</span>
@@ -1070,7 +1109,16 @@
                 `;
             });
 
-            // Aggiunge informazioni derivate
+            // Se non ci sono righe valide, mostra un messaggio
+            if (!hasValidRows) {
+                html += `
+                    <div class="tt-row">
+                        <span class="label" style="color:#999;">Nessun dato aggiuntivo</span>
+                    </div>
+                `;
+            }
+
+            // Aggiunge informazioni derivate (sempre visibili)
             const forzaVal = parseFloat(d.forza) || 0;
             const fc = forzaVal < 0 ? 'tt-neg' : 'tt-pos';
             html += `
@@ -1115,13 +1163,6 @@
         // ============================================================
         // CONTROLS
         // ============================================================
-        function resetZoom() {
-            if (_svgRoot && _zoomBehavior) {
-                _svgRoot.transition().duration(500)
-                    .call(_zoomBehavior.transform, d3.zoomIdentity);
-            }
-        }
-
         function togglePortfolioHighlight() {
             _highlightPortfolio = !_highlightPortfolio;
             const btn = document.getElementById('togglePortfolioBtn');
