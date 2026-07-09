@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Statistics Graph 0.3</title>
+    <title>Statistics Graph 0.1</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <script src="https://d3js.org/d3.v7.min.js"></script>
     <link rel="icon" type="image/png" href="images/icon-finest.png">
@@ -462,8 +462,7 @@
         }
 
         .node-ball:hover {
-            filter: drop-shadow(0 0 12px rgba(0, 0, 0, 0.4)) !important;
-            transform: scale(1.08);
+            /* Nessun effetto - icona completamente immobile */
         }
 
         .node-cloud {
@@ -473,8 +472,7 @@
         }
 
         .node-cloud:hover {
-            filter: drop-shadow(0 0 12px rgba(0, 0, 0, 0.4)) !important;
-            transform: scale(1.08);
+            /* Nessun effetto - icona completamente immobile */
         }
 
         .portfolio-node {
@@ -897,6 +895,15 @@
             const nodeG = g.append('g').attr('class', 'nodes');
             const tooltip = document.getElementById('tooltip');
 
+            // Listener per mantenere il tooltip visibile quando il mouse è sopra di esso
+            tooltip.addEventListener('mouseenter', function () {
+                tooltip.classList.add('visible');
+            });
+
+            tooltip.addEventListener('mouseleave', function () {
+                tooltip.classList.remove('visible');
+            });
+
             // Funzione per generare il contenuto del tooltip una volta sola
             function generateTooltipContent(d) {
                 const fields = [
@@ -995,15 +1002,11 @@
                 return html;
             }
 
-            // Funzione per il mouseenter - usa il tooltip cache
+            // Funzione per il mouseenter
             function nodeMouseEnter(event, d) {
-                // Effetto hover sul nodo
-                const target = d3.select(this);
-                target.transition().duration(120)
-                    .attr('stroke', '#000')
-                    .attr('stroke-width', 2.5);
+                // Nessun effetto sulle icone - rimangono immobili
 
-                // Aggiorna il tooltip solo se i dati sono cambiati
+                // Aggiorna il tooltip
                 const content = generateTooltipContent(d);
                 if (tooltip.innerHTML !== content) {
                     tooltip.innerHTML = content;
@@ -1014,11 +1017,8 @@
             }
 
             function nodeMouseLeave(event, d) {
-                const target = d3.select(this);
-                target.transition().duration(120)
-                    .attr('stroke', d.portfolio ? '#2e7d32' : d._color)
-                    .attr('stroke-width', d.portfolio ? 2.5 : 1.2);
-
+                // Nessun effetto sulle icone - rimangono immobili
+                // Il tooltip rimane visibile se il mouse entra nel tooltip (gestito dai listener del tooltip)
                 tooltip.classList.remove('visible');
             }
 
