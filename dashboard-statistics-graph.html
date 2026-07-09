@@ -135,6 +135,82 @@
             font-size: 11px;
         }
 
+        /* ---- DROPDOWN CHECK LIST ---- */
+        .dropdown-check-list {
+            display: inline-block;
+            position: relative;
+            text-align: left;
+        }
+
+        .dropdown-check-list .anchor {
+            position: relative;
+            cursor: pointer;
+            display: inline-block;
+            padding: 6px 24px 6px 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            background: #fff;
+            color: #000;
+            font-family: inherit;
+            font-weight: bold;
+            font-size: 11px;
+            min-width: 140px;
+            text-align: left;
+            user-select: none;
+        }
+
+        .dropdown-check-list .anchor:after {
+            position: absolute;
+            content: "";
+            border-left: 4px solid transparent;
+            border-right: 4px solid transparent;
+            border-top: 4px solid #000;
+            right: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        .dropdown-check-list .items {
+            padding: 6px;
+            display: none;
+            position: absolute;
+            z-index: 1001;
+            background: #fff;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            width: max-content;
+            min-width: 100%;
+            max-height: 250px;
+            overflow-y: auto;
+            top: calc(100% + 4px);
+            left: 0;
+        }
+
+        .dropdown-check-list.visible .items {
+            display: block;
+        }
+
+        .dropdown-check-list .items label {
+            display: flex;
+            align-items: center;
+            padding: 4px 8px;
+            cursor: pointer;
+            font-size: 10px;
+            font-family: inherit;
+            font-weight: 500;
+            white-space: nowrap;
+        }
+
+        .dropdown-check-list .items label:hover {
+            background-color: #eee;
+        }
+
+        .dropdown-check-list input[type="checkbox"] {
+            margin-right: 6px;
+            cursor: pointer;
+        }
+
         /* ---- MESSAGE ---- */
         .message {
             padding: 10px 16px;
@@ -406,6 +482,11 @@
             </div>
             <h1>📊 Statistics Timeline</h1>
             <div class="header-actions">
+                <div id="sector-filter-container" class="dropdown-check-list">
+                    <span class="anchor" onclick="toggleSectorDropdown()" id="sectorSelectorAnchor">Tutti i
+                        settori</span>
+                    <div id="sectorSelectorItems" class="items"></div>
+                </div>
                 <select class="market-select" id="marketSelect" onchange="onMarketChange()">
                     <option value="ALL">Tutti i mercati</option>
                 </select>
@@ -488,6 +569,7 @@
         let _svgRoot = null;
         let _zoomBehavior = null;
         let _marketFilter = 'ALL';
+        let _selectedSectors = [];
         let _intInversionActive = false;
 
         // ============================================================
@@ -560,6 +642,7 @@
 
                 document.getElementById('loadingStatus').textContent = `${_allData.length} strumenti ricevuti. Rendering...`;
                 populateMarketSelector(_allData);
+                populateSectorSelector(_allData);
                 applyFilters();
 
             } catch (err) {
@@ -604,7 +687,11 @@
             const H = wrapper.clientHeight || 700;
 
             const dateSet = [...new Set(data.map(d => d.date_start).filter(Boolean))].sort();
-            const sectorSet = [...new Set(data.map(d => d.sector || 'N/D'))].sort();
+            const sectorSet = [...new Set(data.map(d => d.sector || 'N/D'))].sort((a, b) => {
+                const la = sectorLabel(a);
+                const lb = sectorLabel(b);
+                return la.localeCompare(lb);
+            });
 
             const nDates = dateSet.length;
             const nSectors = sectorSet.length;
@@ -929,13 +1016,15 @@
                     <span class="tt-badge tt-market">${d.code_market || '-'}</span>
                     ${d.portfolio ? '<span class="tt-badge tt-portfolio">★ Portfolio</span>' : ''}
                 </div>
-                <div style="border-top:1px solid #444; padding-top:5px; max-height:260px; overflow-y:auto;">
+                <div style="border-top:1px solid #444; padding-top:5px;">
             `;
 
             // Aggiunge tutte le righe
             fields.forEach(f => {
                 let val = d[f.key];
-                if (f.key === 'portfolio') {
+                if (f.key === 'sector') {
+                    val = sectorLabel(val || 'N/D');
+                } else if (f.key === 'portfolio') {
                     val = val ? '✓ Sì' : '✗ No';
                 } else if (f.key === 'forza' && typeof val === 'number') {
                     val = val.toFixed(4);
@@ -977,8 +1066,9 @@
             const tooltip = document.getElementById('tooltip');
             const wrapper = document.getElementById('graphWrapper');
             const wr = wrapper.getBoundingClientRect();
-            const TW = 320,
-                TH = 400;
+            const rect = tooltip.getBoundingClientRect();
+            const TW = rect.width || 320;
+            const TH = rect.height || 500;
             let left = event.clientX - wr.left + 14;
             let top = event.clientY - wr.top - 10;
             if (left + TW > wr.width) left = event.clientX - wr.left - TW - 14;
@@ -1033,6 +1123,68 @@
             applyFilters();
         }
 
+        function populateSectorSelector(data) {
+            const container = document.getElementById('sectorSelectorItems');
+            const sectors = [...new Set(data.map(d => d.sector || 'N/D'))].sort((a, b) => {
+                const la = sectorLabel(a);
+                const lb = sectorLabel(b);
+                return la.localeCompare(lb);
+            });
+
+            container.innerHTML = '';
+            sectors.forEach(s => {
+                const label = document.createElement('label');
+                const cb = document.createElement('input');
+                cb.type = 'checkbox';
+                cb.value = s;
+                cb.checked = _selectedSectors.includes(s);
+                cb.onchange = onSectorSelectionChange;
+
+                label.appendChild(cb);
+                label.appendChild(document.createTextNode(sectorLabel(s)));
+                container.appendChild(label);
+            });
+
+            updateSectorAnchorText();
+        }
+
+        function toggleSectorDropdown() {
+            const container = document.getElementById('sector-filter-container');
+            container.classList.toggle('visible');
+
+            if (container.classList.contains('visible')) {
+                const closeHandler = (e) => {
+                    if (!container.contains(e.target)) {
+                        container.classList.remove('visible');
+                        document.removeEventListener('click', closeHandler);
+                    }
+                };
+                setTimeout(() => document.addEventListener('click', closeHandler), 10);
+            }
+        }
+
+        function updateSectorAnchorText() {
+            const anchor = document.getElementById('sectorSelectorAnchor');
+            if (_selectedSectors.length === 0) {
+                anchor.textContent = "Tutti i settori";
+            } else if (_selectedSectors.length === 1) {
+                anchor.textContent = sectorLabel(_selectedSectors[0]);
+            } else {
+                anchor.textContent = `${_selectedSectors.length} settori`;
+            }
+        }
+
+        function onSectorSelectionChange() {
+            const items = document.getElementById('sectorSelectorItems');
+            const checkboxes = items.querySelectorAll('input[type="checkbox"]');
+            _selectedSectors = [];
+            checkboxes.forEach(cb => {
+                if (cb.checked) _selectedSectors.push(cb.value);
+            });
+            updateSectorAnchorText();
+            applyFilters();
+        }
+
         function toggleIntInversion() {
             _intInversionActive = !_intInversionActive;
             const btn = document.getElementById('intInversionBtn');
@@ -1045,6 +1197,10 @@
 
             if (_marketFilter !== 'ALL') {
                 filtered = filtered.filter(d => d.code_market === _marketFilter);
+            }
+
+            if (_selectedSectors.length > 0) {
+                filtered = filtered.filter(d => _selectedSectors.includes(d.sector || 'N/D'));
             }
 
             if (_intInversionActive) {
