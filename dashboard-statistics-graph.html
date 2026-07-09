@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Statistics Graph 0.1</title>
+    <title>Statistics Graph 0.3</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <script src="https://d3js.org/d3.v7.min.js"></script>
     <link rel="icon" type="image/png" href="images/icon-finest.png">
@@ -1003,15 +1003,14 @@
                     .attr('stroke', '#000')
                     .attr('stroke-width', 2.5);
 
-                // Aggiorna il tooltip
+                // Aggiorna il tooltip solo se i dati sono cambiati
                 const content = generateTooltipContent(d);
                 if (tooltip.innerHTML !== content) {
                     tooltip.innerHTML = content;
                 }
 
                 tooltip.classList.add('visible');
-                // Posiziona il tooltip a lato dell'icona (stabile, no sfarfallio)
-                positionTooltipNextToIcon(this);
+                positionTooltip(event);
             }
 
             function nodeMouseLeave(event, d) {
@@ -1140,27 +1139,22 @@
         }
 
         // ============================================================
-        // TOOLTIP - Posizionamento STABILE a lato dell'icona
+        // TOOLTIP - Posizionamento ottimizzato
         // ============================================================
-        function positionTooltipNextToIcon(iconElement) {
+        function positionTooltip(event) {
             const tooltip = document.getElementById('tooltip');
             const wrapper = document.getElementById('graphWrapper');
             const wr = wrapper.getBoundingClientRect();
-            const iconRect = iconElement.getBoundingClientRect();
+            const rect = tooltip.getBoundingClientRect();
+            const TW = rect.width || 320;
+            const TH = rect.height || 500;
+            let left = event.clientX - wr.left + 14;
+            let top = event.clientY - wr.top - 10;
 
-            const TW = 320; // larghezza fissa tooltip
-            const TH = 500; // altezza fissa tooltip
-
-            // Posiziona il tooltip a DESTRA dell'icona
-            let left = iconRect.right - wr.left + 12;
-            let top = iconRect.top - wr.top - TH / 2 + iconRect.height / 2;
-
-            // Se il tooltip esce a destra, posiziona a sinistra
+            // Evita che esca dal container
             if (left + TW > wr.width) {
-                left = iconRect.left - wr.left - TW - 12;
+                left = event.clientX - wr.left - TW - 14;
             }
-
-            // Evita che esca dal container verticalmente
             if (top + TH > wr.height) {
                 top = wr.height - TH - 10;
             }
