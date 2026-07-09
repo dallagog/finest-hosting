@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Market Trend 0.1</title>
+    <title>Market Trend 0.21</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <link rel="icon" type="image/png" href="images/icon-finest.png">
@@ -445,6 +445,7 @@
         }
 
         .period-tooltip {
+            display: none;
             visibility: hidden;
             opacity: 0;
             pointer-events: none;
@@ -521,32 +522,80 @@
             font-weight: 700;
         }
 
-        /* Yield display in header */
+        /* Yield display nascosto (ora usato come tooltip) */
         .yield-container {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            margin-bottom: 8px;
-            font-size: 0.8rem;
+            display: none;
         }
 
-        .yield-row {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 20px;
-            padding: 4px 0;
+        /* Tooltip sul chip codice */
+        .chip-tooltip-wrap {
+            position: relative;
+            display: inline-block;
         }
 
-        .yield-row .lbl {
-            color: #777;
+        .chip-tooltip {
+            visibility: hidden;
+            opacity: 0;
+            pointer-events: none;
+            position: absolute;
+            top: calc(100% + 8px);
+            left: 50%;
+            transform: translateX(-50%);
+            background: #fff;
+            border: 1px solid #000;
+            border-radius: 8px;
+            box-shadow: 0 4px 18px rgba(0, 0, 0, 0.15);
+            padding: 10px 14px;
+            min-width: 220px;
+            font-size: 0.74rem;
+            white-space: nowrap;
+            z-index: 3000;
+            transition: opacity 0.15s, visibility 0.15s;
+            font-family: inherit;
+        }
+
+        .chip-tooltip::after {
+            content: '';
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            border: 7px solid transparent;
+            border-bottom-color: #000;
+        }
+
+        .chip-tooltip-wrap:hover .chip-tooltip {
+            visibility: visible;
+            opacity: 1;
+        }
+
+        .chip-tooltip-title {
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-bottom: 1px solid #eee;
+            margin-bottom: 7px;
+            padding-bottom: 5px;
+            color: #000;
             font-size: 0.75rem;
         }
 
-        .yield-row .val {
+        .chip-tooltip-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 16px;
+            padding: 2px 0;
+            color: #444;
+        }
+
+        .chip-tooltip-row .lbl {
+            color: #777;
+        }
+
+        .chip-tooltip-row .val {
             font-weight: 700;
             color: #000;
-            font-size: 0.8rem;
         }
     </style>
 </head>
@@ -576,7 +625,12 @@
             <input type="text" id="page-title-input" class="header-title-input" placeholder="Titolo Grafico">
             <div class="instrument-card">
                 <div class="instrument-title-row">
-                    <span id="chip-code" class="inst-chip inst-chip-code" style="display:none"></span>
+                    <div class="chip-tooltip-wrap">
+                        <span id="chip-code" class="inst-chip inst-chip-code" style="display:none"></span>
+                        <div class="chip-tooltip" id="chip-tooltip">
+                            <div class="chip-tooltip-title">Variazioni</div>
+                        </div>
+                    </div>
                     <span id="chip-isin" class="inst-chip inst-chip-isin" style="display:none"></span>
                     <span id="chip-currency" class="inst-chip inst-chip-currency" style="display:none"></span>
                 </div>
@@ -1422,14 +1476,10 @@
 
             const buildPeriodTooltip = (periodId) => {
                 const tooltip = document.getElementById(`tooltip-${periodId}`);
-                const yieldDisplay = document.getElementById('yield-display');
-                if (!tooltip || !yieldDisplay) return;
+                if (!tooltip) return;
 
                 // Pulisce il tooltip (mantiene solo il titolo)
                 while (tooltip.children.length > 1) tooltip.removeChild(tooltip.lastChild);
-
-                // Pulisce il yield display nel header
-                yieldDisplay.innerHTML = '';
 
                 const addTooltipRow = (label, value, cls = '') => {
                     const row = document.createElement('div');
@@ -1437,7 +1487,6 @@
 
                     // Determina se è un valore Max per applicare il grassetto
                     const isMax = label.includes('Max');
-                    const isMexMinomax = label.includes('Min');
                     const maxClass = isMax ? 'tooltip-max-bold' : '';
 
                     // Applica il colore della classe se fornita
@@ -1445,13 +1494,6 @@
 
                     row.innerHTML = `<span class="lbl">${label}</span><span class="val ${maxClass}${colorClass}">${value}</span>`;
                     tooltip.appendChild(row);
-                };
-
-                const addHeaderRow = (label, value, cls = '') => {
-                    const row = document.createElement('div');
-                    row.className = 'yield-row';
-                    row.innerHTML = `<span class="lbl">${label}</span><span class="val ${cls}">${value}</span>`;
-                    yieldDisplay.appendChild(row);
                 };
 
                 // Prezzo
@@ -1466,7 +1508,6 @@
                     const maxPrice = Math.max(...validPrices);
 
                     const priceLabel = getTranslation('int.prices') || 'Prezzo';
-                    addHeaderRow(priceLabel, `${sign}${yieldP.toFixed(2)}%`, cls);
                     addTooltipRow(priceLabel, `${sign}${yieldP.toFixed(2)}%`, cls);
                     addTooltipRow(getTranslation('int.price.min') || 'Min', minPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 4 }));
                     addTooltipRow(getTranslation('int.price.max') || 'Max', maxPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 4 }));
@@ -1483,22 +1524,82 @@
                     const minEx = Math.min(...validExchanges);
                     const maxEx = Math.max(...validExchanges);
 
-                    const exchangeLabel = getTranslation('int.exchange') || 'Cambio';
-                    addHeaderRow(exchangeLabel, `${sign}${yieldE.toFixed(2)}%`, cls);
-
                     // Separator nel tooltip
                     const sep = document.createElement('div');
                     sep.style.cssText = 'border-top:1px solid #eee;margin:5px 0';
                     tooltip.appendChild(sep);
 
-                    addTooltipRow(exchangeLabel, `${sign}${yieldE.toFixed(2)}%`, cls);
+                    addTooltipRow(getTranslation('int.exchange') || 'Cambio', `${sign}${yieldE.toFixed(2)}%`, cls);
                     addTooltipRow(getTranslation('int.exchange.min') || 'Min', minEx.toFixed(4));
                     addTooltipRow(getTranslation('int.exchange.max') || 'Max', maxEx.toFixed(4));
                 }
             };
 
+            // Funzione per popolare il tooltip del chip codice
+            const buildChipTooltip = () => {
+                const chipTooltip = document.getElementById('chip-tooltip');
+                if (!chipTooltip) return;
+
+                // Pulisce il tooltip (mantiene solo il titolo)
+                while (chipTooltip.children.length > 1) chipTooltip.removeChild(chipTooltip.lastChild);
+
+                const addChipTooltipRow = (label, value, cls = '') => {
+                    const row = document.createElement('div');
+                    row.className = 'chip-tooltip-row';
+
+                    // Determina se è un valore Max per applicare il grassetto
+                    const isMax = label.includes('Max');
+                    const maxClass = isMax ? 'tooltip-max-bold' : '';
+
+                    // Applica il colore della classe se fornita
+                    const colorClass = cls ? ` ${cls}` : '';
+
+                    row.innerHTML = `<span class="lbl">${label}</span><span class="val ${maxClass}${colorClass}">${value}</span>`;
+                    chipTooltip.appendChild(row);
+                };
+
+                // Prezzo
+                const validPrices = prices.filter(p => p !== null && p !== undefined);
+                if (validPrices.length >= 2) {
+                    const firstP = validPrices[0];
+                    const lastP = validPrices[validPrices.length - 1];
+                    const yieldP = ((lastP - firstP) / firstP) * 100;
+                    const sign = yieldP >= 0 ? '+' : '';
+                    const cls = yieldP >= 0 ? 'yield-positive' : 'yield-negative';
+                    const minPrice = Math.min(...validPrices);
+                    const maxPrice = Math.max(...validPrices);
+
+                    const priceLabel = getTranslation('int.prices') || 'Prezzo';
+                    addChipTooltipRow(priceLabel, `${sign}${yieldP.toFixed(2)}%`, cls);
+                    addChipTooltipRow(getTranslation('int.price.min') || 'Min', minPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 4 }));
+                    addChipTooltipRow(getTranslation('int.price.max') || 'Max', maxPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 4 }));
+                }
+
+                // Cambio
+                const validExchanges = exchanges.filter(e => e !== null && e !== undefined && e !== 0);
+                if (validExchanges.length >= 2) {
+                    const firstE = validExchanges[0];
+                    const lastE = validExchanges[validExchanges.length - 1];
+                    const yieldE = ((1 / lastE - 1 / firstE) / (1 / firstE)) * 100;
+                    const sign = yieldE >= 0 ? '+' : '';
+                    const cls = yieldE >= 0 ? 'yield-positive' : 'yield-negative';
+                    const minEx = Math.min(...validExchanges);
+                    const maxEx = Math.max(...validExchanges);
+
+                    // Separator nel tooltip
+                    const sep = document.createElement('div');
+                    sep.style.cssText = 'border-top:1px solid #eee;margin:5px 0';
+                    chipTooltip.appendChild(sep);
+
+                    addChipTooltipRow(getTranslation('int.exchange') || 'Cambio', `${sign}${yieldE.toFixed(2)}%`, cls);
+                    addChipTooltipRow(getTranslation('int.exchange.min') || 'Min', minEx.toFixed(4));
+                    addChipTooltipRow(getTranslation('int.exchange.max') || 'Max', maxEx.toFixed(4));
+                }
+            };
+
             // Aggiorna il tooltip solo per il periodo attivo (gli altri non hanno dati)
             buildPeriodTooltip(activePeriod);
+            buildChipTooltip();
 
             const gradient = ctx.createLinearGradient(0, 0, 0, 400);
             gradient.addColorStop(0, 'rgba(75, 192, 192, 0.4)');
