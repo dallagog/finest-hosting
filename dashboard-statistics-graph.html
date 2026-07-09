@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Statistics Graph 0.1</title>
+    <title>Statistics Graph 0.3</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <script src="https://d3js.org/d3.v7.min.js"></script>
     <link rel="icon" type="image/png" href="images/icon-finest.png">
@@ -447,19 +447,23 @@
         .node-ball {
             filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.15));
             transition: all 0.2s ease;
+            cursor: pointer !important;
         }
 
         .node-ball:hover {
-            filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.30));
+            filter: drop-shadow(0 0 12px rgba(0, 0, 0, 0.4)) !important;
+            transform: scale(1.08);
         }
 
         .node-cloud {
             filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.10));
             transition: all 0.2s ease;
+            cursor: pointer !important;
         }
 
         .node-cloud:hover {
-            filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.25));
+            filter: drop-shadow(0 0 12px rgba(0, 0, 0, 0.4)) !important;
+            transform: scale(1.08);
         }
 
         .portfolio-node {
@@ -543,6 +547,9 @@
                 <div class="legend-row" style="margin-top:4px; border-top:1px solid #eee; padding-top:4px; color:#999;">
                     ⬤ Dim. = Volume &nbsp;|&nbsp; 🖱 Scroll = Zoom
                 </div>
+                <div class="legend-row" style="color:#999; font-size:8px; margin-top:2px;">
+                    🔍 Click su sfera/nuvola → Grafico prezzi
+                </div>
             </div>
 
             <div class="tooltip" id="tooltip"></div>
@@ -588,6 +595,14 @@
             const k = 'dom.sector:' + s;
             const v = translations[k];
             return (v && v !== k) ? v : s;
+        }
+
+        // ============================================================
+        // OPEN PRICE GRAPH
+        // ============================================================
+        function openPriceGraph(instrumentId) {
+            const url = `dashboard-graph-prices.html?id_instrument=${instrumentId}&username=${credentials.username}&token=${credentials.token}&instrument_currency=${credentials.currency}`;
+            window.open(url, '_blank');
         }
 
         // ============================================================
@@ -884,7 +899,7 @@
                 return d._forza < 0 ? 'url(#gradRed)' : 'url(#gradGreen)';
             }
 
-            // ---- CERCHI ----
+            // ---- CERCHI CON CLICK PER GRAFICO PREZZI ----
             const circleEnter = nodeG.selectAll('circle.node-ball').data(circleData).enter()
                 .append('circle')
                 .attr('class', d => d.portfolio ? 'node-ball portfolio-node' : 'node-ball')
@@ -898,11 +913,18 @@
                 .each(function (d) {
                     d3.select(this).datum(d);
                 })
+                // Evento CLICK per aprire il grafico prezzi
+                .on('click', function (event, d) {
+                    event.stopPropagation();
+                    if (d.id_instrument) {
+                        openPriceGraph(d.id_instrument);
+                    }
+                })
                 .on('mouseenter', nodeMouseEnter)
                 .on('mousemove', nodeMouseMove)
                 .on('mouseleave', nodeMouseLeave);
 
-            // ---- NUVOLE CON FULMINE ----
+            // ---- NUVOLE CON FULMINE E CLICK PER GRAFICO PREZZI ----
             cloudData.forEach(d => {
                 const shapes = cloudPath(d._cx, d._cy, d._r);
 
@@ -911,6 +933,13 @@
                     .style('cursor', 'pointer')
                     .each(function () {
                         d3.select(this).datum(d);
+                    })
+                    // Evento CLICK per aprire il grafico prezzi
+                    .on('click', function (event, ev) {
+                        event.stopPropagation();
+                        if (ev.id_instrument) {
+                            openPriceGraph(ev.id_instrument);
+                        }
                     })
                     .on('mouseenter', nodeMouseEnter)
                     .on('mousemove', nodeMouseMove)
@@ -1052,6 +1081,10 @@
                 <div class="tt-row">
                     <span class="label">Tipo nodo</span>
                     <span class="value">${d._isCloud ? '☁️ Nuvola (inv. negativa)' : '⚪ Sfera'}</span>
+                </div>
+                <div class="tt-row" style="border-bottom: none; padding-top: 4px; margin-top: 4px; border-top: 1px solid #555;">
+                    <span class="label">🔍 Clicca per</span>
+                    <span class="value" style="color: #4fc3f7;">grafico prezzi</span>
                 </div>
             `;
 
