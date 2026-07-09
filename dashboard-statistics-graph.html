@@ -1003,18 +1003,15 @@
                     .attr('stroke', '#000')
                     .attr('stroke-width', 2.5);
 
-                // Aggiorna il tooltip solo se i dati sono cambiati
+                // Aggiorna il tooltip
                 const content = generateTooltipContent(d);
                 if (tooltip.innerHTML !== content) {
                     tooltip.innerHTML = content;
                 }
 
                 tooltip.classList.add('visible');
-                positionTooltip(event);
-            }
-
-            function nodeMouseMove(event, d) {
-                positionTooltip(event);
+                // Posiziona il tooltip a lato dell'icona (stabile, no sfarfallio)
+                positionTooltipNextToIcon(this);
             }
 
             function nodeMouseLeave(event, d) {
@@ -1084,7 +1081,6 @@
                     }
                 })
                 .on('mouseenter', nodeMouseEnter)
-                .on('mousemove', nodeMouseMove)
                 .on('mouseleave', nodeMouseLeave);
 
             // ---- NUVOLE CON FULMINE E CLICK PER GRAFICO PREZZI ----
@@ -1104,7 +1100,6 @@
                         }
                     })
                     .on('mouseenter', nodeMouseEnter)
-                    .on('mousemove', nodeMouseMove)
                     .on('mouseleave', nodeMouseLeave);
 
                 cloudGroup.append('path')
@@ -1145,22 +1140,27 @@
         }
 
         // ============================================================
-        // TOOLTIP - Posizionamento ottimizzato
+        // TOOLTIP - Posizionamento STABILE a lato dell'icona
         // ============================================================
-        function positionTooltip(event) {
+        function positionTooltipNextToIcon(iconElement) {
             const tooltip = document.getElementById('tooltip');
             const wrapper = document.getElementById('graphWrapper');
             const wr = wrapper.getBoundingClientRect();
-            const rect = tooltip.getBoundingClientRect();
-            const TW = rect.width || 320;
-            const TH = rect.height || 500;
-            let left = event.clientX - wr.left + 14;
-            let top = event.clientY - wr.top - 10;
+            const iconRect = iconElement.getBoundingClientRect();
 
-            // Evita che esca dal container
+            const TW = 320; // larghezza fissa tooltip
+            const TH = 500; // altezza fissa tooltip
+
+            // Posiziona il tooltip a DESTRA dell'icona
+            let left = iconRect.right - wr.left + 12;
+            let top = iconRect.top - wr.top - TH / 2 + iconRect.height / 2;
+
+            // Se il tooltip esce a destra, posiziona a sinistra
             if (left + TW > wr.width) {
-                left = event.clientX - wr.left - TW - 14;
+                left = iconRect.left - wr.left - TW - 12;
             }
+
+            // Evita che esca dal container verticalmente
             if (top + TH > wr.height) {
                 top = wr.height - TH - 10;
             }
