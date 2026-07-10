@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Dashboard 0.3</title>
+    <title>Dashboard 0.1a</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
@@ -702,6 +702,27 @@
             margin: 0;
             cursor: pointer;
         }
+
+        /* Nascondere elementi durante l'esportazione in PDF */
+        body.exporting-pdf button,
+        body.exporting-pdf .portfolio-controls button,
+        body.exporting-pdf .profitability-controls button {
+            display: none !important;
+        }
+
+        body.exporting-pdf .collapsible-container {
+            border: none !important;
+            box-shadow: none !important;
+        }
+
+        body.exporting-pdf .data-table th,
+        body.exporting-pdf .data-table td {
+            border-bottom: none !important;
+        }
+
+        body.exporting-pdf .collapsible-header {
+            display: none !important;
+        }
     </style>
 </head>
 
@@ -855,6 +876,10 @@
                                 <input type="checkbox" id="expand-details" onchange="renderTable()">
                                 <span id="expandLabel">Espandi</span>
                             </label>
+
+                            <button onclick="openTrendGraph()" style="margin-left: auto;">
+                                <i class="fa fa-line-chart"></i> <span id="trendTextPortfolio">Andamentale</span>
+                            </button>
                         </div>
 
                         <button id="graphBtn" onclick="openGraphNewWindow('portfolio')">
@@ -907,6 +932,10 @@
                                     onchange="renderProfitabilityTable()">
                                 <span id="expandProfitabilityLabel">Espandi</span>
                             </label>
+
+                            <button onclick="openTrendGraph()" style="margin-left: auto;">
+                                <i class="fa fa-line-chart"></i> <span id="trendTextProfitability">Andamentale</span>
+                            </button>
                         </div>
                         <button id="profitabilityGraphBtn" onclick="openGraphNewWindow('profitability')">
                             <i class="fa fa-bar-chart"></i> <span id="profitabilityGraphText">Graph</span>
@@ -3578,7 +3607,10 @@
 
             try {
                 await new Promise(r => setTimeout(r, 100)); // allow UI to refresh
-                
+
+                // Aggiungi la classe per nascondere elementi durante l'esportazione
+                document.body.classList.add('exporting-pdf');
+
                 const element = document.getElementById(sectionId);
                 const canvas = await html2canvas(element, {
                     scale: 2,
@@ -3586,32 +3618,35 @@
                     logging: false
                 });
 
+                // Rimuovi la classe dopo l'esportazione
+                document.body.classList.remove('exporting-pdf');
+
                 const imgData = canvas.toDataURL('image/jpeg', 1.0);
                 const { jsPDF } = window.jspdf;
-                
+
                 const pdf = new jsPDF({
                     orientation: 'landscape',
                     unit: 'mm',
                     format: 'a4'
                 });
-                
+
                 const pdfWidth = pdf.internal.pageSize.getWidth();
                 const pdfHeight = pdf.internal.pageSize.getHeight();
-                
+
                 const imgProps = pdf.getImageProperties(imgData);
                 const margin = 10;
-                
+
                 const renderWidth = pdfWidth - (margin * 2);
                 const renderHeight = (imgProps.height * renderWidth) / imgProps.width;
-                
+
                 if (renderHeight > (pdfHeight - margin * 2)) {
                     let heightLeft = renderHeight;
                     let position = margin;
                     const usableHeight = pdfHeight - margin * 2;
-                    
+
                     pdf.addImage(imgData, 'JPEG', margin, position, renderWidth, renderHeight);
                     heightLeft -= usableHeight;
-                    
+
                     while (heightLeft > 0) {
                         position = position - usableHeight; // sposta l'immagine verso l'alto per tagliare la porzione successiva
                         pdf.addPage();
@@ -3625,7 +3660,7 @@
                 }
 
                 pdf.save(filename + '.pdf');
-                
+
             } catch (error) {
                 console.error("Error exporting PDF:", error);
                 alert("Errore durante l'esportazione in PDF");
