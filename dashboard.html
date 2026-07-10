@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Dashboard 0.1b</title>
+    <title>Dashboard 0.1c</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js">
     </script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js">
@@ -708,80 +708,178 @@
         /* Nascondere elementi durante l'esportazione in PDF */
         body.exporting-pdf button,
         body.exporting-pdf .portfolio-controls button,
-        body.exporting-pdf .profitability-controls button {
+        body.exporting-pdf .profitability-controls button,
+        body.exporting-pdf .portfolio-controls select,
+        body.exporting-pdf .portfolio-controls input[type="checkbox"],
+        body.exporting-pdf .portfolio-controls label,
+        body.exporting-pdf .grouping-container select,
+        body.exporting-pdf .grouping-container input,
+        body.exporting-pdf .grouping-container label,
+        body.exporting-pdf .expand-toggle,
+        body.exporting-pdf .reports-controls,
+        body.exporting-pdf .reports-section button,
+        body.exporting-pdf .collapsible-header .toggle-btn {
             display: none !important;
         }
 
         body.exporting-pdf .collapsible-container {
             border: none !important;
             box-shadow: none !important;
+            padding: 10px !important;
         }
 
         body.exporting-pdf .data-table th,
         body.exporting-pdf .data-table td {
             border-bottom: none !important;
+            padding: 4px 8px !important;
+            font-size: 10px !important;
         }
 
         body.exporting-pdf .collapsible-header {
             display: none !important;
         }
 
+        body.exporting-pdf .collapsible-content {
+            display: block !important;
+            border-top: none !important;
+            padding-top: 5px !important;
+        }
+
+        /* Nascondi checkbox nelle tabelle durante l'esportazione */
+        body.exporting-pdf .data-table th:first-child,
+        body.exporting-pdf .data-table td:first-child {
+            display: none !important;
+        }
+
         /* Stile per l'intestazione del PDF */
         .pdf-header {
-            font-family: 'Orbitron', sans-serif;
-            padding: 20px;
-            background: #f8f8f8;
-            border-bottom: 2px solid #000;
+            font-family: 'Arial', 'Helvetica', sans-serif;
+            padding: 15px 20px;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border-radius: 8px;
+            border: 1px solid #dee2e6;
             margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
         }
 
-        .pdf-header h2 {
+        .pdf-header .pdf-title {
             font-size: 18px;
-            margin-bottom: 10px;
-            color: #000;
+            font-weight: 700;
+            color: #2c3e50;
+            margin-bottom: 12px;
+            letter-spacing: 0.5px;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 8px;
+            display: inline-block;
         }
 
-        .pdf-header .header-row {
+        .pdf-header .pdf-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px 30px;
+            font-size: 12px;
+            color: #34495e;
+        }
+
+        .pdf-header .pdf-grid .label {
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .pdf-header .pdf-grid .value {
+            font-weight: 400;
+            color: #555;
+        }
+
+        .pdf-header .pdf-divider {
+            border-top: 1px solid #dee2e6;
+            margin: 10px 0;
+        }
+
+        .pdf-header .pdf-reports-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: #2c3e50;
+            margin: 8px 0 4px 0;
+        }
+
+        .pdf-header .pdf-report-list {
             display: flex;
             flex-wrap: wrap;
-            gap: 15px 30px;
-            font-size: 12px;
-            color: #333;
-        }
-
-        .pdf-header .header-row .label {
-            font-weight: 600;
-            color: #000;
-        }
-
-        .pdf-header .header-row .value {
-            font-weight: 400;
-        }
-
-        .pdf-header .report-list {
-            margin-top: 8px;
-            font-size: 11px;
-            color: #555;
-            max-height: 80px;
-            overflow-y: auto;
+            gap: 4px 8px;
+            padding: 6px 10px;
             background: #fff;
-            padding: 8px 12px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-        }
-
-        .pdf-header .report-list .report-item {
-            display: inline-block;
-            background: #f0f0f0;
-            padding: 2px 8px;
-            margin: 2px 4px 2px 0;
-            border-radius: 3px;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            max-height: 70px;
+            overflow-y: auto;
             font-size: 10px;
         }
 
-        .pdf-header .divider {
-            border-top: 1px solid #ddd;
-            margin: 10px 0;
+        .pdf-header .pdf-report-item {
+            background: #e9ecef;
+            padding: 2px 10px;
+            border-radius: 12px;
+            color: #2c3e50;
+            font-weight: 500;
+            white-space: nowrap;
+        }
+
+        .pdf-header .pdf-report-count {
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .pdf-header .pdf-no-reports {
+            color: #999;
+            font-size: 11px;
+            font-style: italic;
+            padding: 4px 0;
+        }
+
+        /* Stile per la tabella nel PDF */
+        body.exporting-pdf .data-table {
+            font-family: 'Arial', 'Helvetica', sans-serif !important;
+            font-size: 9px !important;
+            border-collapse: collapse !important;
+            width: 100% !important;
+        }
+
+        body.exporting-pdf .data-table th {
+            background: #2c3e50 !important;
+            color: #ffffff !important;
+            font-weight: 700 !important;
+            padding: 5px 8px !important;
+            text-align: center !important;
+            font-size: 9px !important;
+            border: 1px solid #2c3e50 !important;
+        }
+
+        body.exporting-pdf .data-table td {
+            padding: 4px 8px !important;
+            text-align: right !important;
+            font-size: 9px !important;
+            border: 1px solid #dee2e6 !important;
+            background: #ffffff !important;
+        }
+
+        body.exporting-pdf .data-table td:first-child,
+        body.exporting-pdf .data-table th:first-child {
+            text-align: left !important;
+            padding-left: 12px !important;
+        }
+
+        body.exporting-pdf .data-table tbody tr:nth-child(even) td {
+            background: #f8f9fa !important;
+        }
+
+        body.exporting-pdf .data-table tbody tr:nth-child(odd) td {
+            background: #ffffff !important;
+        }
+
+        body.exporting-pdf .data-table tbody tr[style*="font-weight: bold"] td {
+            background: #e9ecef !important;
+            font-weight: 700 !important;
         }
     </style>
 </head>
@@ -3769,7 +3867,7 @@
                 description: a.description || a.id_account
             }));
 
-            // Ottieni il nome del portfolio selezionato
+            // Ottieni il nome del portfolio selezionato (tradotto)
             const portfolioSelect = document.getElementById('portfolio');
             let portfolioName = '';
             if (portfolioSelect) {
@@ -3779,7 +3877,7 @@
                 }
             }
 
-            // Ottieni il nome della redditività selezionata
+            // Ottieni il nome della redditività selezionata (tradotto)
             const profitabilitySelect = document.getElementById('profitability');
             let profitabilityName = '';
             if (profitabilitySelect) {
@@ -3789,33 +3887,42 @@
                 }
             }
 
-            // Costruisci l'HTML dell'intestazione
+            // Traduci le label
+            const reportLabel = reportType === 'portfolio' ?
+                (getTranslation('int.portfolio') || 'Portafoglio') :
+                (getTranslation('int.profitability') || 'Redditività');
+
+            const userLabel = getTranslation('int.user.label') || 'Utente';
+            const langLabel = getTranslation('int.language') || 'Lingua';
+            const currencyLabel = getTranslation('int.currency') || 'Divisa';
+            const dateStartLabel = getTranslation('int.date.start') || 'Data iniziale';
+            const dateEndLabel = getTranslation('int.date.end') || 'Data finale';
+            const portfolioLabel = getTranslation('int.portfolio') || 'Portafoglio';
+            const profitabilityLabel = getTranslation('int.profitability') || 'Redditività';
+            const reportsLabel = getTranslation('int.reports.selected') || 'Rapporti selezionati';
+            const noReportsLabel = getTranslation('int.no.reports.selected') || 'Nessun rapporto selezionato';
+
+            // Costruisci l'HTML dell'intestazione con design moderno
             let headerHTML = `
                 <div class="pdf-header">
-                    <h2>${getTranslation('int.pdf.report') || 'Report'} - ${reportType === 'portfolio' ? (getTranslation('int.portfolio') || 'Portafoglio') : (getTranslation('int.profitability') || 'Redditività')}</h2>
-                    <div class="divider"></div>
-                    <div class="header-row">
-                        <div><span class="label">${getTranslation('int.user.label') || 'Utente'}:</span> <span class="value">${user}</span></div>
-                        <div><span class="label">${getTranslation('int.language') || 'Lingua'}:</span> <span class="value">${lang}</span></div>
-                        <div><span class="label">${getTranslation('int.currency') || 'Divisa'}:</span> <span class="value">${currency}</span></div>
+                    <div class="pdf-title">${getTranslation('int.pdf.report') || 'Report'} - ${reportLabel}</div>
+                    <div class="pdf-divider"></div>
+                    <div class="pdf-grid">
+                        <div><span class="label">${userLabel}:</span> <span class="value">${user}</span></div>
+                        <div><span class="label">${langLabel}:</span> <span class="value">${lang}</span></div>
+                        <div><span class="label">${currencyLabel}:</span> <span class="value">${currency}</span></div>
+                        <div><span class="label">${dateStartLabel}:</span> <span class="value">${dateStart}</span></div>
+                        <div><span class="label">${dateEndLabel}:</span> <span class="value">${dateEnd}</span></div>
+                        <div><span class="label">${portfolioLabel}:</span> <span class="value">${portfolioName || '-'}</span></div>
+                        <div><span class="label">${profitabilityLabel}:</span> <span class="value">${profitabilityName || '-'}</span></div>
                     </div>
-                    <div class="header-row">
-                        <div><span class="label">${getTranslation('int.date.start') || 'Data iniziale'}:</span> <span class="value">${dateStart}</span></div>
-                        <div><span class="label">${getTranslation('int.date.end') || 'Data finale'}:</span> <span class="value">${dateEnd}</span></div>
+                    <div class="pdf-divider"></div>
+                    <div class="pdf-reports-title">${reportsLabel} <span class="pdf-report-count">(${selectedReports.length})</span></div>
+                    ${selectedReports.length > 0 ? `
+                    <div class="pdf-report-list">
+                        ${selectedReports.map(r => `<span class="pdf-report-item">${r.id}${r.description && r.description !== r.id ? ' - ' + r.description : ''}</span>`).join('')}
                     </div>
-                    <div class="header-row">
-                        <div><span class="label">${getTranslation('int.portfolio') || 'Portafoglio'}:</span> <span class="value">${portfolioName || '-'}</span></div>
-                        <div><span class="label">${getTranslation('int.profitability') || 'Redditività'}:</span> <span class="value">${profitabilityName || '-'}</span></div>
-                    </div>
-                    <div class="divider"></div>
-                    <div>
-                        <div><span class="label">${getTranslation('int.reports.selected') || 'Rapporti selezionati'}:</span> <span class="value">${selectedReports.length}</span></div>
-                        ${selectedReports.length > 0 ? `
-                        <div class="report-list">
-                            ${selectedReports.map(r => `<span class="report-item">${r.id}${r.description && r.description !== r.id ? ' - ' + r.description : ''}</span>`).join('')}
-                        </div>
-                        ` : `<div style="color:#999; font-size:11px; margin-top:4px;">${getTranslation('int.no.reports.selected') || 'Nessun rapporto selezionato'}</div>`}
-                    </div>
+                    ` : `<div class="pdf-no-reports">${noReportsLabel}</div>`}
                 </div>
             `;
 
@@ -3846,75 +3953,31 @@
                 const headerWrapper = document.createElement('div');
                 headerWrapper.id = 'pdf-header-wrapper';
                 headerWrapper.innerHTML = headerHTML;
-                headerWrapper.style.cssText = 'width: 100%; margin-bottom: 20px;';
+                headerWrapper.style.cssText = 'width: 100%; margin-bottom: 15px;';
+
+                // Rimuovi eventuali vecchi wrapper
+                const oldWrapper = document.getElementById('pdf-header-wrapper');
+                if (oldWrapper) oldWrapper.remove();
 
                 // Inserisci l'intestazione all'inizio del container da esportare
-                const firstChild = element.firstChild;
-                if (firstChild) {
-                    element.insertBefore(headerWrapper, firstChild);
-                } else {
-                    element.appendChild(headerWrapper);
-                }
+                element.insertBefore(headerWrapper, element.firstChild);
 
-                // Aggiungi uno stile temporaneo per il PDF
-                const styleForPdf = document.createElement('style');
-                styleForPdf.id = 'pdf-export-style';
-                styleForPdf.textContent = `
-                    .pdf-header {
-                        font-family: 'Orbitron', sans-serif;
-                        padding: 15px 20px;
-                        background: #f8f8f8;
-                        border-bottom: 2px solid #000;
-                        margin-bottom: 15px;
+                // Rimuovi la prima colonna (checkbox) dalla tabella durante l'esportazione
+                const tables = element.querySelectorAll('.data-table');
+                tables.forEach(table => {
+                    // Nascondi la prima colonna dell'header
+                    const headerRow = table.querySelector('thead tr');
+                    if (headerRow) {
+                        const firstTh = headerRow.querySelector('th:first-child');
+                        if (firstTh) firstTh.style.display = 'none';
                     }
-                    .pdf-header h2 {
-                        font-size: 16px;
-                        margin-bottom: 8px;
-                        color: #000;
-                    }
-                    .pdf-header .header-row {
-                        display: flex;
-                        flex-wrap: wrap;
-                        gap: 10px 25px;
-                        font-size: 11px;
-                        color: #333;
-                    }
-                    .pdf-header .header-row .label {
-                        font-weight: 600;
-                        color: #000;
-                    }
-                    .pdf-header .header-row .value {
-                        font-weight: 400;
-                    }
-                    .pdf-header .report-list {
-                        margin-top: 5px;
-                        font-size: 10px;
-                        color: #555;
-                        max-height: 60px;
-                        overflow-y: auto;
-                        background: #fff;
-                        padding: 5px 10px;
-                        border: 1px solid #ddd;
-                        border-radius: 4px;
-                    }
-                    .pdf-header .report-list .report-item {
-                        display: inline-block;
-                        background: #f0f0f0;
-                        padding: 1px 6px;
-                        margin: 1px 3px 1px 0;
-                        border-radius: 3px;
-                        font-size: 9px;
-                    }
-                    .pdf-header .divider {
-                        border-top: 1px solid #ddd;
-                        margin: 6px 0;
-                    }
-                    body.exporting-pdf .data-table th, body.exporting-pdf .data-table td {
-                        padding: 4px 6px !important;
-                        font-size: 10px !important;
-                    }
-                `;
-                document.head.appendChild(styleForPdf);
+                    // Nascondi la prima colonna di ogni riga del body
+                    const rows = table.querySelectorAll('tbody tr');
+                    rows.forEach(row => {
+                        const firstTd = row.querySelector('td:first-child');
+                        if (firstTd) firstTd.style.display = 'none';
+                    });
+                });
 
                 // Attendi un momento per il rendering
                 await new Promise(r => setTimeout(r, 200));
@@ -3932,8 +3995,21 @@
                 // Rimuovi gli elementi temporanei
                 const headerWrapperRemoved = document.getElementById('pdf-header-wrapper');
                 if (headerWrapperRemoved) headerWrapperRemoved.remove();
-                const styleRemoved = document.getElementById('pdf-export-style');
-                if (styleRemoved) styleRemoved.remove();
+
+                // Ripristina la prima colonna nelle tabelle
+                tables.forEach(table => {
+                    const headerRow = table.querySelector('thead tr');
+                    if (headerRow) {
+                        const firstTh = headerRow.querySelector('th:first-child');
+                        if (firstTh) firstTh.style.display = '';
+                    }
+                    const rows = table.querySelectorAll('tbody tr');
+                    rows.forEach(row => {
+                        const firstTd = row.querySelector('td:first-child');
+                        if (firstTd) firstTd.style.display = '';
+                    });
+                });
+
                 document.body.classList.remove('exporting-pdf');
 
                 const imgData = canvas.toDataURL('image/jpeg', 0.95);
@@ -3949,7 +4025,7 @@
                 const pdfHeight = pdf.internal.pageSize.getHeight();
 
                 const imgProps = pdf.getImageProperties(imgData);
-                const margin = 10;
+                const margin = 8;
 
                 const renderWidth = pdfWidth - (margin * 2);
                 const renderHeight = (imgProps.height * renderWidth) / imgProps.width;
@@ -3984,6 +4060,22 @@
                 const styleRemoved = document.getElementById('pdf-export-style');
                 if (styleRemoved) styleRemoved.remove();
                 document.body.classList.remove('exporting-pdf');
+
+                // Ripristina la prima colonna nelle tabelle in caso di errore
+                const tables = document.querySelectorAll('.data-table');
+                tables.forEach(table => {
+                    const headerRow = table.querySelector('thead tr');
+                    if (headerRow) {
+                        const firstTh = headerRow.querySelector('th:first-child');
+                        if (firstTh) firstTh.style.display = '';
+                    }
+                    const rows = table.querySelectorAll('tbody tr');
+                    rows.forEach(row => {
+                        const firstTd = row.querySelector('td:first-child');
+                        if (firstTd) firstTd.style.display = '';
+                    });
+                });
+
                 alert("Errore durante l'esportazione in PDF");
             } finally {
                 btn.innerHTML = originalText;
