@@ -4,9 +4,11 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Dashboard 0.1a</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <title>Dashboard 0.1b</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js">
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js">
+    </script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <script src="js/dashboard-shared.js"></script>
     <link rel="icon" type="image/png" href="images/icon-finest.png">
@@ -723,6 +725,64 @@
         body.exporting-pdf .collapsible-header {
             display: none !important;
         }
+
+        /* Stile per l'intestazione del PDF */
+        .pdf-header {
+            font-family: 'Orbitron', sans-serif;
+            padding: 20px;
+            background: #f8f8f8;
+            border-bottom: 2px solid #000;
+            margin-bottom: 20px;
+        }
+
+        .pdf-header h2 {
+            font-size: 18px;
+            margin-bottom: 10px;
+            color: #000;
+        }
+
+        .pdf-header .header-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px 30px;
+            font-size: 12px;
+            color: #333;
+        }
+
+        .pdf-header .header-row .label {
+            font-weight: 600;
+            color: #000;
+        }
+
+        .pdf-header .header-row .value {
+            font-weight: 400;
+        }
+
+        .pdf-header .report-list {
+            margin-top: 8px;
+            font-size: 11px;
+            color: #555;
+            max-height: 80px;
+            overflow-y: auto;
+            background: #fff;
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+        .pdf-header .report-list .report-item {
+            display: inline-block;
+            background: #f0f0f0;
+            padding: 2px 8px;
+            margin: 2px 4px 2px 0;
+            border-radius: 3px;
+            font-size: 10px;
+        }
+
+        .pdf-header .divider {
+            border-top: 1px solid #ddd;
+            margin: 10px 0;
+        }
     </style>
 </head>
 
@@ -795,6 +855,11 @@
                             style="padding:4px 14px; margin:0; font-size:12px; line-height:1.4;">
                             <i class="fa fa-check"></i> <span id="headerApplyText">Applica</span>
                         </button>
+                        <!-- Pulsante Andamentale spostato qui -->
+                        <button onclick="openTrendGraph()"
+                            style="padding:4px 14px; margin:0; font-size:12px; line-height:1.4;">
+                            <i class="fa fa-line-chart"></i> <span id="trendTextHeader">Andamentale</span>
+                        </button>
                     </div>
                     <span id="dateEvaluationInfo"
                         style="font-size:12px; color:#666; font-weight:400; letter-spacing:0; white-space:nowrap; margin-right:12px;"></span>
@@ -847,7 +912,7 @@
                         </div>
                     </div>
 
-                    <div style="display: flex; gap: 15px; margin-top: 15px;">
+                    <div style="display: flex; gap: 15px; margin-top: 15px; flex-wrap: wrap;">
                         <button id="apply-filters" style="flex: 1;">Applica Filtri</button>
                         <button onclick="openTrendGraph()" style="flex: 1;">
                             <i class="fa fa-line-chart"></i> <span id="trendText">Andamentale</span>
@@ -877,9 +942,7 @@
                                 <span id="expandLabel">Espandi</span>
                             </label>
 
-                            <button onclick="openTrendGraph()" style="margin-left: auto;">
-                                <i class="fa fa-line-chart"></i> <span id="trendTextPortfolio">Andamentale</span>
-                            </button>
+                            <!-- Pulsante Andamentale RIMOSSO da qui -->
                         </div>
 
                         <button id="graphBtn" onclick="openGraphNewWindow('portfolio')">
@@ -933,9 +996,7 @@
                                 <span id="expandProfitabilityLabel">Espandi</span>
                             </label>
 
-                            <button onclick="openTrendGraph()" style="margin-left: auto;">
-                                <i class="fa fa-line-chart"></i> <span id="trendTextProfitability">Andamentale</span>
-                            </button>
+                            <!-- Pulsante Andamentale RIMOSSO da qui -->
                         </div>
                         <button id="profitabilityGraphBtn" onclick="openGraphNewWindow('profitability')">
                             <i class="fa fa-bar-chart"></i> <span id="profitabilityGraphText">Graph</span>
@@ -1258,13 +1319,15 @@
             if (elUpdate) elUpdate.textContent = updateText;
 
             const downloadPdfText = getTranslation('int.download.pdf');
-            if (downloadPdfText !== 'int.download.pdf') document.getElementById('downloadPdfText').textContent = downloadPdfText
+            if (downloadPdfText !== 'int.download.pdf') document.getElementById('downloadPdfText').textContent =
+                downloadPdfText
 
             const selectAllText = getTranslation('int.selectall');
             if (selectAllText !== 'int.selectall') document.getElementById('selectAllText').textContent = selectAllText;
 
             const deselectAllText = getTranslation('int.deselectall');
-            if (deselectAllText !== 'int.deselectall') document.getElementById('deselectAllText').textContent = deselectAllText;
+            if (deselectAllText !== 'int.deselectall') document.getElementById('deselectAllText').textContent =
+                deselectAllText;
 
             // Explicitly requested translations
             const groupingLabel = document.getElementById('grouping-label-dashboard');
@@ -1281,9 +1344,13 @@
             if (el = document.getElementById('operationsText')) el.textContent = getTranslation('int.operation');
             if (el = document.getElementById('generatePdfText')) el.textContent = getTranslation('int.pdf.report');
             if (el = document.getElementById('trendText')) el.textContent = getTranslation('int.trend');
+            // Aggiorna anche il testo del pulsante Andamentale nell'header
+            const trendHeaderEl = document.getElementById('trendTextHeader');
+            if (trendHeaderEl) trendHeaderEl.textContent = getTranslation('int.trend');
 
             const applyFiltersText = getTranslation('int.apply.filters');
-            if (applyFiltersText !== 'int.apply.filters') document.getElementById('apply-filters').textContent = applyFiltersText;
+            if (applyFiltersText !== 'int.apply.filters') document.getElementById('apply-filters').textContent =
+                applyFiltersText;
             const headerApplyEl = document.getElementById('headerApplyText');
             if (headerApplyEl) {
                 const shortApply = getTranslation('int.apply.filters');
@@ -1427,14 +1494,16 @@
                 if (langData) {
                     document.getElementById('languageFlag').textContent = langData.flag;
                     const langDescription = getTranslation('int.language.description');
-                    document.getElementById('languageDisplay').textContent = langDescription !== 'int.language.description' ? langDescription : userLanguage;
+                    document.getElementById('languageDisplay').textContent = langDescription !== 'int.language.description' ?
+                        langDescription : userLanguage;
                 } else {
                     document.getElementById('languageDisplay').textContent = userLanguage;
                 }
             }
 
             if (userCurrency) {
-                if (currencies.length === 0 || !currencies.find(c => c.currency === userCurrency)) await loadCurrencies(userLanguage || 'it_IT');
+                if (currencies.length === 0 || !currencies.find(c => c.currency === userCurrency)) await loadCurrencies(
+                    userLanguage || 'it_IT');
                 const currData = currencies.find(c => c.currency === userCurrency);
                 if (currData && currData['img.currency.flag']) {
                     document.getElementById('currencyDisplay').textContent = `${currData['img.currency.flag']} ${userCurrency}`;
@@ -1687,14 +1756,16 @@
                 account_type: a.account_type,
                 account_sector: a.account_sector || (a.raw && a.raw.account_sector) || '',
                 account_level: a.account_level || (a.raw && a.raw.account_level) || '',
-                account_level_yield: a.account_level_yield || (a.raw && a.raw.account_level_yield) || a.account_level || (a.raw && a.raw.account_level) || '',
+                account_level_yield: a.account_level_yield || (a.raw && a.raw.account_level_yield) || a.account_level || (
+                    a.raw && a.raw.account_level) || '',
                 date_accession: a.date_accession || (a.raw && a.raw.date_accession) || '',
                 description: a.description || (a.raw && (a.raw.description_account || a.raw.description)) || '',
                 selected: !!a.selected
             })) : [];
 
             if ((!accountsList || accountsList.length === 0) && filterData) {
-                const fallback = (filterData.Account && filterData.Account.list) ? filterData.Account.list : (filterData.Filter && filterData.Filter.accounts ? filterData.Filter.accounts : []);
+                const fallback = (filterData.Account && filterData.Account.list) ? filterData.Account.list : (filterData
+                    .Filter && filterData.Filter.accounts ? filterData.Filter.accounts : []);
                 if (Array.isArray(fallback)) {
                     accountsList = fallback.map(a => ({
                         id_account: a.id_account || a.id || '',
@@ -1710,7 +1781,8 @@
             }
 
             if (!Array.isArray(accountsList) || accountsList.length === 0) {
-                container.innerHTML = `<p style="color:#999;">${getTranslation('int.error.loading.account') || 'Nessun rapporto trovato'}</p>`;
+                container.innerHTML =
+                    `<p style="color:#999;">${getTranslation('int.error.loading.account') || 'Nessun rapporto trovato'}</p>`;
                 const filterSection = document.getElementById('filter-section');
                 if (filterSection) {
                     const content = filterSection.querySelector('.collapsible-content');
@@ -1768,20 +1840,28 @@
 
             const th2 = document.createElement('th');
             th2.style.cssText = 'padding: 8px; text-align: left; cursor: pointer; user-select: none;';
-            th2.innerHTML = `${getTranslation('int.account.code') || 'Codice'} ${accountsSortCol === 'id_account' ? (accountsSortDir === 'asc' ? '↑' : '↓') : ''}`;
+            th2.innerHTML =
+                `${getTranslation('int.account.code') || 'Codice'} ${accountsSortCol === 'id_account' ? (accountsSortDir === 'asc' ? '↑' : '↓') : ''}`;
             th2.onclick = () => {
                 if (accountsSortCol === 'id_account') accountsSortDir = accountsSortDir === 'asc' ? 'desc' : 'asc';
-                else { accountsSortCol = 'id_account'; accountsSortDir = 'asc'; }
+                else {
+                    accountsSortCol = 'id_account';
+                    accountsSortDir = 'asc';
+                }
                 renderReportsList_patched();
             };
             headerRow.appendChild(th2);
 
             const th3 = document.createElement('th');
             th3.style.cssText = 'padding: 8px; text-align: left; cursor: pointer; user-select: none;';
-            th3.innerHTML = `${getTranslation('int.account.account_sector') || 'Settore'} ${accountsSortCol === 'account_sector' ? (accountsSortDir === 'asc' ? '↑' : '↓') : ''}`;
+            th3.innerHTML =
+                `${getTranslation('int.account.account_sector') || 'Settore'} ${accountsSortCol === 'account_sector' ? (accountsSortDir === 'asc' ? '↑' : '↓') : ''}`;
             th3.onclick = () => {
                 if (accountsSortCol === 'account_sector') accountsSortDir = accountsSortDir === 'asc' ? 'desc' : 'asc';
-                else { accountsSortCol = 'account_sector'; accountsSortDir = 'asc'; }
+                else {
+                    accountsSortCol = 'account_sector';
+                    accountsSortDir = 'asc';
+                }
                 renderReportsList_patched();
             };
             headerRow.appendChild(th3);
@@ -1803,7 +1883,8 @@
             accountsList.forEach((item, index) => {
                 const tr = document.createElement('tr');
                 // Applica sfondo alternato per l'elenco rapporti
-                tr.style.cssText = `border-bottom: 1px solid #eee; ${index % 2 === 0 ? 'background: #fcfcfc;' : 'background: #f9f9f9;'}`;
+                tr.style.cssText =
+                    `border-bottom: 1px solid #eee; ${index % 2 === 0 ? 'background: #fcfcfc;' : 'background: #f9f9f9;'}`;
 
                 const td1 = document.createElement('td');
                 td1.style.cssText = 'padding: 8px; text-align: center;';
@@ -1840,7 +1921,8 @@
 
                 const td4 = document.createElement('td');
                 td4.style.cssText = 'padding: 8px;';
-                td4.textContent = (item.date_accession && item.date_accession.length >= 10) ? item.date_accession.substring(0, 10) : (item.date_accession || '');
+                td4.textContent = (item.date_accession && item.date_accession.length >= 10) ? item.date_accession.substring(0,
+                    10) : (item.date_accession || '');
                 tr.appendChild(td4);
 
                 const td5 = document.createElement('td');
@@ -1865,14 +1947,16 @@
             summary.style.marginTop = '15px';
             summary.style.color = '#555';
             summary.style.fontSize = '13px';
-            summary.innerHTML = `<strong>${accountsList.length}</strong> ${getTranslation('int.reports.available') || 'rapporti disponibili'}`;
+            summary.innerHTML =
+                `<strong>${accountsList.length}</strong> ${getTranslation('int.reports.available') || 'rapporti disponibili'}`;
             container.appendChild(summary);
 
             const selectAllCheckbox = document.getElementById('select-all-accounts');
             if (selectAllCheckbox) {
                 updateSelectAllCheckbox();
                 selectAllCheckbox.addEventListener('change', () => {
-                    if (selectAllCheckbox.checked) selectAllReports(); else deselectAllReports();
+                    if (selectAllCheckbox.checked) selectAllReports();
+                    else deselectAllReports();
                 });
             }
         }
@@ -1935,8 +2019,7 @@
                 else if (data.status === 'ok' && data.data) {
                     console.log('loadFilter - MATCH Caso 3: data.status ok and data.data found');
                     loaded = data.data;
-                }
-                else {
+                } else {
                     console.log('loadFilter - MATCH Caso Default: using data as is');
                     loaded = data;
                 }
@@ -1974,6 +2057,7 @@
                 showMessage((getTranslation('int.error.loading.filters') || 'Errore nel caricamento dei filtri'), 'error');
             }
         }
+
         function syncSelectedAccountsFromFilter() {
             selectedAccounts = [];
             // Cerca in Account.list (formato FE_FilterManager) o Filter.accounts (vecchio formato)
@@ -2008,7 +2092,8 @@
 
             // Popola il dropdown del portafoglio usando domine.json (level_portfolio)
             const portfolioSelect = document.getElementById('portfolio');
-            portfolioSelect.innerHTML = `<option value="">${getTranslation('int.select.option') || '-- seleziona --'}</option>`;
+            portfolioSelect.innerHTML =
+                `<option value="">${getTranslation('int.select.option') || '-- seleziona --'}</option>`;
 
             const portfolioOptions = [];
             console.log('populateFilterUI - domineData state:', domineData);
@@ -2059,7 +2144,8 @@
 
             // Popola il dropdown della redditività usando domine.json (level_yield)
             const profitabilitySelect = document.getElementById('profitability');
-            profitabilitySelect.innerHTML = `<option value="">${getTranslation('int.select.option') || '-- seleziona --'}</option>`;
+            profitabilitySelect.innerHTML =
+                `<option value="">${getTranslation('int.select.option') || '-- seleziona --'}</option>`;
 
             const yieldOptions = [];
             if (domineData && Array.isArray(domineData.level_yield)) {
@@ -2107,6 +2193,7 @@
                 if (emvlOpt) emvlOpt.selected = true;
             }
         }
+
         function updateSelectAllCheckbox() {
             const selectAllCheckbox = document.getElementById('select-all-accounts');
             if (!selectAllCheckbox || !filterData?.Account?.list) return;
@@ -2391,35 +2478,51 @@
                         const applyBtn = document.getElementById('apply-filters');
                         const headerApplyBtn = document.getElementById('header-apply-btn');
                         const inProgressLabel = getTranslation('int.inprogress') || 'In elaborazione...';
-                        const originalLabel = applyBtn ? applyBtn.textContent : (getTranslation('int.apply.filters') || 'Applica Filtri');
+                        const originalLabel = applyBtn ? applyBtn.textContent : (getTranslation('int.apply.filters') ||
+                            'Applica Filtri');
 
                         function setApplyBtnState(state) {
                             if (state === 'inprogress') {
                                 if (applyBtn) {
-                                    applyBtn.setAttribute('style', 'flex: 1; background: #fff !important; color: #000 !important; border: 2px solid #000 !important;');
+                                    applyBtn.setAttribute('style',
+                                        'flex: 1; background: #fff !important; color: #000 !important; border: 2px solid #000 !important;'
+                                    );
                                     applyBtn.textContent = inProgressLabel;
                                 }
                                 if (headerApplyBtn) {
-                                    headerApplyBtn.setAttribute('style', 'padding:4px 14px; margin:0; font-size:12px; line-height:1.4; background: #fff !important; color: #000 !important; border: 2px solid #000 !important;');
-                                    headerApplyBtn.innerHTML = `<i class="fa fa-spinner fa-spin"></i> <span id="headerApplyText">${inProgressLabel}</span>`;
+                                    headerApplyBtn.setAttribute('style',
+                                        'padding:4px 14px; margin:0; font-size:12px; line-height:1.4; background: #fff !important; color: #000 !important; border: 2px solid #000 !important;'
+                                    );
+                                    headerApplyBtn.innerHTML =
+                                        `<i class="fa fa-spinner fa-spin"></i> <span id="headerApplyText">${inProgressLabel}</span>`;
                                 }
                             } else if (state === 'done') {
                                 if (applyBtn) {
-                                    applyBtn.setAttribute('style', 'flex: 1; background: #28a745 !important; color: #fff !important; border: 2px solid #28a745 !important;');
+                                    applyBtn.setAttribute('style',
+                                        'flex: 1; background: #28a745 !important; color: #fff !important; border: 2px solid #28a745 !important;'
+                                    );
                                 }
                                 if (headerApplyBtn) {
-                                    headerApplyBtn.setAttribute('style', 'padding:4px 14px; margin:0; font-size:12px; line-height:1.4; background: #28a745 !important; color: #fff !important; border: 2px solid #28a745 !important;');
-                                    headerApplyBtn.innerHTML = `<i class="fa fa-check"></i> <span id="headerApplyText">${inProgressLabel}</span>`;
+                                    headerApplyBtn.setAttribute('style',
+                                        'padding:4px 14px; margin:0; font-size:12px; line-height:1.4; background: #28a745 !important; color: #fff !important; border: 2px solid #28a745 !important;'
+                                    );
+                                    headerApplyBtn.innerHTML =
+                                        `<i class="fa fa-check"></i> <span id="headerApplyText">${inProgressLabel}</span>`;
                                 }
                             } else { // 'default'
                                 if (applyBtn) {
-                                    applyBtn.setAttribute('style', 'flex: 1; background: #000 !important; color: #fff !important; border: 1px solid #000 !important;');
-                                    applyBtn.textContent = originalLabel || getTranslation('int.apply.filters') || 'Applica Filtri';
+                                    applyBtn.setAttribute('style',
+                                        'flex: 1; background: #000 !important; color: #fff !important; border: 1px solid #000 !important;'
+                                    );
+                                    applyBtn.textContent = originalLabel || getTranslation('int.apply.filters') ||
+                                        'Applica Filtri';
                                 }
                                 if (headerApplyBtn) {
                                     const applyLabel = getTranslation('int.apply.filters') || 'Applica';
-                                    headerApplyBtn.setAttribute('style', 'padding:4px 14px; margin:0; font-size:12px; line-height:1.4;');
-                                    headerApplyBtn.innerHTML = `<i class="fa fa-check"></i> <span id="headerApplyText">${applyLabel}</span>`;
+                                    headerApplyBtn.setAttribute('style',
+                                        'padding:4px 14px; margin:0; font-size:12px; line-height:1.4;');
+                                    headerApplyBtn.innerHTML =
+                                        `<i class="fa fa-check"></i> <span id="headerApplyText">${applyLabel}</span>`;
                                 }
                             }
                         }
@@ -2430,7 +2533,8 @@
 
                         // Avvia connessione WebSocket per monitorare lo stato del filtro
                         const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-                        const wsUrl = `${wsProtocol}//feweb-tunnel.fe-web.eu/ws/filterstatus/${credentials.username}`;
+                        const wsUrl =
+                            `${wsProtocol}//feweb-tunnel.fe-web.eu/ws/filterstatus/${credentials.username}`;
                         console.log('WebSocket connecting to:', wsUrl);
 
                         let ws;
@@ -2623,11 +2727,15 @@
                     classificationMap = {};
                     let classificationList = data.classification;
                     if (typeof classificationList === 'string') {
-                        try { classificationList = JSON.parse(classificationList.replace(/'/g, '"')); }
-                        catch (e) { classificationList = []; }
+                        try { classificationList = JSON.parse(classificationList.replace(/'/g, '"')); } catch (e) {
+                            classificationList = [];
+                        }
                     }
                     if (Array.isArray(classificationList)) {
-                        classificationList.forEach(item => { if (item.id_instrument) classificationMap[item.id_instrument] = item; });
+                        classificationList.forEach(item => {
+                            if (item.id_instrument) classificationMap[item.id_instrument] =
+                                item;
+                        });
                         localStorage.setItem('classificationMap', JSON.stringify(classificationMap));
                     }
 
@@ -2656,10 +2764,13 @@
                         const pesoKey = 'int.weight.percent';
 
                         // Broad key detection
-                        const mpValueKey = sampleKeys.find(k => k === 'M/P' || k === 'Minus/Plus' || k === 'valutazioni_ctv_minusplus');
+                        const mpValueKey = sampleKeys.find(k => k === 'M/P' || k === 'Minus/Plus' ||
+                            k === 'valutazioni_ctv_minusplus');
                         // quantity è utilizzato per indicare la quantità quando viene esposta la liquidità
-                        const costValueKey = sampleKeys.find(k => k === '$cost_amount_curr' || k === '$amount_cost' || k === 'cost_amount' || k === 'quantity' || /^costo$/i.test(k));
-                        const marketValueKey = sampleKeys.find(k => k === 'CTVMKTTQ' || /^mp$/i.test(k) || /^controvalore$/i.test(k) || /^market.?value$/i.test(k));
+                        const costValueKey = sampleKeys.find(k => k === '$cost_amount_curr' || k === '$amount_cost' ||
+                            k === 'cost_amount' || k === 'quantity' || /^costo$/i.test(k));
+                        const marketValueKey = sampleKeys.find(k => k === 'CTVMKTTQ' || /^mp$/i.test(k) ||
+                            /^controvalore$/i.test(k) || /^market.?value$/i.test(k));
 
                         window._pfCostoKey = costValueKey;
                         window._pfMpKey = marketValueKey;
@@ -2687,7 +2798,8 @@
                                 item[percKey] = parseFloat((mpValue / Math.abs(costValue) * 100).toFixed(3));
                             } else if (!isNaN(marketValue) && !isNaN(costValue) && costValue !== 0) {
                                 // Fallback: (MarketValue - CostValue) / CostValue * 100
-                                item[percKey] = parseFloat(((marketValue - costValue) / Math.abs(costValue) * 100).toFixed(3));
+                                item[percKey] = parseFloat(((marketValue - costValue) / Math.abs(costValue) * 100)
+                                    .toFixed(3));
                             } else {
                                 item[percKey] = null;
                             }
@@ -2717,7 +2829,8 @@
                         } else {
                             const allKeys = new Set();
                             portfolioData.forEach(item => Object.keys(item).forEach(k => allKeys.add(k)));
-                            tableColumns = Array.from(allKeys).filter(k => k !== 'Ticker' && k !== '%' && k !== 'peso%' && k !== percKey && k !== pesoKey);
+                            tableColumns = Array.from(allKeys).filter(k => k !== 'Ticker' && k !== '%' && k !== 'peso%' &&
+                                k !== percKey && k !== pesoKey);
                             tableColumns.push(pesoKey);
                             tableColumns.push(percKey);
                         }
@@ -2768,7 +2881,8 @@
                 console.error('ERROR: portfolio-header-row or portfolio-body element not found!');
                 return;
             }
-            thead.innerHTML = ''; tbody.innerHTML = '';
+            thead.innerHTML = '';
+            tbody.innerHTML = '';
             let displayData = [];
             if (selectedAccounts.length > 0) {
                 displayData = portfolioData.filter(item => isAccountSelected(item.id_account));
@@ -2786,7 +2900,8 @@
                 th.addEventListener('drop', (e) => handleDrop(e, index));
                 const sortIcon = currentSort.column === col ? (currentSort.direction === 'asc' ? ' ▲' : ' ▼') : '';
                 if (index > 0) th.style.textAlign = 'right';
-                th.innerHTML = `<span style="cursor: pointer;" onclick="sortPortfolio('${col}')">${getTranslation(col) || col}${sortIcon}</span>`;
+                th.innerHTML =
+                    `<span style="cursor: pointer;" onclick="sortPortfolio('${col}')">${getTranslation(col) || col}${sortIcon}</span>`;
                 thead.appendChild(th);
             });
 
@@ -2808,7 +2923,8 @@
 
             if (currentSort.column) {
                 displayData.sort((a, b) => {
-                    const valA = a[currentSort.column]; const valB = b[currentSort.column];
+                    const valA = a[currentSort.column];
+                    const valB = b[currentSort.column];
                     if (valA < valB) return currentSort.direction === 'asc' ? -1 : 1;
                     if (valA > valB) return currentSort.direction === 'asc' ? 1 : -1;
                     return 0;
@@ -2819,14 +2935,22 @@
                 const totals = {};
                 columns.forEach(col => {
                     if (col === 'Ticker') { totals[col] = 'TOTAL'; return; }
-                    if (col === 'id_account' || col === 'int.minusplus.percent' || col === 'int.weight.percent') { totals[col] = ''; return; }
-                    if (col === 'quantity' || col.toLowerCase().includes('quantity') || col.toLowerCase().includes('qta')) { totals[col] = ''; return; }
+                    if (col === 'id_account' || col === 'int.minusplus.percent' || col === 'int.weight.percent') {
+                        totals[col] = '';
+                        return;
+                    }
+                    if (col === 'quantity' || col.toLowerCase().includes('quantity') || col.toLowerCase().includes(
+                        'qta')) { totals[col] = ''; return; }
                     const desc = getTranslation(col) || col;
                     if (desc.includes('%')) { totals[col] = ''; return; }
-                    const isNumeric = items.some(item => { const val = item[col]; return typeof val === 'number' || (typeof val === 'string' && /^-?\d+(\.\d+)?$/.test(val)); });
+                    const isNumeric = items.some(item => {
+                        const val = item[col]; return typeof val === 'number' || (
+                            typeof val === 'string' && /^-?\d+(\.\d+)?$/.test(val));
+                    });
                     if (isNumeric) {
                         const sum = items.reduce((acc, curr) => {
-                            let val = curr[col]; if (typeof val === 'string') val = parseFloat(val);
+                            let val = curr[col];
+                            if (typeof val === 'string') val = parseFloat(val);
                             return acc + (val || 0);
                         }, 0);
                         totals[col] = parseFloat(sum.toFixed(2));
@@ -2844,7 +2968,8 @@
                 if (!isNaN(totalMPValue) && !isNaN(totalCost) && totalCost !== 0) {
                     totals['int.minusplus.percent'] = parseFloat((totalMPValue / Math.abs(totalCost) * 100).toFixed(3));
                 } else if (!isNaN(totalMP) && !isNaN(totalCost) && totalCost !== 0) {
-                    totals['int.minusplus.percent'] = parseFloat(((totalMP - totalCost) / Math.abs(totalCost) * 100).toFixed(3));
+                    totals['int.minusplus.percent'] = parseFloat(((totalMP - totalCost) / Math.abs(totalCost) * 100)
+                        .toFixed(3));
                 }
                 return totals;
             };
@@ -2879,9 +3004,11 @@
 
                     // peso% per la riga gruppo = somma MP gruppo / totale MP * 100
                     const groupMP = _pfMpK ? groupItems.reduce((acc, it) => {
-                        const v = parseFloat(it[_pfMpK]); return acc + (isNaN(v) ? 0 : v);
+                        const v = parseFloat(it[_pfMpK]);
+                        return acc + (isNaN(v) ? 0 : v);
                     }, 0) : 0;
-                    groupTotal['int.weight.percent'] = (_grandTotalMP !== 0) ? parseFloat((groupMP / _grandTotalMP * 100).toFixed(3)) : null;
+                    groupTotal['int.weight.percent'] = (_grandTotalMP !== 0) ? parseFloat((groupMP / _grandTotalMP *
+                        100).toFixed(3)) : null;
 
                     // Sovrascrivi la prima colonna con la descrizione del gruppo
                     let groupName = group;
@@ -2916,8 +3043,8 @@
                     if (isExpanded) {
                         groupItems.forEach(item => {
                             const itemMP = _pfMpK ? parseFloat(item[_pfMpK]) : NaN;
-                            item['int.weight.percent'] = (!isNaN(itemMP) && _grandTotalMP !== 0)
-                                ? parseFloat((itemMP / _grandTotalMP * 100).toFixed(2)) : null;
+                            item['int.weight.percent'] = (!isNaN(itemMP) && _grandTotalMP !== 0) ?
+                                parseFloat((itemMP / _grandTotalMP * 100).toFixed(2)) : null;
                             renderRow(item, tbody);
                         });
                     }
@@ -2928,8 +3055,8 @@
             } else {
                 displayData.forEach(item => {
                     const itemMP = _pfMpK ? parseFloat(item[_pfMpK]) : NaN;
-                    item['int.weight.percent'] = (!isNaN(itemMP) && _grandTotalMP !== 0)
-                        ? parseFloat((itemMP / _grandTotalMP * 100).toFixed(2)) : null;
+                    item['int.weight.percent'] = (!isNaN(itemMP) && _grandTotalMP !== 0) ?
+                        parseFloat((itemMP / _grandTotalMP * 100).toFixed(2)) : null;
                     renderRow(item, tbody);
                 });
                 const grandTotal = calculateTotals(displayData, tableColumns);
@@ -2962,23 +3089,31 @@
                 if (isClickableAccount) {
                     const span = document.createElement('span');
                     span.textContent = val !== undefined ? val : '';
-                    span.style.cursor = 'pointer'; span.style.color = '#000'; span.style.textDecoration = 'underline';
+                    span.style.cursor = 'pointer';
+                    span.style.color = '#000';
+                    span.style.textDecoration = 'underline';
                     span.onclick = (e) => {
                         e.stopPropagation();
                         const idInstrument = item.id_instrument || item.Ticker;
-                        const classObj = classificationMap[idInstrument] || classificationMap[String(idInstrument)] || {};
+                        const classObj = classificationMap[idInstrument] || classificationMap[String(idInstrument)] ||
+                            {};
                         const accObj = accountsData.find(a => String(a.id_account) === String(item.id_account)) || {};
-                        const accountLevel = item.account_level_portfolio || item.account_level || accObj.account_level || '';
-                        const accountLevelYield = item.account_level_yield || item.account_level || accObj.account_level_yield || accObj.account_level || '';
+                        const accountLevel = item.account_level_portfolio || item.account_level || accObj
+                            .account_level || '';
+                        const accountLevelYield = item.account_level_yield || item.account_level || accObj
+                            .account_level_yield || accObj.account_level || '';
                         const instrCurrency = item.id_currency || classObj.id_currency || item.currency || '';
                         const evalCurrency = localStorage.getItem('currency') || '';
-                        if (item.id_instrument && item.id_account) openPortfolioDetails(item.id_account, item.id_instrument, accountLevel, evalCurrency, instrCurrency, accountLevelYield);
+                        if (item.id_instrument && item.id_account) openPortfolioDetails(item.id_account, item
+                            .id_instrument, accountLevel, evalCurrency, instrCurrency, accountLevelYield);
                     };
                     td.appendChild(span);
                 } else if (isClickableCode) {
                     const span = document.createElement('span');
                     span.textContent = val !== undefined ? val : '';
-                    span.style.cursor = 'pointer'; span.style.color = '#000'; span.style.textDecoration = 'underline';
+                    span.style.cursor = 'pointer';
+                    span.style.color = '#000';
+                    span.style.textDecoration = 'underline';
                     span.onclick = (e) => {
                         e.stopPropagation();
                         // Open Instrument Graph
@@ -2994,7 +3129,9 @@
                 } else if (isClickableDescription) {
                     const span = document.createElement('span');
                     span.textContent = val !== undefined ? val : '';
-                    span.style.cursor = 'pointer'; span.style.color = '#000'; span.style.textDecoration = 'underline';
+                    span.style.cursor = 'pointer';
+                    span.style.color = '#000';
+                    span.style.textDecoration = 'underline';
                     span.onclick = (e) => {
                         e.stopPropagation();
                         // Open Instrument Details
@@ -3013,7 +3150,10 @@
                     if (val === null || val === undefined || val === '') {
                         td.textContent = '';
                     } else if (typeof val === 'number') {
-                        td.textContent = val.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' %';
+                        td.textContent = val.toLocaleString(undefined, {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2
+                        }) + ' %';
                         if (col === 'int.minusplus.percent') {
                             td.style.color = val >= 0 ? '#27ae60' : '#e74c3c';
                             td.style.fontWeight = '600';
@@ -3030,7 +3170,10 @@
                     if (typeof val === 'number') {
                         if (isPercentageCol && val > 5000) td.textContent = '--';
                         else {
-                            td.textContent = val.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + (isPercentageCol ? ' %' : '');
+                            td.textContent = val.toLocaleString(undefined, {
+                                minimumFractionDigits: 2,
+                                maximumFractionDigits: 2
+                            }) + (isPercentageCol ? ' %' : '');
                             if (isPercentageCol) {
                                 td.style.color = val >= 0 ? '#27ae60' : '#e74c3c';
                                 td.style.fontWeight = '600';
@@ -3046,13 +3189,25 @@
 
         function sortPortfolio(col) {
             if (currentSort.column === col) currentSort.direction = currentSort.direction === 'asc' ? 'desc' : 'asc';
-            else { currentSort.column = col; currentSort.direction = 'asc'; }
+            else {
+                currentSort.column = col;
+                currentSort.direction = 'asc';
+            }
             renderTable();
         }
 
         let draggedColIndex = null;
-        function handleDragStart(e, index) { draggedColIndex = index; e.dataTransfer.effectAllowed = 'move'; }
-        function handleDragOver(e) { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }
+
+        function handleDragStart(e, index) {
+            draggedColIndex = index;
+            e.dataTransfer.effectAllowed = 'move';
+        }
+
+        function handleDragOver(e) {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+        }
+
         function handleDrop(e, index) {
             e.preventDefault();
             if (draggedColIndex === index) return;
@@ -3066,7 +3221,8 @@
             tr.classList.add('selected');
         }
 
-        function openPortfolioDetails(idAccount, idInstrument, accountLevel, evalCurrency, instrCurrency, accountLevelYield) {
+        function openPortfolioDetails(idAccount, idInstrument, accountLevel, evalCurrency, instrCurrency,
+            accountLevelYield) {
             const params = new URLSearchParams();
             params.set('username', credentials.username || '');
             params.set('token', credentials.token || '');
@@ -3087,7 +3243,8 @@
             window.open(`dashboard-wallet-instrument-trades.html?${params.toString()}`, '_blank');
         }
 
-        function openTradeYieldDetails(id_account, id_instrument, yield_level, evalCurrency, instrCurrency, account_level) {
+        function openTradeYieldDetails(id_account, id_instrument, yield_level, evalCurrency, instrCurrency,
+            account_level) {
             console.log('openTradeYieldDetails called with id_account:', id_account, 'id_instrument:', id_instrument);
             const params = new URLSearchParams();
             params.set('id_account', id_account || '');
@@ -3135,11 +3292,15 @@
                     classificationMap = {};
                     let classificationList = data.classification;
                     if (typeof classificationList === 'string') {
-                        try { classificationList = JSON.parse(classificationList.replace(/'/g, '"')); }
-                        catch (e) { classificationList = []; }
+                        try { classificationList = JSON.parse(classificationList.replace(/'/g, '"')); } catch (e) {
+                            classificationList = [];
+                        }
                     }
                     if (Array.isArray(classificationList)) {
-                        classificationList.forEach(item => { if (item.id_instrument) classificationMap[item.id_instrument] = item; });
+                        classificationList.forEach(item => {
+                            if (item.id_instrument) classificationMap[item.id_instrument] =
+                                item;
+                        });
                         localStorage.setItem('classificationMap', JSON.stringify(classificationMap));
                     }
 
@@ -3177,8 +3338,10 @@
                     console.log('Parsed profitability data:', profitabilityData);
                     if (profitabilityData.length > 0) {
                         profitabilityData.forEach(item => {
-                            const ristot = item['RISTOT']; const giacmed = item['GIACMED'];
-                            if (typeof ristot === 'number' && typeof giacmed === 'number' && giacmed !== 0) item['%'] = parseFloat(((ristot / giacmed) * 100).toFixed(2));
+                            const ristot = item['RISTOT'];
+                            const giacmed = item['GIACMED'];
+                            if (typeof ristot === 'number' && typeof giacmed === 'number' && giacmed !== 0) item[
+                                '%'] = parseFloat(((ristot / giacmed) * 100).toFixed(2));
                             else item['%'] = null;
                         });
                         if (profitabilityColumns.length > 0) profitabilityTableColumns = [...profitabilityColumns, '%'];
@@ -3190,7 +3353,8 @@
                     }
                     profitabilityData.sort((a, b) => {
                         const getQty = (item) => {
-                            const key = Object.keys(item).find(k => k.toLowerCase() === 'quantity' || k.toLowerCase() === 'quantità' || k.toLowerCase() === 'qta');
+                            const key = Object.keys(item).find(k => k.toLowerCase() === 'quantity' || k
+                                .toLowerCase() === 'quantità' || k.toLowerCase() === 'qta');
                             return key && item[key] ? Math.abs(parseFloat(item[key])) : 0;
                         };
                         return getQty(b) - getQty(a);
@@ -3207,13 +3371,16 @@
 
         function populateProfitabilityGroupingSelect(classificationList) {
             const select = document.getElementById('profitability-grouping-select');
-            select.innerHTML = `<option value="">${getTranslation('int.noselection') || 'Nessun raggruppamento'}</option>`;
+            select.innerHTML =
+                `<option value="">${getTranslation('int.noselection') || 'Nessun raggruppamento'}</option>`;
             let keys = [];
             if (classificationFilter && classificationFilter.length > 0) keys = classificationFilter;
-            else if (Array.isArray(classificationList) && classificationList.length > 0) keys = Object.keys(classificationList[0]).filter(k => k !== 'id_instrument');
+            else if (Array.isArray(classificationList) && classificationList.length > 0) keys = Object.keys(
+                classificationList[0]).filter(k => k !== 'id_instrument');
             keys.forEach(key => {
                 const opt = document.createElement('option');
-                opt.value = key; opt.textContent = getTranslation(key) || key;
+                opt.value = key;
+                opt.textContent = getTranslation(key) || key;
                 select.appendChild(opt);
             });
         }
@@ -3238,7 +3405,8 @@
                 console.error('ERROR: profitability-header-row or profitability-body element not found!');
                 return;
             }
-            thead.innerHTML = ''; tbody.innerHTML = '';
+            thead.innerHTML = '';
+            tbody.innerHTML = '';
             let displayData = [];
             if (selectedAccounts.length > 0) {
                 displayData = profitabilityData.filter(item => isAccountSelected(item.id_account));
@@ -3262,15 +3430,19 @@
                 th.ondrop = (e) => handleProfitabilityDrop(e, index);
                 th.onclick = () => sortProfitability(col);
                 const handle = document.createElement('span');
-                handle.className = 'drag-handle'; handle.textContent = '⋮'; th.appendChild(handle);
+                handle.className = 'drag-handle';
+                handle.textContent = '⋮';
+                th.appendChild(handle);
                 th.appendChild(document.createTextNode(getTranslation(col) || col));
-                if (currentProfitabilitySort.column === col) th.classList.add(currentProfitabilitySort.direction === 'asc' ? 'sort-asc' : 'sort-desc');
+                if (currentProfitabilitySort.column === col) th.classList.add(currentProfitabilitySort.direction === 'asc' ?
+                    'sort-asc' : 'sort-desc');
                 thead.appendChild(th);
             });
 
             if (currentProfitabilitySort.column) {
                 displayData.sort((a, b) => {
-                    const valA = a[currentProfitabilitySort.column]; const valB = b[currentProfitabilitySort.column];
+                    const valA = a[currentProfitabilitySort.column];
+                    const valB = b[currentProfitabilitySort.column];
                     if (valA < valB) return currentProfitabilitySort.direction === 'asc' ? -1 : 1;
                     if (valA > valB) return currentProfitabilitySort.direction === 'asc' ? 1 : -1;
                     return 0;
@@ -3289,10 +3461,14 @@
                         return;
                     }
                     if (lower.includes('per@')) { totals[col] = ''; return; }
-                    const isNumeric = items.some(item => { const val = item[col]; return typeof val === 'number' || (typeof val === 'string' && /^-?\d+(\.\d+)?$/.test(val)); });
+                    const isNumeric = items.some(item => {
+                        const val = item[col]; return typeof val === 'number' || (
+                            typeof val === 'string' && /^-?\d+(\.\d+)?$/.test(val));
+                    });
                     if (isNumeric) {
                         const sum = items.reduce((acc, curr) => {
-                            let val = curr[col]; if (typeof val === 'string') val = parseFloat(val);
+                            let val = curr[col];
+                            if (typeof val === 'string') val = parseFloat(val);
                             return acc + (val || 0);
                         }, 0);
                         totals[col] = parseFloat(sum.toFixed(2));
@@ -3318,7 +3494,8 @@
                     const instrumentId = item.id_instrument;
                     if (instrumentId) {
                         let classObj = classificationMap[instrumentId] || classificationMap[String(instrumentId)];
-                        if (classObj && classObj[currentProfitabilityGroup]) groupVal = classObj[currentProfitabilityGroup];
+                        if (classObj && classObj[currentProfitabilityGroup]) groupVal = classObj[
+                            currentProfitabilityGroup];
                     }
                     if (!groups[groupVal]) groups[groupVal] = [];
                     groups[groupVal].push(item);
@@ -3398,22 +3575,30 @@
                 if (isClickableAccount) {
                     const span = document.createElement('span');
                     span.textContent = val !== undefined ? val : '';
-                    span.style.cursor = 'pointer'; span.style.color = '#000'; span.style.textDecoration = 'underline';
+                    span.style.cursor = 'pointer';
+                    span.style.color = '#000';
+                    span.style.textDecoration = 'underline';
                     span.onclick = (e) => {
                         e.stopPropagation();
                         // Open Yield Details
-                        console.log('Account clicked:', val, 'Ticker:', item.Ticker, 'id_instrument:', item.id_instrument);
+                        console.log('Account clicked:', val, 'Ticker:', item.Ticker, 'id_instrument:', item
+                            .id_instrument);
                         const idAccount = val;
                         const idInstrument = item.Ticker || item.id_instrument;
                         const accObj = accountsData.find(a => String(a.id_account) === String(idAccount)) || {};
-                        const accountLevelYield = item.account_level_yield || item.account_level || accObj.account_level_yield || accObj.account_level || '';
-                        const accountLevel = item.account_level_portfolio || item.account_level || accObj.account_level || '';
-                        const classObj = classificationMap[idInstrument] || classificationMap[String(idInstrument)] || {};
+                        const accountLevelYield = item.account_level_yield || item.account_level || accObj
+                            .account_level_yield || accObj.account_level || '';
+                        const accountLevel = item.account_level_portfolio || item.account_level || accObj
+                            .account_level || '';
+                        const classObj = classificationMap[idInstrument] || classificationMap[String(idInstrument)] ||
+                            {};
                         const instrCurrency = item.id_currency || classObj.id_currency || item.currency || '';
                         const evalCurrency = localStorage.getItem('currency') || '';
                         if (idAccount && idInstrument) {
-                            console.log('Opening yield details with id_account:', idAccount, 'id_instrument:', idInstrument);
-                            openTradeYieldDetails(idAccount, idInstrument, accountLevelYield, evalCurrency, instrCurrency, accountLevel);
+                            console.log('Opening yield details with id_account:', idAccount, 'id_instrument:',
+                                idInstrument);
+                            openTradeYieldDetails(idAccount, idInstrument, accountLevelYield, evalCurrency,
+                                instrCurrency, accountLevel);
                         } else {
                             console.warn('Missing id_account or id_instrument:', { idAccount, idInstrument });
                         }
@@ -3422,7 +3607,9 @@
                 } else if (isClickableCode) {
                     const span = document.createElement('span');
                     span.textContent = val !== undefined ? val : '';
-                    span.style.cursor = 'pointer'; span.style.color = '#000'; span.style.textDecoration = 'underline';
+                    span.style.cursor = 'pointer';
+                    span.style.color = '#000';
+                    span.style.textDecoration = 'underline';
                     span.onclick = (e) => {
                         e.stopPropagation();
                         // Open Instrument Graph
@@ -3438,7 +3625,9 @@
                 } else if (isClickableDescription) {
                     const span = document.createElement('span');
                     span.textContent = val !== undefined ? val : '';
-                    span.style.cursor = 'pointer'; span.style.color = '#000'; span.style.textDecoration = 'underline';
+                    span.style.cursor = 'pointer';
+                    span.style.color = '#000';
+                    span.style.textDecoration = 'underline';
                     span.onclick = (e) => {
                         e.stopPropagation();
                         // Open Instrument Details
@@ -3457,7 +3646,10 @@
                     if (typeof val === 'number') {
                         if (isPercentageCol && val > 5000) td.textContent = '--';
                         else {
-                            td.textContent = val.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + (isPercentageCol ? ' %' : '');
+                            td.textContent = val.toLocaleString(undefined, {
+                                minimumFractionDigits: 2,
+                                maximumFractionDigits: 2
+                            }) + (isPercentageCol ? ' %' : '');
                             if (isPercentageCol) {
                                 td.style.color = val >= 0 ? '#27ae60' : '#e74c3c';
                                 td.style.fontWeight = '600';
@@ -3473,14 +3665,27 @@
         }
 
         function sortProfitability(col) {
-            if (currentProfitabilitySort.column === col) currentProfitabilitySort.direction = currentProfitabilitySort.direction === 'asc' ? 'desc' : 'asc';
-            else { currentProfitabilitySort.column = col; currentProfitabilitySort.direction = 'asc'; }
+            if (currentProfitabilitySort.column === col) currentProfitabilitySort.direction = currentProfitabilitySort
+                .direction === 'asc' ? 'desc' : 'asc';
+            else {
+                currentProfitabilitySort.column = col;
+                currentProfitabilitySort.direction = 'asc';
+            }
             renderProfitabilityTable();
         }
 
         let draggedProfitabilityColIndex = null;
-        function handleProfitabilityDragStart(e, index) { draggedProfitabilityColIndex = index; e.dataTransfer.effectAllowed = 'move'; }
-        function handleProfitabilityDragOver(e) { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }
+
+        function handleProfitabilityDragStart(e, index) {
+            draggedProfitabilityColIndex = index;
+            e.dataTransfer.effectAllowed = 'move';
+        }
+
+        function handleProfitabilityDragOver(e) {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+        }
+
         function handleProfitabilityDrop(e, index) {
             e.preventDefault();
             if (draggedProfitabilityColIndex === index) return;
@@ -3544,6 +3749,248 @@
             window.location.href = 'login.html';
         }
 
+        // ========== FUNZIONE PER GENERARE INTESTAZIONE PDF ==========
+        function generatePDFHeader(reportType) {
+            const f = (filterData && filterData.Filter) ? filterData.Filter : {};
+            const dateStart = f.date_start || '';
+            const dateEnd = f.date_end || '';
+            const user = credentials.username || localStorage.getItem('username') || '';
+            const lang = credentials.language || localStorage.getItem('language') || 'it_IT';
+            let currency = localStorage.getItem('currency') || 'EUR';
+            const currencyDisplay = document.getElementById('currencyDisplay');
+            if (currencyDisplay && currencyDisplay.textContent && currencyDisplay.textContent !== '-') {
+                const parts = currencyDisplay.textContent.split(' ');
+                currency = parts.length > 1 ? parts[1] : parts[0];
+            }
+
+            // Ottieni la lista dei rapporti selezionati
+            const selectedReports = accountsData.filter(a => a.selected).map(a => ({
+                id: a.id_account,
+                description: a.description || a.id_account
+            }));
+
+            // Ottieni il nome del portfolio selezionato
+            const portfolioSelect = document.getElementById('portfolio');
+            let portfolioName = '';
+            if (portfolioSelect) {
+                const selectedOption = portfolioSelect.options[portfolioSelect.selectedIndex];
+                if (selectedOption && selectedOption.value) {
+                    portfolioName = selectedOption.textContent || selectedOption.value;
+                }
+            }
+
+            // Ottieni il nome della redditività selezionata
+            const profitabilitySelect = document.getElementById('profitability');
+            let profitabilityName = '';
+            if (profitabilitySelect) {
+                const selectedOption = profitabilitySelect.options[profitabilitySelect.selectedIndex];
+                if (selectedOption && selectedOption.value) {
+                    profitabilityName = selectedOption.textContent || selectedOption.value;
+                }
+            }
+
+            // Costruisci l'HTML dell'intestazione
+            let headerHTML = `
+                <div class="pdf-header">
+                    <h2>${getTranslation('int.pdf.report') || 'Report'} - ${reportType === 'portfolio' ? (getTranslation('int.portfolio') || 'Portafoglio') : (getTranslation('int.profitability') || 'Redditività')}</h2>
+                    <div class="divider"></div>
+                    <div class="header-row">
+                        <div><span class="label">${getTranslation('int.user.label') || 'Utente'}:</span> <span class="value">${user}</span></div>
+                        <div><span class="label">${getTranslation('int.language') || 'Lingua'}:</span> <span class="value">${lang}</span></div>
+                        <div><span class="label">${getTranslation('int.currency') || 'Divisa'}:</span> <span class="value">${currency}</span></div>
+                    </div>
+                    <div class="header-row">
+                        <div><span class="label">${getTranslation('int.date.start') || 'Data iniziale'}:</span> <span class="value">${dateStart}</span></div>
+                        <div><span class="label">${getTranslation('int.date.end') || 'Data finale'}:</span> <span class="value">${dateEnd}</span></div>
+                    </div>
+                    <div class="header-row">
+                        <div><span class="label">${getTranslation('int.portfolio') || 'Portafoglio'}:</span> <span class="value">${portfolioName || '-'}</span></div>
+                        <div><span class="label">${getTranslation('int.profitability') || 'Redditività'}:</span> <span class="value">${profitabilityName || '-'}</span></div>
+                    </div>
+                    <div class="divider"></div>
+                    <div>
+                        <div><span class="label">${getTranslation('int.reports.selected') || 'Rapporti selezionati'}:</span> <span class="value">${selectedReports.length}</span></div>
+                        ${selectedReports.length > 0 ? `
+                        <div class="report-list">
+                            ${selectedReports.map(r => `<span class="report-item">${r.id}${r.description && r.description !== r.id ? ' - ' + r.description : ''}</span>`).join('')}
+                        </div>
+                        ` : `<div style="color:#999; font-size:11px; margin-top:4px;">${getTranslation('int.no.reports.selected') || 'Nessun rapporto selezionato'}</div>`}
+                    </div>
+                </div>
+            `;
+
+            return headerHTML;
+        }
+
+        // ========== FUNZIONE MODIFICATA PER ESPORTAZIONE PDF CON INTESTAZIONE ==========
+        async function exportSectionToPDF(sectionId, filename, btn) {
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> PDF';
+            btn.disabled = true;
+
+            try {
+                await new Promise(r => setTimeout(r, 100));
+
+                // Aggiungi la classe per nascondere elementi durante l'esportazione
+                document.body.classList.add('exporting-pdf');
+
+                const element = document.getElementById(sectionId);
+
+                // Determina il tipo di report
+                const reportType = sectionId === 'portfolio-section' ? 'portfolio' : 'profitability';
+
+                // Genera l'intestazione HTML
+                const headerHTML = generatePDFHeader(reportType);
+
+                // Crea un wrapper temporaneo per l'intestazione
+                const headerWrapper = document.createElement('div');
+                headerWrapper.id = 'pdf-header-wrapper';
+                headerWrapper.innerHTML = headerHTML;
+                headerWrapper.style.cssText = 'width: 100%; margin-bottom: 20px;';
+
+                // Inserisci l'intestazione all'inizio del container da esportare
+                const firstChild = element.firstChild;
+                if (firstChild) {
+                    element.insertBefore(headerWrapper, firstChild);
+                } else {
+                    element.appendChild(headerWrapper);
+                }
+
+                // Aggiungi uno stile temporaneo per il PDF
+                const styleForPdf = document.createElement('style');
+                styleForPdf.id = 'pdf-export-style';
+                styleForPdf.textContent = `
+                    .pdf-header {
+                        font-family: 'Orbitron', sans-serif;
+                        padding: 15px 20px;
+                        background: #f8f8f8;
+                        border-bottom: 2px solid #000;
+                        margin-bottom: 15px;
+                    }
+                    .pdf-header h2 {
+                        font-size: 16px;
+                        margin-bottom: 8px;
+                        color: #000;
+                    }
+                    .pdf-header .header-row {
+                        display: flex;
+                        flex-wrap: wrap;
+                        gap: 10px 25px;
+                        font-size: 11px;
+                        color: #333;
+                    }
+                    .pdf-header .header-row .label {
+                        font-weight: 600;
+                        color: #000;
+                    }
+                    .pdf-header .header-row .value {
+                        font-weight: 400;
+                    }
+                    .pdf-header .report-list {
+                        margin-top: 5px;
+                        font-size: 10px;
+                        color: #555;
+                        max-height: 60px;
+                        overflow-y: auto;
+                        background: #fff;
+                        padding: 5px 10px;
+                        border: 1px solid #ddd;
+                        border-radius: 4px;
+                    }
+                    .pdf-header .report-list .report-item {
+                        display: inline-block;
+                        background: #f0f0f0;
+                        padding: 1px 6px;
+                        margin: 1px 3px 1px 0;
+                        border-radius: 3px;
+                        font-size: 9px;
+                    }
+                    .pdf-header .divider {
+                        border-top: 1px solid #ddd;
+                        margin: 6px 0;
+                    }
+                    body.exporting-pdf .data-table th, body.exporting-pdf .data-table td {
+                        padding: 4px 6px !important;
+                        font-size: 10px !important;
+                    }
+                `;
+                document.head.appendChild(styleForPdf);
+
+                // Attendi un momento per il rendering
+                await new Promise(r => setTimeout(r, 200));
+
+                const canvas = await html2canvas(element, {
+                    scale: 2.5,
+                    backgroundColor: '#ffffff',
+                    logging: false,
+                    useCORS: true,
+                    allowTaint: true,
+                    windowWidth: element.scrollWidth,
+                    windowHeight: element.scrollHeight
+                });
+
+                // Rimuovi gli elementi temporanei
+                const headerWrapperRemoved = document.getElementById('pdf-header-wrapper');
+                if (headerWrapperRemoved) headerWrapperRemoved.remove();
+                const styleRemoved = document.getElementById('pdf-export-style');
+                if (styleRemoved) styleRemoved.remove();
+                document.body.classList.remove('exporting-pdf');
+
+                const imgData = canvas.toDataURL('image/jpeg', 0.95);
+                const { jsPDF } = window.jspdf;
+
+                const pdf = new jsPDF({
+                    orientation: 'landscape',
+                    unit: 'mm',
+                    format: 'a4'
+                });
+
+                const pdfWidth = pdf.internal.pageSize.getWidth();
+                const pdfHeight = pdf.internal.pageSize.getHeight();
+
+                const imgProps = pdf.getImageProperties(imgData);
+                const margin = 10;
+
+                const renderWidth = pdfWidth - (margin * 2);
+                const renderHeight = (imgProps.height * renderWidth) / imgProps.width;
+
+                if (renderHeight > (pdfHeight - margin * 2)) {
+                    let heightLeft = renderHeight;
+                    let position = margin;
+                    const usableHeight = pdfHeight - margin * 2;
+
+                    pdf.addImage(imgData, 'JPEG', margin, position, renderWidth, renderHeight);
+                    heightLeft -= usableHeight;
+
+                    while (heightLeft > 0) {
+                        position = position - usableHeight;
+                        pdf.addPage();
+                        pdf.addImage(imgData, 'JPEG', margin, position, renderWidth, renderHeight);
+                        heightLeft -= usableHeight;
+                    }
+                } else {
+                    const x = (pdfWidth - renderWidth) / 2;
+                    const y = (pdfHeight - renderHeight) / 2;
+                    pdf.addImage(imgData, 'JPEG', x, y, renderWidth, renderHeight);
+                }
+
+                pdf.save(filename + '.pdf');
+
+            } catch (error) {
+                console.error("Error exporting PDF:", error);
+                // Rimuovi elementi temporanei in caso di errore
+                const headerWrapperRemoved = document.getElementById('pdf-header-wrapper');
+                if (headerWrapperRemoved) headerWrapperRemoved.remove();
+                const styleRemoved = document.getElementById('pdf-export-style');
+                if (styleRemoved) styleRemoved.remove();
+                document.body.classList.remove('exporting-pdf');
+                alert("Errore durante l'esportazione in PDF");
+            } finally {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }
+        }
+
         // ========== INITIALIZATION ==========
         window.addEventListener('load', async () => {
             if (checkAuthentication()) {
@@ -3599,76 +4046,6 @@
         // Nota: Rimosso il refresh automatico di loadFilter() su focus
         // I rapporti selezionati vengono mantenuti fino a rielaborazione esplicita
         // Solo in caso di "Applica Filtri" vengono modificati i rapporti selezionati
-
-        async function exportSectionToPDF(sectionId, filename, btn) {
-            const originalText = btn.innerHTML;
-            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> PDF';
-            btn.disabled = true;
-
-            try {
-                await new Promise(r => setTimeout(r, 100)); // allow UI to refresh
-
-                // Aggiungi la classe per nascondere elementi durante l'esportazione
-                document.body.classList.add('exporting-pdf');
-
-                const element = document.getElementById(sectionId);
-                const canvas = await html2canvas(element, {
-                    scale: 2,
-                    backgroundColor: '#ffffff',
-                    logging: false
-                });
-
-                // Rimuovi la classe dopo l'esportazione
-                document.body.classList.remove('exporting-pdf');
-
-                const imgData = canvas.toDataURL('image/jpeg', 1.0);
-                const { jsPDF } = window.jspdf;
-
-                const pdf = new jsPDF({
-                    orientation: 'landscape',
-                    unit: 'mm',
-                    format: 'a4'
-                });
-
-                const pdfWidth = pdf.internal.pageSize.getWidth();
-                const pdfHeight = pdf.internal.pageSize.getHeight();
-
-                const imgProps = pdf.getImageProperties(imgData);
-                const margin = 10;
-
-                const renderWidth = pdfWidth - (margin * 2);
-                const renderHeight = (imgProps.height * renderWidth) / imgProps.width;
-
-                if (renderHeight > (pdfHeight - margin * 2)) {
-                    let heightLeft = renderHeight;
-                    let position = margin;
-                    const usableHeight = pdfHeight - margin * 2;
-
-                    pdf.addImage(imgData, 'JPEG', margin, position, renderWidth, renderHeight);
-                    heightLeft -= usableHeight;
-
-                    while (heightLeft > 0) {
-                        position = position - usableHeight; // sposta l'immagine verso l'alto per tagliare la porzione successiva
-                        pdf.addPage();
-                        pdf.addImage(imgData, 'JPEG', margin, position, renderWidth, renderHeight);
-                        heightLeft -= usableHeight;
-                    }
-                } else {
-                    const x = (pdfWidth - renderWidth) / 2;
-                    const y = (pdfHeight - renderHeight) / 2;
-                    pdf.addImage(imgData, 'JPEG', x, y, renderWidth, renderHeight);
-                }
-
-                pdf.save(filename + '.pdf');
-
-            } catch (error) {
-                console.error("Error exporting PDF:", error);
-                alert("Errore durante l'esportazione in PDF");
-            } finally {
-                btn.innerHTML = originalText;
-                btn.disabled = false;
-            }
-        }
     </script>
 </body>
 
