@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Statistics 0.1</title>
+    <title>Statistics 0.2</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <script src="js/dashboard-shared.js"></script>
     <link rel="icon" type="image/png" href="images/icon-finest.png">
@@ -444,11 +444,80 @@
             color: #000;
         }
 
-        .filter-actions {
+        /* Nuova struttura a griglia per i filtri */
+        .filters-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .filters-grid .filter-group {
+            margin-bottom: 0;
+        }
+
+        .filters-grid .filter-group .dropdown-check-list {
+            width: 100%;
+        }
+
+        .filters-grid .filter-group .anchor {
+            width: 100%;
+        }
+
+        /* Riga bottoni */
+        .buttons-row {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            align-items: center;
+            padding-top: 5px;
+        }
+
+        .buttons-row .filter-group {
+            margin-bottom: 0;
+        }
+
+        /* Inversione checkbox inline */
+        .inversion-wrapper {
             display: flex;
             align-items: center;
-            gap: 12px;
-            flex-wrap: wrap;
+            gap: 8px;
+            height: 100%;
+            padding-top: 5px;
+        }
+
+        .inversion-wrapper input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+            margin: 0;
+            cursor: pointer;
+        }
+
+        .inversion-wrapper label {
+            margin: 0;
+            cursor: pointer;
+            display: inline;
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        /* Responsive */
+        @media (max-width: 1200px) {
+            .filters-grid {
+                grid-template-columns: 1fr 1fr 1fr;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .filters-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .filters-grid {
+                grid-template-columns: 1fr;
+            }
         }
     </style>
 </head>
@@ -471,31 +540,27 @@
         <div id="message" class="message"></div>
 
         <div class="collapsible-container">
-            <!-- RIGA 1: Data iniziale / Data finale / Forza min / Forza max -->
-            <div style="display: flex; gap: 15px; align-items: flex-end; flex-wrap: wrap; margin-bottom: 15px;">
-                <div class="filter-group" style="flex: 1; min-width: 150px;">
+            <!-- RIGA 1: Data iniziale, Data finale, Forza min, Forza max, Settore -->
+            <div class="filters-grid">
+                <div class="filter-group">
                     <label>Data iniziale:</label>
                     <input type="date" id="date-start">
                 </div>
-                <div class="filter-group" style="flex: 1; min-width: 150px;">
+                <div class="filter-group">
                     <label>Data finale:</label>
                     <input type="date" id="date-end">
                 </div>
-                <div class="filter-group" style="flex: 1; min-width: 150px;">
+                <div class="filter-group">
                     <label>Forza min:</label>
                     <input type="number" id="value-min" step="0.01">
                 </div>
-                <div class="filter-group" style="flex: 1; min-width: 150px;">
+                <div class="filter-group">
                     <label>Forza max:</label>
                     <input type="number" id="value-max" step="0.01">
                 </div>
-            </div>
-
-            <!-- RIGA 2: Settore / Mercato / Strumento / Inversione -->
-            <div style="display: flex; gap: 15px; align-items: flex-end; flex-wrap: wrap; margin-bottom: 15px;">
-                <div class="filter-group" style="flex: 1; min-width: 150px;">
+                <div class="filter-group">
                     <label>Settore:</label>
-                    <div id="sector-filter-container" class="dropdown-check-list" style="width: 100%;">
+                    <div id="sector-filter-container" class="dropdown-check-list">
                         <span class="anchor" onclick="toggleSectorDropdown()" id="sectorSelectorAnchor">Tutti i
                             settori</span>
                         <div id="sectorSelectorItems" class="items">
@@ -503,9 +568,13 @@
                         </div>
                     </div>
                 </div>
-                <div class="filter-group" style="flex: 1; min-width: 150px;">
+            </div>
+
+            <!-- RIGA 2: Mercato, Strumento, Inversione + Bottoni -->
+            <div class="filters-grid">
+                <div class="filter-group">
                     <label>Mercato:</label>
-                    <div id="market-filter-container" class="dropdown-check-list" style="width: 100%;">
+                    <div id="market-filter-container" class="dropdown-check-list">
                         <span class="anchor" onclick="toggleMarketDropdown()" id="marketSelectorAnchor">Tutti i
                             mercati</span>
                         <div id="marketSelectorItems" class="items">
@@ -513,7 +582,7 @@
                         </div>
                     </div>
                 </div>
-                <div class="filter-group" style="flex: 1; min-width: 150px;">
+                <div class="filter-group">
                     <label>Strumento:</label>
                     <div class="instrument-search-wrapper">
                         <input type="text" id="instrument-search-input" class="instrument-search-field"
@@ -524,19 +593,19 @@
                     </div>
                     <input type="hidden" id="instrument-filter" value="">
                 </div>
-                <div class="filter-group" style="display: flex; align-items: center; gap: 8px; padding-bottom: 12px; flex: 0 0 auto;">
-                    <input type="checkbox" id="inversion-filter"
-                        style="width: 16px; height: 16px; margin: 0; cursor: pointer;">
-                    <label id="inversion-label" for="inversion-filter" data-translate="int.inversion"
-                        style="margin: 0; cursor: pointer; display: inline;"></label>
+                <div class="filter-group">
+                    <label>&nbsp;</label>
+                    <div class="inversion-wrapper">
+                        <input type="checkbox" id="inversion-filter">
+                        <label id="inversion-label" for="inversion-filter" data-translate="int.inversion">Inversione</label>
+                    </div>
                 </div>
-            </div>
-
-            <!-- RIGA 3: Pulsanti Applica e Grafici -->
-            <div style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap; margin-top: 5px;">
-                <div class="filter-actions">
-                    <button onclick="fetchMarketData()" data-translate="int.apply">Applica selezione</button>
-                    <button id="graph-btn" class="graph-btn" onclick="openStatisticsGraph()" style="display:none;">Grafici</button>
+                <div class="filter-group" style="grid-column: span 2;">
+                    <label>&nbsp;</label>
+                    <div class="buttons-row">
+                        <button onclick="fetchMarketData()" data-translate="int.apply">Applica selezione</button>
+                        <button id="graph-btn" class="graph-btn" onclick="openStatisticsGraph()" style="display:none;">Grafici</button>
+                    </div>
                 </div>
             </div>
         </div>
