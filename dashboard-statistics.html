@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Statistics 0.2</title>
+    <title>Statistics 0.3</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <script src="js/dashboard-shared.js"></script>
     <link rel="icon" type="image/png" href="images/icon-finest.png">
@@ -140,7 +140,6 @@
             background: #f0f0f0;
         }
 
-        /* RIGHE ALTERNE CHIARO/GRIGIO */
         .data-table tbody tr {
             transition: background 0.2s;
             cursor: pointer;
@@ -148,22 +147,18 @@
 
         .data-table tbody tr:nth-child(even) {
             background-color: #f9f9f9;
-            /* Grigio chiaro */
         }
 
         .data-table tbody tr:nth-child(odd) {
             background-color: #ffffff;
-            /* Bianco */
         }
 
         .data-table tbody tr:hover {
             background: #f0f0f0 !important;
-            /* Grigio più scuro al passaggio del mouse */
         }
 
         .data-table tbody tr.selected {
             background: #e0e0e0 !important;
-            /* Grigio per riga selezionata */
             border-left: 3px solid #000;
         }
 
@@ -189,7 +184,6 @@
             display: block;
         }
 
-        /* Multi-selection dropdown styles */
         .dropdown-check-list {
             display: inline-block;
             position: relative;
@@ -254,7 +248,6 @@
             width: auto;
         }
 
-        /* Instrument search widget */
         .instrument-search-wrapper {
             position: relative;
             width: 100%;
@@ -390,7 +383,6 @@
             font-size: 0.85em;
         }
 
-        /* Instrument tooltip */
         .inst-tooltip-anchor {
             position: relative;
             display: inline-block;
@@ -444,79 +436,94 @@
             color: #000;
         }
 
-        /* Nuova struttura a griglia per i filtri */
-        .filters-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr 1fr 1fr 1fr;
+        /* Layout filtri su due righe */
+        .filters-row {
+            display: flex;
             gap: 15px;
             margin-bottom: 15px;
+            flex-wrap: wrap;
         }
 
-        .filters-grid .filter-group {
+        .filters-row .filter-group {
+            flex: 1;
+            min-width: 150px;
             margin-bottom: 0;
         }
 
-        .filters-grid .filter-group .dropdown-check-list {
+        .filters-row .filter-group .dropdown-check-list {
             width: 100%;
         }
 
-        .filters-grid .filter-group .anchor {
+        .filters-row .filter-group .anchor {
             width: 100%;
         }
 
-        /* Riga bottoni */
-        .buttons-row {
-            display: flex;
-            gap: 10px;
-            justify-content: flex-end;
-            align-items: center;
-            padding-top: 5px;
+        .filters-row .filter-group .instrument-search-wrapper {
+            width: 100%;
         }
 
-        .buttons-row .filter-group {
-            margin-bottom: 0;
-        }
-
-        /* Inversione checkbox inline */
-        .inversion-wrapper {
+        /* Gruppo inversione */
+        .inversion-group {
             display: flex;
             align-items: center;
             gap: 8px;
-            height: 100%;
-            padding-top: 5px;
+            padding-top: 24px;
+            flex: 0.5;
+            min-width: 120px;
         }
 
-        .inversion-wrapper input[type="checkbox"] {
+        .inversion-group input[type="checkbox"] {
             width: 16px;
             height: 16px;
             margin: 0;
             cursor: pointer;
         }
 
-        .inversion-wrapper label {
+        .inversion-group label {
             margin: 0;
             cursor: pointer;
-            display: inline;
             color: #666;
             font-size: 0.9rem;
+            display: inline;
         }
 
-        /* Responsive */
+        /* Bottoni */
+        .buttons-group {
+            display: flex;
+            gap: 10px;
+            padding-top: 24px;
+            flex: 0.8;
+            min-width: 200px;
+            justify-content: flex-end;
+        }
+
         @media (max-width: 1200px) {
-            .filters-grid {
-                grid-template-columns: 1fr 1fr 1fr;
+            .filters-row .filter-group {
+                min-width: 130px;
+            }
+            .inversion-group {
+                flex: 0.7;
+            }
+            .buttons-group {
+                flex: 1;
             }
         }
 
         @media (max-width: 768px) {
-            .filters-grid {
-                grid-template-columns: 1fr 1fr;
+            .filters-row .filter-group {
+                min-width: 100%;
+                flex: 1 1 100%;
             }
-        }
-
-        @media (max-width: 480px) {
-            .filters-grid {
-                grid-template-columns: 1fr;
+            .inversion-group {
+                flex: 1 1 100%;
+                padding-top: 0;
+                min-width: 100%;
+            }
+            .buttons-group {
+                flex: 1 1 100%;
+                padding-top: 0;
+                min-width: 100%;
+                justify-content: flex-start;
             }
         }
     </style>
@@ -541,7 +548,7 @@
 
         <div class="collapsible-container">
             <!-- RIGA 1: Data iniziale, Data finale, Forza min, Forza max, Settore -->
-            <div class="filters-grid">
+            <div class="filters-row">
                 <div class="filter-group">
                     <label>Data iniziale:</label>
                     <input type="date" id="date-start">
@@ -561,8 +568,7 @@
                 <div class="filter-group">
                     <label>Settore:</label>
                     <div id="sector-filter-container" class="dropdown-check-list">
-                        <span class="anchor" onclick="toggleSectorDropdown()" id="sectorSelectorAnchor">Tutti i
-                            settori</span>
+                        <span class="anchor" onclick="toggleSectorDropdown()" id="sectorSelectorAnchor">Tutti i settori</span>
                         <div id="sectorSelectorItems" class="items">
                             <!-- Checkboxes injected here -->
                         </div>
@@ -570,13 +576,12 @@
                 </div>
             </div>
 
-            <!-- RIGA 2: Mercato, Strumento, Inversione + Bottoni -->
-            <div class="filters-grid">
+            <!-- RIGA 2: Mercato, Strumento, Inversione, Bottoni -->
+            <div class="filters-row">
                 <div class="filter-group">
                     <label>Mercato:</label>
                     <div id="market-filter-container" class="dropdown-check-list">
-                        <span class="anchor" onclick="toggleMarketDropdown()" id="marketSelectorAnchor">Tutti i
-                            mercati</span>
+                        <span class="anchor" onclick="toggleMarketDropdown()" id="marketSelectorAnchor">Tutti i mercati</span>
                         <div id="marketSelectorItems" class="items">
                             <!-- Checkboxes injected here -->
                         </div>
@@ -593,19 +598,13 @@
                     </div>
                     <input type="hidden" id="instrument-filter" value="">
                 </div>
-                <div class="filter-group">
-                    <label>&nbsp;</label>
-                    <div class="inversion-wrapper">
-                        <input type="checkbox" id="inversion-filter">
-                        <label id="inversion-label" for="inversion-filter" data-translate="int.inversion">Inversione</label>
-                    </div>
+                <div class="inversion-group">
+                    <input type="checkbox" id="inversion-filter">
+                    <label id="inversion-label" for="inversion-filter" data-translate="int.inversion">Inversione</label>
                 </div>
-                <div class="filter-group" style="grid-column: span 2;">
-                    <label>&nbsp;</label>
-                    <div class="buttons-row">
-                        <button onclick="fetchMarketData()" data-translate="int.apply">Applica selezione</button>
-                        <button id="graph-btn" class="graph-btn" onclick="openStatisticsGraph()" style="display:none;">Grafici</button>
-                    </div>
+                <div class="buttons-group">
+                    <button onclick="fetchMarketData()" data-translate="int.apply">Applica selezione</button>
+                    <button id="graph-btn" class="graph-btn" onclick="openStatisticsGraph()" style="display:none;">Grafici</button>
                 </div>
             </div>
         </div>
@@ -618,7 +617,6 @@
     </div>
 
     <script>
-        // URL Servizio configurato correttamente via Cloudflare Tunnel
         const API_URL_MARKET = "https://market-tunnel.fe-web.eu";
 
         const credentials = {
@@ -678,7 +676,6 @@
             try {
                 const resp = await fetch('statistics.json.gz?_=' + Date.now());
                 if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-                // Decomprimi con DecompressionStream (nativo nei browser moderni)
                 const ds = new DecompressionStream('gzip');
                 const decompressed = resp.body.pipeThrough(ds);
                 const text = await new Response(decompressed).text();
@@ -847,8 +844,7 @@
 
         let _lastData = [];
 
-        /* ---- Instrument Search Widget ---- */
-        let _instrumentIndex = [];   // [{id, description, sector}, ...]
+        let _instrumentIndex = [];
         let _instSelIdx = -1;
         let _instFiltered = [];
 
@@ -894,7 +890,6 @@
 
         function populateInstrumentSelector(data) {
             const current = document.getElementById('instrument-filter').value;
-            // Build index: unique instruments from data
             const seen = new Set();
             _instrumentIndex = [];
             data.forEach(r => {
@@ -909,7 +904,6 @@
             });
             _instrumentIndex.sort((a, b) => a.id.localeCompare(b.id));
 
-            // Restore selection label if still valid
             if (current && _instrumentIndex.find(i => i.id === current)) {
                 const inst = _instrumentIndex.find(i => i.id === current);
                 document.getElementById('instrument-search-input').value = inst.description
@@ -935,7 +929,6 @@
                 dropdown.innerHTML = `<div class="inst-item-empty">Nessun risultato</div>`;
             } else {
                 dropdown.innerHTML = [
-                    // "All" option
                     `<div class="inst-item" data-idx="-1">
                         <div class="inst-item-main">
                             <span class="inst-item-id">—</span>
