@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Statistics 0.2</title>
+    <title>Statistics 0.1</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <script src="js/dashboard-shared.js"></script>
     <link rel="icon" type="image/png" href="images/icon-finest.png">
@@ -443,6 +443,13 @@
             text-align: right;
             color: #000;
         }
+
+        .filter-actions {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
     </style>
 </head>
 
@@ -464,7 +471,8 @@
         <div id="message" class="message"></div>
 
         <div class="collapsible-container">
-            <div style="display: flex; gap: 15px; align-items: flex-end; flex-wrap: wrap;">
+            <!-- RIGA 1: Data iniziale / Data finale / Forza min / Forza max -->
+            <div style="display: flex; gap: 15px; align-items: flex-end; flex-wrap: wrap; margin-bottom: 15px;">
                 <div class="filter-group" style="flex: 1; min-width: 150px;">
                     <label>Data iniziale:</label>
                     <input type="date" id="date-start">
@@ -481,6 +489,10 @@
                     <label>Forza max:</label>
                     <input type="number" id="value-max" step="0.01">
                 </div>
+            </div>
+
+            <!-- RIGA 2: Settore / Mercato / Strumento / Inversione -->
+            <div style="display: flex; gap: 15px; align-items: flex-end; flex-wrap: wrap; margin-bottom: 15px;">
                 <div class="filter-group" style="flex: 1; min-width: 150px;">
                     <label>Settore:</label>
                     <div id="sector-filter-container" class="dropdown-check-list" style="width: 100%;">
@@ -512,15 +524,19 @@
                     </div>
                     <input type="hidden" id="instrument-filter" value="">
                 </div>
-                <div class="filter-group" style="display: flex; align-items: center; gap: 8px; padding-bottom: 12px;">
+                <div class="filter-group" style="display: flex; align-items: center; gap: 8px; padding-bottom: 12px; flex: 0 0 auto;">
                     <input type="checkbox" id="inversion-filter"
                         style="width: 16px; height: 16px; margin: 0; cursor: pointer;">
                     <label id="inversion-label" for="inversion-filter" data-translate="int.inversion"
                         style="margin: 0; cursor: pointer; display: inline;"></label>
                 </div>
-                <div class="filter-group">
+            </div>
+
+            <!-- RIGA 3: Pulsanti Applica e Grafici -->
+            <div style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap; margin-top: 5px;">
+                <div class="filter-actions">
                     <button onclick="fetchMarketData()" data-translate="int.apply">Applica selezione</button>
-                    <button id="graph-btn" class="graph-btn" onclick="openStatisticsGraph()" style="display:none; margin-top:8px;">Grafici</button>
+                    <button id="graph-btn" class="graph-btn" onclick="openStatisticsGraph()" style="display:none;">Grafici</button>
                 </div>
             </div>
         </div>
