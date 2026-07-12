@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Statistics Graph 0.1a</title>
+    <title>Statistics Graph 0.1b</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <script src="https://d3js.org/d3.v7.min.js"></script>
     <link rel="icon" type="image/png" href="images/icon-finest.png">
@@ -32,7 +32,8 @@
             color: var(--text-color);
             min-height: 100vh;
             overflow-y: auto;
-            overflow-x: hidden;
+            overflow-x: auto;
+            /* ABILITATO SCROLL ORIZZONTALE */
         }
 
         .main-container {
@@ -41,6 +42,8 @@
             display: flex;
             flex-direction: column;
             gap: 12px;
+            min-width: fit-content;
+            /* Permette al container di espandersi oltre il viewport */
         }
 
         /* ---- HEADER ---- */
@@ -55,6 +58,7 @@
             flex-shrink: 0;
             flex-wrap: wrap;
             gap: 8px;
+            min-width: fit-content;
         }
 
         .user-info-left {
@@ -313,14 +317,16 @@
             border-radius: 8px;
             position: relative;
             overflow: auto;
+            /* Scrolling interno al container */
             min-height: 800px;
             height: auto;
             max-height: 90vh;
+            width: 100%;
         }
 
         #timeline-svg {
-            width: 100%;
-            height: 100%;
+            display: block;
+            /* Rimuove spazio extra sotto l'SVG */
             min-height: 800px;
             cursor: default;
         }
@@ -960,14 +966,18 @@
             const svgEl = document.getElementById('timeline-svg');
             d3.select(svgEl).selectAll('*').remove();
 
+            // Calcola larghezza totale dell'SVG
+            const svgWidth = innerW + MARGIN.left + MARGIN.right;
+
             const svg = d3.select(svgEl)
-                .attr('width', W + MARGIN.left + MARGIN.right)
-                .attr('height', H);
+                .attr('width', svgWidth)
+                .attr('height', H)
+                .style('display', 'block');
 
             _svgRoot = svg;
 
             svg.append('rect')
-                .attr('width', W + MARGIN.left + MARGIN.right)
+                .attr('width', svgWidth)
                 .attr('height', H)
                 .attr('fill', '#fafafa');
 
