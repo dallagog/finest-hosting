@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Statistics Graph 0.1</title>
+    <title>Statistics Graph 0.1a</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <script src="https://d3js.org/d3.v7.min.js"></script>
     <link rel="icon" type="image/png" href="images/icon-finest.png">
@@ -142,6 +142,62 @@
             font-size: 11px;
         }
 
+        /* ---- DATE FILTERS ---- */
+        .date-filters {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
+        .date-filters label {
+            font-size: 9px;
+            font-weight: 600;
+            color: #555;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .date-filters input[type="date"] {
+            padding: 4px 8px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 9px;
+            background: #fff;
+            color: #000;
+            cursor: pointer;
+            width: 120px;
+        }
+
+        .date-filters input[type="date"]:focus {
+            outline: none;
+            border-color: #000;
+            box-shadow: 0 0 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .date-filters .date-sep {
+            color: #999;
+            font-size: 10px;
+        }
+
+        .date-filters .clear-dates {
+            padding: 4px 10px;
+            background: #f44336;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 9px;
+            font-weight: bold;
+            transition: all 0.2s;
+        }
+
+        .date-filters .clear-dates:hover {
+            background: #d32f2f;
+        }
+
         /* ---- DROPDOWN CHECK LIST ---- */
         .dropdown-check-list {
             display: inline-block;
@@ -259,6 +315,7 @@
             overflow: auto;
             min-height: 800px;
             height: auto;
+            max-height: 90vh;
         }
 
         #timeline-svg {
@@ -266,6 +323,26 @@
             height: 100%;
             min-height: 800px;
             cursor: default;
+        }
+
+        /* Scrollbar personalizzata per il wrapper */
+        .graph-wrapper::-webkit-scrollbar {
+            width: 10px;
+            height: 10px;
+        }
+
+        .graph-wrapper::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 4px;
+        }
+
+        .graph-wrapper::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 4px;
+        }
+
+        .graph-wrapper::-webkit-scrollbar-thumb:hover {
+            background: #555;
         }
 
         /* ---- LOADING ---- */
@@ -321,6 +398,7 @@
 
         .tooltip.visible {
             opacity: 1;
+            pointer-events: auto;
         }
 
         .tooltip .tt-id {
@@ -480,6 +558,29 @@
         }
 
         /* ---- RESPONSIVE ---- */
+        @media (max-width: 1024px) {
+            .header-bar {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .user-info-left,
+            h1,
+            .header-actions {
+                flex: none;
+                text-align: center;
+            }
+
+            .header-actions {
+                justify-content: center;
+                flex-wrap: wrap;
+            }
+
+            .date-filters {
+                justify-content: center;
+            }
+        }
+
         @media (max-width: 768px) {
             .header-bar {
                 flex-direction: column;
@@ -499,10 +600,15 @@
 
             .graph-wrapper {
                 min-height: 600px;
+                max-height: 80vh;
             }
 
             #timeline-svg {
                 min-height: 600px;
+            }
+
+            .date-filters input[type="date"] {
+                width: 100px;
             }
         }
 
@@ -518,10 +624,16 @@
 
             .graph-wrapper {
                 min-height: 500px;
+                max-height: 70vh;
             }
 
             #timeline-svg {
                 min-height: 500px;
+            }
+
+            .date-filters input[type="date"] {
+                width: 80px;
+                font-size: 8px;
             }
         }
     </style>
@@ -541,6 +653,15 @@
             </div>
             <h1>📊 Statistics Timeline</h1>
             <div class="header-actions">
+                <!-- Date filters -->
+                <div class="date-filters">
+                    <label>Da</label>
+                    <input type="date" id="dateStart" onchange="onDateFilterChange()">
+                    <span class="date-sep">→</span>
+                    <label>A</label>
+                    <input type="date" id="dateEnd" onchange="onDateFilterChange()">
+                    <button class="clear-dates" onclick="clearDateFilters()">✕</button>
+                </div>
                 <div id="sector-filter-container" class="dropdown-check-list">
                     <span class="anchor" onclick="toggleSectorDropdown()" id="sectorSelectorAnchor">Tutti i
                         settori</span>
@@ -629,7 +750,9 @@
         let _marketFilter = 'ALL';
         let _selectedSectors = [];
         let _intInversionActive = false;
-        let _tooltipData = null; // Cache per i dati del tooltip
+        let _tooltipData = null;
+        let _dateStart = null;
+        let _dateEnd = null;
 
         // ============================================================
         // TRADUZIONI
@@ -707,6 +830,9 @@
                     return;
                 }
 
+                // Imposta i range di date nei filtri
+                setDateRangeDefaults(_allData);
+
                 document.getElementById('loadingStatus').textContent = `${_allData.length} strumenti ricevuti. Rendering...`;
                 populateMarketSelector(_allData);
                 populateSectorSelector(_allData);
@@ -717,6 +843,57 @@
                 showMessage('Impossibile raggiungere il server: ' + err.message, 'error');
                 document.getElementById('loadingOverlay').style.display = 'none';
             }
+        }
+
+        // ============================================================
+        // DATE FILTERS
+        // ============================================================
+        function setDateRangeDefaults(data) {
+            const dates = data.map(d => d.date_start).filter(Boolean).sort();
+            if (dates.length === 0) return;
+
+            const dateStartInput = document.getElementById('dateStart');
+            const dateEndInput = document.getElementById('dateEnd');
+
+            // Imposta data minima e massima
+            const minDate = dates[0];
+            const maxDate = dates[dates.length - 1];
+
+            dateStartInput.min = minDate;
+            dateStartInput.max = maxDate;
+            dateEndInput.min = minDate;
+            dateEndInput.max = maxDate;
+
+            // Valori di default: tutto il range
+            dateStartInput.value = minDate;
+            dateEndInput.value = maxDate;
+            _dateStart = minDate;
+            _dateEnd = maxDate;
+        }
+
+        function onDateFilterChange() {
+            const start = document.getElementById('dateStart').value;
+            const end = document.getElementById('dateEnd').value;
+
+            // Validazione
+            if (start && end && start > end) {
+                showMessage('La data di inizio deve essere precedente alla data di fine.', 'warning');
+                return;
+            }
+
+            _dateStart = start || null;
+            _dateEnd = end || null;
+            document.getElementById('message').style.display = 'none';
+            applyFilters();
+        }
+
+        function clearDateFilters() {
+            document.getElementById('dateStart').value = '';
+            document.getElementById('dateEnd').value = '';
+            _dateStart = null;
+            _dateEnd = null;
+            document.getElementById('message').style.display = 'none';
+            applyFilters();
         }
 
         // ============================================================
@@ -750,6 +927,7 @@
         // ============================================================
         function buildTimeline(data) {
             const wrapper = document.getElementById('graphWrapper');
+            // Ottieni le dimensioni del container per lo scroll
             const W = Math.max(wrapper.clientWidth || 1200, 1200);
             const H = Math.max(wrapper.clientHeight || 800, 800);
 
@@ -764,7 +942,9 @@
             const nSectors = sectorSet.length;
 
             const MARGIN = { top: 50, right: 30, bottom: 50, left: 160 };
-            const innerW = Math.max(W - MARGIN.left - MARGIN.right, nDates * 90);
+            // Calcola larghezza interna in base al numero di date
+            const minDateWidth = 90;
+            const innerW = Math.max(W - MARGIN.left - MARGIN.right, nDates * minDateWidth);
             const innerH = Math.max(H - MARGIN.top - MARGIN.bottom, nSectors * 80);
 
             const xScale = d3.scalePoint()
@@ -781,20 +961,21 @@
             d3.select(svgEl).selectAll('*').remove();
 
             const svg = d3.select(svgEl)
-                .attr('width', W)
+                .attr('width', W + MARGIN.left + MARGIN.right)
                 .attr('height', H);
 
             _svgRoot = svg;
 
             svg.append('rect')
-                .attr('width', W).attr('height', H)
+                .attr('width', W + MARGIN.left + MARGIN.right)
+                .attr('height', H)
                 .attr('fill', '#fafafa');
 
             const g = svg.append('g')
                 .attr('class', 'main-g')
                 .attr('transform', `translate(${MARGIN.left},${MARGIN.top})`);
 
-            // Griglia
+            // Griglia verticale
             g.append('g').attr('class', 'grid-v')
                 .selectAll('line').data(dateSet).enter()
                 .append('line')
@@ -1004,8 +1185,6 @@
 
             // Funzione per il mouseenter
             function nodeMouseEnter(event, d) {
-                // Nessun effetto sulle icone - rimangono immobili
-
                 // Aggiorna il tooltip
                 const content = generateTooltipContent(d);
                 if (tooltip.innerHTML !== content) {
@@ -1017,7 +1196,6 @@
             }
 
             function nodeMouseLeave(event, d) {
-                // Nessun effetto sulle icone - rimangono immobili
                 // Il tooltip rimane visibile se il mouse entra nel tooltip (gestito dai listener del tooltip)
                 tooltip.classList.remove('visible');
             }
@@ -1129,13 +1307,24 @@
                 .attr('pointer-events', 'none')
                 .text(d => d.id_instrument);
 
-            // ---- FINALIZE ----
+            // ---- AGGIORNA STATS ----
             document.getElementById('statCount').textContent = data.length;
             document.getElementById('statSectors').textContent = sectorSet.length;
             document.getElementById('statDates').textContent = dateSet.length;
             document.getElementById('statsBar').style.display = 'block';
             document.getElementById('legend').style.display = 'block';
             document.getElementById('loadingOverlay').style.display = 'none';
+
+            // ---- APPLICA PORTFOLIO HIGHLIGHT SE ATTIVO ----
+            if (_highlightPortfolio) {
+                d3.selectAll('.node-ball, .node-cloud')
+                    .attr('fill-opacity', d => d.portfolio ? 1 : 0.12);
+            }
+
+            // Scorri all'inizio del grafico
+            const wrapperEl = document.getElementById('graphWrapper');
+            wrapperEl.scrollLeft = 0;
+            wrapperEl.scrollTop = 0;
         }
 
         // ============================================================
@@ -1274,14 +1463,25 @@
         function applyFilters() {
             let filtered = _allData;
 
+            // Filtro data
+            if (_dateStart) {
+                filtered = filtered.filter(d => d.date_start >= _dateStart);
+            }
+            if (_dateEnd) {
+                filtered = filtered.filter(d => d.date_start <= _dateEnd);
+            }
+
+            // Filtro mercato
             if (_marketFilter !== 'ALL') {
                 filtered = filtered.filter(d => d.code_market === _marketFilter);
             }
 
+            // Filtro settori
             if (_selectedSectors.length > 0) {
                 filtered = filtered.filter(d => _selectedSectors.includes(d.sector || 'N/D'));
             }
 
+            // Filtro inversione
             if (_intInversionActive) {
                 filtered = filtered.filter(d => {
                     const forza = parseFloat(d.forza) || 0;
