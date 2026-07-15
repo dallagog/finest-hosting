@@ -1721,8 +1721,9 @@
                                     }
                                 }
 
-                                // Disegna simbolo news (cerchietto con N) in alto
-                                ctx.fillStyle = 'red';
+                                // Disegna simbolo news (cerchietto con N) o dividendo (cerchietto con D) in alto
+                                const isDividend = event && event.dividend;
+                                ctx.fillStyle = isDividend ? 'green' : 'red';
                                 ctx.beginPath();
                                 ctx.arc(x, y, radius, 0, 2 * Math.PI);
                                 ctx.fill();
@@ -1731,7 +1732,7 @@
                                 ctx.font = 'bold 10px Arial';
                                 ctx.textAlign = 'center';
                                 ctx.textBaseline = 'middle';
-                                ctx.fillText(event && event.dividend ? 'D' : 'N', x, y);
+                                ctx.fillText(isDividend ? 'D' : 'N', x, y);
 
                                 // Store for tooltip hit testing
                                 newsSymbols.push({ x, y, radius, label });
