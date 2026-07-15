@@ -1325,11 +1325,7 @@
             document.getElementById('legend').style.display = 'block';
             document.getElementById('loadingOverlay').style.display = 'none';
 
-            // ---- APPLICA PORTFOLIO HIGHLIGHT SE ATTIVO ----
-            if (_highlightPortfolio) {
-                d3.selectAll('.node-ball, .node-cloud')
-                    .attr('fill-opacity', d => d.portfolio ? 1 : 0.12);
-            }
+            // (portfolio filter already applied in applyFilters, no post-render opacity needed)
 
             // Scorri all'inizio del grafico
             const wrapperEl = document.getElementById('graphWrapper');
@@ -1371,13 +1367,10 @@
             _highlightPortfolio = !_highlightPortfolio;
             const btn = document.getElementById('togglePortfolioBtn');
             btn.style.background = _highlightPortfolio ? '#2e7d32' : '#000';
-
-            d3.selectAll('.node-ball, .node-cloud')
-                .transition().duration(200)
-                .attr('fill-opacity', d => {
-                    if (!_highlightPortfolio) return 1;
-                    return d.portfolio ? 1 : 0.12;
-                });
+            btn.innerHTML = _highlightPortfolio
+                ? '<i class="fas fa-star"></i> Solo Portfolio'
+                : '<i class="fas fa-star"></i> Portfolio';
+            applyFilters();
         }
 
         function populateMarketSelector(data) {
@@ -1489,6 +1482,11 @@
             // Filtro settori
             if (_selectedSectors.length > 0) {
                 filtered = filtered.filter(d => _selectedSectors.includes(d.sector || 'N/D'));
+            }
+
+            // Filtro portafoglio
+            if (_highlightPortfolio) {
+                filtered = filtered.filter(d => d.portfolio);
             }
 
             // Filtro inversione
