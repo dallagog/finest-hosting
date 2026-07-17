@@ -652,7 +652,7 @@
 
         function openStatisticsGraph() {
             const url = `dashboard-statistics-graph.html?username=${credentials.username}&token=${credentials.token}&currency=${credentials.currency}&date_start=${document.getElementById('date-start').value}&date_end=${document.getElementById('date-end').value}`;
-            window.open(url, '_blank', 'width=1400,height=900');
+            window.open(url, '_blank');
         }
 
         function getTranslation(key) {
@@ -797,27 +797,29 @@
             if (btn._restoreTimer) { clearTimeout(btn._restoreTimer); btn._restoreTimer = null; }
             if (state === 'loading') {
                 btn.disabled = true;
-                btn.style.background = '#000';
-                btn.style.color = '#fff';
-                btn.style.borderColor = '#000';
+                btn.style.background = '#fff';
+                btn.style.color = '#000';
+                btn.style.border = '2px solid #000';
+                btn.style.transition = 'none';
             } else if (state === 'success') {
                 btn.disabled = false;
                 btn.style.background = '#2e7d32';
                 btn.style.color = '#fff';
-                btn.style.borderColor = '#2e7d32';
+                btn.style.border = '2px solid #2e7d32';
                 btn._restoreTimer = setTimeout(() => _setApplyBtnState('default'), 2000);
             } else if (state === 'error') {
                 btn.disabled = false;
-                btn.style.background = '#2e7d32';
+                btn.style.background = '#c62828';
                 btn.style.color = '#fff';
-                btn.style.borderColor = '#2e7d32';
+                btn.style.border = '2px solid #c62828';
                 btn._restoreTimer = setTimeout(() => _setApplyBtnState('default'), 2000);
             } else {
                 // default: restore original
                 btn.disabled = false;
                 btn.style.background = '';
                 btn.style.color = '';
-                btn.style.borderColor = '';
+                btn.style.border = '';
+                btn.style.transition = '';
             }
         }
 
