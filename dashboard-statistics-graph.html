@@ -947,7 +947,7 @@
             const nDates = dateSet.length;
             const nSectors = sectorSet.length;
 
-            const MARGIN = { top: 50, right: 30, bottom: 50, left: 160 };
+            const MARGIN = { top: 50, right: 30, bottom: 80, left: 160 };
             // Calcola larghezza interna in base al numero di date
             const minDateWidth = 90;
             const innerW = Math.max(W - MARGIN.left - MARGIN.right, nDates * minDateWidth);
@@ -966,19 +966,20 @@
             const svgEl = document.getElementById('timeline-svg');
             d3.select(svgEl).selectAll('*').remove();
 
-            // Calcola larghezza totale dell'SVG
+            // Calcola dimensioni totali dell'SVG (basato sul contenuto, non sul viewport)
             const svgWidth = innerW + MARGIN.left + MARGIN.right;
+            const svgHeight = innerH + MARGIN.top + MARGIN.bottom;
 
             const svg = d3.select(svgEl)
                 .attr('width', svgWidth)
-                .attr('height', H)
+                .attr('height', svgHeight)
                 .style('display', 'block');
 
             _svgRoot = svg;
 
             svg.append('rect')
                 .attr('width', svgWidth)
-                .attr('height', H)
+                .attr('height', svgHeight)
                 .attr('fill', '#fafafa');
 
             const g = svg.append('g')
