@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Statistics 0.3</title>
+    <title>Statistics 0.1</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <script src="js/dashboard-shared.js"></script>
     <link rel="icon" type="image/png" href="images/icon-finest.png">
@@ -501,9 +501,11 @@
             .filters-row .filter-group {
                 min-width: 130px;
             }
+
             .inversion-group {
                 flex: 0.7;
             }
+
             .buttons-group {
                 flex: 1;
             }
@@ -514,11 +516,13 @@
                 min-width: 100%;
                 flex: 1 1 100%;
             }
+
             .inversion-group {
                 flex: 1 1 100%;
                 padding-top: 0;
                 min-width: 100%;
             }
+
             .buttons-group {
                 flex: 1 1 100%;
                 padding-top: 0;
@@ -568,7 +572,8 @@
                 <div class="filter-group">
                     <label>Settore:</label>
                     <div id="sector-filter-container" class="dropdown-check-list">
-                        <span class="anchor" onclick="toggleSectorDropdown()" id="sectorSelectorAnchor">Tutti i settori</span>
+                        <span class="anchor" onclick="toggleSectorDropdown()" id="sectorSelectorAnchor">Tutti i
+                            settori</span>
                         <div id="sectorSelectorItems" class="items">
                             <!-- Checkboxes injected here -->
                         </div>
@@ -581,7 +586,8 @@
                 <div class="filter-group">
                     <label>Mercato:</label>
                     <div id="market-filter-container" class="dropdown-check-list">
-                        <span class="anchor" onclick="toggleMarketDropdown()" id="marketSelectorAnchor">Tutti i mercati</span>
+                        <span class="anchor" onclick="toggleMarketDropdown()" id="marketSelectorAnchor">Tutti i
+                            mercati</span>
                         <div id="marketSelectorItems" class="items">
                             <!-- Checkboxes injected here -->
                         </div>
@@ -603,8 +609,10 @@
                     <label id="inversion-label" for="inversion-filter" data-translate="int.inversion">Inversione</label>
                 </div>
                 <div class="buttons-group">
-                    <button onclick="fetchMarketData()" data-translate="int.apply">Applica selezione</button>
-                    <button id="graph-btn" class="graph-btn" onclick="openStatisticsGraph()" style="display:none;">Grafici</button>
+                    <button id="apply-btn" onclick="fetchMarketData()" data-translate="int.apply">Applica
+                        selezione</button>
+                    <button id="graph-btn" class="graph-btn" onclick="openStatisticsGraph()"
+                        style="display:none;">Grafici</button>
                 </div>
             </div>
         </div>
@@ -782,11 +790,44 @@
             document.getElementById('value-max').value = 9999;
         }
 
+        function _setApplyBtnState(state) {
+            const btn = document.getElementById('apply-btn');
+            if (!btn) return;
+            // Remove any pending restore timer
+            if (btn._restoreTimer) { clearTimeout(btn._restoreTimer); btn._restoreTimer = null; }
+            if (state === 'loading') {
+                btn.disabled = true;
+                btn.style.background = '#000';
+                btn.style.color = '#fff';
+                btn.style.borderColor = '#000';
+            } else if (state === 'success') {
+                btn.disabled = false;
+                btn.style.background = '#2e7d32';
+                btn.style.color = '#fff';
+                btn.style.borderColor = '#2e7d32';
+                btn._restoreTimer = setTimeout(() => _setApplyBtnState('default'), 2000);
+            } else if (state === 'error') {
+                btn.disabled = false;
+                btn.style.background = '#2e7d32';
+                btn.style.color = '#fff';
+                btn.style.borderColor = '#2e7d32';
+                btn._restoreTimer = setTimeout(() => _setApplyBtnState('default'), 2000);
+            } else {
+                // default: restore original
+                btn.disabled = false;
+                btn.style.background = '';
+                btn.style.color = '';
+                btn.style.borderColor = '';
+            }
+        }
+
         async function fetchMarketData() {
             const date_start = document.getElementById('date-start').value;
             const date_end = document.getElementById('date-end').value;
             const msgDiv = document.getElementById('message');
             msgDiv.style.display = 'none';
+
+            _setApplyBtnState('loading');
 
             console.log("Checking health from:", `${API_URL_MARKET}/health`);
             try {
@@ -830,8 +871,10 @@
                     }
                     renderTable(result.data);
                     document.getElementById('graph-btn').style.display = 'block';
+                    _setApplyBtnState('success');
                 } else {
                     showMessage(result.msg || "Errore API", "error");
+                    _setApplyBtnState('error');
                 }
             } catch (err) {
                 console.error("Fetch Error:", err);
@@ -839,6 +882,7 @@
                     "Impossibile raggiungere il server market-tunnel. Verificare la connessione o i record DNS.",
                     "error"
                 );
+                _setApplyBtnState('error');
             }
         }
 
