@@ -1053,6 +1053,13 @@
                 lastRenderedColumns = [...tableColumns];
                 lastRenderedData = {}; // Reset data tracking on structural change
 
+                // Row-number header
+                const thNum = document.createElement('th');
+                thNum.textContent = '#';
+                thNum.style.cursor = 'default';
+                thNum.style.textAlign = 'center';
+                thead.appendChild(thNum);
+
                 // Headers
                 tableColumns.forEach(col => {
                     const th = document.createElement('th');
@@ -1109,7 +1116,9 @@
                 });
             }
 
+            let rowNum = 0;
             displayData.forEach(item => {
+                rowNum++;
                 const ticker = item.id_instrument || item.Ticker || 'unknown';
                 let tr = document.getElementById(`row-${ticker}`);
                 const isNewRow = !tr;
@@ -1122,8 +1131,18 @@
                 // Append/move row to maintain sort order in DOM
                 tbody.appendChild(tr);
 
+                // Row number cell (always first)
+                let tdNum = isNewRow ? document.createElement('td') : tr.cells[0];
+                tdNum.textContent = rowNum;
+                tdNum.style.textAlign = 'center';
+                tdNum.style.color = '#999';
+                tdNum.style.fontSize = '11px';
+                tdNum.style.userSelect = 'none';
+                if (isNewRow) tr.appendChild(tdNum);
+
                 tableColumns.forEach((col, index) => {
-                    let td = isNewRow ? document.createElement('td') : tr.cells[index];
+                    // offset by 1 because cells[0] is now the row-number cell
+                    let td = isNewRow ? document.createElement('td') : tr.cells[index + 1];
 
                     if (col === 'azioni') {
                         if (isNewRow) {
@@ -1367,6 +1386,12 @@
             const percentualeMP = totalCosto !== 0 ? (totalMinusPlus / totalCosto) * 100 : 0;
 
             // Riga 1: TOTALE
+            // Empty cell for the row-number column
+            const tdNumFoot = document.createElement('td');
+            tdNumFoot.style.background = '#f0f0f0';
+            tdNumFoot.style.borderTop = '2px solid #000';
+            tfoot.appendChild(tdNumFoot);
+
             tableColumns.forEach((col, index) => {
                 const td = document.createElement('td');
                 td.style.fontWeight = 'bold';

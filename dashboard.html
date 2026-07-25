@@ -2980,6 +2980,7 @@
             }
             thead.innerHTML = '';
             tbody.innerHTML = '';
+            window._portfolioRowCounter = 0;
             let displayData = [];
             if (selectedAccounts.length > 0) {
                 displayData = portfolioData.filter(item => isAccountSelected(item.id_account));
@@ -2988,6 +2989,17 @@
                 displayData = [...portfolioData];
                 console.log('Using all portfolioData (no account filter):', displayData.length);
             }
+
+            // Row number header
+            const thRowNum = document.createElement('th');
+            thRowNum.textContent = '#';
+            thRowNum.style.textAlign = 'center';
+            thRowNum.style.width = '36px';
+            thRowNum.style.minWidth = '36px';
+            thRowNum.style.color = '#999';
+            thRowNum.style.fontWeight = '400';
+            thRowNum.style.fontSize = '11px';
+            thead.appendChild(thRowNum);
 
             tableColumns.forEach((col, index) => {
                 const th = document.createElement('th');
@@ -3174,6 +3186,19 @@
                     // Row click only selects, no longer opens details
                 });
             }
+            // Row number cell
+            const tdRowNum = document.createElement('td');
+            tdRowNum.style.textAlign = 'center';
+            tdRowNum.style.color = '#bbb';
+            tdRowNum.style.fontSize = '11px';
+            tdRowNum.style.userSelect = 'none';
+            tdRowNum.style.width = '36px';
+            tdRowNum.style.minWidth = '36px';
+            if (!isTotal) {
+                window._portfolioRowCounter = (window._portfolioRowCounter || 0) + 1;
+                tdRowNum.textContent = window._portfolioRowCounter;
+            }
+            tr.appendChild(tdRowNum);
             tableColumns.forEach((col, index) => {
                 const td = document.createElement('td');
                 let val = item[col];
@@ -3504,6 +3529,7 @@
             }
             thead.innerHTML = '';
             tbody.innerHTML = '';
+            window._profitabilityRowCounter = 0;
             let displayData = [];
             if (selectedAccounts.length > 0) {
                 displayData = profitabilityData.filter(item => isAccountSelected(item.id_account));
@@ -3518,6 +3544,17 @@
                 return item.RISTOT !== undefined && item.RISTOT !== null && item.RISTOT !== '';
             });
             console.log('After RISTOT filter:', displayData.length, 'items');
+
+            // Row number header
+            const thRowNumP = document.createElement('th');
+            thRowNumP.textContent = '#';
+            thRowNumP.style.textAlign = 'center';
+            thRowNumP.style.width = '36px';
+            thRowNumP.style.minWidth = '36px';
+            thRowNumP.style.color = '#999';
+            thRowNumP.style.fontWeight = '400';
+            thRowNumP.style.fontSize = '11px';
+            thead.appendChild(thRowNumP);
 
             profitabilityTableColumns.forEach((col, index) => {
                 const th = document.createElement('th');
@@ -3661,6 +3698,19 @@
                     // Row click only selects
                 };
             }
+            // Row number cell
+            const tdRowNumP = document.createElement('td');
+            tdRowNumP.style.textAlign = 'center';
+            tdRowNumP.style.color = '#bbb';
+            tdRowNumP.style.fontSize = '11px';
+            tdRowNumP.style.userSelect = 'none';
+            tdRowNumP.style.width = '36px';
+            tdRowNumP.style.minWidth = '36px';
+            if (!isTotal) {
+                window._profitabilityRowCounter = (window._profitabilityRowCounter || 0) + 1;
+                tdRowNumP.textContent = window._profitabilityRowCounter;
+            }
+            tr.appendChild(tdRowNumP);
             profitabilityTableColumns.forEach((col, index) => {
                 const td = document.createElement('td');
                 let val = item[col];

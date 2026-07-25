@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>Statistics – Mobile 0.2</title>
+    <title>Finest Mobile Dashboard</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <script src="js/dashboard-shared.js"></script>
     <link rel="icon" type="image/png" href="images/icon-finest.png">
@@ -32,6 +32,7 @@
             --radius: 16px;
             --radius-sm: 10px;
             --header-h: 60px;
+            --nav-h: 64px;
             --safe-bottom: env(safe-area-inset-bottom, 0px);
         }
 
@@ -47,13 +48,14 @@
             background: var(--bg);
             color: var(--text);
             min-height: 100vh;
-            padding-bottom: calc(20px + var(--safe-bottom));
+            padding-bottom: calc(var(--nav-h) + 20px + var(--safe-bottom));
             overflow-x: hidden;
         }
 
         /* ── SCROLLBAR ── */
         ::-webkit-scrollbar {
             width: 4px;
+            height: 4px;
         }
 
         ::-webkit-scrollbar-track {
@@ -101,7 +103,7 @@
         }
 
         .top-header .brand h1 {
-            font-size: 0.85rem;
+            font-size: 0.9rem;
             font-weight: 800;
             letter-spacing: -0.5px;
             background: linear-gradient(135deg, var(--text), var(--accent));
@@ -114,6 +116,20 @@
             display: flex;
             align-items: center;
             gap: 8px;
+        }
+
+        .top-header .user-badge .user-info {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            font-size: 0.65rem;
+            color: var(--text-secondary);
+            line-height: 1.3;
+        }
+
+        .top-header .user-badge .user-info strong {
+            color: var(--text);
+            font-size: 0.7rem;
         }
 
         .top-header .user-badge .avatar {
@@ -129,38 +145,85 @@
             font-size: 14px;
         }
 
-        .top-header .user-badge .user-info {
-            display: none;
-            flex-direction: column;
-            align-items: flex-end;
-            font-size: 0.65rem;
-            color: var(--text-secondary);
-            line-height: 1.3;
-        }
-
-        .top-header .user-badge .user-info strong {
-            color: var(--text);
-            font-size: 0.7rem;
-        }
-
-        .close-btn {
-            width: 34px;
-            height: 34px;
-            border-radius: 50%;
-            background: var(--red-light);
-            border: none;
-            color: var(--red);
-            font-size: 14px;
-            cursor: pointer;
+        /* ── BOTTOM NAVBAR ── */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: calc(var(--nav-h) + var(--safe-bottom));
+            padding-bottom: var(--safe-bottom);
+            background: rgba(255, 255, 255, 0.96);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-top: 1px solid var(--border);
             display: flex;
             align-items: center;
-            justify-content: center;
-            transition: all 0.2s;
-            flex-shrink: 0;
+            justify-content: space-around;
+            z-index: 1000;
+            box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.05);
         }
 
-        .close-btn:active {
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 3px;
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 0.62rem;
+            font-weight: 600;
+            padding: 6px 12px;
+            border-radius: 12px;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            border: none;
+            background: none;
+            width: 20%;
+        }
+
+        .nav-item i {
+            font-size: 1.15rem;
+            transition: transform 0.2s ease;
+        }
+
+        .nav-item.active {
+            color: var(--accent);
+        }
+
+        .nav-item.active i {
+            transform: translateY(-2px) scale(1.1);
+        }
+
+        .nav-item.logout-item {
+            color: var(--red);
+        }
+
+        .nav-item:active {
             transform: scale(0.92);
+        }
+
+        /* ── TAB SECTIONS ── */
+        .tab-section {
+            display: none;
+            animation: fadeIn 0.25s ease;
+        }
+
+        .tab-section.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(6px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         /* ── MESSAGE ── */
@@ -171,7 +234,6 @@
             font-size: 0.78rem;
             font-weight: 500;
             display: none;
-            animation: slideDown 0.3s ease;
         }
 
         .message.error {
@@ -192,18 +254,6 @@
             display: block;
         }
 
-        @keyframes slideDown {
-            from {
-                opacity: 0;
-                transform: translateY(-10px);
-            }
-
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
         /* ── FILTER PANEL ── */
         .filter-panel {
             margin: 12px 16px 0;
@@ -211,27 +261,21 @@
             border-radius: var(--radius);
             box-shadow: var(--shadow);
             overflow: hidden;
-            transition: all 0.3s ease;
         }
 
         .filter-toggle {
             width: 100%;
             background: none;
             border: none;
-            padding: 16px 18px;
+            padding: 14px 18px;
             display: flex;
             align-items: center;
             justify-content: space-between;
             font-family: inherit;
-            font-size: 0.78rem;
+            font-size: 0.8rem;
             font-weight: 600;
             cursor: pointer;
             color: var(--text);
-            transition: background 0.2s;
-        }
-
-        .filter-toggle:active {
-            background: var(--bg);
         }
 
         .filter-toggle .left {
@@ -242,7 +286,6 @@
 
         .filter-toggle .left i {
             color: var(--accent);
-            font-size: 14px;
         }
 
         .filter-toggle .badge-count {
@@ -252,42 +295,17 @@
             font-weight: 700;
             padding: 1px 8px;
             border-radius: 12px;
-            min-width: 20px;
-            text-align: center;
-        }
-
-        .filter-toggle .arrow {
-            transition: transform 0.3s ease;
-            font-size: 12px;
-            color: var(--text-secondary);
-        }
-
-        .filter-toggle.open .arrow {
-            transform: rotate(180deg);
         }
 
         .filter-body {
             display: none;
             padding: 0 18px 18px;
             flex-direction: column;
-            gap: 14px;
+            gap: 12px;
         }
 
         .filter-body.open {
             display: flex;
-            animation: fadeIn 0.25s ease;
-        }
-
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-                transform: translateY(-8px);
-            }
-
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
         }
 
         .filter-group {
@@ -300,8 +318,8 @@
             font-size: 0.68rem;
             font-weight: 600;
             color: var(--text-secondary);
-            letter-spacing: 0.3px;
             text-transform: uppercase;
+            letter-spacing: 0.3px;
         }
 
         .filter-group input,
@@ -314,16 +332,12 @@
             font-size: 0.82rem;
             background: var(--white);
             color: var(--text);
-            transition: border-color 0.2s, box-shadow 0.2s;
-            -webkit-appearance: none;
-            appearance: none;
         }
 
         .filter-group input:focus,
         .filter-group select:focus {
             outline: none;
             border-color: var(--accent);
-            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
         }
 
         .date-row,
@@ -337,32 +351,26 @@
             flex: 1;
         }
 
-        /* Inversion checkbox */
         .inversion-row {
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 10px;
             padding: 4px 0;
         }
 
         .inversion-row input[type="checkbox"] {
-            width: 20px;
-            height: 20px;
+            width: 18px;
+            height: 18px;
             accent-color: var(--accent);
-            cursor: pointer;
-            flex-shrink: 0;
-            border-radius: 4px;
         }
 
         .inversion-row label {
             font-size: 0.78rem;
             font-weight: 500;
             color: var(--text);
-            cursor: pointer;
-            user-select: none;
         }
 
-        /* Sector dropdown */
+        /* Dropdown Check List */
         .dropdown-check-list {
             position: relative;
             width: 100%;
@@ -376,25 +384,9 @@
             border: 1.5px solid var(--border);
             border-radius: var(--radius-sm);
             background: var(--white);
-            font-family: inherit;
             font-size: 0.82rem;
             cursor: pointer;
-            transition: border-color 0.2s;
             color: var(--text);
-        }
-
-        .dropdown-check-list .anchor:active {
-            border-color: var(--accent);
-        }
-
-        .dropdown-check-list .anchor .arrow-down {
-            font-size: 10px;
-            color: var(--text-secondary);
-            transition: transform 0.2s;
-        }
-
-        .dropdown-check-list.visible .anchor .arrow-down {
-            transform: rotate(180deg);
         }
 
         .dropdown-check-list .items {
@@ -426,23 +418,12 @@
             border-radius: 6px;
             cursor: pointer;
             color: var(--text);
-            transition: background 0.15s;
-        }
-
-        .dropdown-check-list .items label:hover {
-            background: var(--bg);
-        }
-
-        .dropdown-check-list .items label:active {
-            background: var(--accent-light);
         }
 
         .dropdown-check-list input[type="checkbox"] {
             width: 16px;
             height: 16px;
             accent-color: var(--accent);
-            margin: 0;
-            flex-shrink: 0;
         }
 
         /* Instrument search */
@@ -453,24 +434,12 @@
 
         .instrument-search-field {
             width: 100%;
-            padding: 10px 36px 10px 40px;
+            padding: 10px 36px 10px 36px;
             border: 1.5px solid var(--border);
             border-radius: var(--radius-sm);
-            font-family: inherit;
             font-size: 0.82rem;
             background: var(--white);
             color: var(--text);
-            transition: border-color 0.2s, box-shadow 0.2s;
-        }
-
-        .instrument-search-field:focus {
-            outline: none;
-            border-color: var(--accent);
-            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
-        }
-
-        .instrument-search-field::placeholder {
-            color: var(--text-muted);
         }
 
         .instrument-search-icon {
@@ -480,7 +449,6 @@
             transform: translateY(-50%);
             color: var(--text-muted);
             font-size: 14px;
-            pointer-events: none;
         }
 
         .instrument-search-clear {
@@ -494,13 +462,6 @@
             display: none;
             background: none;
             border: none;
-            padding: 4px;
-            line-height: 1;
-            transition: color 0.2s;
-        }
-
-        .instrument-search-clear:hover {
-            color: var(--text);
         }
 
         .instrument-search-dropdown {
@@ -510,7 +471,6 @@
             right: 0;
             background: var(--white);
             border: 1.5px solid var(--border);
-            border-top: none;
             z-index: 300;
             max-height: 200px;
             overflow-y: auto;
@@ -526,16 +486,6 @@
             display: flex;
             flex-direction: column;
             gap: 2px;
-            transition: background 0.15s;
-        }
-
-        .inst-item:last-child {
-            border-bottom: none;
-        }
-
-        .inst-item:hover,
-        .inst-item.active {
-            background: var(--bg);
         }
 
         .inst-item-main {
@@ -558,27 +508,16 @@
             text-overflow: ellipsis;
         }
 
-        .inst-item-empty {
-            padding: 14px 12px;
-            color: var(--text-muted);
-            font-style: italic;
-            font-size: 0.78rem;
-            text-align: center;
-        }
-
-        /* Apply button */
         .apply-btn {
             width: 100%;
-            padding: 14px;
+            padding: 12px;
             background: var(--accent);
             color: white;
             border: none;
             border-radius: var(--radius-sm);
-            font-family: inherit;
             font-size: 0.82rem;
             font-weight: 700;
             cursor: pointer;
-            transition: all 0.2s;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -586,18 +525,111 @@
             margin-top: 4px;
         }
 
-        .apply-btn:active {
-            transform: scale(0.97);
-            background: #1d4ed8;
+        /* ── TABLE STYLING FOR MOBILE ── */
+        .table-card {
+            margin: 12px 16px;
+            background: var(--white);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            overflow: hidden;
         }
 
-        /* ── RESULTS HEADER ── */
+        .table-responsive {
+            width: 100%;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .mobile-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.75rem;
+            text-align: left;
+            white-space: nowrap;
+        }
+
+        .mobile-table th {
+            background: #f8fafc;
+            padding: 10px 12px;
+            font-weight: 700;
+            color: var(--text-secondary);
+            border-bottom: 1.5px solid var(--border);
+            font-size: 0.68rem;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+
+        .mobile-table td {
+            padding: 10px 12px;
+            border-bottom: 1px solid var(--border);
+            color: var(--text);
+        }
+
+        .mobile-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .mobile-table .col-row-num {
+            text-align: center;
+            width: 36px;
+            min-width: 36px;
+            color: var(--text-muted);
+            font-size: 0.7rem;
+        }
+
+        .mobile-table .num-val {
+            text-align: right;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .mobile-table .val-pos {
+            color: var(--green);
+            font-weight: 600;
+        }
+
+        .mobile-table .val-neg {
+            color: var(--red);
+            font-weight: 600;
+        }
+
+        .mobile-table a,
+        .mobile-table span.link {
+            color: var(--text);
+            text-decoration: underline;
+            cursor: pointer;
+        }
+
+        .table-controls {
+            padding: 12px 16px;
+            background: #fafbfd;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .table-controls select,
+        .table-controls label {
+            font-size: 0.75rem;
+            color: var(--text);
+        }
+
+        .table-controls select {
+            padding: 6px 10px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            background: white;
+        }
+
+        /* ── CARDS FOR STATISTICS ── */
         .results-header {
             margin: 16px 16px 0;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 8px 4px;
+            padding: 4px;
         }
 
         .results-header .count {
@@ -606,62 +638,21 @@
             color: var(--text-secondary);
         }
 
-        .results-header .count strong {
-            color: var(--text);
-            font-size: 0.85rem;
-        }
-
-        .results-header .view-options {
-            display: flex;
-            gap: 4px;
-        }
-
-        .results-header .view-options button {
-            padding: 4px 10px;
-            border: 1.5px solid var(--border);
-            border-radius: 6px;
-            background: var(--white);
-            font-size: 0.6rem;
-            font-weight: 600;
-            color: var(--text-secondary);
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .results-header .view-options button.active {
-            background: var(--accent);
-            color: white;
-            border-color: var(--accent);
-        }
-
-        .results-header .view-options button:active {
-            transform: scale(0.95);
-        }
-
-        /* ── CARD LIST ── */
         .card-list {
             display: flex;
             flex-direction: column;
             gap: 12px;
-            margin: 10px 16px 0;
-            padding-bottom: 10px;
+            margin: 10px 16px;
         }
 
         .stat-card {
             background: var(--white);
             border-radius: var(--radius);
             box-shadow: var(--shadow);
-            padding: 16px;
+            padding: 14px 16px;
             display: flex;
             flex-direction: column;
             gap: 10px;
-            transition: all 0.25s ease;
-            border: 1px solid transparent;
-        }
-
-        .stat-card:active {
-            transform: scale(0.98);
-            box-shadow: var(--shadow-hover);
         }
 
         .stat-card .card-header {
@@ -671,50 +662,19 @@
             gap: 8px;
         }
 
-        .stat-card .card-header .left {
-            display: flex;
-            flex-direction: column;
-            gap: 2px;
-            flex: 1;
-            min-width: 0;
-        }
-
         .stat-card .card-id {
             font-size: 0.9rem;
             font-weight: 800;
             color: var(--text);
-            letter-spacing: -0.3px;
             cursor: pointer;
-            transition: color 0.2s;
-        }
-
-        .stat-card .card-id:active {
-            color: var(--accent);
         }
 
         .stat-card .card-desc {
             font-size: 0.72rem;
             color: var(--text-secondary);
             cursor: pointer;
-            line-height: 1.4;
-            transition: color 0.2s;
         }
 
-        .stat-card .card-desc:active {
-            color: var(--text);
-        }
-
-        .stat-card .card-date {
-            font-size: 0.6rem;
-            color: var(--text-muted);
-            white-space: nowrap;
-            padding: 2px 8px;
-            background: var(--bg);
-            border-radius: 12px;
-            flex-shrink: 0;
-        }
-
-        /* Badges row */
         .stat-card .card-badges {
             display: flex;
             gap: 6px;
@@ -724,10 +684,9 @@
         .stat-card .badge {
             font-size: 0.55rem;
             font-weight: 700;
-            padding: 2px 10px;
-            border-radius: 12px;
+            padding: 2px 8px;
+            border-radius: 10px;
             text-transform: uppercase;
-            letter-spacing: 0.3px;
         }
 
         .badge-sector {
@@ -745,13 +704,12 @@
             color: #059669;
         }
 
-        /* Metrics grid */
         .stat-card .metrics-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(60px, 1fr));
+            grid-template-columns: repeat(4, 1fr);
             gap: 8px;
             padding-top: 10px;
-            border-top: 1.5px solid var(--border);
+            border-top: 1px solid var(--border);
         }
 
         .stat-card .metric-item {
@@ -765,7 +723,6 @@
             font-weight: 600;
             color: var(--text-muted);
             text-transform: uppercase;
-            letter-spacing: 0.3px;
         }
 
         .stat-card .metric-item .value {
@@ -774,74 +731,22 @@
             color: var(--text);
         }
 
-        .stat-card .metric-item .value.positive {
-            color: var(--green);
-        }
-
-        .stat-card .metric-item .value.negative {
-            color: var(--red);
-        }
-
-        .stat-card .metric-item .value .sub {
-            font-size: 0.55rem;
-            font-weight: 400;
-            color: var(--text-muted);
-            margin-left: 2px;
-        }
-
-        /* Fundamentals row */
-        .stat-card .fundamentals {
-            display: flex;
-            gap: 12px;
-            padding-top: 8px;
-            border-top: 1px solid var(--border);
-            flex-wrap: wrap;
-        }
-
-        .stat-card .fund-item {
-            display: flex;
-            flex-direction: column;
-            gap: 1px;
-        }
-
-        .stat-card .fund-item .label {
-            font-size: 0.5rem;
-            font-weight: 600;
-            color: var(--text-muted);
-            text-transform: uppercase;
-            letter-spacing: 0.3px;
-        }
-
-        .stat-card .fund-item .value {
-            font-size: 0.7rem;
-            font-weight: 600;
-            color: var(--text);
-        }
-
-        /* Loading state */
         .loading-text {
             text-align: center;
             color: var(--text-muted);
             font-size: 0.82rem;
-            padding: 60px 20px;
-        }
-
-        .loading-text i {
-            font-size: 2rem;
-            display: block;
-            margin-bottom: 12px;
-            color: var(--border);
+            padding: 40px 20px;
         }
 
         .loading-text .spinner {
             display: inline-block;
-            width: 32px;
-            height: 32px;
+            width: 28px;
+            height: 28px;
             border: 3px solid var(--border);
             border-top-color: var(--accent);
             border-radius: 50%;
             animation: spin 0.8s linear infinite;
-            margin-bottom: 12px;
+            margin-bottom: 8px;
         }
 
         @keyframes spin {
@@ -850,73 +755,7 @@
             }
         }
 
-        /* ── EMPTY STATE ── */
-        .empty-state {
-            text-align: center;
-            padding: 40px 20px;
-        }
-
-        .empty-state i {
-            font-size: 3rem;
-            color: var(--border);
-            margin-bottom: 12px;
-        }
-
-        .empty-state h3 {
-            font-size: 0.9rem;
-            font-weight: 700;
-            color: var(--text);
-            margin-bottom: 4px;
-        }
-
-        .empty-state p {
-            font-size: 0.75rem;
-            color: var(--text-secondary);
-        }
-
-        /* ── PULL TO REFRESH ── */
-        .pull-indicator {
-            text-align: center;
-            font-size: 0.6rem;
-            color: var(--text-muted);
-            padding: 8px 0;
-            display: none;
-        }
-
-        /* ── RESPONSIVE ── */
-        @media (min-width: 480px) {
-            .stat-card .metrics-grid {
-                grid-template-columns: repeat(4, 1fr);
-            }
-        }
-
-        @media (min-width: 640px) {
-            body {
-                padding: 20px 40px;
-            }
-
-            .top-header .user-badge .user-info {
-                display: flex;
-            }
-
-            .card-list {
-                display: grid;
-                grid-template-columns: 1fr 1fr;
-                gap: 16px;
-            }
-        }
-
-        @media (min-width: 1024px) {
-            body {
-                padding: 24px 60px;
-            }
-
-            .card-list {
-                grid-template-columns: 1fr 1fr 1fr;
-            }
-        }
-
-        /* ── DARK MODE SUPPORT ── */
+        /* Dark mode */
         @media (prefers-color-scheme: dark) {
             :root {
                 --bg: #0f0f1a;
@@ -926,19 +765,20 @@
                 --text-secondary: #9ca3af;
                 --text-muted: #6b7280;
                 --shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
-                --shadow-hover: 0 8px 32px rgba(0, 0, 0, 0.4);
                 --accent-light: #1e3a5f;
             }
 
-            .top-header {
-                background: rgba(26, 26, 46, 0.92);
+            .top-header,
+            .bottom-nav {
+                background: rgba(26, 26, 46, 0.95);
             }
 
-            .top-header .brand h1 {
-                background: linear-gradient(135deg, #e8e8f0, #60a5fa);
-                -webkit-background-clip: text;
-                -webkit-text-fill-color: transparent;
-                background-clip: text;
+            .mobile-table th {
+                background: #14142a;
+            }
+
+            .table-controls {
+                background: #14142a;
             }
 
             .filter-group input,
@@ -947,44 +787,6 @@
             .instrument-search-field {
                 background: #14142a;
                 color: #e8e8f0;
-            }
-
-            .filter-group input::placeholder {
-                color: #4a4a6a;
-            }
-
-            .stat-card .card-date {
-                background: #14142a;
-            }
-
-            .dropdown-check-list .items {
-                background: #1a1a2e;
-                border-color: #2a2a44;
-            }
-
-            .instrument-search-dropdown {
-                background: #1a1a2e;
-                border-color: #2a2a44;
-            }
-
-            .inst-item {
-                border-color: #2a2a44;
-            }
-
-            .inst-item:hover,
-            .inst-item.active {
-                background: #14142a;
-            }
-
-            .results-header .view-options button {
-                background: #14142a;
-                border-color: #2a2a44;
-                color: var(--text-secondary);
-            }
-
-            .results-header .view-options button.active {
-                background: var(--accent);
-                color: white;
             }
         }
     </style>
@@ -995,153 +797,296 @@
     <!-- TOP HEADER -->
     <header class="top-header">
         <div class="brand">
-            <div class="logo">📊</div>
-            <h1>Statistics</h1>
+            <div class="logo" id="headerLogo">💼</div>
+            <h1 id="headerTitle">Portafoglio</h1>
         </div>
         <div class="user-badge">
             <div class="user-info">
                 <strong id="usernameDisplay">-</strong>
-                <span id="currencyDisplay">-</span>
-                <span id="dateCreationDisplay"
-                    style="font-size: 0.55rem; color: var(--text-muted); display: none;"></span>
+                <span id="currencyDisplay">EUR</span>
             </div>
             <div class="avatar" id="avatarLetter">U</div>
-            <button class="close-btn" onclick="closeDashboard()" aria-label="Chiudi">
-                <i class="fas fa-times"></i>
-            </button>
         </div>
     </header>
 
     <div id="message" class="message"></div>
 
-    <!-- FILTER PANEL -->
-    <div class="filter-panel" id="filterPanel">
-        <button class="filter-toggle" id="filterToggleBtn" onclick="toggleFilters()">
-            <span class="left">
-                <i class="fas fa-sliders-h"></i>
-                <span>Filtri</span>
-                <span class="badge-count" id="filterBadge" style="display:none;">0</span>
-            </span>
-            <span class="arrow">▾</span>
-        </button>
-        <div class="filter-body open" id="filterBody">
-
-            <div class="date-row">
-                <div class="filter-group">
-                    <label>Dal</label>
-                    <input type="date" id="date-start">
+    <!-- ── TAB 1: PORTAFOGLIO ── -->
+    <section id="view-portfolio" class="tab-section active">
+        <div class="table-card">
+            <div class="table-controls">
+                <div style="display:flex; align-items:center; gap:8px;">
+                    <label for="portfolio-grouping">Raggruppa:</label>
+                    <select id="portfolio-grouping" onchange="onPortfolioGroupingChange()">
+                        <option value="">Nessun raggruppamento</option>
+                        <option value="sector">Settore</option>
+                        <option value="instrument_type">Tipo Strumento</option>
+                        <option value="code_market">Mercato</option>
+                    </select>
                 </div>
-                <div class="filter-group">
-                    <label>Al</label>
-                    <input type="date" id="date-end">
+                <div style="display:flex; align-items:center; gap:6px;">
+                    <input type="checkbox" id="expand-portfolio-details" onchange="renderPortfolioTable()">
+                    <label for="expand-portfolio-details">Espandi</label>
                 </div>
             </div>
+            <div class="table-responsive">
+                <table class="mobile-table">
+                    <thead>
+                        <tr>
+                            <th class="col-row-num">#</th>
+                            <th>Codice</th>
+                            <th>Descrizione</th>
+                            <th class="num-val">Q.tà</th>
+                            <th class="num-val">Costo</th>
+                            <th class="num-val">C.Valore</th>
+                            <th class="num-val">M/P %</th>
+                            <th class="num-val">Peso %</th>
+                        </tr>
+                    </thead>
+                    <tbody id="portfolio-table-body">
+                        <tr>
+                            <td colspan="8" class="loading-text">
+                                <div class="spinner"></div>Caricamento Portafoglio...
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </section>
 
-            <div class="force-row">
-                <div class="filter-group">
-                    <label>Forza min</label>
-                    <input type="number" id="value-min" step="0.01" placeholder="0">
+    <!-- ── TAB 2: RENDIMENTO ── -->
+    <section id="view-yield" class="tab-section">
+        <div class="table-card">
+            <div class="table-controls">
+                <div style="display:flex; align-items:center; gap:8px;">
+                    <label for="yield-grouping">Raggruppa:</label>
+                    <select id="yield-grouping" onchange="onYieldGroupingChange()">
+                        <option value="">Nessun raggruppamento</option>
+                        <option value="sector">Settore</option>
+                        <option value="instrument_type">Tipo Strumento</option>
+                        <option value="code_market">Mercato</option>
+                    </select>
                 </div>
-                <div class="filter-group">
-                    <label>Forza max</label>
-                    <input type="number" id="value-max" step="0.01" placeholder="∞">
+                <div style="display:flex; align-items:center; gap:6px;">
+                    <input type="checkbox" id="expand-yield-details" onchange="renderYieldTable()">
+                    <label for="expand-yield-details">Espandi</label>
                 </div>
             </div>
-
-            <div class="filter-group">
-                <label>Settore</label>
-                <div id="sector-filter-container" class="dropdown-check-list">
-                    <span class="anchor" onclick="toggleSectorDropdown()" id="sectorSelectorAnchor">
-                        <span>Tutti i settori</span>
-                        <span class="arrow-down">▾</span>
-                    </span>
-                    <div id="sectorSelectorItems" class="items"></div>
-                </div>
+            <div class="table-responsive">
+                <table class="mobile-table">
+                    <thead>
+                        <tr>
+                            <th class="col-row-num">#</th>
+                            <th>Codice</th>
+                            <th>Descrizione</th>
+                            <th class="num-val">RISTOT</th>
+                            <th class="num-val">GIACMED</th>
+                            <th class="num-val">Rendimento %</th>
+                        </tr>
+                    </thead>
+                    <tbody id="yield-table-body">
+                        <tr>
+                            <td colspan="6" class="loading-text">
+                                <div class="spinner"></div>Caricamento Rendimento...
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
+        </div>
+    </section>
 
-            <div class="filter-group">
-                <label>Strumento</label>
-                <div class="instrument-search-wrapper">
-                    <span class="instrument-search-icon"><i class="fas fa-search"></i></span>
-                    <input type="text" id="instrument-search-input" class="instrument-search-field"
-                        placeholder="Cerca per codice o nome..." autocomplete="off">
-                    <button type="button" class="instrument-search-clear" id="instrument-search-clear"
-                        aria-label="Cancella">✕</button>
-                    <div class="instrument-search-dropdown" id="instrument-search-dropdown"></div>
-                </div>
-                <input type="hidden" id="instrument-filter" value="">
-            </div>
-
-            <div class="inversion-row">
-                <input type="checkbox" id="inversion-filter">
-                <label for="inversion-filter" data-translate="int.inversion">Solo inversione</label>
-            </div>
-
-            <button class="apply-btn" onclick="fetchMarketData()">
-                <i class="fas fa-arrow-right"></i>
-                <span data-translate="int.apply">Applica</span>
+    <!-- ── TAB 3: MERCATO ── -->
+    <section id="view-market" class="tab-section">
+        <div class="filter-panel">
+            <button class="filter-toggle" onclick="toggleMarketFilters()">
+                <span class="left"><i class="fas fa-sliders-h"></i> <span>Filtri Mercato</span></span>
+                <span class="arrow">▾</span>
             </button>
+            <div class="filter-body" id="marketFilterBody">
+                <div class="date-row">
+                    <div class="filter-group">
+                        <label>Dal</label>
+                        <input type="date" id="mkt-date-start">
+                    </div>
+                    <div class="filter-group">
+                        <label>Al</label>
+                        <input type="date" id="mkt-date-end">
+                    </div>
+                </div>
+                <button class="apply-btn" onclick="fetchMarketSectionData()">
+                    <i class="fas fa-sync-alt"></i> Aggiorna Mercato
+                </button>
+            </div>
         </div>
-    </div>
 
-    <!-- RESULTS -->
-    <div class="results-header" id="resultsHeader" style="display:none;">
-        <span class="count"><strong id="resultsCount">0</strong> strumenti</span>
-        <div class="view-options">
-            <button class="active" onclick="setView('cards')" id="viewCards"><i class="fas fa-th"></i></button>
-            <button onclick="setView('list')" id="viewList"><i class="fas fa-list"></i></button>
+        <div class="table-card">
+            <div class="table-responsive">
+                <table class="mobile-table">
+                    <thead>
+                        <tr>
+                            <th class="col-row-num">#</th>
+                            <th>Strumento</th>
+                            <th>Descrizione</th>
+                            <th>Settore</th>
+                            <th class="num-val">Forza</th>
+                            <th class="num-val">Invarianza</th>
+                            <th>Mercato</th>
+                        </tr>
+                    </thead>
+                    <tbody id="market-table-body">
+                        <tr>
+                            <td colspan="7" class="loading-text">
+                                <div class="spinner"></div>Caricamento Mercato...
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
         </div>
-    </div>
+    </section>
 
-    <div class="card-list" id="cardList">
-        <div class="loading-text">
-            <div class="spinner"></div>
-            Caricamento dati...
+    <!-- ── TAB 4: STATISTICA ── -->
+    <section id="view-statistics" class="tab-section">
+        <div class="filter-panel" id="filterPanel">
+            <button class="filter-toggle" id="filterToggleBtn" onclick="toggleStatFilters()">
+                <span class="left">
+                    <i class="fas fa-sliders-h"></i>
+                    <span>Filtri Statistica</span>
+                    <span class="badge-count" id="filterBadge" style="display:none;">0</span>
+                </span>
+                <span class="arrow">▾</span>
+            </button>
+            <div class="filter-body open" id="statFilterBody">
+
+                <div class="date-row">
+                    <div class="filter-group">
+                        <label>Dal</label>
+                        <input type="date" id="stat-date-start">
+                    </div>
+                    <div class="filter-group">
+                        <label>Al</label>
+                        <input type="date" id="stat-date-end">
+                    </div>
+                </div>
+
+                <div class="force-row">
+                    <div class="filter-group">
+                        <label>Forza min</label>
+                        <input type="number" id="value-min" step="0.01" placeholder="0">
+                    </div>
+                    <div class="filter-group">
+                        <label>Forza max</label>
+                        <input type="number" id="value-max" step="0.01" placeholder="∞">
+                    </div>
+                </div>
+
+                <!-- SELEZIONE MERCATO (NEW) -->
+                <div class="filter-group">
+                    <label>Mercato</label>
+                    <div id="market-filter-container" class="dropdown-check-list">
+                        <span class="anchor" onclick="toggleMarketDropdown()" id="marketSelectorAnchor">
+                            <span>Tutti i mercati</span>
+                            <span class="arrow-down">▾</span>
+                        </span>
+                        <div id="marketSelectorItems" class="items"></div>
+                    </div>
+                </div>
+
+                <!-- SELEZIONE SETTORE -->
+                <div class="filter-group">
+                    <label>Settore</label>
+                    <div id="sector-filter-container" class="dropdown-check-list">
+                        <span class="anchor" onclick="toggleSectorDropdown()" id="sectorSelectorAnchor">
+                            <span>Tutti i settori</span>
+                            <span class="arrow-down">▾</span>
+                        </span>
+                        <div id="sectorSelectorItems" class="items"></div>
+                    </div>
+                </div>
+
+                <div class="filter-group">
+                    <label>Strumento</label>
+                    <div class="instrument-search-wrapper">
+                        <span class="instrument-search-icon"><i class="fas fa-search"></i></span>
+                        <input type="text" id="instrument-search-input" class="instrument-search-field"
+                            placeholder="Cerca per codice o nome..." autocomplete="off">
+                        <button type="button" class="instrument-search-clear" id="instrument-search-clear"
+                            aria-label="Cancella">✕</button>
+                        <div class="instrument-search-dropdown" id="instrument-search-dropdown"></div>
+                    </div>
+                    <input type="hidden" id="instrument-filter" value="">
+                </div>
+
+                <div class="inversion-row">
+                    <input type="checkbox" id="inversion-filter">
+                    <label for="inversion-filter">Solo inversione</label>
+                </div>
+
+                <button class="apply-btn" onclick="fetchStatisticsData()">
+                    <i class="fas fa-arrow-right"></i>
+                    <span>Applica</span>
+                </button>
+            </div>
         </div>
-    </div>
 
-    <div class="pull-indicator" id="pullIndicator">⬇ Tira per aggiornare</div>
+        <div class="results-header" id="resultsHeader" style="display:none;">
+            <span class="count"><strong id="resultsCount">0</strong> strumenti trovati</span>
+        </div>
+
+        <div class="card-list" id="cardList">
+            <div class="loading-text">
+                <div class="spinner"></div>
+                Caricamento dati...
+            </div>
+        </div>
+    </section>
+
+    <!-- ── BOTTOM NAVIGATION ── -->
+    <nav class="bottom-nav">
+        <button class="nav-item active" onclick="switchTab('portfolio')">
+            <i class="fas fa-briefcase"></i>
+            <span>Portafoglio</span>
+        </button>
+        <button class="nav-item" onclick="switchTab('yield')">
+            <i class="fas fa-chart-line"></i>
+            <span>Rendimento</span>
+        </button>
+        <button class="nav-item" onclick="switchTab('market')">
+            <i class="fas fa-store"></i>
+            <span>Mercato</span>
+        </button>
+        <button class="nav-item" onclick="switchTab('statistics')">
+            <i class="fas fa-chart-pie"></i>
+            <span>Statistica</span>
+        </button>
+        <button class="nav-item logout-item" onclick="logout()">
+            <i class="fas fa-sign-out-alt"></i>
+            <span>Logout</span>
+        </button>
+    </nav>
 
     <script>
+        const API_URL = "https://feweb-tunnel.fe-web.eu";
         const API_URL_MARKET = "https://market-tunnel.fe-web.eu";
 
         const credentials = {
             username: localStorage.getItem('username'),
             token: localStorage.getItem('token'),
             currency: localStorage.getItem('currency') || 'EUR',
-            date_start: localStorage.getItem('date_start') || '',
-            date_end: localStorage.getItem('date_end') || '',
             language: localStorage.getItem('language') || 'it_IT'
         };
 
         let translations = {};
-        let _lastData = [];
+        let portfolioRawData = [];
+        let yieldRawData = [];
+        let marketRawData = [];
+        let statisticsRawData = [];
+
         let _selectedSectors = [];
-        let _currentView = 'cards';
-        let _filterCount = 0;
-
-        // ── TRANSLATIONS ──────────────────────────────────────────────
-        async function loadTranslations() {
-            try {
-                const resp = await fetch(`lang/${credentials.language}.json`);
-                if (resp.ok) {
-                    translations = await resp.json();
-                    applyTranslations();
-                }
-            } catch (err) { console.error("Translations error:", err); }
-        }
-
-        function getTranslation(key) { return translations[key] || key; }
-
-        function applyTranslations() {
-            document.querySelectorAll('[data-translate]').forEach(el => {
-                const key = el.getAttribute('data-translate');
-                const translation = getTranslation(key);
-                if (translation && translation !== key) {
-                    el.textContent = translation;
-                }
-            });
-        }
+        let _selectedMarkets = [];
+        let classificationMap = {};
 
         // ── INIT ──────────────────────────────────────────────────────
         async function init() {
@@ -1157,86 +1102,408 @@
             await loadTranslations();
             setDefaultDates();
             initInstrumentSearch();
-            await loadStaticData();
 
-            // Pull to refresh
-            setupPullToRefresh();
+            // Load initial view (Portafoglio)
+            loadPortfolioData();
         }
 
-        // ── PULL TO REFRESH ──
-        let _pullStartY = 0;
-        let _isPulling = false;
-
-        function setupPullToRefresh() {
-            const container = document.getElementById('cardList');
-            let touchStartY = 0;
-
-            document.addEventListener('touchstart', (e) => {
-                if (window.scrollY === 0) {
-                    touchStartY = e.touches[0].clientY;
-                }
-            }, { passive: true });
-
-            document.addEventListener('touchmove', (e) => {
-                const pullY = e.touches[0].clientY - touchStartY;
-                const indicator = document.getElementById('pullIndicator');
-                if (pullY > 60 && window.scrollY === 0) {
-                    indicator.style.display = 'block';
-                    indicator.textContent = '⬇ Rilascia per aggiornare';
-                    _isPulling = true;
-                } else if (_isPulling) {
-                    indicator.style.display = 'block';
-                    indicator.textContent = '⬇ Tira per aggiornare';
-                }
-            }, { passive: true });
-
-            document.addEventListener('touchend', (e) => {
-                const indicator = document.getElementById('pullIndicator');
-                if (_isPulling && window.scrollY === 0) {
-                    indicator.textContent = '🔄 Aggiornamento...';
-                    fetchMarketData();
-                    setTimeout(() => {
-                        indicator.style.display = 'none';
-                        _isPulling = false;
-                    }, 1000);
-                } else {
-                    indicator.style.display = 'none';
-                    _isPulling = false;
-                }
-            }, { passive: true });
+        async function loadTranslations() {
+            try {
+                const resp = await fetch(`lang/${credentials.language}.json`);
+                if (resp.ok) translations = await resp.json();
+            } catch (err) { console.error("Translations error:", err); }
         }
 
-        // ── DATES ─────────────────────────────────────────────────────
+        function getTranslation(key) { return translations[key] || key; }
+
         function setDefaultDates() {
             const today = new Date();
             const lastMonth = new Date(today.getFullYear(), today.getMonth() - 1, today.getDate());
-            document.getElementById('date-start').value = lastMonth.toISOString().split('T')[0];
-            document.getElementById('date-end').value = today.toISOString().split('T')[0];
+            const todayStr = today.toISOString().split('T')[0];
+            const lastMonthStr = lastMonth.toISOString().split('T')[0];
+
+            document.getElementById('mkt-date-start').value = lastMonthStr;
+            document.getElementById('mkt-date-end').value = todayStr;
+            document.getElementById('stat-date-start').value = lastMonthStr;
+            document.getElementById('stat-date-end').value = todayStr;
+
             document.getElementById('value-min').value = 4;
             document.getElementById('value-max').value = 9999;
         }
 
-        // ── FILTER TOGGLE ─────────────────────────────────────────────
-        function toggleFilters() {
+        // ── TAB SWITCHING ──
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab-section').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+
+            const targetSection = document.getElementById(`view-${tabName}`);
+            if (targetSection) targetSection.classList.add('active');
+
+            const btnIndex = { portfolio: 0, yield: 1, market: 2, statistics: 3 }[tabName];
+            if (btnIndex !== undefined) {
+                document.querySelectorAll('.nav-item')[btnIndex].classList.add('active');
+            }
+
+            const headerTitles = {
+                portfolio: { title: 'Portafoglio', logo: '💼' },
+                yield: { title: 'Rendimento', logo: '📈' },
+                market: { title: 'Mercato', logo: '🏛️' },
+                statistics: { title: 'Statistica', logo: '📊' }
+            };
+
+            if (headerTitles[tabName]) {
+                document.getElementById('headerTitle').textContent = headerTitles[tabName].title;
+                document.getElementById('headerLogo').textContent = headerTitles[tabName].logo;
+            }
+
+            // Lazy data loading on tab selection
+            if (tabName === 'portfolio' && portfolioRawData.length === 0) loadPortfolioData();
+            if (tabName === 'yield' && yieldRawData.length === 0) loadYieldData();
+            if (tabName === 'market' && marketRawData.length === 0) fetchMarketSectionData();
+            if (tabName === 'statistics' && statisticsRawData.length === 0) loadStaticStatisticsData();
+        }
+
+        function logout() {
+            localStorage.clear();
+            window.location.href = 'index.html';
+        }
+
+        function showMessage(text, type) {
+            const d = document.getElementById('message');
+            d.textContent = text;
+            d.className = `message ${type}`;
+            d.style.display = 'block';
+            setTimeout(() => { d.style.display = 'none'; }, 4000);
+        }
+
+        // ── 1. PORTAFOGLIO SECTION ─────────────────────────────────────
+        async function loadPortfolioData() {
+            const tbody = document.getElementById('portfolio-table-body');
+            try {
+                const payload = {
+                    username: credentials.username || "",
+                    token: credentials.token || "",
+                    language: credentials.language || ""
+                };
+                const resp = await fetch(`${API_URL}/getportfolio`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await resp.json();
+                if (data.status === 'ok') {
+                    classificationMap = {};
+                    let cList = data.classification;
+                    if (typeof cList === 'string') {
+                        try { cList = JSON.parse(cList.replace(/'/g, '"')); } catch (e) { cList = []; }
+                    }
+                    if (Array.isArray(cList)) {
+                        cList.forEach(item => {
+                            if (item.id_instrument) classificationMap[item.id_instrument] = item;
+                        });
+                    }
+
+                    let rawPf = data.portfolio;
+                    if (!Array.isArray(rawPf) && Array.isArray(data)) rawPf = data;
+                    portfolioRawData = Array.isArray(rawPf) ? rawPf : [];
+
+                    renderPortfolioTable();
+                } else {
+                    tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; color:var(--red); padding:20px;">${data.msg || 'Errore caricamento portafoglio'}</td></tr>`;
+                }
+            } catch (err) {
+                console.error("Portfolio fetch error:", err);
+                tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; color:var(--red); padding:20px;">Impossibile caricare il portafoglio</td></tr>`;
+            }
+        }
+
+        function onPortfolioGroupingChange() {
+            renderPortfolioTable();
+        }
+
+        function renderPortfolioTable() {
+            const tbody = document.getElementById('portfolio-table-body');
+            const grouping = document.getElementById('portfolio-grouping').value;
+            const isExpanded = document.getElementById('expand-portfolio-details').checked;
+
+            if (portfolioRawData.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; padding:20px; color:var(--text-muted);">Nessun elemento in portafoglio</td></tr>`;
+                return;
+            }
+
+            const fmtNum = (v) => {
+                if (v === null || v === undefined || isNaN(v)) return '-';
+                return parseFloat(v).toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            };
+
+            let rowCount = 0;
+            let html = '';
+
+            const renderSingleRow = (item, rIndex) => {
+                const mpVal = parseFloat(item['M/P'] || item['Minus/Plus'] || item['valutazioni_ctv_minusplus'] || 0);
+                const costVal = parseFloat(item['$cost_amount_curr'] || item['cost_amount'] || item['quantity'] || 0);
+                const ctvVal = parseFloat(item['CTVMKTTQ'] || item['mp'] || item['controvalore'] || 0);
+
+                let mpPerc = null;
+                if (!isNaN(mpVal) && !isNaN(costVal) && costVal !== 0) {
+                    mpPerc = (mpVal / Math.abs(costVal)) * 100;
+                }
+
+                const mpClass = mpVal >= 0 ? 'val-pos' : 'val-neg';
+
+                return `<tr>
+                    <td class="col-row-num">${rIndex}</td>
+                    <td><a onclick="openPriceGraph('${item.id_instrument || item.Ticker}')">${item.id_instrument || item.Ticker || '-'}</a></td>
+                    <td><a onclick="openInstrumentDetail('${item.id_instrument || item.Ticker}')">${item.instrument_description || item.description || '-'}</a></td>
+                    <td class="num-val">${fmtNum(item.quantity)}</td>
+                    <td class="num-val">${fmtNum(costVal)}</td>
+                    <td class="num-val">${fmtNum(ctvVal)}</td>
+                    <td class="num-val ${mpClass}">${mpPerc !== null ? mpPerc.toFixed(2) + '%' : '-'}</td>
+                    <td class="num-val">${item['int.weight.percent'] ? parseFloat(item['int.weight.percent']).toFixed(2) + '%' : '-'}</td>
+                </tr>`;
+            };
+
+            if (grouping) {
+                const groups = {};
+                portfolioRawData.forEach(item => {
+                    let gVal = 'Altro';
+                    const instId = item.id_instrument || item.Ticker;
+                    if (instId && classificationMap[instId] && classificationMap[instId][grouping]) {
+                        gVal = classificationMap[instId][grouping];
+                    }
+                    if (!groups[gVal]) groups[gVal] = [];
+                    groups[gVal].push(item);
+                });
+
+                Object.keys(groups).sort().forEach(group => {
+                    const items = groups[group];
+                    const groupCost = items.reduce((sum, i) => sum + (parseFloat(i['$cost_amount_curr'] || i['cost_amount'] || 0) || 0), 0);
+                    const groupCtv = items.reduce((sum, i) => sum + (parseFloat(i['CTVMKTTQ'] || i['mp'] || 0) || 0), 0);
+
+                    html += `<tr style="background:#f1f5f9; font-weight:700;">
+                        <td class="col-row-num">#</td>
+                        <td colspan="3">${getTranslation(group) || group} (${items.length})</td>
+                        <td class="num-val">${fmtNum(groupCost)}</td>
+                        <td class="num-val">${fmtNum(groupCtv)}</td>
+                        <td colspan="2"></td>
+                    </tr>`;
+
+                    if (isExpanded) {
+                        items.forEach(item => {
+                            rowCount++;
+                            html += renderSingleRow(item, rowCount);
+                        });
+                    }
+                });
+            } else {
+                portfolioRawData.forEach(item => {
+                    rowCount++;
+                    html += renderSingleRow(item, rowCount);
+                });
+            }
+
+            tbody.innerHTML = html;
+        }
+
+        // ── 2. RENDIMENTO SECTION ─────────────────────────────────────
+        async function loadYieldData() {
+            const tbody = document.getElementById('yield-table-body');
+            try {
+                const payload = {
+                    username: credentials.username || "",
+                    token: credentials.token || "",
+                    language: credentials.language || ""
+                };
+                const resp = await fetch(`${API_URL}/getportfolioyield`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await resp.json();
+                if (data.status === 'ok') {
+                    let rawY = data.portfolioyield;
+                    if (!Array.isArray(rawY) && Array.isArray(data)) rawY = data;
+                    yieldRawData = Array.isArray(rawY) ? rawY.filter(i => i.RISTOT !== undefined && i.RISTOT !== null && i.RISTOT !== '') : [];
+
+                    renderYieldTable();
+                } else {
+                    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:var(--red); padding:20px;">${data.msg || 'Errore caricamento rendimento'}</td></tr>`;
+                }
+            } catch (err) {
+                console.error("Yield fetch error:", err);
+                tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:var(--red); padding:20px;">Impossibile caricare il rendimento</td></tr>`;
+            }
+        }
+
+        function onYieldGroupingChange() {
+            renderYieldTable();
+        }
+
+        function renderYieldTable() {
+            const tbody = document.getElementById('yield-table-body');
+            const grouping = document.getElementById('yield-grouping').value;
+            const isExpanded = document.getElementById('expand-yield-details').checked;
+
+            if (yieldRawData.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:20px; color:var(--text-muted);">Nessun dato di rendimento disponibile</td></tr>`;
+                return;
+            }
+
+            const fmtNum = (v) => {
+                if (v === null || v === undefined || isNaN(v)) return '-';
+                return parseFloat(v).toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            };
+
+            let rowCount = 0;
+            let html = '';
+
+            const renderSingleRow = (item, rIndex) => {
+                const ristot = parseFloat(item.RISTOT || 0);
+                const giacmed = parseFloat(item.GIACMED || 0);
+                const yieldPerc = (giacmed !== 0) ? (ristot / giacmed) * 100 : null;
+                const yieldClass = ristot >= 0 ? 'val-pos' : 'val-neg';
+
+                return `<tr>
+                    <td class="col-row-num">${rIndex}</td>
+                    <td><a onclick="openPriceGraph('${item.id_instrument || item.Ticker}')">${item.id_instrument || item.Ticker || '-'}</a></td>
+                    <td><a onclick="openInstrumentDetail('${item.id_instrument || item.Ticker}')">${item.instrument_description || item.description || '-'}</a></td>
+                    <td class="num-val ${yieldClass}">${fmtNum(ristot)}</td>
+                    <td class="num-val">${fmtNum(giacmed)}</td>
+                    <td class="num-val ${yieldClass}">${yieldPerc !== null ? yieldPerc.toFixed(2) + '%' : '-'}</td>
+                </tr>`;
+            };
+
+            if (grouping) {
+                const groups = {};
+                yieldRawData.forEach(item => {
+                    let gVal = 'Altro';
+                    const instId = item.id_instrument || item.Ticker;
+                    if (instId && classificationMap[instId] && classificationMap[instId][grouping]) {
+                        gVal = classificationMap[instId][grouping];
+                    }
+                    if (!groups[gVal]) groups[gVal] = [];
+                    groups[gVal].push(item);
+                });
+
+                Object.keys(groups).sort().forEach(group => {
+                    const items = groups[group];
+                    const totalRistot = items.reduce((sum, i) => sum + (parseFloat(i.RISTOT) || 0), 0);
+                    const totalGiacmed = items.reduce((sum, i) => sum + (parseFloat(i.GIACMED) || 0), 0);
+                    const groupYieldPerc = totalGiacmed !== 0 ? (totalRistot / totalGiacmed) * 100 : null;
+
+                    html += `<tr style="background:#f1f5f9; font-weight:700;">
+                        <td class="col-row-num">#</td>
+                        <td colspan="2">${getTranslation(group) || group} (${items.length})</td>
+                        <td class="num-val ${totalRistot >= 0 ? 'val-pos' : 'val-neg'}">${fmtNum(totalRistot)}</td>
+                        <td class="num-val">${fmtNum(totalGiacmed)}</td>
+                        <td class="num-val">${groupYieldPerc !== null ? groupYieldPerc.toFixed(2) + '%' : '-'}</td>
+                    </tr>`;
+
+                    if (isExpanded) {
+                        items.forEach(item => {
+                            rowCount++;
+                            html += renderSingleRow(item, rowCount);
+                        });
+                    }
+                });
+            } else {
+                yieldRawData.forEach(item => {
+                    rowCount++;
+                    html += renderSingleRow(item, rowCount);
+                });
+            }
+
+            tbody.innerHTML = html;
+        }
+
+        // ── 3. MERCATO SECTION ─────────────────────────────────────────
+        function toggleMarketFilters() {
+            const body = document.getElementById('marketFilterBody');
+            body.classList.toggle('open');
+        }
+
+        async function fetchMarketSectionData() {
+            const tbody = document.getElementById('market-table-body');
+            tbody.innerHTML = `<tr><td colspan="7" class="loading-text"><div class="spinner"></div>Caricamento dati Mercato...</td></tr>`;
+
+            const date_start = document.getElementById('mkt-date-start').value;
+            const date_end = document.getElementById('mkt-date-end').value;
+
+            const payload = {
+                username: credentials.username,
+                token: credentials.token,
+                currency: credentials.currency,
+                date_start,
+                date_end
+            };
+
+            try {
+                const resp = await fetch(`${API_URL_MARKET}/getmarket`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const result = await resp.json();
+                if (result.status === 'ok') {
+                    marketRawData = result.data || [];
+                    renderMarketTable();
+                } else {
+                    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:var(--red); padding:20px;">${result.msg || 'Errore mercato'}</td></tr>`;
+                }
+            } catch (err) {
+                console.error("Market fetch error:", err);
+                tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:var(--red); padding:20px;">Impossibile collegarsi al server mercato</td></tr>`;
+            }
+        }
+
+        function renderMarketTable() {
+            const tbody = document.getElementById('market-table-body');
+            if (marketRawData.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:20px; color:var(--text-muted);">Nessun dato di mercato presente</td></tr>`;
+                return;
+            }
+
+            let rowCount = 0;
+            let html = '';
+
+            marketRawData.forEach(row => {
+                rowCount++;
+                const forzaVal = parseFloat(row.forza);
+                const isNegForza = forzaVal < 0;
+
+                const invVal = parseInt(row.invariance_days) || 0;
+                const isNegInv = invVal < 0;
+
+                html += `<tr>
+                    <td class="col-row-num">${rowCount}</td>
+                    <td><a onclick="openPriceGraph('${row.id_instrument}')">${row.id_instrument}</a></td>
+                    <td><a onclick="openInstrumentDetail('${row.id_instrument}')">${row.instrument_description || '-'}</a></td>
+                    <td>${row.sector ? getSectorLabel(row.sector) : '-'}</td>
+                    <td class="num-val ${isNegForza ? 'val-neg' : 'val-pos'}">${row.forza}</td>
+                    <td class="num-val ${isNegInv ? 'val-neg' : ''}">${invVal}</td>
+                    <td>${row.code_market || '-'}</td>
+                </tr>`;
+            });
+
+            tbody.innerHTML = html;
+        }
+
+        // ── 4. STATISTICA SECTION (WITH MARKET FILTER) ───────────────
+        function toggleStatFilters() {
             const btn = document.getElementById('filterToggleBtn');
-            const body = document.getElementById('filterBody');
+            const body = document.getElementById('statFilterBody');
             btn.classList.toggle('open');
             body.classList.toggle('open');
         }
 
-        // ── SECTOR DROPDOWN ───────────────────────────────────────────
         function toggleSectorDropdown() {
             const container = document.getElementById('sector-filter-container');
             container.classList.toggle('visible');
-            if (container.classList.contains('visible')) {
-                const closeHandler = (e) => {
-                    if (!container.contains(e.target)) {
-                        container.classList.remove('visible');
-                        document.removeEventListener('click', closeHandler);
-                    }
-                };
-                setTimeout(() => document.addEventListener('click', closeHandler), 10);
-            }
+        }
+
+        function toggleMarketDropdown() {
+            const container = document.getElementById('market-filter-container');
+            container.classList.toggle('visible');
         }
 
         function updateSectorAnchorText() {
@@ -1248,7 +1515,17 @@
             } else {
                 anchor.textContent = `${_selectedSectors.length} settori`;
             }
-            updateFilterBadge();
+        }
+
+        function updateMarketAnchorText() {
+            const anchor = document.getElementById('marketSelectorAnchor').querySelector('span:first-child');
+            if (_selectedMarkets.length === 0) {
+                anchor.textContent = 'Tutti i mercati';
+            } else if (_selectedMarkets.length === 1) {
+                anchor.textContent = _selectedMarkets[0];
+            } else {
+                anchor.textContent = `${_selectedMarkets.length} mercati`;
+            }
         }
 
         function onSectorChange() {
@@ -1256,7 +1533,15 @@
             _selectedSectors = [];
             cbs.forEach(cb => { if (cb.checked) _selectedSectors.push(cb.value); });
             updateSectorAnchorText();
-            if (_lastData.length > 0) applyFiltersAndRender();
+            applyStatisticsFilters();
+        }
+
+        function onMarketChange() {
+            const cbs = document.getElementById('marketSelectorItems').querySelectorAll('input[type="checkbox"]');
+            _selectedMarkets = [];
+            cbs.forEach(cb => { if (cb.checked) _selectedMarkets.push(cb.value); });
+            updateMarketAnchorText();
+            applyStatisticsFilters();
         }
 
         function getSectorLabel(sector) {
@@ -1267,46 +1552,175 @@
         function populateSectorSelector(data) {
             const container = document.getElementById('sectorSelectorItems');
             const sectors = [...new Set(data.map(r => r.sector).filter(Boolean))].sort();
-            const prev = [..._selectedSectors];
             container.innerHTML = '';
             sectors.forEach(sector => {
                 const label = document.createElement('label');
                 const cb = document.createElement('input');
                 cb.type = 'checkbox';
                 cb.value = sector;
-                cb.checked = prev.includes(sector);
+                cb.checked = _selectedSectors.includes(sector);
                 cb.onchange = onSectorChange;
                 label.appendChild(cb);
-                const text = document.createTextNode(' ' + getSectorLabel(sector));
-                label.appendChild(text);
+                label.appendChild(document.createTextNode(' ' + getSectorLabel(sector)));
                 container.appendChild(label);
             });
-            _selectedSectors = _selectedSectors.filter(s => sectors.includes(s));
             updateSectorAnchorText();
         }
 
-        // ── FILTER BADGE ──
-        function updateFilterBadge() {
-            const badge = document.getElementById('filterBadge');
-            let count = 0;
-            if (_selectedSectors.length > 0) count++;
-            if (document.getElementById('instrument-filter').value) count++;
-            if (document.getElementById('inversion-filter').checked) count++;
-            const vMin = document.getElementById('value-min').value;
-            const vMax = document.getElementById('value-max').value;
-            if (vMin && parseFloat(vMin) > 4) count++;
-            if (vMax && parseFloat(vMax) < 9999) count++;
+        function populateMarketSelector(data) {
+            const container = document.getElementById('marketSelectorItems');
+            const markets = [...new Set(data.map(r => r.code_market).filter(Boolean))].sort();
+            container.innerHTML = '';
+            markets.forEach(mkt => {
+                const label = document.createElement('label');
+                const cb = document.createElement('input');
+                cb.type = 'checkbox';
+                cb.value = mkt;
+                cb.checked = _selectedMarkets.includes(mkt);
+                cb.onchange = onMarketChange;
+                label.appendChild(cb);
+                label.appendChild(document.createTextNode(' ' + mkt));
+                container.appendChild(label);
+            });
+            updateMarketAnchorText();
+        }
 
-            _filterCount = count;
-            if (count > 0) {
-                badge.textContent = count;
-                badge.style.display = 'inline';
-            } else {
-                badge.style.display = 'none';
+        async function loadStaticStatisticsData() {
+            try {
+                const resp = await fetch('statistics.json.gz?_=' + Date.now());
+                if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+                const ds = new DecompressionStream('gzip');
+                const decompressed = resp.body.pipeThrough(ds);
+                const text = await new Response(decompressed).text();
+                const result = JSON.parse(text);
+                if (result.status === 'ok') {
+                    statisticsRawData = result.data || [];
+                    populateSectorSelector(statisticsRawData);
+                    populateMarketSelector(statisticsRawData);
+                    populateInstrumentSelector(statisticsRawData);
+                    applyStatisticsFilters();
+                }
+            } catch (err) {
+                console.warn('statistics.json.gz error, trying server fetch:', err);
+                fetchStatisticsData();
             }
         }
 
-        // ── INSTRUMENT SEARCH ──
+        async function fetchStatisticsData() {
+            const date_start = document.getElementById('stat-date-start').value;
+            const date_end = document.getElementById('stat-date-end').value;
+
+            const cardList = document.getElementById('cardList');
+            cardList.innerHTML = `<div class="loading-text"><div class="spinner"></div>Caricamento Statistica...</div>`;
+
+            const payload = {
+                username: credentials.username,
+                token: credentials.token,
+                currency: credentials.currency,
+                date_start,
+                date_end,
+                sector: _selectedSectors.length > 0 ? _selectedSectors : null
+            };
+
+            try {
+                const resp = await fetch(`${API_URL_MARKET}/getmarket`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const result = await resp.json();
+                if (result.status === 'ok') {
+                    statisticsRawData = result.data || [];
+                    populateSectorSelector(statisticsRawData);
+                    populateMarketSelector(statisticsRawData);
+                    populateInstrumentSelector(statisticsRawData);
+                    applyStatisticsFilters();
+                } else {
+                    cardList.innerHTML = `<div class="loading-text" style="color:var(--red);">${result.msg || 'Errore API'}</div>`;
+                }
+            } catch (err) {
+                console.error("Statistics fetch error:", err);
+                cardList.innerHTML = `<div class="loading-text" style="color:var(--red);">Impossibile collegarsi al server</div>`;
+            }
+        }
+
+        function applyStatisticsFilters() {
+            const vMin = parseFloat(document.getElementById('value-min').value);
+            const vMax = parseFloat(document.getElementById('value-max').value);
+            const instrFilter = document.getElementById('instrument-filter').value.trim().toLowerCase();
+            const invFilter = document.getElementById('inversion-filter').checked;
+
+            const filtered = statisticsRawData.filter(row => {
+                const val = parseFloat(row.forza);
+                if (isNaN(val)) return false;
+                const abs = Math.abs(val);
+                if (!isNaN(vMin) && abs < vMin) return false;
+                if (!isNaN(vMax) && abs > vMax) return false;
+                if (instrFilter && (row.id_instrument || '').toLowerCase() !== instrFilter) return false;
+                if (_selectedSectors.length > 0 && !_selectedSectors.includes(row.sector)) return false;
+                if (_selectedMarkets.length > 0 && !_selectedMarkets.includes(row.code_market)) return false;
+                if (invFilter) {
+                    const iVal = parseInt(row.invariance_days) || 0;
+                    if (val >= 0 || iVal >= 0) return false;
+                }
+                return true;
+            });
+
+            const cardList = document.getElementById('cardList');
+            const resultsHdr = document.getElementById('resultsHeader');
+
+            if (filtered.length === 0) {
+                cardList.innerHTML = `<div class="loading-text">Nessun risultato corrispondente ai filtri.</div>`;
+                resultsHdr.style.display = 'none';
+                return;
+            }
+
+            resultsHdr.style.display = 'flex';
+            document.getElementById('resultsCount').textContent = filtered.length;
+
+            cardList.innerHTML = '';
+            filtered.forEach(row => {
+                const forzaVal = parseFloat(row.forza);
+                const invVal = parseInt(row.invariance_days) || 0;
+
+                const card = document.createElement('div');
+                card.className = 'stat-card';
+                card.innerHTML = `
+                    <div class="card-header">
+                        <div>
+                            <div class="card-id" onclick="openPriceGraph('${row.id_instrument}')">${row.id_instrument}</div>
+                            <div class="card-desc" onclick="openInstrumentDetail('${row.id_instrument}')">${row.instrument_description || '—'}</div>
+                        </div>
+                    </div>
+                    <div class="card-badges">
+                        <span class="badge badge-sector">${row.sector ? getSectorLabel(row.sector) : '—'}</span>
+                        <span class="badge badge-market">${row.code_market || '—'}</span>
+                        <span class="badge badge-currency">${row.currency || 'EUR'}</span>
+                    </div>
+                    <div class="metrics-grid">
+                        <div class="metric-item">
+                            <span class="label">Forza</span>
+                            <span class="value ${forzaVal < 0 ? 'val-neg' : 'val-pos'}">${forzaVal}</span>
+                        </div>
+                        <div class="metric-item">
+                            <span class="label">Inv. Days</span>
+                            <span class="value ${invVal < 0 ? 'val-neg' : ''}">${invVal}</span>
+                        </div>
+                        <div class="metric-item">
+                            <span class="label">Close</span>
+                            <span class="value">${row['price@close'] ? parseFloat(row['price@close']).toFixed(2) : '-'}</span>
+                        </div>
+                        <div class="metric-item">
+                            <span class="label">Volume</span>
+                            <span class="value">${row['instrument@volume'] ? parseFloat(row['instrument@volume']).toLocaleString('it-IT') : '-'}</span>
+                        </div>
+                    </div>
+                `;
+                cardList.appendChild(card);
+            });
+        }
+
+        // ── INSTRUMENT SEARCH HELPERS ──
         let _instrumentIndex = [];
         let _instSelIdx = -1;
         let _instFiltered = [];
@@ -1321,24 +1735,10 @@
                 const q = searchInput.value.trim();
                 clearBtn.style.display = q ? 'block' : 'none';
                 renderInstDropdown(q);
-                updateFilterBadge();
             });
 
             searchInput.addEventListener('focus', () => {
                 renderInstDropdown(searchInput.value.trim());
-            });
-
-            searchInput.addEventListener('keydown', (e) => {
-                if (dropdown.style.display === 'none') return;
-                if (e.key === 'ArrowDown') { e.preventDefault(); moveInstSel(1); }
-                else if (e.key === 'ArrowUp') { e.preventDefault(); moveInstSel(-1); }
-                else if (e.key === 'Enter') {
-                    e.preventDefault();
-                    if (_instSelIdx >= 0 && _instFiltered[_instSelIdx]) {
-                        selectInstrument(_instFiltered[_instSelIdx]);
-                    }
-                }
-                else if (e.key === 'Escape') closeInstDropdown();
             });
 
             clearBtn.addEventListener('click', () => {
@@ -1346,8 +1746,7 @@
                 hidden.value = '';
                 clearBtn.style.display = 'none';
                 closeInstDropdown();
-                updateFilterBadge();
-                applyFiltersAndRender();
+                applyStatisticsFilters();
             });
 
             document.addEventListener('click', (e) => {
@@ -1388,378 +1787,52 @@
                     i.sector.toLowerCase().includes(q)
                 )
                 : _instrumentIndex;
-            _instFiltered = _instFiltered.slice(0, 60);
-            _instSelIdx = -1;
+            _instFiltered = _instFiltered.slice(0, 50);
 
             if (_instFiltered.length === 0) {
-                dropdown.innerHTML = `<div class="inst-item-empty">Nessun risultato</div>`;
+                dropdown.innerHTML = `<div style="padding:10px; color:var(--text-muted); text-align:center;">Nessun risultato</div>`;
             } else {
                 dropdown.innerHTML = [
-                    `<div class="inst-item" data-idx="-1">
-                        <div class="inst-item-main">
-                            <span class="inst-item-id">—</span>
-                            <span class="inst-item-desc">Tutti gli strumenti</span>
-                        </div>
+                    `<div class="inst-item" onclick="clearInstrumentSelection()">
+                        <div class="inst-item-main"><span class="inst-item-id">— Tutti gli strumenti —</span></div>
                      </div>`
-                ].concat(_instFiltered.map((inst, i) => {
-                    const sector = inst.sector
-                        ? `<span class="inst-badge inst-badge-sector">${getSectorLabel(inst.sector)}</span>` : '';
-                    return `
-                        <div class="inst-item" data-idx="${i}">
-                            <div class="inst-item-main">
-                                <span class="inst-item-id">${inst.id}</span>
-                                <span class="inst-item-desc">${inst.description}</span>
-                            </div>
-                        </div>`;
-                })).join('');
-
-                dropdown.querySelectorAll('.inst-item').forEach(el => {
-                    el.addEventListener('mousedown', (e) => {
-                        e.preventDefault();
-                        const idx = parseInt(el.dataset.idx);
-                        if (idx === -1) clearInstrumentSelection();
-                        else selectInstrument(_instFiltered[idx]);
-                    });
-                });
+                ].concat(_instFiltered.map((inst, i) => `
+                    <div class="inst-item" onclick="selectInstrumentByIndex(${i})">
+                        <div class="inst-item-main">
+                            <span class="inst-item-id">${inst.id}</span>
+                            <span class="inst-item-desc">${inst.description}</span>
+                        </div>
+                    </div>
+                `)).join('');
             }
-
             dropdown.style.display = 'block';
         }
 
-        function moveInstSel(dir) {
-            const dropdown = document.getElementById('instrument-search-dropdown');
-            const items = dropdown.querySelectorAll('.inst-item');
-            if (!items.length) return;
-            _instSelIdx = Math.max(-1, Math.min(_instFiltered.length - 1, _instSelIdx + dir));
-            items.forEach((el, i) => el.classList.toggle('active', i - 1 === _instSelIdx));
-            const activeEl = dropdown.querySelector('.inst-item.active');
-            if (activeEl) activeEl.scrollIntoView({ block: 'nearest' });
+        function selectInstrumentByIndex(idx) {
+            if (_instFiltered[idx]) selectInstrument(_instFiltered[idx]);
         }
 
         function selectInstrument(inst) {
-            const searchInput = document.getElementById('instrument-search-input');
-            const hidden = document.getElementById('instrument-filter');
-            const clearBtn = document.getElementById('instrument-search-clear');
-            searchInput.value = inst.description ? `${inst.id} — ${inst.description}` : inst.id;
-            hidden.value = inst.id;
-            clearBtn.style.display = 'block';
+            document.getElementById('instrument-search-input').value = inst.description ? `${inst.id} — ${inst.description}` : inst.id;
+            document.getElementById('instrument-filter').value = inst.id;
+            document.getElementById('instrument-search-clear').style.display = 'block';
             closeInstDropdown();
-            updateFilterBadge();
-            applyFiltersAndRender();
+            applyStatisticsFilters();
         }
 
         function clearInstrumentSelection() {
-            const searchInput = document.getElementById('instrument-search-input');
-            const hidden = document.getElementById('instrument-filter');
-            const clearBtn = document.getElementById('instrument-search-clear');
-            searchInput.value = '';
-            hidden.value = '';
-            clearBtn.style.display = 'none';
+            document.getElementById('instrument-search-input').value = '';
+            document.getElementById('instrument-filter').value = '';
+            document.getElementById('instrument-search-clear').style.display = 'none';
             closeInstDropdown();
-            updateFilterBadge();
-            applyFiltersAndRender();
+            applyStatisticsFilters();
         }
 
         function closeInstDropdown() {
             document.getElementById('instrument-search-dropdown').style.display = 'none';
-            _instSelIdx = -1;
         }
 
-        // ── FETCH ─────────────────────────────────────────────────────
-        async function fetchMarketData() {
-            const date_start = document.getElementById('date-start').value;
-            const date_end = document.getElementById('date-end').value;
-            const msgDiv = document.getElementById('message');
-            msgDiv.style.display = 'none';
-
-            // Show loading state
-            const cardList = document.getElementById('cardList');
-            cardList.innerHTML = `
-                <div class="loading-text">
-                    <div class="spinner"></div>
-                    Caricamento dati...
-                </div>
-            `;
-
-            try {
-                const h = await fetch(`${API_URL_MARKET}/health`);
-                await h.json();
-            } catch (e) { console.warn("Health check skipped:", e); }
-
-            const payload = {
-                username: credentials.username,
-                token: credentials.token,
-                currency: credentials.currency,
-                date_start,
-                date_end,
-                sector: _selectedSectors.length > 0 ? _selectedSectors : null
-            };
-
-            try {
-                const resp = await fetch(`${API_URL_MARKET}/getmarket`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-                const result = await resp.json();
-                if (result.status === 'ok') {
-                    if (result.date_creation) {
-                        const dateEl = document.getElementById('dateCreationDisplay');
-                        dateEl.textContent = '📅 ' + result.date_creation;
-                        dateEl.style.display = 'inline';
-                    }
-                    renderCards(result.data);
-                } else {
-                    showMessage(result.msg || 'Errore API', 'error');
-                    cardList.innerHTML = `
-                        <div class="empty-state">
-                            <i class="fas fa-exclamation-triangle"></i>
-                            <h3>Errore</h3>
-                            <p>${result.msg || 'Errore durante il caricamento'}</p>
-                        </div>
-                    `;
-                }
-            } catch (err) {
-                console.error("Fetch error:", err);
-                showMessage('Impossibile raggiungere il server. Verifica la connessione.', 'error');
-                cardList.innerHTML = `
-                    <div class="empty-state">
-                        <i class="fas fa-wifi-slash"></i>
-                        <h3>Connessione assente</h3>
-                        <p>Verifica la connessione di rete e riprova</p>
-                    </div>
-                `;
-            }
-        }
-
-        // ── LOAD STATIC DATA ──────────────────────────────────────────
-        async function loadStaticData() {
-            try {
-                const resp = await fetch('statistics.json.gz?_=' + Date.now());
-                if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-                const ds = new DecompressionStream('gzip');
-                const decompressed = resp.body.pipeThrough(ds);
-                const text = await new Response(decompressed).text();
-                const result = JSON.parse(text);
-                if (result.status === 'ok') {
-                    if (result.date_creation) {
-                        const dateEl = document.getElementById('dateCreationDisplay');
-                        dateEl.textContent = '📅 ' + result.date_creation;
-                        dateEl.style.display = 'inline';
-                    }
-                    renderCards(result.data);
-                } else {
-                    showMessage('statistics.json.gz non valido: ' + (result.msg || ''), 'warning');
-                }
-            } catch (err) {
-                console.warn('statistics.json.gz non disponibile:', err);
-                showMessage('Usa "Applica" per caricare i dati dal server.', 'info');
-                const cardList = document.getElementById('cardList');
-                cardList.innerHTML = `
-                    <div class="empty-state">
-                        <i class="fas fa-cloud-upload-alt"></i>
-                        <h3>Nessun dato locale</h3>
-                        <p>Premi "Applica" per caricare i dati dal server</p>
-                    </div>
-                `;
-            }
-        }
-
-        // ── RENDER ────────────────────────────────────────────────────
-        function renderCards(data) {
-            _lastData = data;
-            populateInstrumentSelector(data);
-            const items = document.getElementById('sectorSelectorItems');
-            if (items.children.length === 0 || _selectedSectors.length === 0) {
-                populateSectorSelector(data);
-            }
-            applyFiltersAndRender();
-        }
-
-        function applyFiltersAndRender() {
-            const data = _lastData;
-            const vMin = parseFloat(document.getElementById('value-min').value);
-            const vMax = parseFloat(document.getElementById('value-max').value);
-            const instrFilter = document.getElementById('instrument-filter').value.trim().toLowerCase();
-            const invFilter = document.getElementById('inversion-filter').checked;
-
-            const filtered = data.filter(row => {
-                const val = parseFloat(row.forza);
-                if (isNaN(val)) return false;
-                const abs = Math.abs(val);
-                if (!isNaN(vMin) && abs < vMin) return false;
-                if (!isNaN(vMax) && abs > vMax) return false;
-                if (instrFilter && (row.id_instrument || '').toLowerCase() !== instrFilter) return false;
-                if (_selectedSectors.length > 0 && !_selectedSectors.includes(row.sector)) return false;
-                if (invFilter) {
-                    const iVal = parseInt(row.invariance_days) || 0;
-                    if (val >= 0 || iVal >= 0) return false;
-                }
-                return true;
-            });
-
-            const cardList = document.getElementById('cardList');
-            const resultsHdr = document.getElementById('resultsHeader');
-
-            updateFilterBadge();
-
-            if (filtered.length === 0) {
-                cardList.innerHTML = `
-                    <div class="empty-state">
-                        <i class="fas fa-search"></i>
-                        <h3>Nessun risultato</h3>
-                        <p>Prova a modificare i filtri</p>
-                    </div>
-                `;
-                resultsHdr.style.display = 'none';
-                return;
-            }
-
-            resultsHdr.style.display = 'flex';
-            document.getElementById('resultsCount').textContent = filtered.length;
-
-            if (_currentView === 'cards') {
-                renderCardsView(filtered, cardList);
-            } else {
-                renderListView(filtered, cardList);
-            }
-        }
-
-        function renderCardsView(filtered, cardList) {
-            cardList.innerHTML = '';
-            filtered.forEach(row => {
-                const forzaVal = parseFloat(row.forza);
-                const isNegForza = forzaVal < 0;
-                const isPosForza = forzaVal > 0;
-
-                const invVal = parseInt(row.invariance_days) || 0;
-                const isNegInv = invVal < 0;
-
-                const fmtNum = (v, dec = 2) => {
-                    if (v === null || v === undefined || v === 'None') return '—';
-                    const n = parseFloat(v);
-                    return isNaN(n) ? '—' : n.toLocaleString('it-IT', { minimumFractionDigits: dec, maximumFractionDigits: dec });
-                };
-                const fmtCap = (v) => v ? String(v) : '—';
-
-                const hasFund = row.PE != null || row.EPS != null || row.market_capitalization != null;
-
-                const card = document.createElement('div');
-                card.className = 'stat-card';
-                card.innerHTML = `
-                    <div class="card-header">
-                        <div class="left">
-                            <span class="card-id" onclick="openPriceGraph('${row.id_instrument}')">${row.id_instrument}</span>
-                            <span class="card-desc" onclick="openInstrumentDetail('${row.id_instrument}')">${row.instrument_description || '—'}</span>
-                        </div>
-                        <span class="card-date">${row.date_start || ''}</span>
-                    </div>
-                    <div class="card-badges">
-                        <span class="badge badge-sector">${row.sector ? getSectorLabel(row.sector) : '—'}</span>
-                        <span class="badge badge-market">${row.code_market || '—'}</span>
-                        <span class="badge badge-currency">${row.currency || '—'}</span>
-                    </div>
-                    <div class="metrics-grid">
-                        <div class="metric-item">
-                            <span class="label">Forza</span>
-                            <span class="value ${isNegForza ? 'negative' : isPosForza ? 'positive' : ''}">${forzaVal}</span>
-                        </div>
-                        <div class="metric-item">
-                            <span class="label">Inv. Days</span>
-                            <span class="value ${isNegInv ? 'negative' : ''}">${invVal}</span>
-                        </div>
-                        <div class="metric-item">
-                            <span class="label">Close</span>
-                            <span class="value">${fmtNum(row['price@close'])}</span>
-                        </div>
-                        <div class="metric-item">
-                            <span class="label">Volume</span>
-                            <span class="value">${fmtNum(row['instrument@volume'], 0)}</span>
-                        </div>
-                    </div>
-                    ${hasFund ? `
-                    <div class="fundamentals">
-                        ${row.PE != null ? `<div class="fund-item"><span class="label">P/E</span><span class="value">${fmtNum(row.PE)}</span></div>` : ''}
-                        ${row.EPS != null ? `<div class="fund-item"><span class="label">EPS</span><span class="value">${fmtNum(row.EPS)}</span></div>` : ''}
-                        ${row.market_capitalization ? `<div class="fund-item"><span class="label">Cap</span><span class="value">${fmtCap(row.market_capitalization)}</span></div>` : ''}
-                    </div>` : ''}
-                `;
-                cardList.appendChild(card);
-            });
-        }
-
-        function renderListView(filtered, cardList) {
-            cardList.innerHTML = '';
-            const table = document.createElement('table');
-            table.style.cssText = `
-                width: 100%;
-                border-collapse: collapse;
-                font-size: 0.7rem;
-                background: var(--white);
-                border-radius: var(--radius);
-                overflow: hidden;
-                box-shadow: var(--shadow);
-            `;
-
-            const thead = document.createElement('thead');
-            thead.innerHTML = `
-                <tr style="background: var(--bg); border-bottom: 2px solid var(--border);">
-                    <th style="padding: 10px 12px; text-align:left; font-weight:700; color: var(--text-secondary); font-size:0.6rem; text-transform:uppercase; letter-spacing:0.5px;">Strumento</th>
-                    <th style="padding: 10px 12px; text-align:right; font-weight:700; color: var(--text-secondary); font-size:0.6rem; text-transform:uppercase; letter-spacing:0.5px;">Forza</th>
-                    <th style="padding: 10px 12px; text-align:right; font-weight:700; color: var(--text-secondary); font-size:0.6rem; text-transform:uppercase; letter-spacing:0.5px;">Inv.</th>
-                    <th style="padding: 10px 12px; text-align:right; font-weight:700; color: var(--text-secondary); font-size:0.6rem; text-transform:uppercase; letter-spacing:0.5px;">Close</th>
-                </tr>
-            `;
-            table.appendChild(thead);
-
-            const tbody = document.createElement('tbody');
-            filtered.forEach(row => {
-                const forzaVal = parseFloat(row.forza);
-                const isNegForza = forzaVal < 0;
-                const invVal = parseInt(row.invariance_days) || 0;
-                const isNegInv = invVal < 0;
-                const tr = document.createElement('tr');
-                tr.style.cssText = 'border-bottom: 1px solid var(--border); cursor:pointer;';
-                tr.onclick = () => openInstrumentDetail(row.id_instrument);
-                tr.innerHTML = `
-                    <td style="padding: 10px 12px;">
-                        <div style="display:flex; flex-direction:column; gap:1px;">
-                            <span style="font-weight:700; color: var(--text);">${row.id_instrument}</span>
-                            <span style="font-size:0.6rem; color: var(--text-secondary);">${row.instrument_description || ''}</span>
-                        </div>
-                    </td>
-                    <td style="padding: 10px 12px; text-align:right; font-weight:700; color: ${isNegForza ? 'var(--red)' : 'var(--green)'};">${forzaVal}</td>
-                    <td style="padding: 10px 12px; text-align:right; font-weight:700; color: ${isNegInv ? 'var(--red)' : ''};">${invVal}</td>
-                    <td style="padding: 10px 12px; text-align:right; font-weight:600;">${parseFloat(row['price@close']).toFixed(2)}</td>
-                `;
-                tbody.appendChild(tr);
-            });
-            table.appendChild(tbody);
-            cardList.appendChild(table);
-        }
-
-        // ── VIEW SWITCH ──
-        function setView(view) {
-            _currentView = view;
-            document.getElementById('viewCards').classList.toggle('active', view === 'cards');
-            document.getElementById('viewList').classList.toggle('active', view === 'list');
-            if (_lastData.length > 0) applyFiltersAndRender();
-        }
-
-        // ── HELPERS ───────────────────────────────────────────────────
-        function showMessage(text, type) {
-            const d = document.getElementById('message');
-            d.textContent = text;
-            d.className = `message ${type}`;
-            d.style.display = 'block';
-            // Auto-hide after 5 seconds
-            setTimeout(() => {
-                d.style.display = 'none';
-            }, 5000);
-        }
-
-        function closeDashboard() { window.close(); }
-
+        // ── NAVIGATION EXTERNAL LINKS ──
         function openPriceGraph(id) {
             const url = `dashboard-graph-prices.html?id_instrument=${id}&username=${credentials.username}&token=${credentials.token}&instrument_currency=${credentials.currency}`;
             window.open(url, '_blank');
@@ -1769,16 +1842,6 @@
             const url = `dashboard-detail-instrument.html?id_instrument=${id}&username=${credentials.username}&token=${credentials.token}&language=${credentials.language}&currency=${credentials.currency}`;
             window.open(url, '_blank');
         }
-
-        // ── INPUT LISTENERS FOR FILTER BADGE ──
-        document.addEventListener('DOMContentLoaded', () => {
-            document.getElementById('value-min').addEventListener('input', updateFilterBadge);
-            document.getElementById('value-max').addEventListener('input', updateFilterBadge);
-            document.getElementById('inversion-filter').addEventListener('change', updateFilterBadge);
-            document.getElementById('instrument-filter').addEventListener('change', updateFilterBadge);
-            // Filter badge initial update
-            setTimeout(updateFilterBadge, 100);
-        });
 
         window.onload = init;
     </script>
