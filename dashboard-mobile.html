@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>Finest Mobile Dashboard</title>
+    <title>Finest 1.0</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <script src="js/dashboard-shared.js"></script>
     <link rel="icon" type="image/png" href="images/icon-finest.png">
@@ -806,9 +806,21 @@
         }
 
         @keyframes rotatePhone {
-            0%, 10% { transform: rotate(90deg); }
-            40%, 60% { transform: rotate(0deg); }
-            90%, 100% { transform: rotate(90deg); }
+
+            0%,
+            10% {
+                transform: rotate(90deg);
+            }
+
+            40%,
+            60% {
+                transform: rotate(0deg);
+            }
+
+            90%,
+            100% {
+                transform: rotate(90deg);
+            }
         }
 
         .portrait-lock-overlay h2 {
@@ -997,6 +1009,129 @@
             flex-wrap: wrap;
         }
 
+        /* ── SECTION SUMMARY CARDS ── */
+        .section-summary-card {
+            background: var(--white);
+            border-radius: var(--radius);
+            padding: 16px;
+            margin: 12px 16px;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .summary-header-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+        }
+
+        .summary-title-badge {
+            font-size: 0.88rem;
+            font-weight: 800;
+            color: var(--text);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .summary-badge-sub {
+            font-size: 0.68rem;
+            font-weight: 700;
+            background: var(--accent-light);
+            color: var(--accent);
+            padding: 3px 8px;
+            border-radius: 12px;
+        }
+
+        .summary-metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            background: #f8fafc;
+            padding: 12px;
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border);
+        }
+
+        .summary-metric-item {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .summary-metric-item.span-2 {
+            grid-column: span 2;
+        }
+
+        .summary-metric-label {
+            font-size: 0.62rem;
+            font-weight: 700;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+        }
+
+        .summary-metric-value {
+            font-size: 0.95rem;
+            font-weight: 800;
+            color: var(--text);
+            font-variant-numeric: tabular-nums;
+        }
+
+        .summary-actions-bar {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 8px;
+            border-top: 1px solid var(--border);
+            padding-top: 10px;
+            margin-top: 2px;
+        }
+
+        .btn-summary-action {
+            background: #f1f5f9;
+            color: var(--text);
+            border: 1px solid var(--border);
+            padding: 8px 14px;
+            border-radius: var(--radius-sm);
+            font-size: 0.78rem;
+            font-weight: 700;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-summary-action:active {
+            transform: scale(0.97);
+        }
+
+        .btn-summary-action.active {
+            background: var(--accent);
+            color: #ffffff;
+            border-color: var(--accent);
+        }
+
+        .btn-summary-action.btn-refresh {
+            background: #e0f2fe;
+            color: #0284c7;
+            border-color: #bae6fd;
+        }
+
+        .details-wrapper {
+            display: none;
+            flex-direction: column;
+        }
+
+        .details-wrapper.open {
+            display: flex;
+        }
+
         /* Dark mode */
         @media (prefers-color-scheme: dark) {
             :root {
@@ -1053,6 +1188,28 @@
             .card-metric-value {
                 color: #f3f4f6;
             }
+
+            .section-summary-card {
+                background: #1e1e32;
+                border-color: #2a2a44;
+            }
+
+            .summary-metrics-grid {
+                background: #14142a;
+                border-color: #2a2a44;
+            }
+
+            .btn-summary-action {
+                background: #2a2a44;
+                color: #e8e8f0;
+                border-color: #3b3b5c;
+            }
+
+            .btn-summary-action.btn-refresh {
+                background: #0369a1;
+                color: #e0f2fe;
+                border-color: #0284c7;
+            }
         }
     </style>
 </head>
@@ -1066,7 +1223,8 @@
             <i class="fas fa-redo lock-rotate-icon"></i>
         </div>
         <h2>Modalità Verticale Richiesta</h2>
-        <p>Per una fruizione ottimale, la rotazione dello schermo è disabilitata. Ruota il tuo smartphone in posizione verticale.</p>
+        <p>Per una fruizione ottimale, la rotazione dello schermo è disabilitata. Ruota il tuo smartphone in posizione
+            verticale.</p>
     </div>
 
     <!-- TOP HEADER -->
@@ -1088,73 +1246,174 @@
 
     <!-- ── TAB 1: PORTAFOGLIO ── -->
     <section id="view-portfolio" class="tab-section active">
-        <div class="filter-panel" style="margin: 12px 16px 0;">
-            <div class="table-controls" style="border-radius: var(--radius); border: 1px solid var(--border);">
-                <div style="display:flex; align-items:center; gap:8px;">
-                    <label for="portfolio-grouping">Raggruppa:</label>
-                    <select id="portfolio-grouping" onchange="onPortfolioGroupingChange()">
-                        <option value="">Nessun raggruppamento</option>
-                        <option value="sector">Settore</option>
-                        <option value="instrument_type">Tipo Strumento</option>
-                        <option value="code_market">Mercato</option>
-                    </select>
+        <!-- Summary Card with totals -->
+        <div class="section-summary-card">
+            <div class="summary-header-row">
+                <span class="summary-title-badge">
+                    <i class="fas fa-briefcase" style="color:var(--accent);"></i> Portafoglio
+                </span>
+                <span class="summary-badge-sub">Titoli con quantità</span>
+            </div>
+            <div class="summary-metrics-grid">
+                <div class="summary-metric-item">
+                    <span class="summary-metric-label">Costo Totale</span>
+                    <span class="summary-metric-value" id="pf-sum-cost">-</span>
                 </div>
-                <div style="display:flex; align-items:center; gap:6px;">
-                    <input type="checkbox" id="expand-portfolio-details" onchange="renderPortfolioTable()">
-                    <label for="expand-portfolio-details">Espandi</label>
+                <div class="summary-metric-item">
+                    <span class="summary-metric-label">Controvalore Totale</span>
+                    <span class="summary-metric-value" id="pf-sum-ctv">-</span>
+                </div>
+                <div class="summary-metric-item">
+                    <span class="summary-metric-label">Totale M/P</span>
+                    <span class="summary-metric-value" id="pf-sum-mp">-</span>
+                </div>
+                <div class="summary-metric-item">
+                    <span class="summary-metric-label">Titoli Presenti</span>
+                    <span class="summary-metric-value" id="pf-sum-count">0</span>
                 </div>
             </div>
-        </div>
-        
-        <div style="margin: 10px 16px 0; display:flex; align-items:center; justify-content:space-between; font-size:0.72rem; color:var(--text-secondary);">
-            <span style="display:inline-flex; align-items:center; gap:6px; background:var(--white); padding:4px 10px; border-radius:20px; border:1px solid var(--border); font-weight:600;">
-                <i class="fas fa-filter" style="color:var(--accent);"></i> Portafoglio: solo saldi a zero
-            </span>
-            <span id="portfolio-count-badge" style="font-weight:700;">0 elementi</span>
+            <div class="summary-actions-bar">
+                <button class="btn-summary-action" id="btn-toggle-portfolio-details" onclick="togglePortfolioDetails()">
+                    <i class="fas fa-list"></i>
+                    <span id="label-portfolio-details">Mostra Dettagli</span>
+                </button>
+            </div>
         </div>
 
-        <div id="portfolio-card-list" class="mobile-card-list">
-            <div class="loading-text">
-                <div class="spinner"></div>Caricamento Portafoglio...
+        <!-- Details Wrapper -->
+        <div id="portfolio-details-wrapper" class="details-wrapper">
+            <div class="filter-panel" style="margin: 0 16px 8px;">
+                <div class="table-controls" style="border-radius: var(--radius); border: 1px solid var(--border);">
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        <label for="portfolio-grouping">Raggruppa:</label>
+                        <select id="portfolio-grouping" onchange="onPortfolioGroupingChange()">
+                            <option value="">Nessun raggruppamento</option>
+                            <option value="sector">Settore</option>
+                            <option value="instrument_type">Tipo Strumento</option>
+                            <option value="code_market">Mercato</option>
+                        </select>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:6px;">
+                        <input type="checkbox" id="expand-portfolio-details" onchange="renderPortfolioTable()" checked>
+                        <label for="expand-portfolio-details">Espandi</label>
+                    </div>
+                </div>
+            </div>
+
+            <div id="portfolio-card-list" class="mobile-card-list">
+                <div class="loading-text">
+                    <div class="spinner"></div>Caricamento Portafoglio...
+                </div>
             </div>
         </div>
     </section>
 
     <!-- ── TAB 2: RENDIMENTO ── -->
     <section id="view-yield" class="tab-section">
-        <div class="filter-panel" style="margin: 12px 16px 0;">
-            <div class="table-controls" style="border-radius: var(--radius); border: 1px solid var(--border);">
-                <div style="display:flex; align-items:center; gap:8px;">
-                    <label for="yield-grouping">Raggruppa:</label>
-                    <select id="yield-grouping" onchange="onYieldGroupingChange()">
-                        <option value="">Nessun raggruppamento</option>
-                        <option value="sector">Settore</option>
-                        <option value="instrument_type">Tipo Strumento</option>
-                        <option value="code_market">Mercato</option>
-                    </select>
+        <!-- Summary Card with totals -->
+        <div class="section-summary-card">
+            <div class="summary-header-row">
+                <span class="summary-title-badge">
+                    <i class="fas fa-chart-line" style="color:var(--green);"></i> Rendimento
+                </span>
+                <span class="summary-badge-sub" style="background:var(--green-light); color:var(--green);">Riepilogo
+                    Totali</span>
+            </div>
+            <div class="summary-metrics-grid">
+                <div class="summary-metric-item">
+                    <span class="summary-metric-label">Totale RISTOT</span>
+                    <span class="summary-metric-value" id="yield-sum-ristot">-</span>
                 </div>
-                <div style="display:flex; align-items:center; gap:6px;">
-                    <input type="checkbox" id="expand-yield-details" onchange="renderYieldTable()">
-                    <label for="expand-yield-details">Espandi</label>
+                <div class="summary-metric-item">
+                    <span class="summary-metric-label">Totale GIACMED</span>
+                    <span class="summary-metric-value" id="yield-sum-giacmed">-</span>
                 </div>
+                <div class="summary-metric-item">
+                    <span class="summary-metric-label">Rendimento Media %</span>
+                    <span class="summary-metric-value" id="yield-sum-perc">-</span>
+                </div>
+                <div class="summary-metric-item">
+                    <span class="summary-metric-label">Strumenti</span>
+                    <span class="summary-metric-value" id="yield-sum-count">0</span>
+                </div>
+            </div>
+            <div class="summary-actions-bar">
+                <button class="btn-summary-action" id="btn-toggle-yield-details" onclick="toggleYieldDetails()">
+                    <i class="fas fa-list"></i>
+                    <span id="label-yield-details">Mostra Dettagli</span>
+                </button>
             </div>
         </div>
 
-        <div style="margin: 10px 16px 0; display:flex; align-items:center; justify-content:space-between; font-size:0.72rem; color:var(--text-secondary);">
-            <span style="font-weight:600;">Rendimento Portafoglio</span>
-            <span id="yield-count-badge" style="font-weight:700;">0 elementi</span>
-        </div>
+        <!-- Details Wrapper -->
+        <div id="yield-details-wrapper" class="details-wrapper">
+            <div class="filter-panel" style="margin: 0 16px 8px;">
+                <div class="table-controls" style="border-radius: var(--radius); border: 1px solid var(--border);">
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        <label for="yield-grouping">Raggruppa:</label>
+                        <select id="yield-grouping" onchange="onYieldGroupingChange()">
+                            <option value="">Nessun raggruppamento</option>
+                            <option value="sector">Settore</option>
+                            <option value="instrument_type">Tipo Strumento</option>
+                            <option value="code_market">Mercato</option>
+                        </select>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:6px;">
+                        <input type="checkbox" id="expand-yield-details" onchange="renderYieldTable()" checked>
+                        <label for="expand-yield-details">Espandi</label>
+                    </div>
+                </div>
+            </div>
 
-        <div id="yield-card-list" class="mobile-card-list">
-            <div class="loading-text">
-                <div class="spinner"></div>Caricamento Rendimento...
+            <div id="yield-card-list" class="mobile-card-list">
+                <div class="loading-text">
+                    <div class="spinner"></div>Caricamento Rendimento...
+                </div>
             </div>
         </div>
     </section>
 
     <!-- ── TAB 3: MERCATO ── -->
     <section id="view-market" class="tab-section">
-        <div class="filter-panel">
+        <!-- Summary Card with totals & refresh button -->
+        <div class="section-summary-card">
+            <div class="summary-header-row">
+                <span class="summary-title-badge">
+                    <i class="fas fa-store" style="color:var(--orange);"></i> Mercato
+                </span>
+                <span class="summary-badge-sub" style="background:var(--orange-light); color:var(--orange);">Analisi
+                    Trend</span>
+            </div>
+            <div class="summary-metrics-grid">
+                <div class="summary-metric-item">
+                    <span class="summary-metric-label">Strumenti Totali</span>
+                    <span class="summary-metric-value" id="mkt-sum-count">0</span>
+                </div>
+                <div class="summary-metric-item">
+                    <span class="summary-metric-label">Segnali Positivi</span>
+                    <span class="summary-metric-value val-pos" id="mkt-sum-pos">0</span>
+                </div>
+                <div class="summary-metric-item">
+                    <span class="summary-metric-label">Segnali Negativi</span>
+                    <span class="summary-metric-value val-neg" id="mkt-sum-neg">0</span>
+                </div>
+                <div class="summary-metric-item">
+                    <span class="summary-metric-label">Forza Media</span>
+                    <span class="summary-metric-value" id="mkt-sum-forza">-</span>
+                </div>
+            </div>
+            <div class="summary-actions-bar">
+                <button class="btn-summary-action btn-refresh" onclick="fetchMarketSectionData()">
+                    <i class="fas fa-sync-alt"></i> Aggiorna
+                </button>
+                <button class="btn-summary-action" id="btn-toggle-market-details" onclick="toggleMarketDetails()">
+                    <i class="fas fa-list"></i>
+                    <span id="label-market-details">Mostra Dettagli</span>
+                </button>
+            </div>
+        </div>
+
+        <div class="filter-panel" style="margin: 0 16px 8px;">
             <button class="filter-toggle" onclick="toggleMarketFilters()">
                 <span class="left"><i class="fas fa-sliders-h"></i> <span>Filtri Mercato</span></span>
                 <span class="arrow">▾</span>
@@ -1171,33 +1430,17 @@
                     </div>
                 </div>
                 <button class="apply-btn" onclick="fetchMarketSectionData()">
-                    <i class="fas fa-sync-alt"></i> Aggiorna Mercato
+                    <i class="fas fa-sync-alt"></i> Aggiorna Filtri Mercato
                 </button>
             </div>
         </div>
 
-        <div class="table-card">
-            <div class="table-responsive">
-                <table class="mobile-table">
-                    <thead>
-                        <tr>
-                            <th class="col-row-num">#</th>
-                            <th>Strumento</th>
-                            <th>Descrizione</th>
-                            <th>Settore</th>
-                            <th class="num-val">Forza</th>
-                            <th class="num-val">Invarianza</th>
-                            <th>Mercato</th>
-                        </tr>
-                    </thead>
-                    <tbody id="market-table-body">
-                        <tr>
-                            <td colspan="7" class="loading-text">
-                                <div class="spinner"></div>Caricamento Mercato...
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
+        <!-- Details Wrapper for Market -->
+        <div id="market-details-wrapper" class="details-wrapper">
+            <div id="market-card-list" class="mobile-card-list">
+                <div class="loading-text">
+                    <div class="spinner"></div>Caricamento Mercato...
+                </div>
             </div>
         </div>
     </section>
@@ -1293,8 +1536,10 @@
         <div class="card-list" id="cardList">
             <div class="loading-text" style="padding: 30px 20px;">
                 <i class="fas fa-chart-pie" style="font-size: 36px; color: var(--accent); margin-bottom: 12px;"></i>
-                <div style="font-size: 0.92rem; font-weight: 700; color: var(--text); margin-bottom: 4px;">Calcolo Statistica</div>
-                <div style="font-size: 0.78rem; color: var(--text-secondary);">Imposta i filtri desiderati e premi <strong>"Applica"</strong> per eseguire la statistica.</div>
+                <div style="font-size: 0.92rem; font-weight: 700; color: var(--text); margin-bottom: 4px;">Calcolo
+                    Statistica</div>
+                <div style="font-size: 0.78rem; color: var(--text-secondary);">Imposta i filtri desiderati e premi
+                    <strong>"Applica"</strong> per eseguire la statistica.</div>
             </div>
         </div>
     </section>
@@ -1357,16 +1602,68 @@
             lockOrientationPortrait();
         });
 
-        // Helper to check if a portfolio record has zero balance
-        function isZeroBalance(item) {
+        let _portfolioDetailsOpen = false;
+        let _yieldDetailsOpen = false;
+        let _marketDetailsOpen = false;
+
+        function togglePortfolioDetails() {
+            _portfolioDetailsOpen = !_portfolioDetailsOpen;
+            const wrapper = document.getElementById('portfolio-details-wrapper');
+            const btn = document.getElementById('btn-toggle-portfolio-details');
+            const lbl = document.getElementById('label-portfolio-details');
+            if (_portfolioDetailsOpen) {
+                wrapper.classList.add('open');
+                btn.classList.add('active');
+                lbl.textContent = 'Nascondi Dettagli';
+            } else {
+                wrapper.classList.remove('open');
+                btn.classList.remove('active');
+                lbl.textContent = 'Mostra Dettagli';
+            }
+        }
+
+        function toggleYieldDetails() {
+            _yieldDetailsOpen = !_yieldDetailsOpen;
+            const wrapper = document.getElementById('yield-details-wrapper');
+            const btn = document.getElementById('btn-toggle-yield-details');
+            const lbl = document.getElementById('label-yield-details');
+            if (_yieldDetailsOpen) {
+                wrapper.classList.add('open');
+                btn.classList.add('active');
+                lbl.textContent = 'Nascondi Dettagli';
+            } else {
+                wrapper.classList.remove('open');
+                btn.classList.remove('active');
+                lbl.textContent = 'Mostra Dettagli';
+            }
+        }
+
+        function toggleMarketDetails() {
+            _marketDetailsOpen = !_marketDetailsOpen;
+            const wrapper = document.getElementById('market-details-wrapper');
+            const btn = document.getElementById('btn-toggle-market-details');
+            const lbl = document.getElementById('label-market-details');
+            if (_marketDetailsOpen) {
+                wrapper.classList.add('open');
+                btn.classList.add('active');
+                lbl.textContent = 'Nascondi Dettagli';
+            } else {
+                wrapper.classList.remove('open');
+                btn.classList.remove('active');
+                lbl.textContent = 'Mostra Dettagli';
+            }
+        }
+
+        // Helper to check if a portfolio record has positive/non-zero quantity (REQUIREMENT 1)
+        function hasQuantity(item) {
             if (!item) return false;
             const q = item.quantity;
             if (q === undefined || q === null || q === '') {
                 const ctv = parseFloat(item.CTVMKTTQ || item.mp || item.controvalore || 0);
-                return ctv === 0;
+                return ctv > 0;
             }
             const numQ = parseFloat(String(q).replace(',', '.'));
-            return !isNaN(numQ) && Math.abs(numQ) < 0.000001;
+            return !isNaN(numQ) && Math.abs(numQ) > 0.000001;
         }
 
         // ── INIT ──────────────────────────────────────────────────────
@@ -1445,7 +1742,6 @@
             if (tabName === 'portfolio' && portfolioRawData.length === 0) loadPortfolioData();
             if (tabName === 'yield' && yieldRawData.length === 0) loadYieldData();
             if (tabName === 'market' && marketRawData.length === 0) fetchMarketSectionData();
-            // Statistica is NOT loaded automatically on tab switch
         }
 
         function logout() {
@@ -1511,28 +1807,46 @@
             const grouping = document.getElementById('portfolio-grouping').value;
             const isExpanded = document.getElementById('expand-portfolio-details').checked;
 
-            if (!portfolioRawData || portfolioRawData.length === 0) {
-                container.innerHTML = `<div class="loading-text">Nessun elemento in portafoglio</div>`;
-                const countBadge = document.getElementById('portfolio-count-badge');
-                if (countBadge) countBadge.textContent = '0 elementi';
-                return;
-            }
-
-            // REQUIREMENT 2: Filter portfolio records to display ONLY zero-balance items
-            const filteredData = portfolioRawData.filter(item => isZeroBalance(item));
-
-            const countBadge = document.getElementById('portfolio-count-badge');
-            if (countBadge) countBadge.textContent = `${filteredData.length} elementi`;
-
-            if (filteredData.length === 0) {
-                container.innerHTML = `<div class="loading-text">Nessun record con saldo a zero presente in portafoglio</div>`;
-                return;
-            }
-
             const fmtNum = (v) => {
                 if (v === null || v === undefined || isNaN(v)) return '-';
                 return parseFloat(v).toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
             };
+
+            // REQUIREMENT 1: Filter portfolio records to display ONLY titles with quantity (> 0)
+            const filteredData = (portfolioRawData || []).filter(item => hasQuantity(item));
+
+            // REQUIREMENT 2: Calculate summary totals (Costo, Controvalore, M/P)
+            let totCosto = 0;
+            let totCtv = 0;
+            let totMp = 0;
+
+            filteredData.forEach(item => {
+                totCosto += parseFloat(item['$cost_amount_curr'] || item['cost_amount'] || item['quantity'] || 0) || 0;
+                totCtv += parseFloat(item['CTVMKTTQ'] || item['mp'] || item['controvalore'] || 0) || 0;
+                totMp += parseFloat(item['M/P'] || item['Minus/Plus'] || item['valutazioni_ctv_minusplus'] || 0) || 0;
+            });
+
+            let totMpPerc = (totCosto !== 0) ? (totMp / Math.abs(totCosto)) * 100 : null;
+
+            // Populate Portfolio Summary Card
+            const elCost = document.getElementById('pf-sum-cost');
+            const elCtv = document.getElementById('pf-sum-ctv');
+            const elMp = document.getElementById('pf-sum-mp');
+            const elCount = document.getElementById('pf-sum-count');
+
+            if (elCost) elCost.textContent = `€ ${fmtNum(totCosto)}`;
+            if (elCtv) elCtv.textContent = `€ ${fmtNum(totCtv)}`;
+            if (elMp) {
+                const mpClass = totMp >= 0 ? 'val-pos' : 'val-neg';
+                const percText = totMpPerc !== null ? ` (${totMpPerc >= 0 ? '+' : ''}${totMpPerc.toFixed(2)}%)` : '';
+                elMp.innerHTML = `<span class="${mpClass}">€ ${fmtNum(totMp)}${percText}</span>`;
+            }
+            if (elCount) elCount.textContent = `${filteredData.length} titoli`;
+
+            if (filteredData.length === 0) {
+                container.innerHTML = `<div class="loading-text">Nessun titolo con quantità presente in portafoglio</div>`;
+                return;
+            }
 
             let rowCount = 0;
             let html = '';
@@ -1563,7 +1877,6 @@
                                 <span class="card-inst-desc" onclick="openInstrumentDetail('${instCode}')">${instDesc}</span>
                             </div>
                         </div>
-                        <span class="zero-balance-badge">Saldo 0</span>
                     </div>
                     <div class="card-metrics-grid">
                         <div class="card-metric-cell">
@@ -1675,20 +1988,42 @@
             const grouping = document.getElementById('yield-grouping').value;
             const isExpanded = document.getElementById('expand-yield-details').checked;
 
-            if (!yieldRawData || yieldRawData.length === 0) {
-                container.innerHTML = `<div class="loading-text">Nessun dato di rendimento disponibile</div>`;
-                const countBadge = document.getElementById('yield-count-badge');
-                if (countBadge) countBadge.textContent = '0 elementi';
-                return;
-            }
-
-            const countBadge = document.getElementById('yield-count-badge');
-            if (countBadge) countBadge.textContent = `${yieldRawData.length} elementi`;
-
             const fmtNum = (v) => {
                 if (v === null || v === undefined || isNaN(v)) return '-';
                 return parseFloat(v).toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
             };
+
+            // Calculate Totals for Yield Summary
+            let totRistot = 0;
+            let totGiacmed = 0;
+            (yieldRawData || []).forEach(item => {
+                totRistot += parseFloat(item.RISTOT || 0);
+                totGiacmed += parseFloat(item.GIACMED || 0);
+            });
+
+            let totYieldPerc = totGiacmed !== 0 ? (totRistot / totGiacmed) * 100 : null;
+
+            // Populate Yield Summary Card UI
+            const elRistot = document.getElementById('yield-sum-ristot');
+            const elGiacmed = document.getElementById('yield-sum-giacmed');
+            const elPerc = document.getElementById('yield-sum-perc');
+            const elCount = document.getElementById('yield-sum-count');
+
+            if (elRistot) {
+                const rClass = totRistot >= 0 ? 'val-pos' : 'val-neg';
+                elRistot.innerHTML = `<span class="${rClass}">€ ${fmtNum(totRistot)}</span>`;
+            }
+            if (elGiacmed) elGiacmed.textContent = `€ ${fmtNum(totGiacmed)}`;
+            if (elPerc) {
+                const pClass = totYieldPerc >= 0 ? 'val-pos' : 'val-neg';
+                elPerc.innerHTML = totYieldPerc !== null ? `<span class="${pClass}">${totYieldPerc >= 0 ? '+' : ''}${totYieldPerc.toFixed(2)}%</span>` : '-';
+            }
+            if (elCount) elCount.textContent = `${yieldRawData.length} strumenti`;
+
+            if (!yieldRawData || yieldRawData.length === 0) {
+                container.innerHTML = `<div class="loading-text">Nessun dato di rendimento disponibile</div>`;
+                return;
+            }
 
             let rowCount = 0;
             let html = '';
@@ -1785,8 +2120,8 @@
         }
 
         async function fetchMarketSectionData() {
-            const tbody = document.getElementById('market-table-body');
-            tbody.innerHTML = `<tr><td colspan="7" class="loading-text"><div class="spinner"></div>Caricamento dati Mercato...</td></tr>`;
+            const container = document.getElementById('market-card-list');
+            if (container) container.innerHTML = `<div class="loading-text"><div class="spinner"></div>Caricamento dati Mercato...</div>`;
 
             const date_start = document.getElementById('mkt-date-start').value;
             const date_end = document.getElementById('mkt-date-end').value;
@@ -1810,18 +2145,50 @@
                     marketRawData = result.data || [];
                     renderMarketTable();
                 } else {
-                    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:var(--red); padding:20px;">${result.msg || 'Errore mercato'}</td></tr>`;
+                    if (container) container.innerHTML = `<div class="loading-text" style="color:var(--red); padding:20px;">${result.msg || 'Errore mercato'}</div>`;
                 }
             } catch (err) {
                 console.error("Market fetch error:", err);
-                tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:var(--red); padding:20px;">Impossibile collegarsi al server mercato</td></tr>`;
+                if (container) container.innerHTML = `<div class="loading-text" style="color:var(--red); padding:20px;">Impossibile collegarsi al server mercato</div>`;
             }
         }
 
         function renderMarketTable() {
-            const tbody = document.getElementById('market-table-body');
-            if (marketRawData.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:20px; color:var(--text-muted);">Nessun dato di mercato presente</td></tr>`;
+            const container = document.getElementById('market-card-list');
+
+            let posCount = 0;
+            let negCount = 0;
+            let sumForza = 0;
+            let validForzaCount = 0;
+
+            (marketRawData || []).forEach(row => {
+                const f = parseFloat(row.forza);
+                if (!isNaN(f)) {
+                    sumForza += f;
+                    validForzaCount++;
+                    if (f >= 0) posCount++; else negCount++;
+                }
+            });
+
+            const avgForza = validForzaCount > 0 ? (sumForza / validForzaCount).toFixed(2) : '-';
+
+            // Populate Market Summary Card UI
+            const elCount = document.getElementById('mkt-sum-count');
+            const elPos = document.getElementById('mkt-sum-pos');
+            const elNeg = document.getElementById('mkt-sum-neg');
+            const elAvgForza = document.getElementById('mkt-sum-forza');
+
+            if (elCount) elCount.textContent = `${marketRawData.length} strumenti`;
+            if (elPos) elPos.textContent = `${posCount}`;
+            if (elNeg) elNeg.textContent = `${negCount}`;
+            if (elAvgForza) {
+                const fVal = parseFloat(avgForza);
+                const fClass = !isNaN(fVal) ? (fVal >= 0 ? 'val-pos' : 'val-neg') : '';
+                elAvgForza.innerHTML = `<span class="${fClass}">${avgForza}</span>`;
+            }
+
+            if (!marketRawData || marketRawData.length === 0) {
+                if (container) container.innerHTML = `<div class="loading-text">Nessun dato di mercato presente</div>`;
                 return;
             }
 
@@ -1832,22 +2199,43 @@
                 rowCount++;
                 const forzaVal = parseFloat(row.forza);
                 const isNegForza = forzaVal < 0;
-
                 const invVal = parseInt(row.invariance_days) || 0;
                 const isNegInv = invVal < 0;
+                const sectorLabel = row.sector ? getSectorLabel(row.sector) : '-';
 
-                html += `<tr>
-                    <td class="col-row-num">${rowCount}</td>
-                    <td><a onclick="openPriceGraph('${row.id_instrument}')">${row.id_instrument}</a></td>
-                    <td><a onclick="openInstrumentDetail('${row.id_instrument}')">${row.instrument_description || '-'}</a></td>
-                    <td>${row.sector ? getSectorLabel(row.sector) : '-'}</td>
-                    <td class="num-val ${isNegForza ? 'val-neg' : 'val-pos'}">${row.forza}</td>
-                    <td class="num-val ${isNegInv ? 'val-neg' : ''}">${invVal}</td>
-                    <td>${row.code_market || '-'}</td>
-                </tr>`;
+                html += `
+                <div class="mobile-data-card">
+                    <div class="card-top-bar">
+                        <div class="card-title-box">
+                            <span class="row-index-badge">#${rowCount}</span>
+                            <div class="card-inst-info">
+                                <span class="card-inst-code" onclick="openPriceGraph('${row.id_instrument}')">${row.id_instrument}</span>
+                                <span class="card-inst-desc" onclick="openInstrumentDetail('${row.id_instrument}')">${row.instrument_description || '-'}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-metrics-grid">
+                        <div class="card-metric-cell">
+                            <span class="card-metric-label">Settore</span>
+                            <span class="card-metric-value" style="font-size:0.75rem;">${sectorLabel}</span>
+                        </div>
+                        <div class="card-metric-cell">
+                            <span class="card-metric-label">Mercato</span>
+                            <span class="card-metric-value" style="font-size:0.75rem;">${row.code_market || '-'}</span>
+                        </div>
+                        <div class="card-metric-cell">
+                            <span class="card-metric-label">Forza</span>
+                            <span class="card-metric-value ${isNegForza ? 'val-neg' : 'val-pos'}">${row.forza || '-'}</span>
+                        </div>
+                        <div class="card-metric-cell">
+                            <span class="card-metric-label">Invarianza</span>
+                            <span class="card-metric-value ${isNegInv ? 'val-neg' : ''}">${invVal} gg</span>
+                        </div>
+                    </div>
+                </div>`;
             });
 
-            tbody.innerHTML = html;
+            if (container) container.innerHTML = html;
         }
 
         // ── 4. STATISTICA SECTION (WITH MARKET FILTER) ───────────────
@@ -1973,7 +2361,7 @@
             _statisticsRequested = true;
             const cardList = document.getElementById('cardList');
             cardList.innerHTML = `<div class="loading-text"><div class="spinner"></div>Elaborazione statistica in corso...</div>`;
-            
+
             if (statisticsRawData.length === 0) {
                 await loadStaticStatisticsData();
             } else {
