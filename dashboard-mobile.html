@@ -1865,7 +1865,7 @@
                 const instCode = item.id_instrument || item.Ticker || '-';
                 const instDesc = item.instrument_description || item.description || '-';
                 const qtyVal = item.quantity !== undefined && item.quantity !== null ? item.quantity : 0;
-                const pesoVal = item['int.weight.percent'] ? parseFloat(item['int.weight.percent']).toFixed(2) + '%' : '-';
+                const pesoVal = (totCtv > 0 && !isNaN(ctvVal)) ? ((ctvVal / totCtv) * 100).toFixed(2) + '%' : '-';
 
                 return `
                 <div class="mobile-data-card">
@@ -1919,7 +1919,7 @@
                     const items = groups[group];
                     const groupCost = items.reduce((sum, i) => sum + (parseFloat(i['$cost_amount_curr'] || i['cost_amount'] || 0) || 0), 0);
                     const groupCtv = items.reduce((sum, i) => sum + (parseFloat(i['CTVMKTTQ'] || i['mp'] || 0) || 0), 0);
-                    const groupName = getTranslation(group) || group;
+                    const groupName = translateGroupLabel(group, grouping);
 
                     html += `
                     <div class="mobile-group-card">
