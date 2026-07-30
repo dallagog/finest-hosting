@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Statistics Graph 0.2</title>
+    <title>Statistics Graph 0.3</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <script src="https://d3js.org/d3.v7.min.js"></script>
     <link rel="icon" type="image/png" href="images/icon-finest.png">
@@ -44,6 +44,19 @@
             gap: 12px;
             min-width: fit-content;
             /* Permette al container di espandersi oltre il viewport */
+        }
+
+        /* ---- STICKY CONTROLS WRAPPER ---- */
+        .sticky-controls {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            background: var(--bg-color);
+            padding-bottom: 8px;
+            flex-shrink: 0;
         }
 
         /* ---- HEADER ---- */
@@ -144,6 +157,92 @@
             font-family: inherit;
             font-weight: bold;
             font-size: 11px;
+        }
+
+        /* ---- RANGE FILTERS ---- */
+        .range-filters {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+            padding: 12px 20px;
+            background: var(--glass-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            flex-shrink: 0;
+            min-width: fit-content;
+        }
+
+        .range-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .range-group label {
+            font-size: 9px;
+            font-weight: 600;
+            color: #555;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            min-width: 40px;
+        }
+
+        .range-group input[type="range"] {
+            width: 120px;
+            height: 5px;
+            border-radius: 5px;
+            background: #ddd;
+            outline: none;
+            -webkit-appearance: none;
+            appearance: none;
+            cursor: pointer;
+        }
+
+        .range-group input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #000;
+            cursor: pointer;
+            box-shadow: 0 0 4px rgba(0, 0, 0, 0.3);
+            transition: all 0.2s;
+        }
+
+        .range-group input[type="range"]::-webkit-slider-thumb:hover {
+            background: #333;
+            box-shadow: 0 0 6px rgba(0, 0, 0, 0.5);
+        }
+
+        .range-group input[type="range"]::-moz-range-thumb {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #000;
+            cursor: pointer;
+            border: none;
+            box-shadow: 0 0 4px rgba(0, 0, 0, 0.3);
+            transition: all 0.2s;
+        }
+
+        .range-group input[type="range"]::-moz-range-thumb:hover {
+            background: #333;
+            box-shadow: 0 0 6px rgba(0, 0, 0, 0.5);
+        }
+
+        .range-value {
+            font-size: 10px;
+            font-weight: 600;
+            color: #000;
+            background: #f0f0f0;
+            padding: 4px 8px;
+            border-radius: 3px;
+            min-width: 50px;
+            text-align: center;
+            border: 1px solid #ddd;
         }
 
         /* ---- DATE FILTERS ---- */
@@ -648,43 +747,80 @@
 <body>
     <div class="main-container">
 
-        <!-- HEADER -->
-        <div class="header-bar">
-            <div class="user-info-left">
-                <div><strong>Utente:</strong> <span id="usernameDisplay">-</span></div>
-                <div><strong>Valuta:</strong> <span id="currencyDisplay">-</span></div>
-                <div id="date-creation-container" style="display:none;">
-                    <strong>Dati del:</strong> <span id="dateCreationDisplay">-</span>
+        <!-- STICKY CONTROLS -->
+        <div class="sticky-controls">
+
+            <!-- HEADER -->
+            <div class="header-bar">
+                <div class="user-info-left">
+                    <div><strong>Utente:</strong> <span id="usernameDisplay">-</span></div>
+                    <div><strong>Valuta:</strong> <span id="currencyDisplay">-</span></div>
+                    <div id="date-creation-container" style="display:none;">
+                        <strong>Dati del:</strong> <span id="dateCreationDisplay">-</span>
+                    </div>
+                </div>
+                <h1>📊 Statistics Timeline</h1>
+                <div class="header-actions">
+                    <!-- Date filters -->
+                    <div class="date-filters">
+                        <label>Da</label>
+                        <input type="date" id="dateStart" onchange="onDateFilterChange()">
+                        <span class="date-sep">→</span>
+                        <label>A</label>
+                        <input type="date" id="dateEnd" onchange="onDateFilterChange()">
+                        <button class="clear-dates" onclick="clearDateFilters()">✕</button>
+                    </div>
+                    <div id="sector-filter-container" class="dropdown-check-list">
+                        <span class="anchor" onclick="toggleSectorDropdown()" id="sectorSelectorAnchor">Tutti i
+                            settori</span>
+                        <div id="sectorSelectorItems" class="items"></div>
+                    </div>
+                    <select class="market-select" id="marketSelect" onchange="onMarketChange()">
+                        <option value="ALL">Tutti i mercati</option>
+                    </select>
+                    <button class="ctrl-btn" id="togglePortfolioBtn" onclick="togglePortfolioHighlight()">
+                        <i class="fas fa-star"></i> Portfolio
+                    </button>
+                    <button class="ctrl-btn" id="intInversionBtn" onclick="toggleIntInversion()">
+                        <i class="fas fa-arrow-rotate-left"></i> Int.Inversion
+                    </button>
+                    <button class="close-btn" onclick="window.close()">✕ Chiudi</button>
                 </div>
             </div>
-            <h1>📊 Statistics Timeline</h1>
-            <div class="header-actions">
-                <!-- Date filters -->
-                <div class="date-filters">
-                    <label>Da</label>
-                    <input type="date" id="dateStart" onchange="onDateFilterChange()">
-                    <span class="date-sep">→</span>
-                    <label>A</label>
-                    <input type="date" id="dateEnd" onchange="onDateFilterChange()">
-                    <button class="clear-dates" onclick="clearDateFilters()">✕</button>
+
+            <!-- RANGE FILTERS -->
+            <div class="range-filters">
+                <div class="range-group">
+                    <label for="forzeRangeMin">Forza Min</label>
+                    <input type="range" id="forzeRangeMin" min="-100" max="100" value="-100" step="1"
+                        onchange="onRangeFilterChange()">
+                    <span class="range-value" id="forzeRangeMinValue">-100</span>
                 </div>
-                <div id="sector-filter-container" class="dropdown-check-list">
-                    <span class="anchor" onclick="toggleSectorDropdown()" id="sectorSelectorAnchor">Tutti i
-                        settori</span>
-                    <div id="sectorSelectorItems" class="items"></div>
+                <div class="range-group">
+                    <label for="forzeRangeMax">Forza Max</label>
+                    <input type="range" id="forzeRangeMax" min="-100" max="100" value="100" step="1"
+                        onchange="onRangeFilterChange()">
+                    <span class="range-value" id="forzeRangeMaxValue">100</span>
                 </div>
-                <select class="market-select" id="marketSelect" onchange="onMarketChange()">
-                    <option value="ALL">Tutti i mercati</option>
-                </select>
-                <button class="ctrl-btn" id="togglePortfolioBtn" onclick="togglePortfolioHighlight()">
-                    <i class="fas fa-star"></i> Portfolio
-                </button>
-                <button class="ctrl-btn" id="intInversionBtn" onclick="toggleIntInversion()">
-                    <i class="fas fa-arrow-rotate-left"></i> Int.Inversion
-                </button>
-                <button class="close-btn" onclick="window.close()">✕ Chiudi</button>
+                <div style="width: 1px; height: 30px; background: #ddd;"></div>
+                <div class="range-group">
+                    <label for="peRangeMin">P/E Min</label>
+                    <input type="range" id="peRangeMin" min="0" max="500" value="0" step="0.1"
+                        onchange="onRangeFilterChange()">
+                    <span class="range-value" id="peRangeMinValue">0</span>
+                </div>
+                <div class="range-group">
+                    <label for="peRangeMax">P/E Max</label>
+                    <input type="range" id="peRangeMax" min="0" max="500" value="500" step="0.1"
+                        onchange="onRangeFilterChange()">
+                    <span class="range-value" id="peRangeMaxValue">500</span>
+                </div>
+                <button class="ctrl-btn" onclick="clearRangeFilters()" style="margin-left: auto;">✕ Resetta
+                    Range</button>
             </div>
+
         </div>
+        <!-- FIN STICKY CONTROLS -->
 
         <div id="message" class="message"></div>
 
@@ -759,6 +895,10 @@
         let _tooltipData = null;
         let _dateStart = null;
         let _dateEnd = null;
+        let _forzeMin = -100;
+        let _forzeMax = 100;
+        let _peMin = 0;
+        let _peMax = 500;
 
         // ============================================================
         // TRADUZIONI
@@ -1457,6 +1597,40 @@
             applyFilters();
         }
 
+        function onRangeFilterChange() {
+            _forzeMin = parseFloat(document.getElementById('forzeRangeMin').value);
+            _forzeMax = parseFloat(document.getElementById('forzeRangeMax').value);
+            _peMin = parseFloat(document.getElementById('peRangeMin').value);
+            _peMax = parseFloat(document.getElementById('peRangeMax').value);
+
+            // Aggiorna i valori visualizzati
+            document.getElementById('forzeRangeMinValue').textContent = _forzeMin.toFixed(0);
+            document.getElementById('forzeRangeMaxValue').textContent = _forzeMax.toFixed(0);
+            document.getElementById('peRangeMinValue').textContent = _peMin.toFixed(1);
+            document.getElementById('peRangeMaxValue').textContent = _peMax.toFixed(1);
+
+            applyFilters();
+        }
+
+        function clearRangeFilters() {
+            document.getElementById('forzeRangeMin').value = -100;
+            document.getElementById('forzeRangeMax').value = 100;
+            document.getElementById('peRangeMin').value = 0;
+            document.getElementById('peRangeMax').value = 500;
+
+            _forzeMin = -100;
+            _forzeMax = 100;
+            _peMin = 0;
+            _peMax = 500;
+
+            document.getElementById('forzeRangeMinValue').textContent = '-100';
+            document.getElementById('forzeRangeMaxValue').textContent = '100';
+            document.getElementById('peRangeMinValue').textContent = '0.0';
+            document.getElementById('peRangeMaxValue').textContent = '500.0';
+
+            applyFilters();
+        }
+
         function toggleIntInversion() {
             _intInversionActive = !_intInversionActive;
             const btn = document.getElementById('intInversionBtn');
@@ -1498,6 +1672,18 @@
                     return forza < 0 && invarianza < 0;
                 });
             }
+
+            // Filtro Forza
+            filtered = filtered.filter(d => {
+                const forza = parseFloat(d.forza) || 0;
+                return forza >= _forzeMin && forza <= _forzeMax;
+            });
+
+            // Filtro P/E
+            filtered = filtered.filter(d => {
+                const pe = parseFloat(d.pe_ratio) || parseFloat(d.pe) || 0;
+                return pe >= _peMin && pe <= _peMax;
+            });
 
             if (filtered.length === 0) {
                 showMessage('Nessun dato disponibile con i filtri selezionati.', 'warning');
