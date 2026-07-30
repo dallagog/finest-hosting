@@ -59,10 +59,63 @@
             flex-shrink: 0;
         }
 
+        /* ---- CONTENT WRAPPER (header + graph) ---- */
+        .content-wrapper {
+            display: flex;
+            gap: 12px;
+            flex: 1;
+        }
+
+        /* ---- SIDEBAR SINISTRA SETTORI ---- */
+        .sidebar-sectors {
+            position: fixed;
+            left: 15px;
+            top: 180px;
+            width: 180px;
+            background: var(--glass-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 12px;
+            max-height: calc(100vh - 220px);
+            overflow-y: auto;
+            z-index: 50;
+        }
+
+        .sidebar-sectors-title {
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #555;
+            margin-bottom: 8px;
+            display: block;
+        }
+
+        .sidebar-sectors-list {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .sidebar-sectors-list label {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 10px;
+            color: #333;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .sidebar-sectors-list input[type="checkbox"] {
+            cursor: pointer;
+            accent-color: #000;
+        }
+
         /* ---- HEADER ---- */
         .header-bar {
             display: flex;
-            justify-content: space-between;
+            justify-content: center;
             align-items: center;
             padding: 12px 20px;
             background: var(--glass-bg);
@@ -70,7 +123,7 @@
             border-radius: 8px;
             flex-shrink: 0;
             flex-wrap: wrap;
-            gap: 8px;
+            gap: 12px;
             min-width: fit-content;
         }
 
@@ -78,30 +131,31 @@
             flex: 1;
             font-size: 12px;
             color: var(--neon-cyan);
-            display: flex;
+            display: none;
             flex-direction: column;
             gap: 3px;
             min-width: 150px;
         }
 
         h1 {
-            flex: 1;
+            flex: none;
             text-align: center;
             font-weight: 700;
             text-transform: uppercase;
             letter-spacing: 2px;
             font-size: 1.1em;
-            min-width: 200px;
+            min-width: auto;
+            order: -1;
         }
 
         .header-actions {
-            flex: 1;
+            flex: none;
             display: flex;
-            gap: 8px;
-            justify-content: flex-end;
+            gap: 12px;
+            justify-content: center;
             align-items: center;
             flex-wrap: wrap;
-            min-width: 200px;
+            min-width: auto;
         }
 
         .close-btn {
@@ -157,92 +211,6 @@
             font-family: inherit;
             font-weight: bold;
             font-size: 11px;
-        }
-
-        /* ---- RANGE FILTERS ---- */
-        .range-filters {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            flex-wrap: wrap;
-            padding: 12px 20px;
-            background: var(--glass-bg);
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            flex-shrink: 0;
-            min-width: fit-content;
-        }
-
-        .range-group {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            flex-wrap: wrap;
-        }
-
-        .range-group label {
-            font-size: 9px;
-            font-weight: 600;
-            color: #555;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            min-width: 40px;
-        }
-
-        .range-group input[type="range"] {
-            width: 120px;
-            height: 5px;
-            border-radius: 5px;
-            background: #ddd;
-            outline: none;
-            -webkit-appearance: none;
-            appearance: none;
-            cursor: pointer;
-        }
-
-        .range-group input[type="range"]::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            appearance: none;
-            width: 16px;
-            height: 16px;
-            border-radius: 50%;
-            background: #000;
-            cursor: pointer;
-            box-shadow: 0 0 4px rgba(0, 0, 0, 0.3);
-            transition: all 0.2s;
-        }
-
-        .range-group input[type="range"]::-webkit-slider-thumb:hover {
-            background: #333;
-            box-shadow: 0 0 6px rgba(0, 0, 0, 0.5);
-        }
-
-        .range-group input[type="range"]::-moz-range-thumb {
-            width: 16px;
-            height: 16px;
-            border-radius: 50%;
-            background: #000;
-            cursor: pointer;
-            border: none;
-            box-shadow: 0 0 4px rgba(0, 0, 0, 0.3);
-            transition: all 0.2s;
-        }
-
-        .range-group input[type="range"]::-moz-range-thumb:hover {
-            background: #333;
-            box-shadow: 0 0 6px rgba(0, 0, 0, 0.5);
-        }
-
-        .range-value {
-            font-size: 10px;
-            font-weight: 600;
-            color: #000;
-            background: #f0f0f0;
-            padding: 4px 8px;
-            border-radius: 3px;
-            min-width: 50px;
-            text-align: center;
-            border: 1px solid #ddd;
         }
 
         /* ---- DATE FILTERS ---- */
@@ -770,11 +738,6 @@
                         <input type="date" id="dateEnd" onchange="onDateFilterChange()">
                         <button class="clear-dates" onclick="clearDateFilters()">✕</button>
                     </div>
-                    <div id="sector-filter-container" class="dropdown-check-list">
-                        <span class="anchor" onclick="toggleSectorDropdown()" id="sectorSelectorAnchor">Tutti i
-                            settori</span>
-                        <div id="sectorSelectorItems" class="items"></div>
-                    </div>
                     <select class="market-select" id="marketSelect" onchange="onMarketChange()">
                         <option value="ALL">Tutti i mercati</option>
                     </select>
@@ -788,39 +751,14 @@
                 </div>
             </div>
 
-            <!-- RANGE FILTERS -->
-            <div class="range-filters">
-                <div class="range-group">
-                    <label for="forzeRangeMin">Forza Min</label>
-                    <input type="range" id="forzeRangeMin" min="-100" max="100" value="-100" step="1"
-                        onchange="onRangeFilterChange()">
-                    <span class="range-value" id="forzeRangeMinValue">-100</span>
-                </div>
-                <div class="range-group">
-                    <label for="forzeRangeMax">Forza Max</label>
-                    <input type="range" id="forzeRangeMax" min="-100" max="100" value="100" step="1"
-                        onchange="onRangeFilterChange()">
-                    <span class="range-value" id="forzeRangeMaxValue">100</span>
-                </div>
-                <div style="width: 1px; height: 30px; background: #ddd;"></div>
-                <div class="range-group">
-                    <label for="peRangeMin">P/E Min</label>
-                    <input type="range" id="peRangeMin" min="0" max="500" value="0" step="0.1"
-                        onchange="onRangeFilterChange()">
-                    <span class="range-value" id="peRangeMinValue">0</span>
-                </div>
-                <div class="range-group">
-                    <label for="peRangeMax">P/E Max</label>
-                    <input type="range" id="peRangeMax" min="0" max="500" value="500" step="0.1"
-                        onchange="onRangeFilterChange()">
-                    <span class="range-value" id="peRangeMaxValue">500</span>
-                </div>
-                <button class="ctrl-btn" onclick="clearRangeFilters()" style="margin-left: auto;">✕ Resetta
-                    Range</button>
-            </div>
-
         </div>
         <!-- FIN STICKY CONTROLS -->
+
+        <!-- SIDEBAR SETTORI -->
+        <div class="sidebar-sectors" id="sidebarSectors">
+            <span class="sidebar-sectors-title">Settori</span>
+            <div class="sidebar-sectors-list" id="sectorSelectorItems"></div>
+        </div>
 
         <div id="message" class="message"></div>
 
@@ -895,10 +833,6 @@
         let _tooltipData = null;
         let _dateStart = null;
         let _dateEnd = null;
-        let _forzeMin = -100;
-        let _forzeMax = 100;
-        let _peMin = 0;
-        let _peMax = 500;
 
         // ============================================================
         // TRADUZIONI
@@ -1557,33 +1491,7 @@
                 container.appendChild(label);
             });
 
-            updateSectorAnchorText();
-        }
-
-        function toggleSectorDropdown() {
-            const container = document.getElementById('sector-filter-container');
-            container.classList.toggle('visible');
-
-            if (container.classList.contains('visible')) {
-                const closeHandler = (e) => {
-                    if (!container.contains(e.target)) {
-                        container.classList.remove('visible');
-                        document.removeEventListener('click', closeHandler);
-                    }
-                };
-                setTimeout(() => document.addEventListener('click', closeHandler), 10);
-            }
-        }
-
-        function updateSectorAnchorText() {
-            const anchor = document.getElementById('sectorSelectorAnchor');
-            if (_selectedSectors.length === 0) {
-                anchor.textContent = "Tutti i settori";
-            } else if (_selectedSectors.length === 1) {
-                anchor.textContent = sectorLabel(_selectedSectors[0]);
-            } else {
-                anchor.textContent = `${_selectedSectors.length} settori`;
-            }
+            // updateSectorAnchorText non più necessario nel nuovo layout
         }
 
         function onSectorSelectionChange() {
@@ -1593,41 +1501,6 @@
             checkboxes.forEach(cb => {
                 if (cb.checked) _selectedSectors.push(cb.value);
             });
-            updateSectorAnchorText();
-            applyFilters();
-        }
-
-        function onRangeFilterChange() {
-            _forzeMin = parseFloat(document.getElementById('forzeRangeMin').value);
-            _forzeMax = parseFloat(document.getElementById('forzeRangeMax').value);
-            _peMin = parseFloat(document.getElementById('peRangeMin').value);
-            _peMax = parseFloat(document.getElementById('peRangeMax').value);
-
-            // Aggiorna i valori visualizzati
-            document.getElementById('forzeRangeMinValue').textContent = _forzeMin.toFixed(0);
-            document.getElementById('forzeRangeMaxValue').textContent = _forzeMax.toFixed(0);
-            document.getElementById('peRangeMinValue').textContent = _peMin.toFixed(1);
-            document.getElementById('peRangeMaxValue').textContent = _peMax.toFixed(1);
-
-            applyFilters();
-        }
-
-        function clearRangeFilters() {
-            document.getElementById('forzeRangeMin').value = -100;
-            document.getElementById('forzeRangeMax').value = 100;
-            document.getElementById('peRangeMin').value = 0;
-            document.getElementById('peRangeMax').value = 500;
-
-            _forzeMin = -100;
-            _forzeMax = 100;
-            _peMin = 0;
-            _peMax = 500;
-
-            document.getElementById('forzeRangeMinValue').textContent = '-100';
-            document.getElementById('forzeRangeMaxValue').textContent = '100';
-            document.getElementById('peRangeMinValue').textContent = '0.0';
-            document.getElementById('peRangeMaxValue').textContent = '500.0';
-
             applyFilters();
         }
 
@@ -1672,18 +1545,6 @@
                     return forza < 0 && invarianza < 0;
                 });
             }
-
-            // Filtro Forza
-            filtered = filtered.filter(d => {
-                const forza = parseFloat(d.forza) || 0;
-                return forza >= _forzeMin && forza <= _forzeMax;
-            });
-
-            // Filtro P/E
-            filtered = filtered.filter(d => {
-                const pe = parseFloat(d.pe_ratio) || parseFloat(d.pe) || 0;
-                return pe >= _peMin && pe <= _peMax;
-            });
 
             if (filtered.length === 0) {
                 showMessage('Nessun dato disponibile con i filtri selezionati.', 'warning');
