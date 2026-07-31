@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Graph 0.2</title>
+    <title>Statistics Graph 0.2</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <script src="https://d3js.org/d3.v7.min.js"></script>
     <link rel="icon" type="image/png" href="images/icon-finest.png">
@@ -46,23 +46,10 @@
             /* Permette al container di espandersi oltre il viewport */
         }
 
-        /* ---- STICKY CONTROLS WRAPPER ---- */
-        .sticky-controls {
-            position: sticky;
-            top: 0;
-            z-index: 100;
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-            background: var(--bg-color);
-            padding-bottom: 8px;
-            flex-shrink: 0;
-        }
-
         /* ---- HEADER ---- */
         .header-bar {
             display: flex;
-            justify-content: center;
+            justify-content: space-between;
             align-items: center;
             padding: 12px 20px;
             background: var(--glass-bg);
@@ -70,7 +57,7 @@
             border-radius: 8px;
             flex-shrink: 0;
             flex-wrap: wrap;
-            gap: 12px;
+            gap: 8px;
             min-width: fit-content;
         }
 
@@ -78,31 +65,30 @@
             flex: 1;
             font-size: 12px;
             color: var(--neon-cyan);
-            display: none;
+            display: flex;
             flex-direction: column;
             gap: 3px;
             min-width: 150px;
         }
 
         h1 {
-            flex: none;
+            flex: 1;
             text-align: center;
             font-weight: 700;
             text-transform: uppercase;
             letter-spacing: 2px;
             font-size: 1.1em;
-            min-width: auto;
-            order: -1;
+            min-width: 200px;
         }
 
         .header-actions {
-            flex: none;
+            flex: 1;
             display: flex;
-            gap: 12px;
-            justify-content: center;
+            gap: 8px;
+            justify-content: flex-end;
             align-items: center;
             flex-wrap: wrap;
-            min-width: auto;
+            min-width: 200px;
         }
 
         .close-btn {
@@ -662,13 +648,17 @@
 <body>
     <div class="main-container">
 
-        <!-- STICKY CONTROLS -->
-        <div class="sticky-controls">
-
-            <!-- HEADER -->
-            <div class="header-bar">
-                <div class="user-info-left" style="display:none;"></div>
-                <h1>📊 Statistics Timeline</h1>
+        <!-- HEADER -->
+        <div class="header-bar">
+            <div class="user-info-left">
+                <div><strong>Utente:</strong> <span id="usernameDisplay">-</span></div>
+                <div><strong>Valuta:</strong> <span id="currencyDisplay">-</span></div>
+                <div id="date-creation-container" style="display:none;">
+                    <strong>Dati del:</strong> <span id="dateCreationDisplay">-</span>
+                </div>
+            </div>
+            <h1>📊 Statistics Timeline</h1>
+            <div class="header-actions">
                 <!-- Date filters -->
                 <div class="date-filters">
                     <label>Da</label>
@@ -678,14 +668,14 @@
                     <input type="date" id="dateEnd" onchange="onDateFilterChange()">
                     <button class="clear-dates" onclick="clearDateFilters()">✕</button>
                 </div>
-                <select class="market-select" id="marketSelect" onchange="onMarketChange()">
-                    <option value="ALL">Tutti i mercati</option>
-                </select>
                 <div id="sector-filter-container" class="dropdown-check-list">
                     <span class="anchor" onclick="toggleSectorDropdown()" id="sectorSelectorAnchor">Tutti i
                         settori</span>
                     <div id="sectorSelectorItems" class="items"></div>
                 </div>
+                <select class="market-select" id="marketSelect" onchange="onMarketChange()">
+                    <option value="ALL">Tutti i mercati</option>
+                </select>
                 <button class="ctrl-btn" id="togglePortfolioBtn" onclick="togglePortfolioHighlight()">
                     <i class="fas fa-star"></i> Portfolio
                 </button>
@@ -694,69 +684,55 @@
                 </button>
                 <button class="close-btn" onclick="window.close()">✕ Chiudi</button>
             </div>
-
         </div>
-        <!-- FIN STICKY CONTROLS -->
 
         <div id="message" class="message"></div>
 
-        <!-- GRAPH AREA CON SIDEBAR SETTORI -->
-        <div style="display: flex; gap: 12px; flex: 1; min-height: 800px; position: relative;">
-            <!-- SIDEBAR SETTORI FISSO (NON SCORRE MAI) -->
-            <div
-                style="position: fixed; left: 15px; top: 180px; width: 160px; background: var(--glass-bg); border: 1px solid var(--border-color); border-radius: 8px; padding: 8px; max-height: calc(100vh - 220px); overflow-y: auto; z-index: 50;">
-                <div id="sectorLabels" style="display: flex; flex-direction: column; gap: 0;"></div>
+        <!-- GRAPH AREA -->
+        <div class="graph-wrapper" id="graphWrapper">
+            <svg id="timeline-svg"></svg>
+
+            <div class="loading-overlay" id="loadingOverlay">
+                <i class="fas fa-spinner"></i>
+                <div>Caricamento dati...</div>
+                <div class="loading-sub" id="loadingStatus">Connessione al server</div>
             </div>
 
-            <!-- GRAFICO SCROLLABILE -->
-            <div class="graph-wrapper" id="graphWrapper" style="margin-left: 180px;">
-                <svg id="timeline-svg"></svg>
-
-                <div class="loading-overlay" id="loadingOverlay">
-                    <i class="fas fa-spinner"></i>
-                    <div>Caricamento dati...</div>
-                    <div class="loading-sub" id="loadingStatus">Connessione al server</div>
-                </div>
-
-                <div class="stats-bar" id="statsBar" style="display:none;">
-                    <div>Strumenti: <strong id="statCount">0</strong></div>
-                    <div>Settori: <strong id="statSectors">0</strong></div>
-                    <div>Date: <strong id="statDates">0</strong></div>
-                </div>
-
-                <div class="legend" id="legend" style="display:none;">
-                    <div class="legend-row"><span class="legend-dot" style="background:#4caf50;"></span> Forza positiva
-                    </div>
-                    <div class="legend-row"><span class="legend-dot" style="background:#f44336;"></span> Forza negativa
-                    </div>
-                    <div class="legend-row"><span class="legend-dot"
-                            style="background:#fff; border:2px solid #2e7d32;"></span> In portafoglio</div>
-                    <div class="legend-row">
-                        <span class="legend-cloud">
-                            <svg viewBox="0 0 30 22" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <path
-                                    d="M6 16 C2 16 0 13.5 0 10.5 C0 7.5 2.5 5.5 5.5 5.5 C6 3.5 8 2 10.5 2 C13 2 15 3.5 15.5 5.5 C17.5 4 20.5 4 22 6 C23.5 8 23 10.5 21 12 C23.5 12 25.5 13.5 25.5 16 C25.5 18.5 23 20 20.5 20 L8 20 C5.5 20 3.5 18.5 3.5 16 L6 16Z"
-                                    fill="#666" stroke="#555" stroke-width="0.5" />
-                                <path d="M13 7 L10.5 13.5 L14 13.5 L12 18.5 L16.5 11 L13 11 L15 7 L13 7Z" fill="#FFD700"
-                                    stroke="#FFC107" stroke-width="0.5" />
-                            </svg>
-                        </span>
-                        Invarianza negativa
-                    </div>
-                    <div class="legend-row"
-                        style="margin-top:4px; border-top:1px solid #eee; padding-top:4px; color:#999;">
-                        ⬤ Dim. = Volume
-                    </div>
-                    <div class="legend-row" style="color:#999; font-size:8px; margin-top:2px;">
-                        🔍 Click su sfera/nuvola → Grafico prezzi
-                    </div>
-                </div>
-
-                <div class="tooltip" id="tooltip"></div>
+            <div class="stats-bar" id="statsBar" style="display:none;">
+                <div>Strumenti: <strong id="statCount">0</strong></div>
+                <div>Settori: <strong id="statSectors">0</strong></div>
+                <div>Date: <strong id="statDates">0</strong></div>
             </div>
-            <!-- FIN GRAFICO SCROLLABILE -->
+
+            <div class="legend" id="legend" style="display:none;">
+                <div class="legend-row"><span class="legend-dot" style="background:#4caf50;"></span> Forza positiva
+                </div>
+                <div class="legend-row"><span class="legend-dot" style="background:#f44336;"></span> Forza negativa
+                </div>
+                <div class="legend-row"><span class="legend-dot"
+                        style="background:#fff; border:2px solid #2e7d32;"></span> In portafoglio</div>
+                <div class="legend-row">
+                    <span class="legend-cloud">
+                        <svg viewBox="0 0 30 22" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path
+                                d="M6 16 C2 16 0 13.5 0 10.5 C0 7.5 2.5 5.5 5.5 5.5 C6 3.5 8 2 10.5 2 C13 2 15 3.5 15.5 5.5 C17.5 4 20.5 4 22 6 C23.5 8 23 10.5 21 12 C23.5 12 25.5 13.5 25.5 16 C25.5 18.5 23 20 20.5 20 L8 20 C5.5 20 3.5 18.5 3.5 16 L6 16Z"
+                                fill="#666" stroke="#555" stroke-width="0.5" />
+                            <path d="M13 7 L10.5 13.5 L14 13.5 L12 18.5 L16.5 11 L13 11 L15 7 L13 7Z" fill="#FFD700"
+                                stroke="#FFC107" stroke-width="0.5" />
+                        </svg>
+                    </span>
+                    Invarianza negativa
+                </div>
+                <div class="legend-row" style="margin-top:4px; border-top:1px solid #eee; padding-top:4px; color:#999;">
+                    ⬤ Dim. = Volume
+                </div>
+                <div class="legend-row" style="color:#999; font-size:8px; margin-top:2px;">
+                    🔍 Click su sfera/nuvola → Grafico prezzi
+                </div>
+            </div>
+
+            <div class="tooltip" id="tooltip"></div>
         </div>
-        <!-- FIN GRAPH AREA CON SIDEBAR -->
 
     </div>
 
@@ -1349,28 +1325,6 @@
             document.getElementById('statsBar').style.display = 'block';
             document.getElementById('legend').style.display = 'block';
             document.getElementById('loadingOverlay').style.display = 'none';
-
-            // ---- POPOLA SIDEBAR SETTORI ----
-            const sectorLabelsContainer = document.getElementById('sectorLabels');
-            sectorLabelsContainer.innerHTML = '';
-
-            nodeData.forEach(d => {
-                const label = document.createElement('div');
-                label.style.cssText = `
-                    font-size: 9px;
-                    padding: 4px;
-                    border-bottom: 1px solid #eee;
-                    color: #555;
-                    overflow: hidden;
-                    text-overflow: ellipsis;
-                    white-space: nowrap;
-                    min-height: 20px;
-                    display: flex;
-                    align-items: center;
-                `;
-                label.textContent = sectorLabel(d.sector || 'N/D');
-                sectorLabelsContainer.appendChild(label);
-            });
 
             // (portfolio filter already applied in applyFilters, no post-render opacity needed)
 
