@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Statistics Graph 0.2</title>
+    <title>Graph 0.1</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <script src="https://d3js.org/d3.v7.min.js"></script>
     <link rel="icon" type="image/png" href="images/icon-finest.png">
@@ -33,7 +33,6 @@
             min-height: 100vh;
             overflow-y: auto;
             overflow-x: auto;
-            /* ABILITATO SCROLL ORIZZONTALE */
         }
 
         .main-container {
@@ -43,11 +42,13 @@
             flex-direction: column;
             gap: 12px;
             min-width: fit-content;
-            /* Permette al container di espandersi oltre il viewport */
         }
 
-        /* ---- HEADER ---- */
+        /* ---- HEADER (STICKY PERMANENTE) ---- */
         .header-bar {
+            position: sticky;
+            top: 0;
+            z-index: 1000;
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -59,6 +60,7 @@
             flex-wrap: wrap;
             gap: 8px;
             min-width: fit-content;
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.1);
         }
 
         .user-info-left {
@@ -144,6 +146,38 @@
             font-family: inherit;
             font-weight: bold;
             font-size: 11px;
+        }
+
+        /* ---- CAPITALIZATION FILTER ---- */
+        .cap-filter {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .cap-filter label {
+            font-size: 9px;
+            font-weight: 600;
+            color: #555;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .cap-filter input[type="number"] {
+            padding: 4px 8px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 9px;
+            background: #fff;
+            color: #000;
+            width: 95px;
+        }
+
+        .cap-filter input[type="number"]:focus {
+            outline: none;
+            border-color: #000;
+            box-shadow: 0 0 4px rgba(0, 0, 0, 0.2);
         }
 
         /* ---- DATE FILTERS ---- */
@@ -317,7 +351,6 @@
             border-radius: 8px;
             position: relative;
             overflow: auto;
-            /* Scrolling interno al container */
             min-height: 800px;
             height: auto;
             max-height: 90vh;
@@ -326,7 +359,6 @@
 
         #timeline-svg {
             display: block;
-            /* Rimuove spazio extra sotto l'SVG */
             min-height: 800px;
             cursor: default;
         }
@@ -382,23 +414,23 @@
             }
         }
 
-        /* ---- TOOLTIP ---- */
+        /* ---- TOOLTIP ALTA VISIBILITÀ ---- */
         .tooltip {
             position: absolute;
-            background: rgba(0, 0, 0, 0.92);
-            color: #fff;
-            padding: 12px 16px;
-            border-radius: 8px;
+            background: #0f172a;
+            color: #f8fafc;
+            padding: 14px 18px;
+            border-radius: 10px;
             font-family: 'Orbitron', sans-serif;
-            font-size: 10px;
+            font-size: 11px;
             pointer-events: none;
             opacity: 0;
             transition: opacity 0.15s ease;
-            z-index: 200;
-            max-width: 320px;
-            border: 1px solid rgba(255, 255, 255, 0.12);
-            box-shadow: 0 6px 24px rgba(0, 0, 0, 0.3);
-            line-height: 1.8;
+            z-index: 2000;
+            max-width: 380px;
+            border: 1.5px solid #38bdf8;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6), 0 0 15px rgba(56, 189, 248, 0.25);
+            line-height: 1.6;
             will-change: opacity, transform;
         }
 
@@ -408,66 +440,275 @@
         }
 
         .tooltip .tt-id {
-            font-weight: 700;
-            font-size: 13px;
-            margin-bottom: 2px;
-            color: #fff;
+            font-weight: 900;
+            font-size: 15px;
+            margin-bottom: 3px;
+            color: #38bdf8;
+            letter-spacing: 0.5px;
         }
 
         .tooltip .tt-desc {
-            color: #bbb;
-            font-size: 9px;
-            margin-bottom: 5px;
+            color: #e2e8f0;
+            font-size: 11px;
+            font-weight: 500;
+            margin-bottom: 8px;
+            line-height: 1.4;
         }
 
         .tt-pos {
-            color: #4caf50;
+            color: #4ade80 !important;
             font-weight: bold;
         }
 
         .tt-neg {
-            color: #f44336;
+            color: #f87171 !important;
             font-weight: bold;
         }
 
         .tt-badge {
             display: inline-block;
-            padding: 1px 7px;
-            border-radius: 10px;
-            font-size: 8px;
+            padding: 2px 8px;
+            border-radius: 6px;
+            font-size: 9px;
             font-weight: 700;
-            margin-right: 3px;
+            margin-right: 4px;
+            text-transform: uppercase;
         }
 
         .tt-sector {
-            background: #e3f2fd;
-            color: #1565c0;
+            background: #1e3a8a;
+            color: #93c5fd;
+            border: 1px solid #3b82f6;
         }
 
         .tt-market {
-            background: #f3e5f5;
-            color: #7b1fa2;
+            background: #581c87;
+            color: #e9d5ff;
+            border: 1px solid #a855f7;
         }
 
         .tt-portfolio {
-            background: #e8f5e9;
-            color: #2e7d32;
+            background: #14532d;
+            color: #86efac;
+            border: 1px solid #22c55e;
         }
 
         .tt-row {
             display: flex;
             justify-content: space-between;
-            padding: 1px 0;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            align-items: center;
+            padding: 3px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
         }
 
         .tt-row .label {
-            color: #999;
+            color: #94a3b8;
+            font-size: 10px;
+            font-weight: 600;
         }
 
         .tt-row .value {
+            color: #ffffff;
+            font-weight: 700;
+            font-size: 11px;
+        }
+
+        /* ---- BUCKET (CESTINO/RACCOLTA TRASCINABILE) STYLES ---- */
+        .bucket-panel {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 380px;
+            max-height: 480px;
+            background: #0f172a;
+            color: #f8fafc;
+            border: 2px dashed #38bdf8;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6), 0 0 20px rgba(56, 189, 248, 0.2);
+            z-index: 2500;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            font-family: 'Orbitron', sans-serif;
+        }
+
+        .bucket-panel.collapsed {
+            max-height: 46px;
+            border-style: solid;
+        }
+
+        .bucket-panel.drag-over {
+            background: #1e293b;
+            border-color: #4ade80;
+            box-shadow: 0 0 25px rgba(74, 222, 128, 0.5);
+            transform: scale(1.02);
+        }
+
+        .bucket-panel.pulse-highlight {
+            border-color: #f59e0b;
+            animation: pulse-bucket 1s infinite alternate;
+        }
+
+        @keyframes pulse-bucket {
+            from {
+                box-shadow: 0 0 10px rgba(245, 158, 11, 0.4);
+            }
+
+            to {
+                box-shadow: 0 0 25px rgba(245, 158, 11, 0.8);
+            }
+        }
+
+        .bucket-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 14px;
+            background: #1e293b;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .bucket-title {
+            font-size: 12px;
+            font-weight: 700;
+            color: #38bdf8;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .bucket-badge {
+            background: #0284c7;
             color: #fff;
-            font-weight: 500;
+            font-size: 10px;
+            font-weight: 700;
+            padding: 2px 7px;
+            border-radius: 10px;
+        }
+
+        .bucket-actions {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .bucket-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            color: #fff;
+            padding: 4px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 10px;
+            font-weight: bold;
+            font-family: inherit;
+            transition: background 0.2s;
+        }
+
+        .bucket-btn:hover {
+            background: rgba(255, 255, 255, 0.25);
+        }
+
+        .bucket-btn-clear:hover {
+            background: #ef4444;
+        }
+
+        .bucket-drop-area {
+            padding: 10px;
+            text-align: center;
+            font-size: 10px;
+            color: #94a3b8;
+            background: rgba(255, 255, 255, 0.03);
+            border-bottom: 1px dashed rgba(255, 255, 255, 0.1);
+        }
+
+        .bucket-items-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            max-height: 350px;
+        }
+
+        .bucket-item-card {
+            background: #1e293b;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            transition: border-color 0.2s;
+        }
+
+        .bucket-item-card:hover {
+            border-color: #38bdf8;
+        }
+
+        .bucket-item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+
+        .bucket-item-id {
+            font-weight: 700;
+            font-size: 12px;
+            color: #38bdf8;
+        }
+
+        .bucket-item-desc {
+            font-size: 10px;
+            color: #cbd5e1;
+        }
+
+        .bucket-item-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 9px;
+            color: #94a3b8;
+        }
+
+        .bucket-item-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 6px;
+            margin-top: 4px;
+        }
+
+        .bucket-item-btn {
+            padding: 4px 8px;
+            font-size: 9px;
+            font-weight: 700;
+            border-radius: 4px;
+            border: none;
+            cursor: pointer;
+            font-family: inherit;
+        }
+
+        .btn-graph {
+            background: #0284c7;
+            color: #fff;
+        }
+
+        .btn-graph:hover {
+            background: #0369a1;
+        }
+
+        .btn-delete {
+            background: rgba(239, 68, 68, 0.2);
+            color: #f87171;
+            border: 1px solid #ef4444;
+        }
+
+        .btn-delete:hover {
+            background: #ef4444;
+            color: #fff;
         }
 
         /* ---- LEGEND ---- */
@@ -542,21 +783,21 @@
         .node-ball {
             filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.15));
             transition: all 0.2s ease;
-            cursor: pointer !important;
+            cursor: grab !important;
         }
 
-        .node-ball:hover {
-            /* Nessun effetto - icona completamente immobile */
+        .node-ball:active {
+            cursor: grabbing !important;
         }
 
         .node-cloud {
             filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.10));
             transition: all 0.2s ease;
-            cursor: pointer !important;
+            cursor: grab !important;
         }
 
-        .node-cloud:hover {
-            /* Nessun effetto - icona completamente immobile */
+        .node-cloud:active {
+            cursor: grabbing !important;
         }
 
         .portfolio-node {
@@ -584,6 +825,12 @@
 
             .date-filters {
                 justify-content: center;
+            }
+
+            .bucket-panel {
+                width: 320px;
+                right: 10px;
+                bottom: 10px;
             }
         }
 
@@ -641,6 +888,11 @@
                 width: 80px;
                 font-size: 8px;
             }
+
+            .bucket-panel {
+                width: calc(100vw - 20px);
+                right: 10px;
+            }
         }
     </style>
 </head>
@@ -648,7 +900,7 @@
 <body>
     <div class="main-container">
 
-        <!-- HEADER -->
+        <!-- HEADER (PERMANENTEMENTE VISIBILE CON STICKY) -->
         <div class="header-bar">
             <div class="user-info-left">
                 <div><strong>Utente:</strong> <span id="usernameDisplay">-</span></div>
@@ -667,6 +919,11 @@
                     <label>A</label>
                     <input type="date" id="dateEnd" onchange="onDateFilterChange()">
                     <button class="clear-dates" onclick="clearDateFilters()">✕</button>
+                </div>
+                <!-- Capitalizzazione max -->
+                <div class="cap-filter">
+                    <label>Cap. Max</label>
+                    <input type="number" id="capMaxInput" placeholder="Max cap..." oninput="onCapFilterChange()">
                 </div>
                 <div id="sector-filter-container" class="dropdown-check-list">
                     <span class="anchor" onclick="toggleSectorDropdown()" id="sectorSelectorAnchor">Tutti i
@@ -727,13 +984,37 @@
                     ⬤ Dim. = Volume
                 </div>
                 <div class="legend-row" style="color:#999; font-size:8px; margin-top:2px;">
-                    🔍 Click su sfera/nuvola → Grafico prezzi
+                    🔍 Click/Drag sfera → Grafico / Bucket
                 </div>
             </div>
 
             <div class="tooltip" id="tooltip"></div>
         </div>
 
+    </div>
+
+    <!-- PANNELLO BUCKET (TRASCINABILE / DROP ZONE) -->
+    <div class="bucket-panel" id="bucketPanel">
+        <div class="bucket-header" onclick="toggleBucketCollapse()">
+            <div class="bucket-title">
+                <i class="fas fa-box-archive"></i> Bucket Strumenti
+                <span class="bucket-badge" id="bucketCount">0</span>
+            </div>
+            <div class="bucket-actions" onclick="event.stopPropagation()">
+                <button class="bucket-btn bucket-btn-clear" onclick="clearBucket()" title="Svuota Bucket">
+                    <i class="fas fa-trash-alt"></i> Svuota
+                </button>
+                <button class="bucket-btn" onclick="toggleBucketCollapse()" title="Espandi/Comprimi">
+                    <i class="fas fa-chevron-down" id="bucketToggleIcon"></i>
+                </button>
+            </div>
+        </div>
+        <div class="bucket-drop-area">
+            <i class="fas fa-hand-pointer"></i> Trascina qui i nodi dal grafico o usa "+ Bucket"
+        </div>
+        <div class="bucket-items-list" id="bucketItemsList">
+            <!-- Gli elementi trascinati verranno inseriti qui -->
+        </div>
     </div>
 
     <script>
@@ -759,6 +1040,11 @@
         let _tooltipData = null;
         let _dateStart = null;
         let _dateEnd = null;
+        let _capMax = null;
+
+        // BUCKET STATE & DRAG GLOBAL
+        let _bucketItems = [];
+        let _draggedNodeData = null;
 
         // ============================================================
         // TRADUZIONI
@@ -794,7 +1080,165 @@
             document.getElementById('usernameDisplay').textContent = credentials.username;
             document.getElementById('currencyDisplay').textContent = credentials.currency;
             await loadTranslations();
+            initBucketListeners();
+            loadBucketFromStorage();
             await fetchStatistics();
+        }
+
+        // ============================================================
+        // GESTIONE BUCKET (CESTINO TRASCINABILE)
+        // ============================================================
+        function initBucketListeners() {
+            const panel = document.getElementById('bucketPanel');
+
+            panel.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                panel.classList.add('drag-over');
+            });
+
+            panel.addEventListener('dragleave', () => {
+                panel.classList.remove('drag-over');
+            });
+
+            panel.addEventListener('drop', (e) => {
+                e.preventDefault();
+                panel.classList.remove('drag-over');
+                panel.classList.remove('pulse-highlight');
+
+                let data = null;
+                try {
+                    const raw = e.dataTransfer.getData('application/json');
+                    if (raw) data = JSON.parse(raw);
+                } catch (err) { }
+
+                if (!data && _draggedNodeData) data = _draggedNodeData;
+
+                if (!data) {
+                    const id = e.dataTransfer.getData('text/plain');
+                    if (id) data = _allData.find(x => x.id_instrument === id);
+                }
+
+                if (data) {
+                    addToBucket(data);
+                }
+            });
+        }
+
+        function loadBucketFromStorage() {
+            try {
+                const saved = localStorage.getItem('finest_graph_bucket');
+                if (saved) {
+                    _bucketItems = JSON.parse(saved);
+                }
+            } catch (e) { _bucketItems = []; }
+            renderBucket();
+        }
+
+        function saveBucketToStorage() {
+            try {
+                localStorage.setItem('finest_graph_bucket', JSON.stringify(_bucketItems));
+            } catch (e) { }
+        }
+
+        function addToBucket(item) {
+            if (!item || !item.id_instrument) return;
+            const exists = _bucketItems.some(x => x.id_instrument === item.id_instrument);
+            if (exists) {
+                showMessage(`Lo strumento ${item.id_instrument} è già presente nel Bucket.`, 'info');
+                return;
+            }
+            _bucketItems.push(item);
+            saveBucketToStorage();
+            renderBucket();
+
+            const panel = document.getElementById('bucketPanel');
+            if (panel.classList.contains('collapsed')) {
+                panel.classList.remove('collapsed');
+                document.getElementById('bucketToggleIcon').className = 'fas fa-chevron-down';
+            }
+
+            panel.classList.add('pulse-highlight');
+            setTimeout(() => panel.classList.remove('pulse-highlight'), 1200);
+        }
+
+        function addToBucketFromId(id) {
+            const item = _allData.find(x => x.id_instrument === id);
+            if (item) addToBucket(item);
+        }
+
+        function removeFromBucket(id_instrument) {
+            _bucketItems = _bucketItems.filter(x => x.id_instrument !== id_instrument);
+            saveBucketToStorage();
+            renderBucket();
+        }
+
+        function clearBucket() {
+            if (_bucketItems.length === 0) return;
+            if (confirm('Sei sicuro di voler svuotare il Bucket?')) {
+                _bucketItems = [];
+                saveBucketToStorage();
+                renderBucket();
+            }
+        }
+
+        function toggleBucketCollapse() {
+            const panel = document.getElementById('bucketPanel');
+            panel.classList.toggle('collapsed');
+            const icon = document.getElementById('bucketToggleIcon');
+            if (panel.classList.contains('collapsed')) {
+                icon.className = 'fas fa-chevron-up';
+            } else {
+                icon.className = 'fas fa-chevron-down';
+            }
+        }
+
+        function renderBucket() {
+            const countEl = document.getElementById('bucketCount');
+            if (countEl) countEl.textContent = _bucketItems.length;
+
+            const listEl = document.getElementById('bucketItemsList');
+            if (!listEl) return;
+
+            if (_bucketItems.length === 0) {
+                listEl.innerHTML = `
+                    <div style="text-align:center; padding: 20px; color:#64748b; font-size:11px;">
+                        Nessun elemento nel bucket.<br>Trascina un nodo o usa "+ Bucket" nel tooltip.
+                    </div>
+                `;
+                return;
+            }
+
+            let html = '';
+            _bucketItems.forEach(item => {
+                const forzaVal = parseFloat(item.forza) || 0;
+                const fc = forzaVal >= 0 ? 'tt-pos' : 'tt-neg';
+                html += `
+                    <div class="bucket-item-card">
+                        <div class="bucket-item-header">
+                            <div>
+                                <div class="bucket-item-id">${item.id_instrument}</div>
+                                <div class="bucket-item-desc">${item.instrument_description || '-'}</div>
+                            </div>
+                            <button class="bucket-item-btn btn-delete" onclick="removeFromBucket('${item.id_instrument}')" title="Rimuovi">✕</button>
+                        </div>
+                        <div class="bucket-item-row">
+                            <span>Settore: <strong>${sectorLabel(item.sector || 'N/D')}</strong></span>
+                            <span>Mercato: <strong>${item.code_market || '-'}</strong></span>
+                        </div>
+                        <div class="bucket-item-row">
+                            <span>Forza: <strong class="${fc}">${forzaVal.toFixed(4)}</strong></span>
+                            <span>Data: <strong>${item.date_start || '-'}</strong></span>
+                        </div>
+                        <div class="bucket-item-actions">
+                            <button class="bucket-item-btn btn-graph" onclick="openPriceGraph('${item.id_instrument}')">
+                                <i class="fas fa-chart-line"></i> Grafico
+                            </button>
+                        </div>
+                    </div>
+                `;
+            });
+
+            listEl.innerHTML = html;
         }
 
         // ============================================================
@@ -836,7 +1280,6 @@
                     return;
                 }
 
-                // Imposta i range di date nei filtri
                 setDateRangeDefaults(_allData);
 
                 document.getElementById('loadingStatus').textContent = `${_allData.length} strumenti ricevuti. Rendering...`;
@@ -852,6 +1295,15 @@
         }
 
         // ============================================================
+        // FILTRO CAPITALIZZAZIONE
+        // ============================================================
+        function onCapFilterChange() {
+            const val = parseFloat(document.getElementById('capMaxInput').value);
+            _capMax = (!isNaN(val) && val >= 0) ? val : null;
+            applyFilters();
+        }
+
+        // ============================================================
         // DATE FILTERS
         // ============================================================
         function setDateRangeDefaults(data) {
@@ -861,7 +1313,6 @@
             const dateStartInput = document.getElementById('dateStart');
             const dateEndInput = document.getElementById('dateEnd');
 
-            // Imposta data minima e massima
             const minDate = dates[0];
             const maxDate = dates[dates.length - 1];
 
@@ -870,7 +1321,6 @@
             dateEndInput.min = minDate;
             dateEndInput.max = maxDate;
 
-            // Valori di default: tutto il range
             dateStartInput.value = minDate;
             dateEndInput.value = maxDate;
             _dateStart = minDate;
@@ -881,7 +1331,6 @@
             const start = document.getElementById('dateStart').value;
             const end = document.getElementById('dateEnd').value;
 
-            // Validazione
             if (start && end && start > end) {
                 showMessage('La data di inizio deve essere precedente alla data di fine.', 'warning');
                 return;
@@ -933,7 +1382,6 @@
         // ============================================================
         function buildTimeline(data) {
             const wrapper = document.getElementById('graphWrapper');
-            // Ottieni le dimensioni del container per lo scroll
             const W = Math.max(wrapper.clientWidth || 1200, 1200);
             const H = Math.max(wrapper.clientHeight || 800, 800);
 
@@ -947,8 +1395,7 @@
             const nDates = dateSet.length;
             const nSectors = sectorSet.length;
 
-            const MARGIN = { top: 50, right: 30, bottom: 80, left: 160 };
-            // Calcola larghezza interna in base al numero di date
+            const MARGIN = { top: 50, right: 30, bottom: 80, left: 170 };
             const minDateWidth = 90;
             const innerW = Math.max(W - MARGIN.left - MARGIN.right, nDates * minDateWidth);
             const innerH = Math.max(H - MARGIN.top - MARGIN.bottom, nSectors * 80);
@@ -966,7 +1413,6 @@
             const svgEl = document.getElementById('timeline-svg');
             d3.select(svgEl).selectAll('*').remove();
 
-            // Calcola dimensioni totali dell'SVG (basato sul contenuto, non sul viewport)
             const svgWidth = innerW + MARGIN.left + MARGIN.right;
             const svgHeight = innerH + MARGIN.top + MARGIN.bottom;
 
@@ -1005,7 +1451,7 @@
                 .attr('height', bandH)
                 .attr('fill', (d, i) => i % 2 === 0 ? 'rgba(0,0,0,0.02)' : 'transparent');
 
-            // Asse X
+            // Asse X (Date in alto)
             const xAxis = d3.axisTop(xScale)
                 .tickSize(0)
                 .tickFormat(d => d);
@@ -1021,26 +1467,56 @@
 
             g.select('.axis-x .domain').remove();
 
-            // Asse Y
-            g.append('g').attr('class', 'axis-y')
-                .selectAll('text').data(sectorSet).enter()
-                .append('text')
-                .attr('x', -8)
-                .attr('y', d => yScale(d))
-                .attr('dy', '0.35em')
-                .attr('text-anchor', 'end')
-                .attr('font-family', 'Orbitron, sans-serif')
-                .attr('font-size', 9)
-                .attr('fill', '#333')
-                .attr('font-weight', '600')
-                .text(d => sectorLabel(d).substring(0, 22));
-
+            // Griglia Orizzontale
             g.append('g').attr('class', 'grid-h')
                 .selectAll('line').data(sectorSet).enter()
                 .append('line')
                 .attr('x1', -MARGIN.left).attr('x2', innerW)
                 .attr('y1', d => yScale(d)).attr('y2', d => yScale(d))
                 .attr('stroke', '#d0d0d0').attr('stroke-width', 0.8);
+
+            // ---- AXIS Y STICKY A SINISTRA ----
+            const initialScrollLeft = wrapper.scrollLeft || 0;
+            const axisYGroup = svg.append('g')
+                .attr('class', 'axis-y-sticky')
+                .attr('transform', `translate(${initialScrollLeft}, ${MARGIN.top})`);
+
+            axisYGroup.append('rect')
+                .attr('class', 'axis-y-bg')
+                .attr('x', 0)
+                .attr('y', -MARGIN.top)
+                .attr('width', MARGIN.left - 5)
+                .attr('height', svgHeight)
+                .attr('fill', '#ffffff')
+                .attr('opacity', 0.98);
+
+            axisYGroup.append('line')
+                .attr('x1', MARGIN.left - 5)
+                .attr('x2', MARGIN.left - 5)
+                .attr('y1', -MARGIN.top)
+                .attr('y2', svgHeight - MARGIN.top)
+                .attr('stroke', '#d0d0d0')
+                .attr('stroke-width', 1.5);
+
+            axisYGroup.selectAll('text').data(sectorSet).enter()
+                .append('text')
+                .attr('x', MARGIN.left - 12)
+                .attr('y', d => yScale(d))
+                .attr('dy', '0.35em')
+                .attr('text-anchor', 'end')
+                .attr('font-family', 'Orbitron, sans-serif')
+                .attr('font-size', 9.5)
+                .attr('fill', '#111')
+                .attr('font-weight', '700')
+                .text(d => sectorLabel(d).substring(0, 24));
+
+            if (!wrapper._stickyScrollHandlerAttached) {
+                wrapper.addEventListener('scroll', () => {
+                    const sl = wrapper.scrollLeft;
+                    d3.select('.axis-y-sticky').attr('transform', `translate(${sl}, ${MARGIN.top})`);
+                });
+                wrapper._stickyScrollHandlerAttached = true;
+            }
 
             // ---- NODI ----
             const cellMap = {};
@@ -1087,7 +1563,6 @@
             const nodeG = g.append('g').attr('class', 'nodes');
             const tooltip = document.getElementById('tooltip');
 
-            // Listener per mantenere il tooltip visibile quando il mouse è sopra di esso
             tooltip.addEventListener('mouseenter', function () {
                 tooltip.classList.add('visible');
             });
@@ -1096,48 +1571,40 @@
                 tooltip.classList.remove('visible');
             });
 
-            // Funzione per generare il contenuto del tooltip una volta sola
             function generateTooltipContent(d) {
                 const fields = [
                     { key: 'id_instrument', label: 'ID Strumento' },
                     { key: 'instrument_description', label: 'Descrizione' },
                     { key: 'sector', label: 'Settore' },
                     { key: 'code_market', label: 'Mercato' },
-                    { key: 'date_start', label: 'Data' },
+                    { key: 'date_start', label: 'Data Start' },
                     { key: 'forza', label: 'Forza' },
-                    { key: 'price@close', label: 'Close' },
+                    { key: 'price@close', label: 'Prezzo Close' },
                     { key: 'currency', label: 'Valuta' },
                     { key: 'instrument@volume', label: 'Volume' },
-                    { key: 'PE', label: 'P/E' },
+                    { key: 'PE', label: 'P/E Ratio' },
                     { key: 'EPS', label: 'EPS' },
                     { key: 'market_capitalization', label: 'Cap. Mercato' },
-                    { key: 'invarianza_vs_market', label: 'Invarianza vs Market' },
-                    { key: 'invarianza_vs_sector', label: 'Invarianza vs Sector' },
-                    { key: 'invarianza_vs_date', label: 'Invarianza vs Date' },
-                    { key: 'invarianza_vs_forecast', label: 'Invarianza vs Forecast' },
-                    { key: 'invarianza_vs_portfolio', label: 'Invarianza vs Portfolio' },
-                    { key: 'invarianza_vs_currency', label: 'Invarianza vs Currency' },
-                    { key: 'invarianza_vs_risk', label: 'Invarianza vs Risk' },
+                    { key: 'invarianza_vs_market', label: 'Inv. vs Market' },
+                    { key: 'invarianza_vs_sector', label: 'Inv. vs Sector' },
                     { key: 'invariance_days', label: 'Inv. Days' },
-                    { key: 'portfolio', label: 'In Portfolio' },
-                    { key: 'invested_amount', label: 'Invested Amount' },
+                    { key: 'portfolio', label: 'In Portafoglio' },
+                    { key: 'invested_amount', label: 'Importo Investito' },
                     { key: 'position_pnl', label: 'Position PnL' },
                     { key: 'position_pnl_percent', label: 'PnL %' },
-                    { key: 'weight', label: 'Weight' },
                 ];
 
                 let html = `
                     <div class="tt-id">${d.id_instrument || '-'}</div>
-                    <div class="tt-desc">${(d.instrument_description || '').substring(0, 50)}</div>
-                    <div style="margin-bottom:4px;">
+                    <div class="tt-desc">${(d.instrument_description || '-')}</div>
+                    <div style="margin-bottom:8px; display:flex; gap:4px; flex-wrap:wrap;">
                         <span class="tt-badge tt-sector">${sectorLabel(d._sector || d.sector || 'N/D')}</span>
                         <span class="tt-badge tt-market">${d.code_market || '-'}</span>
-                        ${d.portfolio ? '<span class="tt-badge tt-portfolio">★ Portfolio</span>' : ''}
+                        ${d.portfolio ? '<span class="tt-badge tt-portfolio">★ PORTFOLIO</span>' : ''}
                     </div>
-                    <div style="border-top:1px solid #444; padding-top:5px;">
+                    <div style="border-top:1px solid rgba(255,255,255,0.15); padding-top:6px;">
                 `;
 
-                let hasValidRows = false;
                 fields.forEach(f => {
                     let val = d[f.key];
                     if (f.key === 'sector') {
@@ -1147,7 +1614,7 @@
                     } else if (f.key === 'forza' && typeof val === 'number') {
                         val = val.toFixed(4);
                     } else if (typeof val === 'number') {
-                        val = val.toFixed(2);
+                        val = val.toLocaleString('it-IT', { maximumFractionDigits: 2 });
                     } else if (val === undefined || val === null || val === 'None' || val === '') {
                         val = '-';
                     } else {
@@ -1156,37 +1623,40 @@
 
                     if (val === '-') return;
 
-                    hasValidRows = true;
+                    let valClass = 'value';
+                    if (f.key === 'forza' || f.key === 'position_pnl' || f.key === 'position_pnl_percent') {
+                        const num = parseFloat(d[f.key]);
+                        if (!isNaN(num)) {
+                            valClass += num >= 0 ? ' tt-pos' : ' tt-neg';
+                        }
+                    }
+
                     html += `
                         <div class="tt-row">
                             <span class="label">${f.label}</span>
-                            <span class="value">${val}</span>
+                            <span class="${valClass}">${val}</span>
                         </div>
                     `;
                 });
-
-                if (!hasValidRows) {
-                    html += `
-                        <div class="tt-row">
-                            <span class="label" style="color:#999;">Nessun dato aggiuntivo</span>
-                        </div>
-                    `;
-                }
 
                 const forzaVal = parseFloat(d.forza) || 0;
                 const fc = forzaVal < 0 ? 'tt-neg' : 'tt-pos';
                 html += `
                     <div class="tt-row">
-                        <span class="label">Forza (colore)</span>
-                        <span class="value ${fc}">${forzaVal.toFixed(4)}</span>
+                        <span class="label">Stato Forza</span>
+                        <span class="value ${fc}">${forzaVal >= 0 ? '▲ Positiva (' + forzaVal.toFixed(4) + ')' : '▼ Negativa (' + forzaVal.toFixed(4) + ')'}</span>
                     </div>
                     <div class="tt-row">
-                        <span class="label">Tipo nodo</span>
+                        <span class="label">Tipo Nodo</span>
                         <span class="value">${d._isCloud ? '☁️ Nuvola (inv. negativa)' : '⚪ Sfera'}</span>
                     </div>
-                    <div class="tt-row" style="border-bottom: none; padding-top: 4px; margin-top: 4px; border-top: 1px solid #555;">
-                        <span class="label">🔍 Clicca per</span>
-                        <span class="value" style="color: #4fc3f7;">grafico prezzi</span>
+                    <div class="tt-row" style="border-bottom: none; padding-top: 8px; margin-top: 6px; border-top: 1px solid #38bdf8; display:flex; gap:6px;">
+                        <button onclick="openPriceGraph('${d.id_instrument}')" style="flex:1; padding:5px 8px; background:#0284c7; color:#fff; border:none; border-radius:4px; font-family:inherit; font-size:10px; font-weight:700; cursor:pointer;">
+                            <i class="fas fa-chart-line"></i> Grafico
+                        </button>
+                        <button onclick="addToBucketFromId('${d.id_instrument}')" style="flex:1; padding:5px 8px; background:#22c55e; color:#fff; border:none; border-radius:4px; font-family:inherit; font-size:10px; font-weight:700; cursor:pointer;">
+                            <i class="fas fa-box-archive"></i> + Bucket
+                        </button>
                     </div>
                 `;
 
@@ -1194,9 +1664,7 @@
                 return html;
             }
 
-            // Funzione per il mouseenter
             function nodeMouseEnter(event, d) {
-                // Aggiorna il tooltip
                 const content = generateTooltipContent(d);
                 if (tooltip.innerHTML !== content) {
                     tooltip.innerHTML = content;
@@ -1207,7 +1675,6 @@
             }
 
             function nodeMouseLeave(event, d) {
-                // Il tooltip rimane visibile se il mouse entra nel tooltip (gestito dai listener del tooltip)
                 tooltip.classList.remove('visible');
             }
 
@@ -1248,8 +1715,8 @@
                 return d._forza < 0 ? 'url(#gradRed)' : 'url(#gradGreen)';
             }
 
-            // ---- CERCHI CON CLICK PER GRAFICO PREZZI ----
-            const circleEnter = nodeG.selectAll('circle.node-ball').data(circleData).enter()
+            // ---- CERCHI CON DRAG & DROP PER BUCKET ----
+            nodeG.selectAll('circle.node-ball').data(circleData).enter()
                 .append('circle')
                 .attr('class', d => d.portfolio ? 'node-ball portfolio-node' : 'node-ball')
                 .attr('cx', d => d._cx)
@@ -1258,7 +1725,7 @@
                 .attr('fill', d => getGradient(d))
                 .attr('stroke', d => d.portfolio ? '#2e7d32' : d._color)
                 .attr('stroke-width', d => d.portfolio ? 2.5 : 1.2)
-                .style('cursor', 'pointer')
+                .attr('draggable', 'true')
                 .each(function (d) {
                     d3.select(this).datum(d);
                 })
@@ -1268,16 +1735,34 @@
                         openPriceGraph(d.id_instrument);
                     }
                 })
+                .on('dblclick', function (event, d) {
+                    event.stopPropagation();
+                    addToBucket(d);
+                })
                 .on('mouseenter', nodeMouseEnter)
-                .on('mouseleave', nodeMouseLeave);
+                .on('mouseleave', nodeMouseLeave)
+                .on('dragstart', function (event, d) {
+                    _draggedNodeData = d;
+                    if (event.dataTransfer) {
+                        event.dataTransfer.setData('application/json', JSON.stringify(d));
+                        event.dataTransfer.setData('text/plain', d.id_instrument);
+                    }
+                    const bucket = document.getElementById('bucketPanel');
+                    bucket.classList.add('pulse-highlight');
+                })
+                .on('dragend', function () {
+                    _draggedNodeData = null;
+                    const bucket = document.getElementById('bucketPanel');
+                    bucket.classList.remove('pulse-highlight');
+                });
 
-            // ---- NUVOLE CON FULMINE E CLICK PER GRAFICO PREZZI ----
+            // ---- NUVOLE CON DRAG & DROP PER BUCKET ----
             cloudData.forEach(d => {
                 const shapes = cloudPath(d._cx, d._cy, d._r);
 
                 const cloudGroup = nodeG.append('g')
                     .attr('class', d.portfolio ? 'node-cloud portfolio-node' : 'node-cloud')
-                    .style('cursor', 'pointer')
+                    .attr('draggable', 'true')
                     .each(function () {
                         d3.select(this).datum(d);
                     })
@@ -1287,8 +1772,26 @@
                             openPriceGraph(ev.id_instrument);
                         }
                     })
+                    .on('dblclick', function (event, ev) {
+                        event.stopPropagation();
+                        addToBucket(ev);
+                    })
                     .on('mouseenter', nodeMouseEnter)
-                    .on('mouseleave', nodeMouseLeave);
+                    .on('mouseleave', nodeMouseLeave)
+                    .on('dragstart', function (event) {
+                        _draggedNodeData = d;
+                        if (event.dataTransfer) {
+                            event.dataTransfer.setData('application/json', JSON.stringify(d));
+                            event.dataTransfer.setData('text/plain', d.id_instrument);
+                        }
+                        const bucket = document.getElementById('bucketPanel');
+                        bucket.classList.add('pulse-highlight');
+                    })
+                    .on('dragend', function () {
+                        _draggedNodeData = null;
+                        const bucket = document.getElementById('bucketPanel');
+                        bucket.classList.remove('pulse-highlight');
+                    });
 
                 cloudGroup.append('path')
                     .attr('d', shapes.cloud)
@@ -1325,13 +1828,6 @@
             document.getElementById('statsBar').style.display = 'block';
             document.getElementById('legend').style.display = 'block';
             document.getElementById('loadingOverlay').style.display = 'none';
-
-            // (portfolio filter already applied in applyFilters, no post-render opacity needed)
-
-            // Scorri all'inizio del grafico
-            const wrapperEl = document.getElementById('graphWrapper');
-            wrapperEl.scrollLeft = 0;
-            wrapperEl.scrollTop = 0;
         }
 
         // ============================================================
@@ -1342,12 +1838,11 @@
             const wrapper = document.getElementById('graphWrapper');
             const wr = wrapper.getBoundingClientRect();
             const rect = tooltip.getBoundingClientRect();
-            const TW = rect.width || 320;
-            const TH = rect.height || 500;
+            const TW = rect.width || 380;
+            const TH = rect.height || 450;
             let left = event.clientX - wr.left + 14;
             let top = event.clientY - wr.top - 10;
 
-            // Evita che esca dal container
             if (left + TW > wr.width) {
                 left = event.clientX - wr.left - TW - 14;
             }
@@ -1362,7 +1857,7 @@
         }
 
         // ============================================================
-        // CONTROLS
+        // CONTROLS & FILTERS
         // ============================================================
         function togglePortfolioHighlight() {
             _highlightPortfolio = !_highlightPortfolio;
@@ -1473,6 +1968,15 @@
             }
             if (_dateEnd) {
                 filtered = filtered.filter(d => d.date_start <= _dateEnd);
+            }
+
+            // Filtro capitalizzazione max
+            if (_capMax !== null) {
+                filtered = filtered.filter(d => {
+                    if (d.market_capitalization === undefined || d.market_capitalization === null || d.market_capitalization === '') return true;
+                    const cap = parseFloat(d.market_capitalization);
+                    return isNaN(cap) || cap <= _capMax;
+                });
             }
 
             // Filtro mercato
