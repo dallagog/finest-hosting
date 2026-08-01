@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Graph 0.2</title>
+    <title>Graph 0.3</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <script src="https://d3js.org/d3.v7.min.js"></script>
     <link rel="icon" type="image/png" href="images/icon-finest.png">
@@ -363,7 +363,35 @@
             cursor: default;
         }
 
-        /* Scrollbar personalizzata per il wrapper */
+        /* ---- SECTOR LABELS OVERLAY (FISSO A SINISTRA) ---- */
+        .sector-labels-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 170px;
+            height: 100%;
+            pointer-events: none;
+            z-index: 50;
+            overflow: hidden;
+            background: white;
+            border-right: 3px solid #000000;
+            box-shadow: 2px 0 10px rgba(0, 0, 0, 0.08);
+        }
+
+        .sector-label-fixed {
+            position: absolute;
+            right: 12px;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 10px;
+            font-weight: 900;
+            color: #000000;
+            text-align: right;
+            white-space: nowrap;
+            transform: translateY(-50%);
+            text-shadow: 0 0 5px rgba(255, 255, 255, 0.9);
+        }
+
+        /* ---- SCROLLBAR ---- */
         .graph-wrapper::-webkit-scrollbar {
             width: 10px;
             height: 10px;
@@ -900,7 +928,7 @@
 <body>
     <div class="main-container">
 
-        <!-- HEADER (PERMANENTEMENTE VISIBILE CON STICKY) -->
+        <!-- HEADER -->
         <div class="header-bar">
             <div class="user-info-left">
                 <div><strong>Utente:</strong> <span id="usernameDisplay">-</span></div>
@@ -911,7 +939,6 @@
             </div>
             <h1>📊 Statistics Timeline</h1>
             <div class="header-actions">
-                <!-- Date filters -->
                 <div class="date-filters">
                     <label>Da</label>
                     <input type="date" id="dateStart" onchange="onDateFilterChange()">
@@ -920,7 +947,6 @@
                     <input type="date" id="dateEnd" onchange="onDateFilterChange()">
                     <button class="clear-dates" onclick="clearDateFilters()">✕</button>
                 </div>
-                <!-- Capitalizzazione max -->
                 <div class="cap-filter">
                     <label>Cap. Max</label>
                     <input type="number" id="capMaxInput" placeholder="Max cap..." oninput="onCapFilterChange()">
@@ -993,7 +1019,7 @@
 
     </div>
 
-    <!-- PANNELLO BUCKET (TRASCINABILE / DROP ZONE) -->
+    <!-- BUCKET PANEL -->
     <div class="bucket-panel" id="bucketPanel">
         <div class="bucket-header" onclick="toggleBucketCollapse()">
             <div class="bucket-title">
@@ -1012,9 +1038,7 @@
         <div class="bucket-drop-area">
             <i class="fas fa-hand-pointer"></i> Trascina qui i nodi dal grafico o usa "+ Bucket"
         </div>
-        <div class="bucket-items-list" id="bucketItemsList">
-            <!-- Gli elementi trascinati verranno inseriti qui -->
-        </div>
+        <div class="bucket-items-list" id="bucketItemsList"></div>
     </div>
 
     <script>
@@ -1042,7 +1066,6 @@
         let _dateEnd = null;
         let _capMax = null;
 
-        // BUCKET STATE & DRAG GLOBAL & TOOLTIP TIMER
         let _bucketItems = [];
         let _draggedNodeData = null;
         let _tooltipHideTimer = null;
@@ -1087,7 +1110,7 @@
         }
 
         // ============================================================
-        // GESTIONE BUCKET (CESTINO TRASCINABILE)
+        // GESTIONE BUCKET
         // ============================================================
         function initBucketListeners() {
             const panel = document.getElementById('bucketPanel');
@@ -1243,7 +1266,7 @@
         }
 
         // ============================================================
-        // FETCH /getstatistics
+        // FETCH
         // ============================================================
         async function fetchStatistics() {
             document.getElementById('loadingStatus').textContent = 'Chiamata /getstatistics...';
@@ -1296,7 +1319,7 @@
         }
 
         // ============================================================
-        // FILTRO CAPITALIZZAZIONE
+        // FILTRI
         // ============================================================
         function onCapFilterChange() {
             const val = parseFloat(document.getElementById('capMaxInput').value);
@@ -1304,9 +1327,6 @@
             applyFilters();
         }
 
-        // ============================================================
-        // DATE FILTERS
-        // ============================================================
         function setDateRangeDefaults(data) {
             const dates = data.map(d => d.date_start).filter(Boolean).sort();
             if (dates.length === 0) return;
@@ -1353,7 +1373,7 @@
         }
 
         // ============================================================
-        // SHAPE: NUVOLA CON FULMINE
+        // SHAPE: NUVOLA
         // ============================================================
         function cloudPath(cx, cy, r) {
             const s = r * 0.85;
@@ -1688,7 +1708,7 @@
                 return d._forza < 0 ? 'url(#gradRed)' : 'url(#gradGreen)';
             }
 
-            // ---- CERCHI CON DRAG & DROP PER BUCKET ----
+            // ---- CERCHI ----
             nodeG.selectAll('circle.node-ball').data(circleData).enter()
                 .append('circle')
                 .attr('class', d => d.portfolio ? 'node-ball portfolio-node' : 'node-ball')
@@ -1729,7 +1749,7 @@
                     bucket.classList.remove('pulse-highlight');
                 });
 
-            // ---- NUVOLE CON DRAG & DROP PER BUCKET ----
+            // ---- NUVOLE ----
             cloudData.forEach(d => {
                 const shapes = cloudPath(d._cx, d._cy, d._r);
 
@@ -1794,85 +1814,34 @@
                 .attr('pointer-events', 'none')
                 .text(d => d.id_instrument);
 
-            // ---- AXIS Y STICKY A SINISTRA (RAGGRUPPATO ED ESEGUITO PER ULTIMO PER STARE SOPRA A TUTTI I NODI E GRIGLIE) ----
-            // Rimuovi eventuali assi Y precedenti
-            svg.selectAll('.axis-y-sticky').remove();
-
-            // Crea un wrapper per l'asse Y che sarà posizionato in modo assoluto rispetto al container
-            const axisYGroup = svg.append('g')
-                .attr('class', 'axis-y-sticky')
-                .attr('transform', `translate(${wrapper.scrollLeft || 0}, ${MARGIN.top})`);
-
-            // Sfondo BIANCO OPACO (100% opacità) per coprire tutti i nodi e griglie che scorrono a sinistra
-            axisYGroup.append('rect')
-                .attr('class', 'axis-y-bg')
-                .attr('x', 0)
-                .attr('y', -MARGIN.top)
-                .attr('width', MARGIN.left + 10)
-                .attr('height', svgHeight + MARGIN.top + MARGIN.bottom)
-                .attr('fill', '#ffffff')
-                .attr('opacity', 1.0);
-
-            // Linea divisoria nera verticale (più spessa e visibile)
-            axisYGroup.append('line')
-                .attr('x1', MARGIN.left)
-                .attr('x2', MARGIN.left)
-                .attr('y1', -MARGIN.top)
-                .attr('y2', svgHeight - MARGIN.top + 10)
-                .attr('stroke', '#000000')
-                .attr('stroke-width', 3);
-
-            // Nomi dei Settori (Grassetto Nero visibilissimo, sempre fisso a sinistra)
-            const sectorLabels = axisYGroup.selectAll('text.sector-label')
-                .data(sectorSet)
-                .enter()
-                .append('text')
-                .attr('class', 'sector-label')
-                .attr('x', MARGIN.left - 12)
-                .attr('y', d => yScale(d))
-                .attr('dy', '0.35em')
-                .attr('text-anchor', 'end')
-                .attr('font-family', 'Orbitron, sans-serif')
-                .attr('font-size', 10)
-                .attr('fill', '#000000')
-                .attr('font-weight', '900')
-                .text(d => sectorLabel(d).substring(0, 24));
-
-            // Handler per riposizionare l'asse Y durante lo scroll orizzontale
-            // Usa requestAnimationFrame per performance migliore
-            let scrollRAF = null;
-            const updateStickyAxisY = () => {
-                if (scrollRAF) {
-                    cancelAnimationFrame(scrollRAF);
-                }
-                scrollRAF = requestAnimationFrame(() => {
-                    const sl = wrapper.scrollLeft || 0;
-                    svg.selectAll('.axis-y-sticky')
-                        .attr('transform', `translate(${sl}, ${MARGIN.top})`);
-                    scrollRAF = null;
-                });
-            };
-
-            // Rimuovi vecchio handler se esiste
-            if (wrapper._stickyScrollHandler) {
-                wrapper.removeEventListener('scroll', wrapper._stickyScrollHandler);
+            // ---- CREA OVERLAY PER ETICHETTE SETTORI FISSE A SINISTRA ----
+            // Rimuovi eventuali overlay precedenti
+            const existingOverlay = document.getElementById('sectorLabelsOverlay');
+            if (existingOverlay) {
+                existingOverlay.remove();
             }
-            wrapper._stickyScrollHandler = updateStickyAxisY;
-            wrapper.addEventListener('scroll', updateStickyAxisY);
 
-            // Aggiorna anche quando la finestra viene ridimensionata
-            if (window._resizeHandler) {
-                window.removeEventListener('resize', window._resizeHandler);
-            }
-            window._resizeHandler = () => {
-                updateStickyAxisY();
-            };
-            window.addEventListener('resize', window._resizeHandler);
+            // Crea un div overlay posizionato sopra il wrapper
+            const overlay = document.createElement('div');
+            overlay.id = 'sectorLabelsOverlay';
+            overlay.className = 'sector-labels-overlay';
 
-            // Esegui subito l'aggiornamento
-            updateStickyAxisY();
+            // Aggiungi le etichette dei settori
+            sectorSet.forEach((sector) => {
+                const label = document.createElement('div');
+                label.className = 'sector-label-fixed';
+                label.textContent = sectorLabel(sector).substring(0, 24);
 
-            // Fine della parte sticky axis Y
+                // Posiziona l'etichetta in base alla posizione y del settore
+                const yPos = yScale(sector) + MARGIN.top;
+                label.style.top = yPos + 'px';
+
+                overlay.appendChild(label);
+            });
+
+            // Aggiungi l'overlay al wrapper
+            wrapper.style.position = 'relative';
+            wrapper.appendChild(overlay);
 
             // ---- AGGIORNA STATS ----
             document.getElementById('statCount').textContent = data.length;
@@ -1884,7 +1853,7 @@
         }
 
         // ============================================================
-        // TOOLTIP - Posizionamento ottimizzato
+        // TOOLTIP
         // ============================================================
         function positionTooltip(event) {
             const tooltip = document.getElementById('tooltip');
@@ -1910,7 +1879,7 @@
         }
 
         // ============================================================
-        // CONTROLS & FILTERS
+        // CONTROLS
         // ============================================================
         function togglePortfolioHighlight() {
             _highlightPortfolio = !_highlightPortfolio;
@@ -2015,7 +1984,6 @@
         function applyFilters() {
             let filtered = _allData;
 
-            // Filtro data
             if (_dateStart) {
                 filtered = filtered.filter(d => d.date_start >= _dateStart);
             }
@@ -2023,7 +1991,6 @@
                 filtered = filtered.filter(d => d.date_start <= _dateEnd);
             }
 
-            // Filtro capitalizzazione max
             if (_capMax !== null) {
                 filtered = filtered.filter(d => {
                     if (d.market_capitalization === undefined || d.market_capitalization === null || d.market_capitalization === '') return true;
@@ -2032,22 +1999,18 @@
                 });
             }
 
-            // Filtro mercato
             if (_marketFilter !== 'ALL') {
                 filtered = filtered.filter(d => d.code_market === _marketFilter);
             }
 
-            // Filtro settori
             if (_selectedSectors.length > 0) {
                 filtered = filtered.filter(d => _selectedSectors.includes(d.sector || 'N/D'));
             }
 
-            // Filtro portafoglio
             if (_highlightPortfolio) {
                 filtered = filtered.filter(d => d.portfolio);
             }
 
-            // Filtro inversione
             if (_intInversionActive) {
                 filtered = filtered.filter(d => {
                     const forza = parseFloat(d.forza) || 0;
@@ -2061,6 +2024,9 @@
                 document.getElementById('statsBar').style.display = 'none';
                 document.getElementById('legend').style.display = 'none';
                 d3.select('#timeline-svg').selectAll('*').remove();
+                // Rimuovi anche l'overlay dei settori
+                const overlay = document.getElementById('sectorLabelsOverlay');
+                if (overlay) overlay.remove();
                 return;
             }
 
