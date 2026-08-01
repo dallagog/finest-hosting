@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Graph 0.1</title>
+    <title>Graph 0.2</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <script src="https://d3js.org/d3.v7.min.js"></script>
     <link rel="icon" type="image/png" href="images/icon-finest.png">
@@ -1795,34 +1795,40 @@
                 .text(d => d.id_instrument);
 
             // ---- AXIS Y STICKY A SINISTRA (RAGGRUPPATO ED ESEGUITO PER ULTIMO PER STARE SOPRA A TUTTI I NODI E GRIGLIE) ----
-            const currentScrollLeft = wrapper.scrollLeft || 0;
+            // Rimuovi eventuali assi Y precedenti
+            svg.selectAll('.axis-y-sticky').remove();
+
+            // Crea un wrapper per l'asse Y che sarà posizionato in modo assoluto rispetto al container
             const axisYGroup = svg.append('g')
                 .attr('class', 'axis-y-sticky')
-                .attr('transform', `translate(${currentScrollLeft}, ${MARGIN.top})`);
+                .attr('transform', `translate(${wrapper.scrollLeft || 0}, ${MARGIN.top})`);
 
             // Sfondo BIANCO OPACO (100% opacità) per coprire tutti i nodi e griglie che scorrono a sinistra
             axisYGroup.append('rect')
                 .attr('class', 'axis-y-bg')
                 .attr('x', 0)
                 .attr('y', -MARGIN.top)
-                .attr('width', MARGIN.left - 2)
-                .attr('height', svgHeight)
+                .attr('width', MARGIN.left + 10)
+                .attr('height', svgHeight + MARGIN.top + MARGIN.bottom)
                 .attr('fill', '#ffffff')
                 .attr('opacity', 1.0);
 
-            // Linea divisoria nera verticale
+            // Linea divisoria nera verticale (più spessa e visibile)
             axisYGroup.append('line')
-                .attr('x1', MARGIN.left - 2)
-                .attr('x2', MARGIN.left - 2)
+                .attr('x1', MARGIN.left)
+                .attr('x2', MARGIN.left)
                 .attr('y1', -MARGIN.top)
-                .attr('y2', svgHeight - MARGIN.top)
+                .attr('y2', svgHeight - MARGIN.top + 10)
                 .attr('stroke', '#000000')
-                .attr('stroke-width', 2);
+                .attr('stroke-width', 3);
 
             // Nomi dei Settori (Grassetto Nero visibilissimo, sempre fisso a sinistra)
-            axisYGroup.selectAll('text').data(sectorSet).enter()
+            const sectorLabels = axisYGroup.selectAll('text.sector-label')
+                .data(sectorSet)
+                .enter()
                 .append('text')
-                .attr('x', MARGIN.left - 10)
+                .attr('class', 'sector-label')
+                .attr('x', MARGIN.left - 12)
                 .attr('y', d => yScale(d))
                 .attr('dy', '0.35em')
                 .attr('text-anchor', 'end')
@@ -1833,17 +1839,40 @@
                 .text(d => sectorLabel(d).substring(0, 24));
 
             // Handler per riposizionare l'asse Y durante lo scroll orizzontale
+            // Usa requestAnimationFrame per performance migliore
+            let scrollRAF = null;
             const updateStickyAxisY = () => {
-                const sl = wrapper.scrollLeft;
-                svg.selectAll('.axis-y-sticky').attr('transform', `translate(${sl}, ${MARGIN.top})`);
+                if (scrollRAF) {
+                    cancelAnimationFrame(scrollRAF);
+                }
+                scrollRAF = requestAnimationFrame(() => {
+                    const sl = wrapper.scrollLeft || 0;
+                    svg.selectAll('.axis-y-sticky')
+                        .attr('transform', `translate(${sl}, ${MARGIN.top})`);
+                    scrollRAF = null;
+                });
             };
 
+            // Rimuovi vecchio handler se esiste
             if (wrapper._stickyScrollHandler) {
                 wrapper.removeEventListener('scroll', wrapper._stickyScrollHandler);
             }
             wrapper._stickyScrollHandler = updateStickyAxisY;
             wrapper.addEventListener('scroll', updateStickyAxisY);
+
+            // Aggiorna anche quando la finestra viene ridimensionata
+            if (window._resizeHandler) {
+                window.removeEventListener('resize', window._resizeHandler);
+            }
+            window._resizeHandler = () => {
+                updateStickyAxisY();
+            };
+            window.addEventListener('resize', window._resizeHandler);
+
+            // Esegui subito l'aggiornamento
             updateStickyAxisY();
+
+            // Fine della parte sticky axis Y
 
             // ---- AGGIORNA STATS ----
             document.getElementById('statCount').textContent = data.length;
