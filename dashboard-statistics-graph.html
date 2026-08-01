@@ -1476,49 +1476,6 @@
                 .attr('y1', d => yScale(d)).attr('y2', d => yScale(d))
                 .attr('stroke', '#d0d0d0').attr('stroke-width', 0.8);
 
-            // ---- AXIS Y STICKY A SINISTRA ----
-            const initialScrollLeft = wrapper.scrollLeft || 0;
-            const axisYGroup = svg.append('g')
-                .attr('class', 'axis-y-sticky')
-                .attr('transform', `translate(${initialScrollLeft}, ${MARGIN.top})`);
-
-            axisYGroup.append('rect')
-                .attr('class', 'axis-y-bg')
-                .attr('x', 0)
-                .attr('y', -MARGIN.top)
-                .attr('width', MARGIN.left - 5)
-                .attr('height', svgHeight)
-                .attr('fill', '#ffffff')
-                .attr('opacity', 0.98);
-
-            axisYGroup.append('line')
-                .attr('x1', MARGIN.left - 5)
-                .attr('x2', MARGIN.left - 5)
-                .attr('y1', -MARGIN.top)
-                .attr('y2', svgHeight - MARGIN.top)
-                .attr('stroke', '#d0d0d0')
-                .attr('stroke-width', 1.5);
-
-            axisYGroup.selectAll('text').data(sectorSet).enter()
-                .append('text')
-                .attr('x', MARGIN.left - 12)
-                .attr('y', d => yScale(d))
-                .attr('dy', '0.35em')
-                .attr('text-anchor', 'end')
-                .attr('font-family', 'Orbitron, sans-serif')
-                .attr('font-size', 9.5)
-                .attr('fill', '#111')
-                .attr('font-weight', '700')
-                .text(d => sectorLabel(d).substring(0, 24));
-
-            if (!wrapper._stickyScrollHandlerAttached) {
-                wrapper.addEventListener('scroll', () => {
-                    const sl = wrapper.scrollLeft;
-                    d3.select('.axis-y-sticky').attr('transform', `translate(${sl}, ${MARGIN.top})`);
-                });
-                wrapper._stickyScrollHandlerAttached = true;
-            }
-
             // ---- NODI ----
             const cellMap = {};
             data.forEach(item => {
@@ -1824,7 +1781,7 @@
                     .attr('fill-opacity', 0.95);
             });
 
-            // ---- ETICHETTE ----
+            // ---- ETICHETTE NODI ----
             nodeG.selectAll('text.node-label').data(nodeData.filter(d => d._r >= 7)).enter()
                 .append('text')
                 .attr('class', 'node-label')
@@ -1836,6 +1793,57 @@
                 .attr('fill', '#444')
                 .attr('pointer-events', 'none')
                 .text(d => d.id_instrument);
+
+            // ---- AXIS Y STICKY A SINISTRA (RAGGRUPPATO ED ESEGUITO PER ULTIMO PER STARE SOPRA A TUTTI I NODI E GRIGLIE) ----
+            const currentScrollLeft = wrapper.scrollLeft || 0;
+            const axisYGroup = svg.append('g')
+                .attr('class', 'axis-y-sticky')
+                .attr('transform', `translate(${currentScrollLeft}, ${MARGIN.top})`);
+
+            // Sfondo BIANCO OPACO (100% opacità) per coprire tutti i nodi e griglie che scorrono a sinistra
+            axisYGroup.append('rect')
+                .attr('class', 'axis-y-bg')
+                .attr('x', 0)
+                .attr('y', -MARGIN.top)
+                .attr('width', MARGIN.left - 2)
+                .attr('height', svgHeight)
+                .attr('fill', '#ffffff')
+                .attr('opacity', 1.0);
+
+            // Linea divisoria nera verticale
+            axisYGroup.append('line')
+                .attr('x1', MARGIN.left - 2)
+                .attr('x2', MARGIN.left - 2)
+                .attr('y1', -MARGIN.top)
+                .attr('y2', svgHeight - MARGIN.top)
+                .attr('stroke', '#000000')
+                .attr('stroke-width', 2);
+
+            // Nomi dei Settori (Grassetto Nero visibilissimo, sempre fisso a sinistra)
+            axisYGroup.selectAll('text').data(sectorSet).enter()
+                .append('text')
+                .attr('x', MARGIN.left - 10)
+                .attr('y', d => yScale(d))
+                .attr('dy', '0.35em')
+                .attr('text-anchor', 'end')
+                .attr('font-family', 'Orbitron, sans-serif')
+                .attr('font-size', 10)
+                .attr('fill', '#000000')
+                .attr('font-weight', '900')
+                .text(d => sectorLabel(d).substring(0, 24));
+
+            // Handler per riposizionare l'asse Y durante lo scroll orizzontale
+            const updateStickyAxisY = () => {
+                const sl = wrapper.scrollLeft;
+                svg.selectAll('.axis-y-sticky').attr('transform', `translate(${sl}, ${MARGIN.top})`);
+            };
+
+            if (wrapper._stickyScrollHandler) {
+                wrapper.removeEventListener('scroll', wrapper._stickyScrollHandler);
+            }
+            wrapper._stickyScrollHandler = updateStickyAxisY;
+            wrapper.addEventListener('scroll', updateStickyAxisY);
+            updateStickyAxisY();
 
             // ---- AGGIORNA STATS ----
             document.getElementById('statCount').textContent = data.length;
