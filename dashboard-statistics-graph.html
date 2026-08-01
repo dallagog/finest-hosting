@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Graph 0.3</title>
+    <title>Graph 0.5</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <script src="https://d3js.org/d3.v7.min.js"></script>
     <link rel="icon" type="image/png" href="images/icon-finest.png">
@@ -44,7 +44,6 @@
             min-width: fit-content;
         }
 
-        /* ---- HEADER (STICKY PERMANENTE) ---- */
         .header-bar {
             position: sticky;
             top: 0;
@@ -148,7 +147,6 @@
             font-size: 11px;
         }
 
-        /* ---- CAPITALIZATION FILTER ---- */
         .cap-filter {
             display: flex;
             align-items: center;
@@ -180,7 +178,6 @@
             box-shadow: 0 0 4px rgba(0, 0, 0, 0.2);
         }
 
-        /* ---- DATE FILTERS ---- */
         .date-filters {
             display: flex;
             align-items: center;
@@ -236,7 +233,6 @@
             background: #d32f2f;
         }
 
-        /* ---- DROPDOWN CHECK LIST ---- */
         .dropdown-check-list {
             display: inline-block;
             position: relative;
@@ -312,7 +308,6 @@
             cursor: pointer;
         }
 
-        /* ---- MESSAGE ---- */
         .message {
             padding: 10px 16px;
             border-radius: 4px;
@@ -363,32 +358,48 @@
             cursor: default;
         }
 
-        /* ---- SECTOR LABELS OVERLAY (FISSO A SINISTRA) ---- */
-        .sector-labels-overlay {
-            position: absolute;
-            top: 0;
+        /* ---- SECTOR LABELS CONTAINER (FISSO A SINISTRA) ---- */
+        .sector-labels-container {
+            position: sticky;
             left: 0;
+            top: 0;
+            float: left;
             width: 170px;
-            height: 100%;
-            pointer-events: none;
-            z-index: 50;
-            overflow: hidden;
-            background: white;
+            min-height: 100%;
+            background: #ffffff;
             border-right: 3px solid #000000;
-            box-shadow: 2px 0 10px rgba(0, 0, 0, 0.08);
+            z-index: 20;
+            pointer-events: none;
+            padding-top: 50px;
+            /* MARGIN.top */
+            box-shadow: 2px 0 10px rgba(0, 0, 0, 0.05);
         }
 
-        .sector-label-fixed {
-            position: absolute;
-            right: 12px;
+        .sector-label-item {
             font-family: 'Orbitron', sans-serif;
             font-size: 10px;
             font-weight: 900;
             color: #000000;
             text-align: right;
+            padding-right: 12px;
             white-space: nowrap;
-            transform: translateY(-50%);
-            text-shadow: 0 0 5px rgba(255, 255, 255, 0.9);
+            height: 80px;
+            /* yScale.step() */
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            line-height: 1.2;
+        }
+
+        .graph-scroll-container {
+            display: flex;
+            overflow: auto;
+            width: 100%;
+        }
+
+        .graph-content {
+            flex: 1;
+            min-width: 100%;
         }
 
         /* ---- SCROLLBAR ---- */
@@ -442,7 +453,7 @@
             }
         }
 
-        /* ---- TOOLTIP ALTA VISIBILITÀ ---- */
+        /* ---- TOOLTIP ---- */
         .tooltip {
             position: absolute;
             background: #0f172a;
@@ -541,7 +552,7 @@
             font-size: 11px;
         }
 
-        /* ---- BUCKET (CESTINO/RACCOLTA TRASCINABILE) STYLES ---- */
+        /* ---- BUCKET ---- */
         .bucket-panel {
             position: fixed;
             bottom: 20px;
@@ -928,7 +939,6 @@
 <body>
     <div class="main-container">
 
-        <!-- HEADER -->
         <div class="header-bar">
             <div class="user-info-left">
                 <div><strong>Utente:</strong> <span id="usernameDisplay">-</span></div>
@@ -973,6 +983,7 @@
 
         <!-- GRAPH AREA -->
         <div class="graph-wrapper" id="graphWrapper">
+            <!-- Le etichette dei settori saranno inserite qui come overlay -->
             <svg id="timeline-svg"></svg>
 
             <div class="loading-overlay" id="loadingOverlay">
@@ -1814,28 +1825,47 @@
                 .attr('pointer-events', 'none')
                 .text(d => d.id_instrument);
 
-            // ---- CREA OVERLAY PER ETICHETTE SETTORI FISSE A SINISTRA ----
+            // ---- CREA LE ETICHETTE DEI SETTORI COME OVERLAY HTML FISSO ----
             // Rimuovi eventuali overlay precedenti
             const existingOverlay = document.getElementById('sectorLabelsOverlay');
             if (existingOverlay) {
                 existingOverlay.remove();
             }
 
-            // Crea un div overlay posizionato sopra il wrapper
+            // Crea un overlay posizionato assolutamente sopra il grafico
             const overlay = document.createElement('div');
             overlay.id = 'sectorLabelsOverlay';
-            overlay.className = 'sector-labels-overlay';
+            overlay.style.cssText = `
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: ${MARGIN.left}px;
+                height: 100%;
+                pointer-events: none;
+                z-index: 20;
+                background: #ffffff;
+                border-right: 3px solid #000000;
+                padding-top: ${MARGIN.top}px;
+                overflow: hidden;
+            `;
 
-            // Aggiungi le etichette dei settori
+            // Aggiungi le etichette
             sectorSet.forEach((sector) => {
                 const label = document.createElement('div');
-                label.className = 'sector-label-fixed';
+                label.style.cssText = `
+                    position: absolute;
+                    right: 12px;
+                    font-family: 'Orbitron', sans-serif;
+                    font-size: 10px;
+                    font-weight: 900;
+                    color: #000000;
+                    text-align: right;
+                    white-space: nowrap;
+                    top: ${yScale(sector)}px;
+                    transform: translateY(-50%);
+                    line-height: 1.2;
+                `;
                 label.textContent = sectorLabel(sector).substring(0, 24);
-
-                // Posiziona l'etichetta in base alla posizione y del settore
-                const yPos = yScale(sector) + MARGIN.top;
-                label.style.top = yPos + 'px';
-
                 overlay.appendChild(label);
             });
 
@@ -2024,7 +2054,6 @@
                 document.getElementById('statsBar').style.display = 'none';
                 document.getElementById('legend').style.display = 'none';
                 d3.select('#timeline-svg').selectAll('*').remove();
-                // Rimuovi anche l'overlay dei settori
                 const overlay = document.getElementById('sectorLabelsOverlay');
                 if (overlay) overlay.remove();
                 return;
