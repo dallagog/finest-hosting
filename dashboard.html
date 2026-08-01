@@ -269,7 +269,7 @@
             background: rgba(255, 255, 255, 0.2);
         }
 
-        /* Menu List MODIFIED */
+        /* ── Menu List ── */
         ul {
             list-style: none;
             padding-left: 0;
@@ -278,46 +278,73 @@
 
         li {
             margin: 2px 0;
-            /* Ridotto da 10px a 2px */
             cursor: pointer;
             font-size: 14px;
             position: relative;
         }
 
-        li>a {
-            display: block;
-            padding: 6px 10px;
-            /* Ridotto da 10px a 6px */
-            background: #f9f9f9;
-            border-left: 3px solid #ccc;
-            color: #333;
+        /* Voci di primo livello: grassetto */
+        #menu-container > ul > li > a {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 7px 10px;
+            background: #f4f4f4;
+            border-left: 3px solid #999;
+            color: #000;
             text-decoration: none;
-            transition: all 0.3s;
+            font-weight: 700;
+            transition: background 0.2s, border-left-color 0.2s, padding-left 0.2s;
         }
 
-        li>a:hover {
-            background: #eee;
+        #menu-container > ul > li > a:hover,
+        #menu-container > ul > li.open > a {
+            background: #e8e8e8;
             border-left-color: #000;
+        }
+
+        /* Voci di sottomenu: peso normale */
+        .submenu li > a {
+            display: block;
+            padding: 5px 10px;
+            background: #fafafa;
+            border-left: 2px solid #ddd;
+            color: #333;
+            text-decoration: none;
+            font-weight: 400;
+            font-size: 13px;
+            transition: background 0.2s, border-left-color 0.2s, padding-left 0.2s;
+        }
+
+        .submenu li > a:hover {
+            background: #eee;
+            border-left-color: #555;
             padding-left: 15px;
         }
 
+        /* Indicatore freccia nel link principale */
+        .menu-arrow {
+            font-size: 10px;
+            color: #888;
+            transition: transform 0.2s;
+            flex-shrink: 0;
+            margin-left: 8px;
+        }
+
+        #menu-container > ul > li.open > a .menu-arrow {
+            transform: rotate(90deg);
+            color: #000;
+        }
+
         .submenu {
-            margin-left: 20px;
+            margin-left: 16px;
             display: none;
             border-left: 1px solid #ddd;
-            padding-left: 10px;
+            padding-left: 8px;
         }
 
-        .open>.submenu {
+        .open > .submenu {
             display: block;
-        }
-
-        .toggle {
-            float: right;
-            cursor: pointer;
-            color: #666;
-            margin-right: 10px;
-            font-weight: bold;
         }
 
 
@@ -1698,32 +1725,38 @@
                         // Se l'item non ha sottomenu validi e non ha una pagina html, lo saltiamo
                         if (!item.html && !subUl) return;
 
-                        if (subUl) {
-                            const toggle = document.createElement('span');
-                            toggle.textContent = '+';
-                            toggle.classList.add('toggle');
-                            toggle.addEventListener('click', (e) => {
-                                e.stopPropagation();
-                                li.classList.toggle('open');
-                                toggle.textContent = li.classList.contains('open') ? '-' : '+';
-                            });
-                            li.appendChild(toggle);
-                            li.classList.add('has-submenu');
-                        }
-
                         const link = document.createElement('a');
                         const translatedDesc = getTranslation(item.description);
                         link.textContent = translatedDesc !== item.description ? translatedDesc : item.description;
-                        if (item.html) {
-                            link.href = item.html;
-                            if (item.target) {
-                                link.target = item.target;
-                            }
-                        } else {
+
+                        if (subUl) {
+                            // Voce con sottomenu: click sull'intera riga apre/chiude
+                            li.classList.add('has-submenu');
                             link.href = 'javascript:void(0)';
-                            // If it's a parent container, maybe we want to keep the pointer but "do nothing"
-                            // link.style.cursor = 'default'; 
+
+                            // Indicatore freccia integrato nel link
+                            const arrow = document.createElement('span');
+                            arrow.className = 'menu-arrow';
+                            arrow.textContent = '▶';
+                            link.appendChild(arrow);
+
+                            li.addEventListener('click', (e) => {
+                                // Se il click è su un link figlio nel sottomenu, non bloccare
+                                if (e.target.closest('.submenu')) return;
+                                e.preventDefault();
+                                li.classList.toggle('open');
+                            });
+                        } else {
+                            if (item.html) {
+                                link.href = item.html;
+                                if (item.target) {
+                                    link.target = item.target;
+                                }
+                            } else {
+                                link.href = 'javascript:void(0)';
+                            }
                         }
+
                         li.appendChild(link);
 
                         if (subUl) {
