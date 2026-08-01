@@ -1042,9 +1042,10 @@
         let _dateEnd = null;
         let _capMax = null;
 
-        // BUCKET STATE & DRAG GLOBAL
+        // BUCKET STATE & DRAG GLOBAL & TOOLTIP TIMER
         let _bucketItems = [];
         let _draggedNodeData = null;
+        let _tooltipHideTimer = null;
 
         // ============================================================
         // TRADUZIONI
@@ -1564,11 +1565,18 @@
             const tooltip = document.getElementById('tooltip');
 
             tooltip.addEventListener('mouseenter', function () {
+                if (_tooltipHideTimer) {
+                    clearTimeout(_tooltipHideTimer);
+                    _tooltipHideTimer = null;
+                }
                 tooltip.classList.add('visible');
             });
 
             tooltip.addEventListener('mouseleave', function () {
-                tooltip.classList.remove('visible');
+                if (_tooltipHideTimer) clearTimeout(_tooltipHideTimer);
+                _tooltipHideTimer = setTimeout(() => {
+                    tooltip.classList.remove('visible');
+                }, 1000);
             });
 
             function generateTooltipContent(d) {
@@ -1665,6 +1673,11 @@
             }
 
             function nodeMouseEnter(event, d) {
+                if (_tooltipHideTimer) {
+                    clearTimeout(_tooltipHideTimer);
+                    _tooltipHideTimer = null;
+                }
+
                 const content = generateTooltipContent(d);
                 if (tooltip.innerHTML !== content) {
                     tooltip.innerHTML = content;
@@ -1675,7 +1688,10 @@
             }
 
             function nodeMouseLeave(event, d) {
-                tooltip.classList.remove('visible');
+                if (_tooltipHideTimer) clearTimeout(_tooltipHideTimer);
+                _tooltipHideTimer = setTimeout(() => {
+                    tooltip.classList.remove('visible');
+                }, 1000);
             }
 
             const circleData = nodeData.filter(d => !d._isCloud);
