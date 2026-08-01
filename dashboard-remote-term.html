@@ -24,18 +24,16 @@
     <script src="https://cdn.jsdelivr.net/npm/xterm-addon-web-links@0.9.0/lib/xterm-addon-web-links.js"></script>
 
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Orbitron:wght@400;500;700;900&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&display=swap');
 
+        /* ── Variabili (identiche a dashboard.html) ── */
         :root {
-            --bg: #0d1117;
-            --surface: #161b22;
-            --border: #30363d;
-            --text: #c9d1d9;
-            --blue: #58a6ff;
-            --green: #3fb950;
-            --red: #f85149;
-            --yellow: #d29922;
-            --radius: 8px;
+            --bg-color:    #f5f5f0;
+            --neon-cyan:   #000000;
+            --neon-blue:   #333333;
+            --glass-bg:    #ffffff;
+            --text-color:  #333333;
+            --border-color:#000000;
         }
 
         * {
@@ -45,48 +43,47 @@
         }
 
         body {
-            font-family: 'JetBrains Mono', monospace;
-            background: linear-gradient(135deg, var(--bg) 0%, var(--surface) 100%);
-            color: var(--text);
+            font-family: 'Orbitron', sans-serif;
+            background-color: var(--bg-color);
+            padding: 20px;
+            color: var(--text-color);
             min-height: 100vh;
             display: flex;
             flex-direction: column;
-            gap: 16px;
-            padding: 16px;
-            overflow: hidden;
+            gap: 20px;
         }
 
-        /* ── Header ── */
+        /* ── Header (identico a dashboard.html) ── */
         .header-bar {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 14px 20px;
-            background: rgba(22, 27, 34, 0.9);
-            border: 1px solid var(--border);
-            border-radius: var(--radius);
-            backdrop-filter: blur(12px);
-            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.4);
+            padding: 20px;
+            background: var(--glass-bg);
+            border: 1px solid var(--border-color);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
             flex-shrink: 0;
         }
 
         .header-bar h1 {
-            font-family: 'Orbitron', sans-serif;
-            font-size: 1.4em;
+            flex: 1;
+            text-align: center;
+            margin: 0;
             font-weight: 700;
             text-transform: uppercase;
             letter-spacing: 2px;
-            color: var(--blue);
-            flex: 1;
-            text-align: center;
+            color: #000;
+            font-size: 1.6em;
         }
 
         .user-info-left {
             flex: 1;
+            font-size: 14px;
+            color: var(--neon-cyan);
             display: flex;
             flex-direction: column;
-            gap: 4px;
-            font-size: 13px;
+            gap: 5px;
         }
 
         .user-info-row {
@@ -95,205 +92,177 @@
             gap: 8px;
         }
 
+        /* Indicatore stato connessione */
         .status-dot {
             display: inline-block;
             width: 8px;
             height: 8px;
             border-radius: 50%;
-            background: var(--green);
-            animation: pulse 2s infinite;
+            background: #22c55e;
+            animation: pulse-dot 2s infinite;
         }
 
         .status-dot.off {
-            background: var(--red);
+            background: #ef4444;
             animation: none;
         }
 
-        @keyframes pulse {
-
-            0%,
-            100% {
-                opacity: 1;
-            }
-
-            50% {
-                opacity: 0.4;
-            }
+        .status-dot.connecting {
+            background: #f59e0b;
+            animation: pulse-dot 0.8s infinite;
         }
 
-        .header-right {
+        @keyframes pulse-dot {
+            0%, 100% { opacity: 1; }
+            50%       { opacity: 0.35; }
+        }
+
+        /* Pulsanti header (stesso stile dashboard.html) */
+        .logout-container {
             flex: 1;
+            text-align: right;
             display: flex;
             justify-content: flex-end;
-            gap: 8px;
+            gap: 10px;
         }
 
-        .btn {
+        .close-btn {
             padding: 8px 16px;
+            background: rgba(255, 0, 0, 0.2);
+            border: 1px solid #ff3333;
+            color: #ff3333;
             border-radius: 4px;
-            border: 1px solid;
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 13px;
-            font-weight: 600;
             cursor: pointer;
-            transition: all .2s;
-            display: flex;
-            align-items: center;
-            gap: 6px;
+            font-family: inherit;
+            transition: all 0.3s;
+            font-weight: bold;
         }
 
-        .btn-danger {
-            background: rgba(248, 81, 73, .1);
-            border-color: var(--red);
-            color: var(--red);
+        .close-btn:hover {
+            background: rgba(255, 0, 0, 0.4);
+            box-shadow: 0 0 10px #ff3333;
         }
 
-        .btn-danger:hover {
-            background: rgba(248, 81, 73, .25);
-            box-shadow: 0 0 10px rgba(248, 81, 73, .4);
+        .reconnect-btn {
+            padding: 8px 16px;
+            background: #000;
+            border: 1px solid #000;
+            color: #fff;
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: inherit;
+            transition: all 0.3s;
+            font-weight: bold;
         }
 
-        .btn-blue {
-            background: rgba(88, 166, 255, .1);
-            border-color: var(--blue);
-            color: var(--blue);
+        .reconnect-btn:hover {
+            background: #333;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
         }
 
-        .btn-blue:hover {
-            background: rgba(88, 166, 255, .25);
-        }
-
-        /* ── Terminal window ── */
-        .terminal-window {
-            flex: 1;
+        /* ── Pannello terminale (stile collapsible-container) ── */
+        .terminal-panel {
+            background: var(--glass-bg);
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
             display: flex;
             flex-direction: column;
-            background: var(--bg);
-            border: 1px solid var(--border);
-            border-radius: var(--radius);
-            box-shadow: 0 4px 20px rgba(0, 0, 0, .6), inset 0 0 30px rgba(88, 166, 255, .04);
-            overflow: hidden;
+            flex: 1;
             min-height: 0;
+            overflow: hidden;
         }
 
+        /* Barra titolo terminale */
         .terminal-titlebar {
-            background: rgba(22, 27, 34, .9);
-            border-bottom: 1px solid var(--border);
-            padding: 10px 16px;
             display: flex;
-            align-items: center;
             justify-content: space-between;
-            font-size: 13px;
+            align-items: center;
+            padding: 12px 20px;
+            border-bottom: 1px solid #eee;
+            background: #fafafa;
             flex-shrink: 0;
         }
 
         .terminal-title {
-            color: var(--blue);
+            font-size: 16px;
             font-weight: 600;
+            color: #000;
             display: flex;
             align-items: center;
             gap: 8px;
         }
 
-        .traffic-lights {
-            display: flex;
-            gap: 6px;
-        }
-
-        .tl {
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            cursor: pointer;
-            transition: opacity .2s, transform .2s;
-        }
-
-        .tl:hover {
-            opacity: .75;
-            transform: scale(1.15);
-        }
-
-        .tl-red {
-            background: var(--red);
-        }
-
-        .tl-yellow {
-            background: var(--yellow);
-        }
-
-        .tl-green {
-            background: var(--green);
-        }
-
+        /* Badge stato */
         .connection-badge {
             font-size: 11px;
-            padding: 2px 8px;
-            border-radius: 20px;
-            font-weight: 600;
-            letter-spacing: .5px;
+            padding: 3px 10px;
+            border-radius: 4px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
         }
 
         .badge-connected {
-            background: rgba(63, 185, 80, .15);
-            color: var(--green);
-            border: 1px solid rgba(63, 185, 80, .3);
+            background: #dcfce7;
+            color: #15803d;
+            border: 1px solid #86efac;
         }
 
         .badge-connecting {
-            background: rgba(210, 153, 34, .15);
-            color: var(--yellow);
-            border: 1px solid rgba(210, 153, 34, .3);
+            background: #fef3c7;
+            color: #92400e;
+            border: 1px solid #fcd34d;
         }
 
         .badge-disconnected {
-            background: rgba(248, 81, 73, .15);
-            color: var(--red);
-            border: 1px solid rgba(248, 81, 73, .3);
+            background: #fee2e2;
+            color: #b91c1c;
+            border: 1px solid #fca5a5;
         }
 
         /* ── xterm container ── */
         #terminal-container {
             flex: 1;
-            padding: 8px;
-            overflow: hidden;
             min-height: 0;
+            background: #1e1e1e;
+            padding: 6px;
+            overflow: hidden;
         }
 
-        /* ── Status bar ── */
+        /* ── Status bar in fondo al pannello ── */
         .statusbar {
-            background: rgba(22, 27, 34, .6);
-            border-top: 1px solid var(--border);
-            padding: 5px 16px;
-            font-size: 11px;
-            color: rgba(201, 209, 217, .5);
             display: flex;
             gap: 20px;
+            padding: 6px 20px;
+            border-top: 1px solid #eee;
+            font-size: 11px;
+            color: #999;
+            background: #fafafa;
             flex-shrink: 0;
         }
 
         .statusbar span {
             display: flex;
             align-items: center;
-            gap: 5px;
+            gap: 4px;
         }
 
-        .statusbar i {
-            font-size: 10px;
-        }
+        .statusbar i { font-size: 10px; }
 
         /* ── Overlay loading ── */
         #overlay {
             position: fixed;
             inset: 0;
-            background: rgba(13, 17, 23, .85);
-            backdrop-filter: blur(4px);
+            background: rgba(245, 245, 240, 0.88);
+            backdrop-filter: blur(2px);
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            gap: 16px;
+            gap: 14px;
             z-index: 100;
-            transition: opacity .3s;
+            transition: opacity 0.25s;
         }
 
         #overlay.hidden {
@@ -302,47 +271,47 @@
         }
 
         .spinner {
-            width: 36px;
-            height: 36px;
-            border: 3px solid rgba(88, 166, 255, .2);
-            border-top-color: var(--blue);
+            width: 32px;
+            height: 32px;
+            border: 3px solid #ddd;
+            border-top-color: #000;
             border-radius: 50%;
-            animation: spin 0.8s linear infinite;
+            animation: spin 0.7s linear infinite;
         }
 
         @keyframes spin {
-            to {
-                transform: rotate(360deg);
-            }
+            to { transform: rotate(360deg); }
         }
 
         #overlay-msg {
-            color: var(--text);
-            font-size: 14px;
-            letter-spacing: .5px;
+            color: #000;
+            font-size: 13px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
         }
 
         #overlay-sub {
-            color: rgba(201, 209, 217, .4);
-            font-size: 12px;
+            color: #666;
+            font-size: 11px;
         }
 
-        /* ── Error toast ── */
+        /* ── Toast errore ── */
         #toast {
             position: fixed;
             bottom: 24px;
             right: 24px;
-            background: rgba(248, 81, 73, .15);
-            border: 1px solid var(--red);
-            color: var(--red);
+            background: #fff0f0;
+            border: 1px solid #ff3333;
+            color: #cc0000;
             padding: 12px 18px;
-            border-radius: var(--radius);
+            border-radius: 8px;
             font-size: 13px;
-            max-width: 360px;
+            max-width: 380px;
             transform: translateY(80px);
             opacity: 0;
-            transition: all .3s;
+            transition: all 0.3s;
             z-index: 200;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
         }
 
         #toast.show {
@@ -353,17 +322,17 @@
 </head>
 
 <body>
-    <!-- Header -->
+    <!-- Header identico a dashboard.html -->
     <div class="header-bar">
         <div class="user-info-left">
             <div class="user-info-row">
-                <strong id="userLabel">Utente:</strong>
+                <strong>Utente:</strong>
                 <span id="usernameDisplay">—</span>
                 <span style="opacity:.4">|</span>
                 <span class="status-dot off" id="statusDot"></span>
                 <span id="connectionStatus">Disconnesso</span>
             </div>
-            <div class="user-info-row" style="font-size:11px; opacity:.6">
+            <div class="user-info-row" style="font-size:12px; color:#666;">
                 <i class="fa fa-server" style="font-size:10px"></i>
                 <span id="serverLabel">feweb-tunnel.fe-web.eu</span>
                 <span style="opacity:.4">|</span>
@@ -373,29 +342,26 @@
 
         <h1><i class="fa fa-terminal"></i> Remote Terminal</h1>
 
-        <div class="header-right">
-            <button class="btn btn-blue" id="btnReconnect" onclick="reconnect()" title="Riconnetti">
+        <div class="logout-container">
+            <button class="reconnect-btn" id="btnReconnect" onclick="reconnect()">
                 <i class="fa fa-rotate-right"></i> Riconnetti
             </button>
-            <button class="btn btn-danger" onclick="closePage()">
+            <button class="close-btn" onclick="closePage()">
                 <i class="fa fa-times"></i> Chiudi
             </button>
         </div>
     </div>
 
-    <!-- Terminal window -->
-    <div class="terminal-window">
+    <!-- Pannello terminale -->
+    <div class="terminal-panel">
         <div class="terminal-titlebar">
-            <div class="traffic-lights">
-                <div class="tl tl-red" title="Chiudi" onclick="closePage()"></div>
-                <div class="tl tl-yellow" title="Riconnetti" onclick="reconnect()"></div>
-                <div class="tl tl-green" title="Clear" onclick="clearTerm()"></div>
-            </div>
             <div class="terminal-title">
                 <i class="fa fa-terminal"></i>
                 <span id="termTitle">bash – non connesso</span>
             </div>
-            <span class="connection-badge badge-disconnected" id="connBadge">OFFLINE</span>
+            <div style="display:flex; align-items:center; gap:12px;">
+                <span class="connection-badge badge-disconnected" id="connBadge">OFFLINE</span>
+            </div>
         </div>
 
         <div id="terminal-container"></div>
@@ -404,7 +370,7 @@
             <span><i class="fa fa-microchip"></i> xterm.js 5.3</span>
             <span id="sbDim"><i class="fa fa-expand"></i> —</span>
             <span id="sbLatency"><i class="fa fa-clock"></i> —</span>
-            <span id="sbServer"><i class="fa fa-globe"></i> <span id="sbServerLabel">—</span></span>
+            <span><i class="fa fa-globe"></i> <span id="sbServerLabel">—</span></span>
         </div>
     </div>
 
@@ -425,7 +391,6 @@
         const API_URL = "https://feweb-tunnel.fe-web.eu";
         const WS_URL = API_URL.replace(/^https?/, ws => ws === 'https' ? 'wss' : 'ws');
         const PING_INTERVAL_MS = 25_000;
-        const RECONNECT_DELAY_MS = 3_000;
 
         let credentials = { username: '', token: '', language: '' };
         let ws = null;
@@ -433,23 +398,22 @@
         let fitAddon = null;
         let pingTimer = null;
         let resizeObserver = null;
-        let connectTime = null;
         let termRows = 24, termCols = 80;
 
         // ─────────────────────────────────────────────────────────────────────
-        // Init credentials
+        // Credenziali
         // ─────────────────────────────────────────────────────────────────────
         function getCredentials() {
             const p = new URLSearchParams(window.location.search);
             credentials = {
                 username: p.get('username') || localStorage.getItem('username') || 'admin',
-                token: p.get('token') || localStorage.getItem('token') || '',
+                token:    p.get('token')    || localStorage.getItem('token')    || '',
                 language: p.get('language') || localStorage.getItem('language') || 'it_IT',
             };
         }
 
         // ─────────────────────────────────────────────────────────────────────
-        // xterm.js setup
+        // xterm.js
         // ─────────────────────────────────────────────────────────────────────
         function initTerminal() {
             if (term) { term.dispose(); }
@@ -457,31 +421,31 @@
             term = new Terminal({
                 cursorBlink: true,
                 cursorStyle: 'block',
-                fontFamily: "'JetBrains Mono', 'Cascadia Code', monospace",
+                fontFamily: "'Cascadia Code', 'Consolas', 'Courier New', monospace",
                 fontSize: 14,
-                lineHeight: 1.3,
+                lineHeight: 1.35,
                 theme: {
-                    background: '#0d1117',
-                    foreground: '#c9d1d9',
-                    cursor: '#58a6ff',
-                    cursorAccent: '#0d1117',
-                    black: '#21262d',
-                    red: '#f85149',
-                    green: '#3fb950',
-                    yellow: '#d29922',
-                    blue: '#58a6ff',
-                    magenta: '#bc8cff',
-                    cyan: '#39c5cf',
-                    white: '#b1bac4',
-                    brightBlack: '#6e7681',
-                    brightRed: '#ff7b72',
-                    brightGreen: '#56d364',
-                    brightYellow: '#e3b341',
-                    brightBlue: '#79c0ff',
-                    brightMagenta: '#d2a8ff',
-                    brightCyan: '#56d4dd',
-                    brightWhite: '#f0f6fc',
-                    selectionBackground: 'rgba(88,166,255,0.25)',
+                    background:    '#1e1e1e',
+                    foreground:    '#d4d4d4',
+                    cursor:        '#ffffff',
+                    cursorAccent:  '#1e1e1e',
+                    black:         '#1e1e1e',
+                    red:           '#f44747',
+                    green:         '#6a9955',
+                    yellow:        '#dcdcaa',
+                    blue:          '#569cd6',
+                    magenta:       '#c586c0',
+                    cyan:          '#4ec9b0',
+                    white:         '#d4d4d4',
+                    brightBlack:   '#808080',
+                    brightRed:     '#f44747',
+                    brightGreen:   '#b5cea8',
+                    brightYellow:  '#dcdcaa',
+                    brightBlue:    '#9cdcfe',
+                    brightMagenta: '#c586c0',
+                    brightCyan:    '#4ec9b0',
+                    brightWhite:   '#ffffff',
+                    selectionBackground: 'rgba(255,255,255,0.2)',
                 },
                 allowProposedApi: true,
                 scrollback: 5000,
@@ -500,14 +464,12 @@
             termCols = term.cols;
             updateDimLabel();
 
-            // Input: invia dati al server via WebSocket
             term.onData(data => {
                 if (ws && ws.readyState === WebSocket.OPEN) {
                     ws.send(JSON.stringify({ type: 'input', data }));
                 }
             });
 
-            // Resize observer per adattare il terminale al contenitore
             if (resizeObserver) resizeObserver.disconnect();
             resizeObserver = new ResizeObserver(() => { fitTerm(); });
             resizeObserver.observe(container);
@@ -534,12 +496,8 @@
             document.getElementById('sbDim').innerHTML = `<i class="fa fa-expand"></i> ${txt}`;
         }
 
-        function clearTerm() {
-            if (term) term.clear();
-        }
-
         // ─────────────────────────────────────────────────────────────────────
-        // WebSocket connection
+        // WebSocket
         // ─────────────────────────────────────────────────────────────────────
         function connect() {
             if (ws) { try { ws.close(); } catch (e) { } ws = null; }
@@ -561,33 +519,27 @@
             }
 
             ws.onopen = () => {
-                connectTime = Date.now();
-                // Invia messaggio di autenticazione con dimensioni terminale
                 ws.send(JSON.stringify({
                     type: 'auth',
                     token: credentials.token,
                     rows: termRows,
                     cols: termCols,
                 }));
-                setStatus('connecting'); // ancora in attesa conferma auth
+                setStatus('connecting');
                 showOverlay('Autenticazione…', 'Verifica credenziali sul server');
                 startPing();
             };
 
             ws.onmessage = (event) => {
                 if (event.data instanceof ArrayBuffer) {
-                    // Output PTY – dati binari → xterm
                     if (term) {
                         term.write(new Uint8Array(event.data));
-                        // Primo dato ricevuto = sessione avviata con successo
-                        if (document.getElementById('overlay') &&
-                            !document.getElementById('overlay').classList.contains('hidden')) {
+                        if (!document.getElementById('overlay').classList.contains('hidden')) {
                             setStatus('connected');
                             hideOverlay();
                         }
                     }
                 } else {
-                    // Messaggio JSON di controllo
                     try {
                         const msg = JSON.parse(event.data);
                         if (msg.type === 'error') {
@@ -597,26 +549,22 @@
                             if (term) term.writeln('\r\n\x1b[31m[ERRORE] ' + msg.msg + '\x1b[0m\r\n');
                         }
                     } catch (e) {
-                        // potrebbe essere testo raw
                         if (term) term.write(event.data);
                     }
                 }
             };
 
-            ws.onerror = (e) => {
+            ws.onerror = () => {
                 showToast('Errore connessione WebSocket');
                 setStatus('disconnected');
                 hideOverlay();
             };
 
-            ws.onclose = (e) => {
+            ws.onclose = () => {
                 stopPing();
                 setStatus('disconnected');
                 hideOverlay();
-                if (term) {
-                    term.writeln('\r\n\x1b[33m[Connessione chiusa]\x1b[0m');
-                }
-                updateLatency('—');
+                if (term) term.writeln('\r\n\x1b[33m[Connessione chiusa]\x1b[0m');
             };
         }
 
@@ -628,13 +576,10 @@
         // ─────────────────────────────────────────────────────────────────────
         // Ping keepalive
         // ─────────────────────────────────────────────────────────────────────
-        let _pingSent = 0;
-
         function startPing() {
             stopPing();
             pingTimer = setInterval(() => {
                 if (ws && ws.readyState === WebSocket.OPEN) {
-                    _pingSent = Date.now();
                     ws.send(JSON.stringify({ type: 'ping' }));
                 }
             }, PING_INTERVAL_MS);
@@ -644,35 +589,26 @@
             if (pingTimer) { clearInterval(pingTimer); pingTimer = null; }
         }
 
-        function updateLatency(ms) {
-            const txt = ms === '—' ? '—' : ms + ' ms';
-            document.getElementById('sbLatency').innerHTML = `<i class="fa fa-clock"></i> ${txt}`;
-        }
-
         // ─────────────────────────────────────────────────────────────────────
         // UI helpers
         // ─────────────────────────────────────────────────────────────────────
         function setStatus(state) {
-            const dot = document.getElementById('statusDot');
+            const dot   = document.getElementById('statusDot');
             const label = document.getElementById('connectionStatus');
             const badge = document.getElementById('connBadge');
             const title = document.getElementById('termTitle');
 
-            dot.className = 'status-dot';
+            dot.className   = 'status-dot';
             badge.className = 'connection-badge';
 
             if (state === 'connected') {
-                dot.classList.add('');
-                dot.style.background = 'var(--green)';
-                dot.style.animation = 'pulse 2s infinite';
                 label.textContent = 'Connesso';
                 badge.classList.add('badge-connected');
                 badge.textContent = 'ONLINE';
                 title.textContent = `bash – ${credentials.username}@${new URL(API_URL).hostname}`;
                 document.getElementById('btnReconnect').style.display = 'none';
             } else if (state === 'connecting') {
-                dot.style.background = 'var(--yellow)';
-                dot.style.animation = 'pulse .8s infinite';
+                dot.classList.add('connecting');
                 label.textContent = 'Connessione…';
                 badge.classList.add('badge-connecting');
                 badge.textContent = 'CONNECTING';
@@ -680,13 +616,11 @@
                 document.getElementById('btnReconnect').style.display = 'none';
             } else {
                 dot.classList.add('off');
-                dot.style.background = 'var(--red)';
-                dot.style.animation = 'none';
                 label.textContent = 'Disconnesso';
                 badge.classList.add('badge-disconnected');
                 badge.textContent = 'OFFLINE';
                 title.textContent = 'bash – non connesso';
-                document.getElementById('btnReconnect').style.display = 'flex';
+                document.getElementById('btnReconnect').style.display = 'inline-block';
             }
         }
 
@@ -716,9 +650,6 @@
             setTimeout(() => window.history.back(), 100);
         }
 
-        // ─────────────────────────────────────────────────────────────────────
-        // Window resize
-        // ─────────────────────────────────────────────────────────────────────
         window.addEventListener('resize', () => { fitTerm(); });
 
         // ─────────────────────────────────────────────────────────────────────
