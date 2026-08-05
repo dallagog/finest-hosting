@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Graph 0.6</title>
+    <title>Graph 0.1</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <script src="https://d3js.org/d3.v7.min.js"></script>
     <link rel="icon" type="image/png" href="images/icon-finest.png">
@@ -1517,8 +1517,8 @@
                 cellMap[key].push(item);
             });
 
-            const jitterMax = Math.min(60, bandH * 1.0);
             const nodeData = [];
+            const minSpacing = 5; // gap minimo tra i bordi delle icone
 
             Object.entries(cellMap).forEach(([key, items]) => {
                 const [ds, sc] = key.split('|');
@@ -1527,6 +1527,18 @@
                 if (cx === undefined || cy === undefined) return;
 
                 const n = items.length;
+
+                // Calcola il raggio massimo tra gli elementi di questa cella
+                const maxRadius = Math.max(...items.map(item => {
+                    const vol = parseFloat(item['instrument@volume']) || 1000;
+                    return Math.max(5, Math.min(14, 3 + Math.log10(vol + 1) * 2.8));
+                }));
+
+                // Calcola lo spazio totale necessario per tutti gli elementi
+                const totalHeightNeeded = n * (2 * maxRadius + minSpacing);
+                const dynamicJitterMax = Math.max(30, totalHeightNeeded / 2);
+                const jitterMax = Math.min(dynamicJitterMax, bandH * 0.95);
+
                 items.forEach((item, idx) => {
                     const offset = n === 1 ? 0 : (idx / (n - 1) - 0.5) * 2 * jitterMax;
                     const forza = parseFloat(item.forza) || 0;
