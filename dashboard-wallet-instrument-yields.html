@@ -412,58 +412,464 @@
         }
 
         async function loadData() {
-            const mode = (selectedInstrumentCurrency === evalCurrency) ? 'eval' : 'instr';
+            console.log('========================================');
+            console.log('=== loadData() START ===');
+            console.log('========================================');
+
+            const mode = (selectedInstrumentCurrency === evalCurrency)
+                ? 'eval'
+                : 'instr';
+
             const currentCode = buildCode(mode);
+
+            // --------------------------------------------------
+            // 1. PARAMETRI INIZIALI
+            // --------------------------------------------------
+
+            console.log('--- PARAMETRI INIZIALI ---');
+            console.log('mode:', mode);
+            console.log('currentCode:', currentCode);
+            console.log('username:', username);
+            console.log('token presente:', !!token);
+            console.log('language:', language);
+            console.log('id_account:', id_account);
+            console.log('id_instrument:', id_instrument);
+            console.log('account_level:', account_level);
+            console.log('account_level_yield:', account_level_yield);
+            console.log('evalCurrency:', evalCurrency);
+            console.log('selectedInstrumentCurrency:', selectedInstrumentCurrency);
+            console.log('instrCurrency:', instrCurrency);
+
+            // --------------------------------------------------
+            // 2. CONTROLLO PARAMETRI OBBLIGATORI
+            // --------------------------------------------------
+
             if (!currentCode || !username) {
+                console.error('ERRORE: parametri mancanti');
+                console.error({
+                    currentCode,
+                    username
+                });
+
                 showError("Missing parameters or authentication.");
                 return;
             }
-            try {
-                const response = await fetch(`${API_URL}/gettradeyield`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        username,
-                        token,
-                        language,
-                        id_account: id_account || '',
-                        id_instrument: id_instrument || '',
-                        account_level: account_level || '',
-                        account_level_yield: account_level_yield || '',
-                        currency: evalCurrency || '',
-                        currency_instrument: selectedInstrumentCurrency || instrCurrency || ''
-                    })
-                });
-                const data = await response.json();
-                if (data.status === 'ok' && data.tradeyield) {
-                    tableData = data.tradeyield.map(item => flattenObject(item)).filter(item => item.event_event_description);
 
-                    // Estrai divisa nativa dell'instrument dal primo record
+            // --------------------------------------------------
+            // 3. URL API
+            // --------------------------------------------------
+
+            const url = `${API_URL}/gettradeyield`;
+
+            console.log('--- API REQUEST ---');
+            console.log('API_URL:', API_URL);
+            console.log('Endpoint:', '/gettradeyield');
+            console.log('URL COMPLETO:', url);
+
+            // --------------------------------------------------
+            // 4. BODY DELLA REQUEST
+            // --------------------------------------------------
+
+            const requestBody = {
+                username,
+                token,
+                language,
+                id_account: id_account || '',
+                id_instrument: id_instrument || '',
+                account_level: account_level || '',
+                account_level_yield: account_level_yield || '',
+                currency: evalCurrency || '',
+                currency_instrument: selectedInstrumentCurrency || instrCurrency || ''
+            };
+
+            console.log('--- REQUEST BODY ---');
+
+            // Non stampiamo il token reale nella console
+            console.log({
+                ...requestBody,
+                token: token ? '*** PRESENTE ***' : '*** VUOTO ***'
+            });
+
+            // --------------------------------------------------
+            // 5. FETCH
+            // --------------------------------------------------
+
+            try {
+                console.log('--- INVIO POST ---');
+                console.log('Invio richiesta a:', url);
+
+                const requestStartTime = performance.now();
+
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(requestBody)
+                });
+
+                const requestEndTime = performance.now();
+
+                console.log('--- RISPOSTA HTTP ---');
+                console.log('Tempo richiesta:', `${Math.round(requestEndTime - requestStartTime)} ms`);
+                console.log('HTTP status:', response.status);
+                console.log('HTTP statusText:', response.statusText);
+                console.log('response.ok:', response.ok);
+                console.log('response.redirected:', response.redirected);
+                console.log('response.type:', response.type);
+                console.log('response.url:', response.url);
+                console.log(
+                    'Content-Type:',
+                    response.headers.get('content-type')
+                );
+
+                // --------------------------------------------------
+                // 6. CONTROLLO HTTP
+                // --------------------------------------------------
+
+                if (!response.ok) {
+                    console.error('ERRORE HTTP:', response.status);
+
+                    // Leggiamo comunque il contenuto restituito dal server
+                    const errorText = await response.text();
+
+                    console.error('Risposta server in caso di errore:');
+                    console.error(errorText);
+
+                    showError(
+                        `Server error: HTTP ${response.status} ${response.statusText}`
+                    );
+
+                    return;
+                }
+
+                // --------------------------------------------------
+                // 7. LEGGIAMO LA RISPOSTA COME TESTO
+                // --------------------------------------------------
+                // Questo è volutamente fatto prima di JSON.parse()
+                // per vedere eventuali errori PHP, HTML, warning, ecc.
+                // --------------------------------------------------
+
+                const responseText = await response.text();
+
+                console.log('--- RISPOSTA RAW DEL SERVER ---');
+                console.log(responseText);
+                console.log('Lunghezza risposta:', responseText.length);
+
+                // --------------------------------------------------
+                // 8. RISPOSTA VUOTA
+                // --------------------------------------------------
+
+                if (!responseText || !responseText.trim()) {
+                    console.error('ERRORE: il server ha restituito una risposta vuota');
+
+                    showError("Server returned an empty response.");
+                    return;
+                }
+
+                // --------------------------------------------------
+                // 9. PARSING JSON
+                // --------------------------------------------------
+
+                let data;
+
+                try {
+                    data = JSON.parse(responseText);
+                } catch (jsonError) {
+                    console.error('ERRORE JSON PARSE');
+                    console.error(jsonError);
+                    console.error('Risposta ricevuta dal server:');
+                    console.error(responseText);
+
+                    showError(
+                        "Server returned invalid JSON."
+                    );
+
+                    return;
+                }
+
+                // --------------------------------------------------
+                // 10. ANALISI DEL JSON
+                // --------------------------------------------------
+
+                console.log('--- JSON PARSED ---');
+                console.log('data:', data);
+                console.log('data.status:', data?.status);
+                console.log('data.msg:', data?.msg);
+                console.log('data.tradeyield:', data?.tradeyield);
+
+                console.log(
+                    'tradeyield è array:',
+                    Array.isArray(data?.tradeyield)
+                );
+
+                if (Array.isArray(data?.tradeyield)) {
+                    console.log(
+                        'Numero record tradeyield:',
+                        data.tradeyield.length
+                    );
+                }
+
+                // --------------------------------------------------
+                // 11. CONTROLLO RISPOSTA API
+                // --------------------------------------------------
+
+                if (data.status === 'ok' && data.tradeyield) {
+
+                    console.log('--- API OK ---');
+                    console.log('tradeyield presente');
+
+                    // --------------------------------------------------
+                    // 12. RECORD ORIGINALI
+                    // --------------------------------------------------
+
+                    console.log(
+                        'Record originali ricevuti:',
+                        data.tradeyield.length
+                    );
+
+                    console.log(
+                        'Primo record:',
+                        data.tradeyield.length > 0
+                            ? data.tradeyield[0]
+                            : 'NESSUN RECORD'
+                    );
+
+                    // --------------------------------------------------
+                    // 13. FLATTEN
+                    // --------------------------------------------------
+
+                    console.log('--- FLATTEN RECORD ---');
+
+                    const flattenedData = data.tradeyield.map((item, index) => {
+
+                        console.log(`Record ${index} originale:`, item);
+
+                        const flattened = flattenObject(item);
+
+                        console.log(`Record ${index} flattenato:`, flattened);
+
+                        return flattened;
+                    });
+
+                    console.log(
+                        'Record dopo flattenObject:',
+                        flattenedData.length
+                    );
+
+                    // --------------------------------------------------
+                    // 14. FILTER
+                    // --------------------------------------------------
+
+                    console.log('--- FILTER event_event_description ---');
+
+                    tableData = flattenedData.filter((item, index) => {
+
+                        const valid = !!item.event_event_description;
+
+                        console.log(
+                            `Record ${index}:`,
+                            'event_event_description =',
+                            item.event_event_description,
+                            '=> incluso:',
+                            valid
+                        );
+
+                        return valid;
+                    });
+
+                    console.log(
+                        'Record finali dopo FILTER:',
+                        tableData.length
+                    );
+
+                    console.log(
+                        'tableData:',
+                        tableData
+                    );
+
+                    // --------------------------------------------------
+                    // 15. ESTRAZIONE DIVISA INSTRUMENT
+                    // --------------------------------------------------
+
+                    console.log('--- INSTRUMENT CURRENCY ---');
+
                     if (!instrCurrency && data.tradeyield.length > 0) {
+
                         const first = data.tradeyield[0];
-                        const raw = first?.instrument?.id_currency
-                            || first?.id_currency
-                            || '';
+
+                        console.log(
+                            'Primo record per currency:',
+                            first
+                        );
+
+                        const raw =
+                            first?.instrument?.id_currency ||
+                            first?.id_currency ||
+                            '';
+
+                        console.log(
+                            'Currency raw trovata:',
+                            raw
+                        );
+
                         if (raw) {
+
                             instrCurrency = raw.trim();
+
+                            console.log(
+                                'instrCurrency impostata a:',
+                                instrCurrency
+                            );
+
                             if (!selectedInstrumentCurrency) {
+
                                 selectedInstrumentCurrency = instrCurrency;
+
+                                console.log(
+                                    'selectedInstrumentCurrency impostata a:',
+                                    selectedInstrumentCurrency
+                                );
                             }
+
+                            console.log(
+                                'Chiamata updateToggleUI()'
+                            );
+
                             updateToggleUI();
                         }
+
+                    } else {
+
+                        console.log(
+                            'Currency non aggiornata:',
+                            {
+                                instrCurrency,
+                                records: data.tradeyield.length
+                            }
+                        );
                     }
 
+                    // --------------------------------------------------
+                    // 16. COLONNE TABELLA
+                    // --------------------------------------------------
+
+                    console.log('--- TABLE COLUMNS ---');
+
                     if (tradeYieldColumns.length > 0) {
+
                         tableColumns = [...tradeYieldColumns];
+
+                        console.log(
+                            'Uso tradeYieldColumns:',
+                            tableColumns
+                        );
+
                     } else {
+
+                        console.log(
+                            'tradeYieldColumns vuoto: calcolo colonne dai dati'
+                        );
+
                         const allKeys = new Set();
-                        tableData.forEach(item => Object.keys(item).forEach(k => allKeys.add(k)));
+
+                        tableData.forEach((item, index) => {
+
+                            console.log(
+                                `Keys record ${index}:`,
+                                Object.keys(item)
+                            );
+
+                            Object.keys(item).forEach(k => {
+                                allKeys.add(k);
+                            });
+                        });
+
                         tableColumns = Array.from(allKeys);
+
+                        console.log(
+                            'Colonne generate:',
+                            tableColumns
+                        );
                     }
+
+                    // --------------------------------------------------
+                    // 17. RENDER
+                    // --------------------------------------------------
+
+                    console.log('--- RENDER TABLE ---');
+                    console.log('tableData:', tableData);
+                    console.log('tableColumns:', tableColumns);
+
                     renderTable();
-                } else { showError(data.msg || "No data found."); }
-            } catch (e) { showError("Network error."); }
-            finally { document.getElementById('loading').style.display = 'none'; }
+
+                    console.log('renderTable() eseguito');
+
+                } else {
+
+                    // --------------------------------------------------
+                    // 18. API ERROR / NO DATA
+                    // --------------------------------------------------
+
+                    console.error('--- API RESPONSE NON OK ---');
+
+                    console.error('data.status:', data?.status);
+                    console.error('data.msg:', data?.msg);
+                    console.error('data:', data);
+
+                    if (data && Array.isArray(data.tradeyield)) {
+                        console.error(
+                            'tradeyield length:',
+                            data.tradeyield.length
+                        );
+                    }
+
+                    showError(
+                        data.msg || "No data found."
+                    );
+                }
+
+            } catch (e) {
+
+                // --------------------------------------------------
+                // 19. NETWORK / JAVASCRIPT ERROR
+                // --------------------------------------------------
+
+                console.error('========================================');
+                console.error('=== ERRORE loadData() ===');
+                console.error('========================================');
+
+                console.error('Errore:', e);
+                console.error('Nome:', e?.name);
+                console.error('Messaggio:', e?.message);
+                console.error('Stack:', e?.stack);
+
+                showError(
+                    e?.message
+                        ? `Network error: ${e.message}`
+                        : "Network error."
+                );
+
+            } finally {
+
+                // --------------------------------------------------
+                // 20. LOADING
+                // --------------------------------------------------
+
+                const loading = document.getElementById('loading');
+
+                if (loading) {
+                    loading.style.display = 'none';
+                } else {
+                    console.warn(
+                        'Elemento #loading non trovato nel DOM'
+                    );
+                }
+
+                console.log('========================================');
+                console.log('=== loadData() END ===');
+                console.log('========================================');
+            }
         }
 
         function parseNumericValue(value) {
