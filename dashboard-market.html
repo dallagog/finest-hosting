@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Market 0.1</title>
+    <title>Market 0.2</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <link rel="icon" type="image/png" href="images/icon-finest.png">
     <style>
@@ -1700,139 +1700,749 @@
 
         // Online Update via WebSocket
         async function runUpdateOnline() {
-            console.log('--- runUpdateOnline init ---');
+
+            console.log('========================================');
+            console.log('--- runUpdateOnline INIT ---');
+            console.log('========================================');
+
             const btn = document.getElementById('updateBtn');
             const btnText = document.getElementById('updateBtnText');
+
             const username = credentials.username;
+
+            // --------------------------------------------------
+            // 1. CREDENTIALS
+            // --------------------------------------------------
+
+            console.log('--- CREDENTIALS ---');
+            console.log('credentials:', {
+                ...credentials,
+                token: credentials?.token ? '*** PRESENTE ***' : '*** VUOTO ***'
+            });
+
+            console.log('username:', username);
+            console.log('language:', credentials.language);
+            console.log('currency:', credentials.currency);
+            console.log('API_URL:', API_URL);
+
             if (!username) {
-                console.error('Username missing in credentials. Current credentials:', credentials);
+
+                console.error(
+                    'Username missing in credentials. Current credentials:',
+                    credentials
+                );
+
                 alert('Errore: username mancante');
                 return;
             }
+
             console.log('Username found:', username);
 
-            // Prepare UI
-            btn.disabled = true;
-            btn.classList.add('loading');
-            const originalText = btnText.textContent;
-            btnText.textContent = getTranslation('int.online') || 'Online...';
+            // --------------------------------------------------
+            // 2. PREPARE UI
+            // --------------------------------------------------
+
+            if (!btn) {
+                console.error('Elemento #updateBtn non trovato');
+            }
+
+            if (!btnText) {
+                console.error('Elemento #updateBtnText non trovato');
+            }
+
+            if (btn) {
+                btn.disabled = true;
+                btn.classList.add('loading');
+            }
+
+            const originalText = btnText ? btnText.textContent : '';
+
+            if (btnText) {
+                btnText.textContent = getTranslation('int.online') || 'Online...';
+            }
+
+            // --------------------------------------------------
+            // 3. TRY
+            // --------------------------------------------------
 
             try {
-                // 1. Trigger the evaluation by calling /putfilter
-                // First get the current filter
-                console.log('Fetching current filter to trigger update...');
-                const getFilterResp = await fetch(`${API_URL}/getfilter`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        username: credentials.username,
-                        token: credentials.token,
-                        language: credentials.language
-                    })
+
+                // ==================================================
+                // STEP 1 - GET CURRENT FILTER
+                // ==================================================
+
+                console.log('========================================');
+                console.log('STEP 1 - GET FILTER');
+                console.log('========================================');
+
+                const getFilterUrl = `${API_URL}/getfilter`;
+
+                console.log('GET FILTER URL:', getFilterUrl);
+
+                const getFilterBody = {
+                    username: credentials.username,
+                    token: credentials.token,
+                    language: credentials.language
+                };
+
+                console.log('GET FILTER BODY:', {
+                    ...getFilterBody,
+                    token: credentials.token
+                        ? '*** PRESENTE ***'
+                        : '*** VUOTO ***'
                 });
-                const filterData = await getFilterResp.json();
-                console.log('Filter data:', filterData);
-                // TODO: da sistemare
-                if (filterData.status == 'ko') filterData.status = 'ok'
-                if (filterData.status !== 'ok') throw new Error('Failed to get filter: ' + filterData.msg);
 
-                console.log('Triggering evaluation via /putfilter...');
-                const putFilterResp = await fetch(`${API_URL}/putfilter`, {
+                console.log('Fetching current filter...');
+
+                const getFilterStart = performance.now();
+
+                const getFilterResp = await fetch(getFilterUrl, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        username: credentials.username,
-                        token: credentials.token,
-                        language: credentials.language,
-                        currency: credentials.currency,
-                        filter: JSON.stringify(filterData.filter)
-                    })
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(getFilterBody)
                 });
-                const putResult = await putFilterResp.json();
-                if (putResult.status !== 'ok') throw new Error('Failed to trigger update: ' + putResult.msg);
-                console.log('/putfilter success, starting WebSocket...');
 
-                // 2. Start WebSocket connection
-                const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-                const currency = credentials.currency || localStorage.getItem('currency') || 'EUR';
-                const wsUrl = `${wsProtocol}//feweb-tunnel.fe-web.eu/ws/updateportfolioonline/${credentials.username}/${currency}`;
-                console.log('WebSocket connecting to:', wsUrl);
+                const getFilterEnd = performance.now();
 
-                if (ws && ws.readyState === WebSocket.OPEN) {
-                    ws.close();
+                console.log(
+                    'GET FILTER response time:',
+                    `${Math.round(getFilterEnd - getFilterStart)} ms`
+                );
+
+                // --------------------------------------------------
+                // HTTP RESPONSE
+                // --------------------------------------------------
+
+                console.log('--- GET FILTER HTTP RESPONSE ---');
+                console.log('status:', getFilterResp.status);
+                console.log('statusText:', getFilterResp.statusText);
+                console.log('ok:', getFilterResp.ok);
+                console.log('type:', getFilterResp.type);
+                console.log('redirected:', getFilterResp.redirected);
+                console.log('url:', getFilterResp.url);
+                console.log(
+                    'content-type:',
+                    getFilterResp.headers.get('content-type')
+                );
+
+                // --------------------------------------------------
+                // READ RAW RESPONSE
+                // --------------------------------------------------
+
+                const getFilterText = await getFilterResp.text();
+
+                console.log('--- GET FILTER RAW RESPONSE ---');
+                console.log(getFilterText);
+                console.log(
+                    'Raw response length:',
+                    getFilterText.length
+                );
+
+                // --------------------------------------------------
+                // HTTP ERROR
+                // --------------------------------------------------
+
+                if (!getFilterResp.ok) {
+
+                    console.error(
+                        'GET FILTER HTTP ERROR:',
+                        getFilterResp.status
+                    );
+
+                    throw new Error(
+                        `GET /getfilter HTTP ${getFilterResp.status} ${getFilterResp.statusText}: ${getFilterText}`
+                    );
                 }
 
+                // --------------------------------------------------
+                // PARSE JSON
+                // --------------------------------------------------
+
+                let filterData;
+
+                try {
+
+                    filterData = JSON.parse(getFilterText);
+
+                } catch (jsonError) {
+
+                    console.error(
+                        'GET FILTER JSON PARSE ERROR:',
+                        jsonError
+                    );
+
+                    console.error(
+                        'Invalid JSON received:',
+                        getFilterText
+                    );
+
+                    throw new Error(
+                        'GET /getfilter returned invalid JSON'
+                    );
+                }
+
+                // --------------------------------------------------
+                // ANALYZE RESPONSE
+                // --------------------------------------------------
+
+                console.log('--- GET FILTER PARSED DATA ---');
+                console.log('filterData:', filterData);
+                console.log('filterData.status:', filterData?.status);
+                console.log('filterData.msg:', filterData?.msg);
+                console.log('filterData.filter:', filterData?.filter);
+
+                console.log(
+                    'filterData.filter type:',
+                    typeof filterData?.filter
+                );
+
+                console.log(
+                    'filterData.filter is null:',
+                    filterData?.filter === null
+                );
+
+                console.log(
+                    'filterData.filter is undefined:',
+                    filterData?.filter === undefined
+                );
+
+                if (filterData && typeof filterData === 'object') {
+
+                    console.log(
+                        'filterData keys:',
+                        Object.keys(filterData)
+                    );
+
+                } else {
+
+                    console.warn(
+                        'filterData is NOT an object:',
+                        filterData
+                    );
+                }
+
+                // --------------------------------------------------
+                // CHECK STATUS
+                // --------------------------------------------------
+
+                if (filterData?.status !== 'ok') {
+
+                    console.error(
+                        'GET FILTER returned non-ok status'
+                    );
+
+                    console.error(
+                        'status:',
+                        filterData?.status
+                    );
+
+                    console.error(
+                        'msg:',
+                        filterData?.msg
+                    );
+
+                    console.error(
+                        'full response:',
+                        filterData
+                    );
+
+                    throw new Error(
+                        'Failed to get filter: ' +
+                        (
+                            filterData?.msg ||
+                            filterData?.error ||
+                            `status=${filterData?.status ?? 'undefined'}`
+                        )
+                    );
+                }
+
+                // --------------------------------------------------
+                // CHECK FILTER
+                // --------------------------------------------------
+
+                if (filterData.filter === undefined) {
+
+                    console.warn(
+                        'GET FILTER returned status=ok but filter is undefined'
+                    );
+
+                } else if (filterData.filter === null) {
+
+                    console.warn(
+                        'GET FILTER returned status=ok but filter is null'
+                    );
+
+                } else {
+
+                    console.log(
+                        'Filter successfully received:',
+                        filterData.filter
+                    );
+                }
+
+                // ==================================================
+                // STEP 2 - PUT FILTER / TRIGGER EVALUATION
+                // ==================================================
+
+                console.log('========================================');
+                console.log('STEP 2 - PUT FILTER');
+                console.log('========================================');
+
+                const putFilterUrl = `${API_URL}/putfilter`;
+
+                console.log(
+                    'PUT FILTER URL:',
+                    putFilterUrl
+                );
+
+                const serializedFilter =
+                    JSON.stringify(filterData.filter);
+
+                console.log(
+                    'Serialized filter:',
+                    serializedFilter
+                );
+
+                const putFilterBody = {
+                    username: credentials.username,
+                    token: credentials.token,
+                    language: credentials.language,
+                    currency: credentials.currency,
+                    filter: serializedFilter
+                };
+
+                console.log('PUT FILTER BODY:', {
+                    ...putFilterBody,
+                    token: credentials.token
+                        ? '*** PRESENTE ***'
+                        : '*** VUOTO ***'
+                });
+
+                console.log(
+                    'Triggering evaluation via /putfilter...'
+                );
+
+                const putFilterStart = performance.now();
+
+                const putFilterResp = await fetch(putFilterUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(putFilterBody)
+                });
+
+                const putFilterEnd = performance.now();
+
+                console.log(
+                    'PUT FILTER response time:',
+                    `${Math.round(putFilterEnd - putFilterStart)} ms`
+                );
+
+                // --------------------------------------------------
+                // PUT FILTER HTTP RESPONSE
+                // --------------------------------------------------
+
+                console.log('--- PUT FILTER HTTP RESPONSE ---');
+                console.log('status:', putFilterResp.status);
+                console.log('statusText:', putFilterResp.statusText);
+                console.log('ok:', putFilterResp.ok);
+                console.log('url:', putFilterResp.url);
+                console.log(
+                    'content-type:',
+                    putFilterResp.headers.get('content-type')
+                );
+
+                // --------------------------------------------------
+                // RAW RESPONSE
+                // --------------------------------------------------
+
+                const putFilterText = await putFilterResp.text();
+
+                console.log('--- PUT FILTER RAW RESPONSE ---');
+                console.log(putFilterText);
+
+                if (!putFilterResp.ok) {
+
+                    console.error(
+                        'PUT FILTER HTTP ERROR:',
+                        putFilterResp.status
+                    );
+
+                    throw new Error(
+                        `PUT /putfilter HTTP ${putFilterResp.status} ${putFilterResp.statusText}: ${putFilterText}`
+                    );
+                }
+
+                // --------------------------------------------------
+                // PARSE PUT FILTER JSON
+                // --------------------------------------------------
+
+                let putResult;
+
+                try {
+
+                    putResult = JSON.parse(putFilterText);
+
+                } catch (jsonError) {
+
+                    console.error(
+                        'PUT FILTER JSON PARSE ERROR:',
+                        jsonError
+                    );
+
+                    console.error(
+                        'Invalid JSON:',
+                        putFilterText
+                    );
+
+                    throw new Error(
+                        'PUT /putfilter returned invalid JSON'
+                    );
+                }
+
+                console.log('--- PUT FILTER PARSED DATA ---');
+                console.log('putResult:', putResult);
+                console.log('putResult.status:', putResult?.status);
+                console.log('putResult.msg:', putResult?.msg);
+                console.log('putResult.error:', putResult?.error);
+
+                // --------------------------------------------------
+                // CHECK PUT RESULT
+                // --------------------------------------------------
+
+                if (putResult?.status !== 'ok') {
+
+                    console.error(
+                        'PUT FILTER failed:',
+                        putResult
+                    );
+
+                    throw new Error(
+                        'Failed to trigger update: ' +
+                        (
+                            putResult?.msg ||
+                            putResult?.error ||
+                            `status=${putResult?.status ?? 'undefined'}`
+                        )
+                    );
+                }
+
+                console.log(
+                    '/putfilter SUCCESS - starting WebSocket...'
+                );
+
+                // ==================================================
+                // STEP 3 - WEBSOCKET
+                // ==================================================
+
+                console.log('========================================');
+                console.log('STEP 3 - WEBSOCKET');
+                console.log('========================================');
+
+                const wsProtocol =
+                    window.location.protocol === 'https:'
+                        ? 'wss:'
+                        : 'ws:';
+
+                const currency =
+                    credentials.currency ||
+                    localStorage.getItem('currency') ||
+                    'EUR';
+
+                const wsUrl =
+                    `${wsProtocol}//feweb-tunnel.fe-web.eu/ws/updateportfolioonline/${credentials.username}/${currency}`;
+
+                console.log('WebSocket protocol:', wsProtocol);
+                console.log('WebSocket username:', credentials.username);
+                console.log('WebSocket currency:', currency);
+                console.log('WebSocket URL:', wsUrl);
+
+                // --------------------------------------------------
+                // CLOSE EXISTING SOCKET
+                // --------------------------------------------------
+
+                if (ws && ws.readyState === WebSocket.OPEN) {
+
+                    console.log(
+                        'Existing WebSocket is OPEN. Closing it first...'
+                    );
+
+                    ws.close();
+
+                } else {
+
+                    console.log(
+                        'No existing OPEN WebSocket.'
+                    );
+                }
+
+                // --------------------------------------------------
+                // CREATE SOCKET
+                // --------------------------------------------------
+
+                console.log(
+                    'Creating new WebSocket...'
+                );
+
                 ws = new WebSocket(wsUrl);
+
+                console.log(
+                    'WebSocket object created:',
+                    ws
+                );
+
             } catch (err) {
-                console.error('Failed to initiate update process:', err);
-                finishUpdate(false, err.message);
+
+                // ==================================================
+                // ERROR
+                // ==================================================
+
+                console.error('========================================');
+                console.error('FAILED TO INITIATE UPDATE PROCESS');
+                console.error('========================================');
+
+                console.error('Error object:', err);
+                console.error('Error name:', err?.name);
+                console.error('Error message:', err?.message);
+                console.error('Error stack:', err?.stack);
+
+                finishUpdate(
+                    false,
+                    err?.message || 'Errore sconosciuto'
+                );
+
                 return;
             }
 
+            // ======================================================
+            // WEBSOCKET EVENTS
+            // ======================================================
+
             ws.onopen = () => {
-                console.log("WebSocket connection established (onopen).");
+
+                console.log('========================================');
+                console.log('WEBSOCKET ONOPEN');
+                console.log('========================================');
+
+                console.log(
+                    'WebSocket connection established.'
+                );
+
+                console.log(
+                    'readyState:',
+                    ws.readyState
+                );
+
                 // No payload needed as per new server logic
             };
 
             ws.onmessage = async (event) => {
-                console.log("WebSocket message received.");
+
+                console.log('========================================');
+                console.log('WEBSOCKET ONMESSAGE');
+                console.log('========================================');
+
+                console.log(
+                    'Raw WebSocket message:',
+                    event.data
+                );
+
                 try {
+
                     const data = JSON.parse(event.data);
+
+                    console.log(
+                        'Parsed WebSocket data:',
+                        data
+                    );
+
+                    console.log(
+                        'WS status:',
+                        data?.status
+                    );
+
+                    console.log(
+                        'WS error:',
+                        data?.error
+                    );
+
                     if (data.status === 'ok') {
-                        const newHash = await computeHash(data.portfolio);
-                        console.log("Current hash:", lastPortfolioHash, "New hash:", newHash);
+
+                        console.log(
+                            'Valid portfolio update received.'
+                        );
+
+                        console.log(
+                            'Portfolio:',
+                            data.portfolio
+                        );
+
+                        console.log(
+                            'Classification:',
+                            data.classification
+                        );
+
+                        const newHash =
+                            await computeHash(data.portfolio);
+
+                        console.log(
+                            'Current hash:',
+                            lastPortfolioHash
+                        );
+
+                        console.log(
+                            'New hash:',
+                            newHash
+                        );
 
                         if (newHash !== lastPortfolioHash) {
-                            console.log("Portfolio changed! Updating UI...");
+
+                            console.log(
+                                'Portfolio changed! Updating UI...'
+                            );
+
                             lastPortfolioHash = newHash;
-                            processAndRenderPortfolio(data.portfolio, data.classification);
-                            // Do not close, continue monitoring for more updates
+
+                            processAndRenderPortfolio(
+                                data.portfolio,
+                                data.classification
+                            );
+
                         } else {
-                            console.log("Portfolio hash unchanged. Still waiting...");
+
+                            console.log(
+                                'Portfolio hash unchanged. Still waiting...'
+                            );
                         }
+
                     } else if (data.error) {
-                        console.error("Server signaled ERROR:", data.error);
-                        ws.close(1008, data.error); // 1008 = Policy Violation / App Error
+
+                        console.error(
+                            'Server signaled ERROR:',
+                            data.error
+                        );
+
+                        console.error(
+                            'Closing WebSocket with code 1008'
+                        );
+
+                        ws.close(
+                            1008,
+                            data.error
+                        );
+
+                    } else {
+
+                        console.warn(
+                            'Unknown WebSocket message format:',
+                            data
+                        );
                     }
+
                 } catch (pe) {
-                    console.error("Error parsing WS message:", pe);
+
+                    console.error(
+                        'Error parsing WS message:',
+                        pe
+                    );
+
+                    console.error(
+                        'Original WS data:',
+                        event.data
+                    );
                 }
             };
 
             ws.onerror = (error) => {
-                console.error("WebSocket error observed (onerror):", error);
-                finishUpdate(false, "Errore connessione");
+
+                console.error('========================================');
+                console.error('WEBSOCKET ONERROR');
+                console.error('========================================');
+
+                console.error(
+                    'WebSocket error observed:',
+                    error
+                );
+
+                console.error(
+                    'WebSocket readyState:',
+                    ws?.readyState
+                );
+
+                finishUpdate(
+                    false,
+                    "Errore connessione"
+                );
             };
 
             ws.onclose = (event) => {
-                console.log("WebSocket connection closed (onclose). Code:", event.code, "Reason:", event.reason);
+
+                console.log('========================================');
+                console.log('WEBSOCKET ONCLOSE');
+                console.log('========================================');
+
+                console.log(
+                    'Close code:',
+                    event.code
+                );
+
+                console.log(
+                    'Close reason:',
+                    event.reason
+                );
+
+                console.log(
+                    'Was clean:',
+                    event.wasClean
+                );
+
                 if (event.code === 1000 || event.code === 1005) {
-                    // Normal closure or no status
-                    finishUpdate(true, null, true);
+
+                    console.log(
+                        'WebSocket closed normally.'
+                    );
+
+                    finishUpdate(
+                        true,
+                        null,
+                        true
+                    );
+
                 } else {
-                    // Abnormal closure
-                    finishUpdate(false, event.reason || "Monitoraggio terminato");
+
+                    console.error(
+                        'WebSocket closed abnormally.'
+                    );
+
+                    finishUpdate(
+                        false,
+                        event.reason || "Monitoraggio terminato"
+                    );
                 }
             };
+        }
 
-            function finishUpdate(success, errorMsg, skipRefresh = false) {
-                console.log('--- finishUpdate --- success:', success, 'errorMsg:', errorMsg, 'skipRefresh:', skipRefresh);
-                btn.disabled = false;
-                btn.classList.remove('loading');
-                btnText.textContent = getTranslation('int.update');
+        function finishUpdate(success, errorMsg, skipRefresh = false) {
+            console.log('--- finishUpdate --- success:', success, 'errorMsg:', errorMsg, 'skipRefresh:', skipRefresh);
+            btn.disabled = false;
+            btn.classList.remove('loading');
+            btnText.textContent = getTranslation('int.update');
 
-                if (success) {
-                    if (!skipRefresh) {
-                        console.log('Refreshing portfolio data via HTTP...');
-                        loadPortfolio();
-                    } else {
-                        console.log('Data already updated via WebSocket, skipping redundant fetch.');
-                        showMessage(getTranslation('int.success.update') || 'Aggiornamento completato', 'success');
-                    }
+            if (success) {
+                if (!skipRefresh) {
+                    console.log('Refreshing portfolio data via HTTP...');
+                    loadPortfolio();
                 } else {
-                    console.warn('Update failed:', errorMsg);
+                    console.log('Data already updated via WebSocket, skipping redundant fetch.');
+                    showMessage(getTranslation('int.success.update') || 'Aggiornamento completato', 'success');
                 }
+            } else {
+                console.warn('Update failed:', errorMsg);
             }
+        }
         }
 
         // ========== INITIALIZATION ==========
