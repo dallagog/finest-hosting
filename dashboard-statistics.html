@@ -1103,6 +1103,28 @@
             updateSectorAnchorText();
         }
 
+        function onSectorChange() {
+            const items = document.getElementById('sectorSelectorItems');
+            const checkboxes = items.querySelectorAll('input[type="checkbox"]');
+            _selectedSectors = [];
+            checkboxes.forEach(cb => {
+                if (cb.checked) _selectedSectors.push(cb.value);
+            });
+            updateSectorAnchorText();
+            applyFiltersAndRender();
+        }
+
+        function updateSectorAnchorText() {
+            const anchor = document.getElementById('sectorSelectorAnchor');
+            if (_selectedSectors.length === 0) {
+                anchor.textContent = "Tutti i settori";
+            } else if (_selectedSectors.length === 1) {
+                anchor.textContent = `Escludi: ${getSectorLabel(_selectedSectors[0])}`;
+            } else {
+                anchor.textContent = `Escludi: ${_selectedSectors.length} settori`;
+            }
+        }
+
         function populateMarketSelector(data) {
             const container = document.getElementById('marketSelectorItems');
             const markets = [...new Set(data.map(r => r.code_market).filter(Boolean))].sort();
