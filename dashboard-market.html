@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Market 0.1</title>
+    <title>Market 0.2</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <link rel="icon" type="image/png" href="images/icon-finest.png">
     <style>
@@ -2427,24 +2427,101 @@
         }
 
         function finishUpdate(success, errorMsg, skipRefresh = false) {
-            console.log('--- finishUpdate --- success:', success, 'errorMsg:', errorMsg, 'skipRefresh:', skipRefresh);
-            btn.disabled = false;
-            btn.classList.remove('loading');
-            btnText.textContent = getTranslation('int.update');
+
+            console.log('========================================');
+            console.log('--- finishUpdate ---');
+            console.log('success:', success);
+            console.log('errorMsg:', errorMsg);
+            console.log('skipRefresh:', skipRefresh);
+            console.log('========================================');
+
+            // Recupera gli elementi DOM nello scope corretto
+            const btn = document.getElementById('updateBtn');
+            const btnText = document.getElementById('updateBtnText');
+
+            console.log('finishUpdate - btn:', btn);
+            console.log('finishUpdate - btnText:', btnText);
+
+            // --------------------------------------------------
+            // RIABILITA PULSANTE
+            // --------------------------------------------------
+
+            if (btn) {
+                btn.disabled = false;
+                btn.classList.remove('loading');
+
+                console.log('Update button riabilitato.');
+            } else {
+                console.warn(
+                    'finishUpdate: elemento #updateBtn non trovato nel DOM.'
+                );
+            }
+
+            // --------------------------------------------------
+            // RIPRISTINA TESTO PULSANTE
+            // --------------------------------------------------
+
+            if (btnText) {
+
+                const updateText =
+                    getTranslation('int.update') || 'Update';
+
+                btnText.textContent = updateText;
+
+                console.log(
+                    'Testo pulsante ripristinato:',
+                    updateText
+                );
+
+            } else {
+
+                console.warn(
+                    'finishUpdate: elemento #updateBtnText non trovato nel DOM.'
+                );
+            }
+
+            // --------------------------------------------------
+            // GESTIONE RISULTATO
+            // --------------------------------------------------
 
             if (success) {
-                if (!skipRefresh) {
-                    console.log('Refreshing portfolio data via HTTP...');
-                    loadPortfolio();
-                } else {
-                    console.log('Data already updated via WebSocket, skipping redundant fetch.');
-                    showMessage(getTranslation('int.success.update') || 'Aggiornamento completato', 'success');
-                }
-            } else {
-                console.warn('Update failed:', errorMsg);
-            }
-        }
 
+                console.log(
+                    'Update completato con successo.'
+                );
+
+                if (!skipRefresh) {
+
+                    console.log(
+                        'Refreshing portfolio data via HTTP...'
+                    );
+
+                    loadPortfolio();
+
+                } else {
+
+                    console.log(
+                        'Data already updated via WebSocket, ' +
+                        'skipping redundant fetch.'
+                    );
+
+                    showMessage(
+                        getTranslation('int.success.update') ||
+                        'Aggiornamento completato',
+                        'success'
+                    );
+                }
+
+            } else {
+
+                console.warn(
+                    'Update failed:',
+                    errorMsg
+                );
+            }
+
+            console.log('--- finishUpdate END ---');
+        }
         // ========== INITIALIZATION ==========
         window.addEventListener('load', async () => {
             console.log('--- Window Load Event Fired ---');
