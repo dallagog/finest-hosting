@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>Finest 1.0</title>
+    <title>FinEst 0.1</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <script src="js/dashboard-shared.js"></script>
     <link rel="icon" type="image/png" href="images/icon-finest.png">
@@ -1539,7 +1539,8 @@
                 <div style="font-size: 0.92rem; font-weight: 700; color: var(--text); margin-bottom: 4px;">Calcolo
                     Statistica</div>
                 <div style="font-size: 0.78rem; color: var(--text-secondary);">Imposta i filtri desiderati e premi
-                    <strong>"Applica"</strong> per eseguire la statistica.</div>
+                    <strong>"Applica"</strong> per eseguire la statistica.
+                </div>
             </div>
         </div>
     </section>
@@ -1569,6 +1570,61 @@
     </nav>
 
     <script>
+        // ============================================================
+        // LOGGER UTILITY
+        // ============================================================
+        const Logger = {
+            _enabled: true,
+            _level: 'DEBUG', // DEBUG, INFO, WARN, ERROR
+
+            setLevel(level) {
+                this._level = level;
+            },
+
+            _log(level, module, message, data) {
+                if (!this._enabled) return;
+                const levels = { DEBUG: 0, INFO: 1, WARN: 2, ERROR: 3 };
+                if (levels[level] < levels[this._level]) return;
+
+                const timestamp = new Date().toISOString();
+                const prefix = `[${timestamp}] [${level}] [${module}]`;
+
+                if (data !== undefined && data !== null) {
+                    try {
+                        const dataStr = typeof data === 'object' ? JSON.stringify(data) : String(data);
+                        console.log(`${prefix} ${message}`, data);
+                    } catch (e) {
+                        console.log(`${prefix} ${message} [Data non serializzabile]`);
+                    }
+                } else {
+                    console.log(`${prefix} ${message}`);
+                }
+            },
+
+            debug(module, message, data) {
+                this._log('DEBUG', module, message, data);
+            },
+
+            info(module, message, data) {
+                this._log('INFO', module, message, data);
+            },
+
+            warn(module, message, data) {
+                this._log('WARN', module, message, data);
+            },
+
+            error(module, message, data) {
+                this._log('ERROR', module, message, data);
+            }
+        };
+
+        // Abilita logging dettagliato
+        Logger.info('SYSTEM', '🚀 Avvio applicazione dashboard mobile');
+        Logger.info('SYSTEM', '📱 Finest 1.0 - Mobile Dashboard');
+
+        // ============================================================
+        // CONFIGURAZIONE
+        // ============================================================
         const API_URL = "https://feweb-tunnel.fe-web.eu";
         const API_URL_MARKET = "https://market-tunnel.fe-web.eu";
 
@@ -1578,6 +1634,13 @@
             currency: localStorage.getItem('currency') || 'EUR',
             language: localStorage.getItem('language') || 'it_IT'
         };
+
+        Logger.info('INIT', 'Credenziali recuperate da localStorage', {
+            username: credentials.username,
+            currency: credentials.currency,
+            language: credentials.language,
+            hasToken: !!credentials.token
+        });
 
         let translations = {};
         let portfolioRawData = [];
@@ -1591,14 +1654,18 @@
 
         // ── PORTRAIT ORIENTATION CONTROL ──
         function lockOrientationPortrait() {
+            Logger.debug('ORIENTATION', 'Tentativo blocco orientamento portrait');
             if (window.screen && window.screen.orientation && typeof window.screen.orientation.lock === 'function') {
                 window.screen.orientation.lock('portrait').catch(err => {
-                    console.log("Screen orientation lock API not allowed by user/browser:", err);
+                    Logger.warn('ORIENTATION', 'Lock orientamento non permesso dal browser', err.message);
                 });
+            } else {
+                Logger.warn('ORIENTATION', 'Screen Orientation API non disponibile');
             }
         }
 
         window.addEventListener('orientationchange', () => {
+            Logger.debug('ORIENTATION', 'Orientamento cambiato, riapplico lock');
             lockOrientationPortrait();
         });
 
@@ -1611,6 +1678,7 @@
             const wrapper = document.getElementById('portfolio-details-wrapper');
             const btn = document.getElementById('btn-toggle-portfolio-details');
             const lbl = document.getElementById('label-portfolio-details');
+            Logger.info('UI', `Toggle dettagli portafoglio: ${_portfolioDetailsOpen ? 'APERTO' : 'CHIUSO'}`);
             if (_portfolioDetailsOpen) {
                 wrapper.classList.add('open');
                 btn.classList.add('active');
@@ -1627,6 +1695,7 @@
             const wrapper = document.getElementById('yield-details-wrapper');
             const btn = document.getElementById('btn-toggle-yield-details');
             const lbl = document.getElementById('label-yield-details');
+            Logger.info('UI', `Toggle dettagli rendimento: ${_yieldDetailsOpen ? 'APERTO' : 'CHIUSO'}`);
             if (_yieldDetailsOpen) {
                 wrapper.classList.add('open');
                 btn.classList.add('active');
@@ -1643,6 +1712,7 @@
             const wrapper = document.getElementById('market-details-wrapper');
             const btn = document.getElementById('btn-toggle-market-details');
             const lbl = document.getElementById('label-market-details');
+            Logger.info('UI', `Toggle dettagli mercato: ${_marketDetailsOpen ? 'APERTO' : 'CHIUSO'}`);
             if (_marketDetailsOpen) {
                 wrapper.classList.add('open');
                 btn.classList.add('active');
@@ -1668,34 +1738,60 @@
 
         // ── INIT ──────────────────────────────────────────────────────
         async function init() {
+            Logger.info('INIT', '=== INIZIO INIZIALIZZAZIONE ===');
             lockOrientationPortrait();
 
             if (!credentials.username) {
+                Logger.warn('INIT', 'Nessun username trovato, reindirizzamento alla login');
                 window.location.href = 'index.html';
                 return;
             }
 
+            Logger.debug('INIT', 'Impostazione header utente', { username: credentials.username });
             document.getElementById('usernameDisplay').textContent = credentials.username;
             document.getElementById('currencyDisplay').textContent = credentials.currency;
             document.getElementById('avatarLetter').textContent = credentials.username.charAt(0).toUpperCase();
 
+            Logger.debug('INIT', 'Caricamento traduzioni');
             await loadTranslations();
+
+            Logger.debug('INIT', 'Impostazione date default');
             setDefaultDates();
+
+            Logger.debug('INIT', 'Inizializzazione ricerca strumenti');
             initInstrumentSearch();
-            preloadStatFilters();
+
+            Logger.debug('INIT', 'Precaricamento filtri statistica');
+            await preloadStatFilters();
 
             // Load initial view (Portafoglio)
+            Logger.info('INIT', 'Caricamento dati portafoglio iniziale');
             loadPortfolioData();
+            Logger.info('INIT', '=== INIZIALIZZAZIONE COMPLETATA ===');
         }
 
         async function loadTranslations() {
+            Logger.debug('TRANSLATIONS', `Caricamento traduzioni per lingua: ${credentials.language}`);
             try {
                 const resp = await fetch(`lang/${credentials.language}.json`);
-                if (resp.ok) translations = await resp.json();
-            } catch (err) { console.error("Translations error:", err); }
+                if (resp.ok) {
+                    translations = await resp.json();
+                    Logger.info('TRANSLATIONS', `Traduzioni caricate: ${Object.keys(translations).length} chiavi`);
+                } else {
+                    Logger.warn('TRANSLATIONS', `File traduzioni non trovato: lang/${credentials.language}.json (HTTP ${resp.status})`);
+                }
+            } catch (err) {
+                Logger.error('TRANSLATIONS', 'Errore caricamento traduzioni', err.message);
+            }
         }
 
-        function getTranslation(key) { return translations[key] || key; }
+        function getTranslation(key) {
+            const result = translations[key] || key;
+            if (result === key && key.startsWith('dom.')) {
+                Logger.debug('TRANSLATIONS', `Chiave non tradotta: ${key}`);
+            }
+            return result;
+        }
 
         function setDefaultDates() {
             const today = new Date();
@@ -1703,6 +1799,7 @@
             const todayStr = today.toISOString().split('T')[0];
             const lastMonthStr = lastMonth.toISOString().split('T')[0];
 
+            Logger.debug('DATES', `Date default: dal ${lastMonthStr} al ${todayStr}`);
             document.getElementById('mkt-date-start').value = lastMonthStr;
             document.getElementById('mkt-date-end').value = todayStr;
             document.getElementById('stat-date-start').value = lastMonthStr;
@@ -1714,6 +1811,7 @@
 
         // ── TAB SWITCHING ──
         function switchTab(tabName) {
+            Logger.info('TAB', `➡️ Cambio tab a: ${tabName}`);
             lockOrientationPortrait();
             document.querySelectorAll('.tab-section').forEach(el => el.classList.remove('active'));
             document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
@@ -1738,18 +1836,29 @@
                 document.getElementById('headerLogo').textContent = headerTitles[tabName].logo;
             }
 
-            // Lazy data loading on tab selection (Statistica is loaded strictly on user request)
-            if (tabName === 'portfolio' && portfolioRawData.length === 0) loadPortfolioData();
-            if (tabName === 'yield' && yieldRawData.length === 0) loadYieldData();
-            if (tabName === 'market' && marketRawData.length === 0) fetchMarketSectionData();
+            // Lazy data loading on tab selection
+            if (tabName === 'portfolio' && portfolioRawData.length === 0) {
+                Logger.debug('TAB', 'Caricamento lazy dati portafoglio');
+                loadPortfolioData();
+            }
+            if (tabName === 'yield' && yieldRawData.length === 0) {
+                Logger.debug('TAB', 'Caricamento lazy dati rendimento');
+                loadYieldData();
+            }
+            if (tabName === 'market' && marketRawData.length === 0) {
+                Logger.debug('TAB', 'Caricamento lazy dati mercato');
+                fetchMarketSectionData();
+            }
         }
 
         function logout() {
+            Logger.info('AUTH', '🚪 Logout eseguito, pulizia localStorage');
             localStorage.clear();
             window.location.href = 'index.html';
         }
 
         function showMessage(text, type) {
+            Logger.info('UI', `Messaggio: [${type}] ${text}`);
             const d = document.getElementById('message');
             d.textContent = text;
             d.className = `message ${type}`;
@@ -1760,49 +1869,76 @@
         // ── 1. PORTAFOGLIO SECTION ─────────────────────────────────────
         async function loadPortfolioData() {
             const container = document.getElementById('portfolio-card-list');
+            Logger.info('PORTAFOGLIO', '📥 Inizio caricamento dati portafoglio');
+
             try {
                 const payload = {
                     username: credentials.username || "",
                     token: credentials.token || "",
                     language: credentials.language || ""
                 };
+                Logger.debug('PORTAFOGLIO', 'Payload richiesta', { username: payload.username, language: payload.language });
+
                 const resp = await fetch(`${API_URL}/getportfolio`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
                 });
+
+                Logger.debug('PORTAFOGLIO', `Risposta HTTP: ${resp.status} ${resp.statusText}`);
                 const data = await resp.json();
+                Logger.debug('PORTAFOGLIO', 'Dati ricevuti', { status: data.status, hasData: !!data });
+
                 if (data.status === 'ok') {
+                    Logger.info('PORTAFOGLIO', '✅ Dati portafoglio ricevuti con successo');
+
                     classificationMap = {};
                     let cList = data.classification;
                     if (typeof cList === 'string') {
-                        try { cList = JSON.parse(cList.replace(/'/g, '"')); } catch (e) { cList = []; }
+                        Logger.debug('PORTAFOGLIO', 'Parsing classification da stringa JSON');
+                        try { cList = JSON.parse(cList.replace(/'/g, '"')); } catch (e) {
+                            Logger.error('PORTAFOGLIO', 'Errore parsing classification', e.message);
+                            cList = [];
+                        }
                     }
                     if (Array.isArray(cList)) {
+                        Logger.info('PORTAFOGLIO', `Classification caricata: ${cList.length} elementi`);
                         cList.forEach(item => {
                             if (item.id_instrument) classificationMap[item.id_instrument] = item;
                         });
+                    } else {
+                        Logger.warn('PORTAFOGLIO', 'Classification non è un array', typeof cList);
                     }
 
                     let rawPf = data.portfolio;
-                    if (!Array.isArray(rawPf) && Array.isArray(data)) rawPf = data;
+                    if (!Array.isArray(rawPf) && Array.isArray(data)) {
+                        Logger.warn('PORTAFOGLIO', 'Dati portafoglio non in formato atteso, tentativo fallback');
+                        rawPf = data;
+                    }
                     portfolioRawData = Array.isArray(rawPf) ? rawPf : [];
+                    Logger.info('PORTAFOGLIO', `📊 Portfolio caricato: ${portfolioRawData.length} elementi`);
 
                     renderPortfolioTable();
                 } else {
+                    Logger.error('PORTAFOGLIO', `Errore server: ${data.msg || 'Unknown error'}`);
                     container.innerHTML = `<div class="loading-text" style="color:var(--red); padding:20px;">${data.msg || 'Errore caricamento portafoglio'}</div>`;
+                    showMessage(data.msg || 'Errore caricamento portafoglio', 'error');
                 }
             } catch (err) {
-                console.error("Portfolio fetch error:", err);
+                Logger.error('PORTAFOGLIO', '❌ Errore fetch portafoglio', err.message);
                 container.innerHTML = `<div class="loading-text" style="color:var(--red); padding:20px;">Impossibile caricare il portafoglio</div>`;
+                showMessage('Impossibile caricare il portafoglio', 'error');
             }
         }
 
         function onPortfolioGroupingChange() {
+            const grouping = document.getElementById('portfolio-grouping').value;
+            Logger.debug('PORTAFOGLIO', `Raggruppamento cambiato: ${grouping || 'nessuno'}`);
             renderPortfolioTable();
         }
 
         function renderPortfolioTable() {
+            Logger.debug('PORTAFOGLIO', '🔄 Renderizzazione tabella portafoglio');
             const container = document.getElementById('portfolio-card-list');
             const grouping = document.getElementById('portfolio-grouping').value;
             const isExpanded = document.getElementById('expand-portfolio-details').checked;
@@ -1814,6 +1950,7 @@
 
             // REQUIREMENT 1: Filter portfolio records to display ONLY titles with quantity (> 0)
             const filteredData = (portfolioRawData || []).filter(item => hasQuantity(item));
+            Logger.debug('PORTAFOGLIO', `Elementi totali: ${portfolioRawData.length}, filtrati con quantità: ${filteredData.length}`);
 
             // REQUIREMENT 2: Calculate summary totals (Costo, Controvalore, M/P)
             let totCosto = 0;
@@ -1843,7 +1980,10 @@
             }
             if (elCount) elCount.textContent = `${filteredData.length} titoli`;
 
+            Logger.debug('PORTAFOGLIO', `Riepilogo: Costo=${fmtNum(totCosto)}, CTV=${fmtNum(totCtv)}, M/P=${fmtNum(totMp)}, Titoli=${filteredData.length}`);
+
             if (filteredData.length === 0) {
+                Logger.warn('PORTAFOGLIO', 'Nessun titolo con quantità presente in portafoglio');
                 container.innerHTML = `<div class="loading-text">Nessun titolo con quantità presente in portafoglio</div>`;
                 return;
             }
@@ -1915,6 +2055,7 @@
                     groups[gVal].push(item);
                 });
 
+                Logger.debug('PORTAFOGLIO', `Gruppi creati: ${Object.keys(groups).length}`);
                 Object.keys(groups).sort().forEach(group => {
                     const items = groups[group];
                     const groupCost = items.reduce((sum, i) => sum + (parseFloat(i['$cost_amount_curr'] || i['cost_amount'] || 0) || 0), 0);
@@ -1947,43 +2088,71 @@
             }
 
             container.innerHTML = html;
+            Logger.debug('PORTAFOGLIO', `✅ Render completata: ${rowCount} card generate`);
+        }
+
+        function translateGroupLabel(group, grouping) {
+            // Simple translation for group labels
+            if (grouping === 'sector') return getSectorLabel(group);
+            if (grouping === 'instrument_type') return getTranslation('dom.type:' + group) || group;
+            if (grouping === 'code_market') return group;
+            return group;
         }
 
         // ── 2. RENDIMENTO SECTION ─────────────────────────────────────
         async function loadYieldData() {
             const container = document.getElementById('yield-card-list');
+            Logger.info('RENDIMENTO', '📥 Inizio caricamento dati rendimento');
+
             try {
                 const payload = {
                     username: credentials.username || "",
                     token: credentials.token || "",
                     language: credentials.language || ""
                 };
+                Logger.debug('RENDIMENTO', 'Payload richiesta', { username: payload.username, language: payload.language });
+
                 const resp = await fetch(`${API_URL}/getportfolioyield`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
                 });
+
+                Logger.debug('RENDIMENTO', `Risposta HTTP: ${resp.status} ${resp.statusText}`);
                 const data = await resp.json();
+                Logger.debug('RENDIMENTO', 'Dati ricevuti', { status: data.status, hasData: !!data });
+
                 if (data.status === 'ok') {
+                    Logger.info('RENDIMENTO', '✅ Dati rendimento ricevuti con successo');
                     let rawY = data.portfolioyield;
-                    if (!Array.isArray(rawY) && Array.isArray(data)) rawY = data;
+                    if (!Array.isArray(rawY) && Array.isArray(data)) {
+                        Logger.warn('RENDIMENTO', 'Dati rendimento non in formato atteso, tentativo fallback');
+                        rawY = data;
+                    }
                     yieldRawData = Array.isArray(rawY) ? rawY.filter(i => i.RISTOT !== undefined && i.RISTOT !== null && i.RISTOT !== '') : [];
+                    Logger.info('RENDIMENTO', `📊 Rendimento caricato: ${yieldRawData.length} elementi`);
 
                     renderYieldTable();
                 } else {
+                    Logger.error('RENDIMENTO', `Errore server: ${data.msg || 'Unknown error'}`);
                     container.innerHTML = `<div class="loading-text" style="color:var(--red); padding:20px;">${data.msg || 'Errore caricamento rendimento'}</div>`;
+                    showMessage(data.msg || 'Errore caricamento rendimento', 'error');
                 }
             } catch (err) {
-                console.error("Yield fetch error:", err);
+                Logger.error('RENDIMENTO', '❌ Errore fetch rendimento', err.message);
                 container.innerHTML = `<div class="loading-text" style="color:var(--red); padding:20px;">Impossibile caricare il rendimento</div>`;
+                showMessage('Impossibile caricare il rendimento', 'error');
             }
         }
 
         function onYieldGroupingChange() {
+            const grouping = document.getElementById('yield-grouping').value;
+            Logger.debug('RENDIMENTO', `Raggruppamento cambiato: ${grouping || 'nessuno'}`);
             renderYieldTable();
         }
 
         function renderYieldTable() {
+            Logger.debug('RENDIMENTO', '🔄 Renderizzazione tabella rendimento');
             const container = document.getElementById('yield-card-list');
             const grouping = document.getElementById('yield-grouping').value;
             const isExpanded = document.getElementById('expand-yield-details').checked;
@@ -2020,7 +2189,10 @@
             }
             if (elCount) elCount.textContent = `${yieldRawData.length} strumenti`;
 
+            Logger.debug('RENDIMENTO', `Riepilogo: RISTOT=${fmtNum(totRistot)}, GIACMED=${fmtNum(totGiacmed)}, Rend%=${totYieldPerc !== null ? totYieldPerc.toFixed(2) : '-'}, Strumenti=${yieldRawData.length}`);
+
             if (!yieldRawData || yieldRawData.length === 0) {
+                Logger.warn('RENDIMENTO', 'Nessun dato di rendimento disponibile');
                 container.innerHTML = `<div class="loading-text">Nessun dato di rendimento disponibile</div>`;
                 return;
             }
@@ -2076,6 +2248,7 @@
                     groups[gVal].push(item);
                 });
 
+                Logger.debug('RENDIMENTO', `Gruppi creati: ${Object.keys(groups).length}`);
                 Object.keys(groups).sort().forEach(group => {
                     const items = groups[group];
                     const totalRistot = items.reduce((sum, i) => sum + (parseFloat(i.RISTOT) || 0), 0);
@@ -2111,20 +2284,25 @@
             }
 
             container.innerHTML = html;
+            Logger.debug('RENDIMENTO', `✅ Render completata: ${rowCount} card generate`);
         }
 
         // ── 3. MERCATO SECTION ─────────────────────────────────────────
         function toggleMarketFilters() {
             const body = document.getElementById('marketFilterBody');
             body.classList.toggle('open');
+            Logger.debug('MERCATO', `Filtri mercato ${body.classList.contains('open') ? 'aperti' : 'chiusi'}`);
         }
 
         async function fetchMarketSectionData() {
             const container = document.getElementById('market-card-list');
+            Logger.info('MERCATO', '📥 Inizio caricamento dati mercato');
+
             if (container) container.innerHTML = `<div class="loading-text"><div class="spinner"></div>Caricamento dati Mercato...</div>`;
 
             const date_start = document.getElementById('mkt-date-start').value;
             const date_end = document.getElementById('mkt-date-end').value;
+            Logger.debug('MERCATO', `Periodo: ${date_start} → ${date_end}`);
 
             const payload = {
                 username: credentials.username,
@@ -2133,6 +2311,7 @@
                 date_start,
                 date_end
             };
+            Logger.debug('MERCATO', 'Payload richiesta', { username: payload.username, currency: payload.currency });
 
             try {
                 const resp = await fetch(`${API_URL_MARKET}/getmarket`, {
@@ -2140,20 +2319,29 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
                 });
+
+                Logger.debug('MERCATO', `Risposta HTTP: ${resp.status} ${resp.statusText}`);
                 const result = await resp.json();
+                Logger.debug('MERCATO', 'Dati ricevuti', { status: result.status, hasData: !!result.data });
+
                 if (result.status === 'ok') {
                     marketRawData = result.data || [];
+                    Logger.info('MERCATO', `✅ Dati mercato ricevuti: ${marketRawData.length} elementi`);
                     renderMarketTable();
                 } else {
+                    Logger.error('MERCATO', `Errore server: ${result.msg || 'Unknown error'}`);
                     if (container) container.innerHTML = `<div class="loading-text" style="color:var(--red); padding:20px;">${result.msg || 'Errore mercato'}</div>`;
+                    showMessage(result.msg || 'Errore mercato', 'error');
                 }
             } catch (err) {
-                console.error("Market fetch error:", err);
+                Logger.error('MERCATO', '❌ Errore fetch mercato', err.message);
                 if (container) container.innerHTML = `<div class="loading-text" style="color:var(--red); padding:20px;">Impossibile collegarsi al server mercato</div>`;
+                showMessage('Impossibile collegarsi al server mercato', 'error');
             }
         }
 
         function renderMarketTable() {
+            Logger.debug('MERCATO', '🔄 Renderizzazione tabella mercato');
             const container = document.getElementById('market-card-list');
 
             let posCount = 0;
@@ -2187,7 +2375,10 @@
                 elAvgForza.innerHTML = `<span class="${fClass}">${avgForza}</span>`;
             }
 
+            Logger.debug('MERCATO', `Riepilogo: Totali=${marketRawData.length}, Pos=${posCount}, Neg=${negCount}, Forza Media=${avgForza}`);
+
             if (!marketRawData || marketRawData.length === 0) {
+                Logger.warn('MERCATO', 'Nessun dato di mercato presente');
                 if (container) container.innerHTML = `<div class="loading-text">Nessun dato di mercato presente</div>`;
                 return;
             }
@@ -2236,6 +2427,7 @@
             });
 
             if (container) container.innerHTML = html;
+            Logger.debug('MERCATO', `✅ Render completata: ${rowCount} card generate`);
         }
 
         // ── 4. STATISTICA SECTION (WITH MARKET FILTER) ───────────────
@@ -2244,16 +2436,19 @@
             const body = document.getElementById('statFilterBody');
             btn.classList.toggle('open');
             body.classList.toggle('open');
+            Logger.debug('STATISTICA', `Filtri ${body.classList.contains('open') ? 'aperti' : 'chiusi'}`);
         }
 
         function toggleSectorDropdown() {
             const container = document.getElementById('sector-filter-container');
             container.classList.toggle('visible');
+            Logger.debug('STATISTICA', `Dropdown settori ${container.classList.contains('visible') ? 'aperto' : 'chiuso'}`);
         }
 
         function toggleMarketDropdown() {
             const container = document.getElementById('market-filter-container');
             container.classList.toggle('visible');
+            Logger.debug('STATISTICA', `Dropdown mercati ${container.classList.contains('visible') ? 'aperto' : 'chiuso'}`);
         }
 
         function updateSectorAnchorText() {
@@ -2285,6 +2480,7 @@
             _selectedSectors = [];
             cbs.forEach(cb => { if (cb.checked) _selectedSectors.push(cb.value); });
             updateSectorAnchorText();
+            Logger.debug('STATISTICA', `Settori selezionati: ${_selectedSectors.length}`, _selectedSectors);
             if (_statisticsRequested) applyStatisticsFilters();
         }
 
@@ -2293,6 +2489,7 @@
             _selectedMarkets = [];
             cbs.forEach(cb => { if (cb.checked) _selectedMarkets.push(cb.value); });
             updateMarketAnchorText();
+            Logger.debug('STATISTICA', `Mercati selezionati: ${_selectedMarkets.length}`, _selectedMarkets);
             if (_statisticsRequested) applyStatisticsFilters();
         }
 
@@ -2304,6 +2501,7 @@
         function populateSectorSelector(data) {
             const container = document.getElementById('sectorSelectorItems');
             const sectors = [...new Set(data.map(r => r.sector).filter(Boolean))].sort();
+            Logger.debug('STATISTICA', `Popolamento settori: ${sectors.length} settori trovati`);
             container.innerHTML = '';
             sectors.forEach(sector => {
                 const label = document.createElement('label');
@@ -2322,6 +2520,7 @@
         function populateMarketSelector(data) {
             const container = document.getElementById('marketSelectorItems');
             const markets = [...new Set(data.map(r => r.code_market).filter(Boolean))].sort();
+            Logger.debug('STATISTICA', `Popolamento mercati: ${markets.length} mercati trovati`);
             container.innerHTML = '';
             markets.forEach(mkt => {
                 const label = document.createElement('label');
@@ -2338,56 +2537,74 @@
         }
 
         async function preloadStatFilters() {
+            Logger.info('STATISTICA', '📥 Precaricamento filtri statistica');
             try {
                 const resp = await fetch('statistics.json.gz?_=' + Date.now());
-                if (!resp.ok) return;
+                if (!resp.ok) {
+                    Logger.warn('STATISTICA', `statistics.json.gz non trovato (HTTP ${resp.status}), utilizzo fallback`);
+                    return;
+                }
+                Logger.debug('STATISTICA', 'Decompressione stream GZIP');
                 const ds = new DecompressionStream('gzip');
                 const decompressed = resp.body.pipeThrough(ds);
                 const text = await new Response(decompressed).text();
                 const result = JSON.parse(text);
                 if (result.status === 'ok') {
                     statisticsRawData = result.data || [];
+                    Logger.info('STATISTICA', `✅ Dati statistici precaricati: ${statisticsRawData.length} elementi`);
                     populateSectorSelector(statisticsRawData);
                     populateMarketSelector(statisticsRawData);
                     populateInstrumentSelector(statisticsRawData);
-                    // REQUIREMENT 3: Statistica is NOT calculated automatically
+                } else {
+                    Logger.warn('STATISTICA', `Precaricamento fallito: ${result.msg || 'Unknown error'}`);
                 }
             } catch (e) {
-                // silent preloading fail
+                Logger.warn('STATISTICA', '❌ Errore precaricamento statistiche', e.message);
             }
         }
 
         async function onApplyStatisticsClicked() {
+            Logger.info('STATISTICA', '🔍 Applicazione filtri statistica');
             _statisticsRequested = true;
             const cardList = document.getElementById('cardList');
             cardList.innerHTML = `<div class="loading-text"><div class="spinner"></div>Elaborazione statistica in corso...</div>`;
 
             if (statisticsRawData.length === 0) {
+                Logger.debug('STATISTICA', 'Dati non caricati, caricamento da source');
                 await loadStaticStatisticsData();
             } else {
+                Logger.debug('STATISTICA', `Dati già presenti (${statisticsRawData.length}), applico filtri`);
                 applyStatisticsFilters();
             }
         }
 
         async function loadStaticStatisticsData() {
+            Logger.info('STATISTICA', '📥 Caricamento dati statistici da source');
             try {
                 const resp = await fetch('statistics.json.gz?_=' + Date.now());
-                if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+                if (!resp.ok) {
+                    Logger.error('STATISTICA', `statistics.json.gz non trovato (HTTP ${resp.status})`);
+                    throw new Error(`HTTP ${resp.status}`);
+                }
+                Logger.debug('STATISTICA', 'Decompressione stream GZIP');
                 const ds = new DecompressionStream('gzip');
                 const decompressed = resp.body.pipeThrough(ds);
                 const text = await new Response(decompressed).text();
                 const result = JSON.parse(text);
                 if (result.status === 'ok') {
                     statisticsRawData = result.data || [];
+                    Logger.info('STATISTICA', `✅ Dati statistici caricati: ${statisticsRawData.length} elementi`);
                     populateSectorSelector(statisticsRawData);
                     populateMarketSelector(statisticsRawData);
                     populateInstrumentSelector(statisticsRawData);
                     if (_statisticsRequested) {
                         applyStatisticsFilters();
                     }
+                } else {
+                    Logger.warn('STATISTICA', `Errore caricamento: ${result.msg || 'Unknown error'}`);
                 }
             } catch (err) {
-                console.warn('statistics.json.gz error, trying server fetch:', err);
+                Logger.warn('STATISTICA', 'statistics.json.gz error, trying server fetch:', err.message);
                 fetchStatisticsData();
             }
         }
@@ -2395,6 +2612,7 @@
         async function fetchStatisticsData() {
             const date_start = document.getElementById('stat-date-start').value;
             const date_end = document.getElementById('stat-date-end').value;
+            Logger.debug('STATISTICA', `Periodo: ${date_start} → ${date_end}`);
 
             const cardList = document.getElementById('cardList');
             cardList.innerHTML = `<div class="loading-text"><div class="spinner"></div>Caricamento Statistica...</div>`;
@@ -2407,6 +2625,7 @@
                 date_end,
                 sector: _selectedSectors.length > 0 ? _selectedSectors : null
             };
+            Logger.debug('STATISTICA', 'Payload richiesta', { username: payload.username, sectors: payload.sector });
 
             try {
                 const resp = await fetch(`${API_URL_MARKET}/getmarket`, {
@@ -2414,27 +2633,39 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
                 });
+
+                Logger.debug('STATISTICA', `Risposta HTTP: ${resp.status} ${resp.statusText}`);
                 const result = await resp.json();
+                Logger.debug('STATISTICA', 'Dati ricevuti', { status: result.status, hasData: !!result.data });
+
                 if (result.status === 'ok') {
                     statisticsRawData = result.data || [];
+                    Logger.info('STATISTICA', `✅ Dati statistici da server: ${statisticsRawData.length} elementi`);
                     populateSectorSelector(statisticsRawData);
                     populateMarketSelector(statisticsRawData);
                     populateInstrumentSelector(statisticsRawData);
                     applyStatisticsFilters();
                 } else {
+                    Logger.error('STATISTICA', `Errore server: ${result.msg || 'Unknown error'}`);
                     cardList.innerHTML = `<div class="loading-text" style="color:var(--red);">${result.msg || 'Errore API'}</div>`;
+                    showMessage(result.msg || 'Errore API statistica', 'error');
                 }
             } catch (err) {
-                console.error("Statistics fetch error:", err);
+                Logger.error('STATISTICA', '❌ Errore fetch statistica', err.message);
                 cardList.innerHTML = `<div class="loading-text" style="color:var(--red);">Impossibile collegarsi al server</div>`;
+                showMessage('Impossibile collegarsi al server statistica', 'error');
             }
         }
 
         function applyStatisticsFilters() {
+            Logger.info('STATISTICA', '🔄 Applicazione filtri ai dati statistici');
+
             const vMin = parseFloat(document.getElementById('value-min').value);
             const vMax = parseFloat(document.getElementById('value-max').value);
             const instrFilter = document.getElementById('instrument-filter').value.trim().toLowerCase();
             const invFilter = document.getElementById('inversion-filter').checked;
+
+            Logger.debug('STATISTICA', `Filtri: Forza [${vMin || '-∞'}, ${vMax || '∞'}], Strumento=${instrFilter || 'tutti'}, Inversione=${invFilter}`);
 
             const filtered = statisticsRawData.filter(row => {
                 const val = parseFloat(row.forza);
@@ -2452,10 +2683,13 @@
                 return true;
             });
 
+            Logger.info('STATISTICA', `📊 Risultato filtri: ${filtered.length} strumenti su ${statisticsRawData.length} totali`);
+
             const cardList = document.getElementById('cardList');
             const resultsHdr = document.getElementById('resultsHeader');
 
             if (filtered.length === 0) {
+                Logger.warn('STATISTICA', 'Nessun risultato corrispondente ai filtri');
                 cardList.innerHTML = `<div class="loading-text">Nessun risultato corrispondente ai filtri.</div>`;
                 resultsHdr.style.display = 'none';
                 return;
@@ -2504,6 +2738,7 @@
                 `;
                 cardList.appendChild(card);
             });
+            Logger.debug('STATISTICA', `✅ Render completata: ${filtered.length} card generate`);
         }
 
         // ── INSTRUMENT SEARCH HELPERS ──
@@ -2512,6 +2747,7 @@
         let _instFiltered = [];
 
         function initInstrumentSearch() {
+            Logger.debug('SEARCH', 'Inizializzazione ricerca strumenti');
             const searchInput = document.getElementById('instrument-search-input');
             const clearBtn = document.getElementById('instrument-search-clear');
             const dropdown = document.getElementById('instrument-search-dropdown');
@@ -2528,6 +2764,7 @@
             });
 
             clearBtn.addEventListener('click', () => {
+                Logger.debug('SEARCH', 'Pulizia campo ricerca');
                 searchInput.value = '';
                 hidden.value = '';
                 clearBtn.style.display = 'none';
@@ -2536,8 +2773,11 @@
             });
 
             document.addEventListener('click', (e) => {
-                if (!e.target.closest('.instrument-search-wrapper')) closeInstDropdown();
+                if (!e.target.closest('.instrument-search-wrapper')) {
+                    closeInstDropdown();
+                }
             });
+            Logger.info('SEARCH', '✅ Ricerca strumenti inizializzata');
         }
 
         function populateInstrumentSelector(data) {
@@ -2555,11 +2795,13 @@
                 }
             });
             _instrumentIndex.sort((a, b) => a.id.localeCompare(b.id));
+            Logger.debug('SEARCH', `Popolamento strumenti: ${_instrumentIndex.length} strumenti unici`);
 
             if (current && _instrumentIndex.find(i => i.id === current)) {
                 const inst = _instrumentIndex.find(i => i.id === current);
                 document.getElementById('instrument-search-input').value = inst.description
                     ? `${inst.id} — ${inst.description}` : inst.id;
+                Logger.debug('SEARCH', `Strumento pre-selezionato: ${current}`);
             }
         }
 
@@ -2592,13 +2834,18 @@
                 `)).join('');
             }
             dropdown.style.display = 'block';
+            Logger.debug('SEARCH', `Dropdown aggiornato: ${_instFiltered.length} risultati`);
         }
 
         function selectInstrumentByIndex(idx) {
-            if (_instFiltered[idx]) selectInstrument(_instFiltered[idx]);
+            if (_instFiltered[idx]) {
+                Logger.debug('SEARCH', `Strumento selezionato per indice ${idx}: ${_instFiltered[idx].id}`);
+                selectInstrument(_instFiltered[idx]);
+            }
         }
 
         function selectInstrument(inst) {
+            Logger.debug('SEARCH', `Strumento selezionato: ${inst.id} - ${inst.description}`);
             document.getElementById('instrument-search-input').value = inst.description ? `${inst.id} — ${inst.description}` : inst.id;
             document.getElementById('instrument-filter').value = inst.id;
             document.getElementById('instrument-search-clear').style.display = 'block';
@@ -2607,6 +2854,7 @@
         }
 
         function clearInstrumentSelection() {
+            Logger.debug('SEARCH', 'Clear selezione strumento');
             document.getElementById('instrument-search-input').value = '';
             document.getElementById('instrument-filter').value = '';
             document.getElementById('instrument-search-clear').style.display = 'none';
@@ -2620,15 +2868,21 @@
 
         // ── NAVIGATION EXTERNAL LINKS ──
         function openPriceGraph(id) {
+            Logger.debug('NAV', `Apertura grafico prezzi: ${id}`);
             const url = `dashboard-graph-prices.html?id_instrument=${id}&username=${credentials.username}&token=${credentials.token}&instrument_currency=${credentials.currency}`;
             window.open(url, '_blank');
         }
 
         function openInstrumentDetail(id) {
+            Logger.debug('NAV', `Apertura dettaglio strumento: ${id}`);
             const url = `dashboard-detail-instrument.html?id_instrument=${id}&username=${credentials.username}&token=${credentials.token}&language=${credentials.language}&currency=${credentials.currency}`;
             window.open(url, '_blank');
         }
 
+        // ============================================================
+        // AVVIO APPLICAZIONE
+        // ============================================================
+        Logger.info('SYSTEM', '🚀 Avvio init()');
         window.onload = init;
     </script>
 </body>
