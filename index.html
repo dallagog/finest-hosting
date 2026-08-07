@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Financial Estimates 0.2.1 alfa</title>
+  <title>Financial Estimates 0.1</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
   <link rel="icon" type="image/png" href="images/icon-finest.png">
   <style>
@@ -237,58 +237,84 @@
   <div id="tron-footer" class="tron-footer"></div>
 
   <script>
+    console.log("=== FinEst Index v0.21 alfa ===");
+    console.log("📅 " + new Date().toISOString());
+
     let language = 'en_UK';
     let translations = {};
     let availableLanguages = [];
+    let maintenanceManifestGlobal = null;
+
+    console.log("🌍 Default language:", language);
 
     // Load language manifest
     async function loadLanguageManifest() {
+      console.log("📋 Loading language manifest...");
       try {
         const response = await fetch('lang/manifest.json');
-        if (!response.ok) return [];
+        if (!response.ok) {
+          console.warn("⚠️ Cannot load manifest.json, status:", response.status);
+          return [];
+        }
         const manifest = await response.json();
+        console.log("✅ Manifest loaded, languages:", manifest.languages || []);
         return manifest.languages || [];
       } catch (error) {
-        console.error("Error loading manifest:", error);
+        console.error("❌ Error loading manifest:", error);
         return [];
       }
     }
 
     // Load language file
     async function loadLanguageFile(langCode) {
+      console.log("📚 Loading language file:", langCode);
       try {
         const response = await fetch(`lang/${langCode}.json`);
-        if (!response.ok) return null;
+        if (!response.ok) {
+          console.warn("⚠️ Language file not found:", langCode, "status:", response.status);
+          return null;
+        }
         const data = await response.json();
         if (data['int.language.code'] && data['int.language.description'] && data['img.language.flag']) {
+          console.log("✅ Language file loaded:", langCode);
           return {
             code: data['int.language.code'],
             description: data['int.language.description'],
             flag: data['img.language.flag']
           };
         }
+        console.warn("⚠️ Invalid language file structure:", langCode);
         return null;
       } catch (error) {
+        console.error("❌ Error loading language file:", langCode, error);
         return null;
       }
     }
 
     // Initialize languages
     async function initializeLanguages() {
+      console.log("🌍 Initializing languages...");
       const langCodes = await loadLanguageManifest();
+      console.log("📋 Found", langCodes.length, "languages in manifest");
+
       for (const langCode of langCodes) {
         const langData = await loadLanguageFile(langCode);
         if (langData) {
           availableLanguages.push(langData);
+          console.log("✅ Language added:", langData.code, langData.description);
         }
       }
+
+      console.log("✅ Languages initialized, total:", availableLanguages.length);
     }
 
     // Update language combo
     function updateLanguageCombo() {
+      console.log("🔄 Updating language combo, available:", availableLanguages.length);
       const combo = document.getElementById('languageCombo');
       combo.innerHTML = '';
       if (availableLanguages.length === 0) {
+        console.warn("⚠️ No languages available to populate combo");
         combo.innerHTML = '<option value="">No languages</option>';
         return;
       }
@@ -296,45 +322,85 @@
         const option = document.createElement('option');
         option.value = lang.code;
         option.textContent = `${lang.flag} ${lang.description}`;
-        if (lang.code === language) option.selected = true;
+        if (lang.code === language) {
+          option.selected = true;
+          console.log("🎯 Selected language:", lang.code);
+        }
         combo.appendChild(option);
       });
+      console.log("✅ Language combo updated, current language:", language);
     }
 
     // Load translations
     async function loadTranslations(lang) {
+      console.log("📚 Loading translations for:", lang);
       try {
         const response = await fetch(`lang/${lang}.json`);
-        if (!response.ok) throw new Error('Translation file not found');
+        if (!response.ok) {
+          console.warn("⚠️ Translation file not found:", lang, "status:", response.status);
+          throw new Error('Translation file not found');
+        }
         translations = await response.json();
+        console.log("✅ Translations loaded for:", lang, "keys:", Object.keys(translations).length);
       } catch (error) {
-        console.error('Error loading translations:', error);
+        console.error('❌ Error loading translations:', error);
+        // Keep previous translations as fallback
       }
     }
 
     // Get translation (use this everywhere)
     function getTranslation(key) {
-      return translations[key] || key;
+      const result = translations[key] || key;
+      if (!translations[key]) {
+        console.debug("🔍 Translation missing for key:", key);
+      }
+      return result;
     }
 
     // Update page translations (no hardcoded titles)
     function updatePageTranslations() {
+      console.log("🔄 Updating page translations for language:", language);
       const signinText = document.getElementById('signin-text');
-      if (signinText) signinText.textContent = getTranslation('int.signin');
+      if (signinText) {
+        const text = getTranslation('int.signin');
+        signinText.textContent = text;
+        console.log("   signin-text:", text);
+      }
 
       const closeText = document.getElementById('close-text');
-      if (closeText) closeText.textContent = getTranslation('int.close');
+      if (closeText) {
+        const text = getTranslation('int.close');
+        closeText.textContent = text;
+        console.log("   close-text:", text);
+      }
 
       // Optionally set title attributes for accessibility
       const closeBtn = document.getElementById('close-btn');
-      if (closeBtn) closeBtn.title = getTranslation('int.close');
+      if (closeBtn) {
+        const text = getTranslation('int.close');
+        closeBtn.title = text;
+        console.log("   close-btn title:", text);
+      }
 
       const signinBtn = document.getElementById('signin-btn');
-      if (signinBtn) signinBtn.title = getTranslation('int.signin');
+      if (signinBtn) {
+        const text = getTranslation('int.signin');
+        signinBtn.title = text;
+        console.log("   signin-btn title:", text);
+      }
+
+      // Re-render maintenance info if present
+      if (maintenanceManifestGlobal) {
+        console.log("🔄 Re-rendering maintenance info on language change");
+        renderMaintenanceInfo(maintenanceManifestGlobal);
+      }
+
+      console.log("✅ Page translations updated");
     }
 
     // Change language
     async function changeLanguage(langCode) {
+      console.log("🌍 Changing language from", language, "to", langCode);
       language = langCode;
       localStorage.setItem('selectedLanguage', langCode);
       await loadTranslations(langCode);
@@ -342,14 +408,17 @@
       updatePageTranslations();
 
       // Re-render maintenance info if present
-      if (window.maintenanceManifest) {
-        renderMaintenanceInfo(window.maintenanceManifest);
+      if (maintenanceManifestGlobal) {
+        console.log("🔄 Re-rendering maintenance info after language change");
+        renderMaintenanceInfo(maintenanceManifestGlobal);
       }
+      console.log("✅ Language changed to:", langCode);
     }
 
     // Language combo event listener
     document.getElementById('languageCombo').addEventListener('change', async (e) => {
       const selectedLang = e.target.value;
+      console.log("🔍 Language selector changed to:", selectedLang);
       if (selectedLang) {
         await changeLanguage(selectedLang);
       }
@@ -357,75 +426,86 @@
 
     // Go to login page
     function goToLogin() {
+      console.log("🔐 Navigating to login page");
       window.location.href = 'login.html';
     }
 
     // Close page - best-effort to close the window/tab
     function closePage() {
+      console.log("❌ Attempting to close page");
       history.length > 1 ? history.back() : window.location.href = 'about:blank';
-      //try {
-      //  // common fallback to allow closing even if not opened by script
-      //  window.open('', '_self');
-      //  window.close();
-      //} catch (err) {
-      //  console.warn('Window close failed:', err);
-      //}
     }
 
     // Check maintenance status
     async function checkMaintenanceStatus() {
+      console.log("🔍 Checking maintenance status...");
       try {
         const response = await fetch('status/manifest.json', { cache: "no-cache" });
-        if (!response.ok) return null;
+        if (!response.ok) {
+          console.log("ℹ️ Maintenance manifest not found, status:", response.status);
+          return null;
+        }
 
         const manifest = await response.json();
+        console.log("✅ Maintenance manifest loaded:", manifest);
 
         // Handle login button based on status.stop
         const signinBtn = document.getElementById('signin-btn');
         if (signinBtn) {
           if (manifest['status.stop'] === "True") {
+            console.log("🚫 Login disabled (status.stop = True)");
             signinBtn.style.pointerEvents = 'none';
             signinBtn.style.opacity = '0.5';
             signinBtn.onclick = null;
           } else {
+            console.log("✅ Login enabled (status.stop != True)");
             signinBtn.style.pointerEvents = 'auto';
             signinBtn.style.opacity = '1';
             signinBtn.onclick = goToLogin;
           }
         }
 
-        const showStatus = manifest['show.status'] || manifest.show; // fallback
+        const showStatus = manifest['show.status'] || manifest.show;
         const showVersion = manifest['show.version'];
+        console.log("📊 show.status:", showStatus, "show.version:", showVersion);
 
         if (showStatus === "True" || showVersion === "True") {
+          console.log("📋 Maintenance info will be displayed");
           return manifest;
         }
       } catch (error) {
-        console.error("Error checking maintenance status:", error);
+        console.error("❌ Error checking maintenance status:", error);
       }
+      console.log("ℹ️ No maintenance info to display");
       return null;
     }
 
     // Render maintenance overlay
     function renderMaintenanceInfo(manifest) {
+      console.log("🖥️ Rendering maintenance info...");
       const offlineContainer = document.getElementById('offline-container');
       const offlineImg = offlineContainer.querySelector('img');
       const infoContainer = document.getElementById('maintenance-info');
 
       // Update image only if show.status is True
       const showStatus = manifest['show.status'] || manifest.show;
+      console.log("📊 show.status:", showStatus);
 
       if (showStatus === "True") {
         if (manifest.status) {
-          offlineImg.src = "status/images/" + manifest.status + ".svg";
+          const imgPath = "status/images/" + manifest.status + ".svg";
+          offlineImg.src = imgPath;
+          console.log("🖼️ Status image set to:", imgPath);
         } else if (manifest.image) {
           // Fallback to explicit image path if status is missing
           offlineImg.src = "status/" + manifest.image;
+          console.log("🖼️ Fallback image set to:", "status/" + manifest.image);
         }
         offlineImg.style.display = 'block';
         // Ensure container blocks interaction and has background if status is showing
         offlineContainer.style.pointerEvents = 'auto';
         offlineContainer.style.background = 'rgba(0, 0, 0, 0.5)'; // Add dimming if needed
+        console.log("🖼️ Status image displayed, container blocks interaction");
       } else {
         // Hide image if just showing version info
         offlineImg.style.display = 'none';
@@ -433,9 +513,11 @@
         // If we want version info to be visible but not block the whole screen:
         offlineContainer.style.pointerEvents = 'none';
         offlineContainer.style.background = 'transparent';
+        console.log("🖼️ Status image hidden, container is click-through");
       }
 
       offlineContainer.style.display = 'flex';
+      console.log("📦 Offline container displayed");
 
       // Login button logic is already handled in checkMaintenanceStatus
 
@@ -443,49 +525,66 @@
       let infoHTML = '';
 
       if (manifest['int.status.message'] === "True") {
+        const message = getTranslation('int.status.message');
         infoHTML += `
           <p style="justify-content: center; margin-bottom: 15px;">
-            <span class="value" style="color: var(--neon-cyan); font-size: 1.2rem; text-align: center;">${getTranslation('int.status.message')}</span>
+            <span class="value" style="color: var(--neon-cyan); font-size: 1.2rem; text-align: center;">${message}</span>
           </p>
         `;
+        console.log("📝 Status message displayed:", message);
       }
 
       if (manifest['show.version'] === "True") {
         const tronFooter = document.getElementById('tron-footer');
         if (tronFooter) {
-          tronFooter.innerHTML = `${getTranslation('int.version')} ${manifest['int.version']} | ${getTranslation('int.date.version')} ${manifest['int.date.version']} | ${getTranslation('int.author')} ${manifest['int.author']}`;
+          const version = getTranslation('int.version') + ' ' + manifest['int.version'];
+          const dateVersion = getTranslation('int.date.version') + ' ' + manifest['int.date.version'];
+          const author = getTranslation('int.author') + ' ' + manifest['int.author'];
+          tronFooter.innerHTML = `${version} | ${dateVersion} | ${author}`;
           tronFooter.style.display = 'block';
+          console.log("📄 Footer displayed:", version, dateVersion, author);
         }
       } else {
         const tronFooter = document.getElementById('tron-footer');
-        if (tronFooter) tronFooter.style.display = 'none';
+        if (tronFooter) {
+          tronFooter.style.display = 'none';
+          console.log("📄 Footer hidden");
+        }
       }
 
       if (infoHTML) {
         infoContainer.style.display = 'flex';
         infoContainer.innerHTML = infoHTML;
+        console.log("📝 Info container displayed with content");
       } else {
         infoContainer.style.display = 'none';
+        console.log("📝 Info container hidden (no content)");
       }
     }
 
     // Health check
     async function checkHealth() {
+      console.log("🏥 Performing health check...");
       const apiBaseUser = "https://user-tunnel.fe-web.eu";
       const apiBaseNew = "https://new-user-tunnel.fe-web.eu";
 
       try {
-        const [resUser, resNew] = await Promise.all([
-          fetch(`${apiBaseUser}/health`, { cache: "no-cache" }),
-          fetch(`${apiBaseNew}/health`, { cache: "no-cache" })
-        ]);
+        console.log("📡 Checking user-tunnel:", apiBaseUser + "/health");
+        const resUser = await fetch(`${apiBaseUser}/health`, { cache: "no-cache" });
+        console.log("📡 user-tunnel response:", resUser.status, resUser.statusText);
+
+        console.log("📡 Checking new-user-tunnel:", apiBaseNew + "/health");
+        const resNew = await fetch(`${apiBaseNew}/health`, { cache: "no-cache" });
+        console.log("📡 new-user-tunnel response:", resNew.status, resNew.statusText);
 
         if (!resUser.ok || !resNew.ok) {
+          console.warn("⚠️ One or both services unhealthy");
           throw new Error("Services unavailable");
         }
         console.log("✅ Services healthy");
       } catch (err) {
         console.error("❌ Server offline:", err);
+        console.log("🖥️ Showing offline container");
         document.getElementById('offline-container').style.display = 'flex';
         // Header stays visible
       }
@@ -493,25 +592,64 @@
 
     // Initialize
     async function init() {
+      console.log("🚀 Initializing application...");
+      console.log("📅 " + new Date().toISOString());
+
       const savedLang = localStorage.getItem('selectedLanguage');
-      if (savedLang) language = savedLang;
+      if (savedLang) {
+        language = savedLang;
+        console.log("🌍 Using saved language:", language);
+      } else {
+        console.log("🌍 No saved language, using default:", language);
+      }
 
       // Always load translations and languages first to caption the maintenance screen if needed
+      console.log("📚 Loading languages and translations...");
       await initializeLanguages();
       await loadTranslations(language);
       updateLanguageCombo();
       updatePageTranslations();
 
+      console.log("🔍 Checking maintenance status...");
       const maintenanceManifest = await checkMaintenanceStatus();
 
       if (maintenanceManifest) {
-        window.maintenanceManifest = maintenanceManifest; // Store for re-rendering on lang change
+        maintenanceManifestGlobal = maintenanceManifest;
+        console.log("📋 Maintenance mode active, rendering maintenance info");
         renderMaintenanceInfo(maintenanceManifest);
       } else {
+        console.log("ℹ️ No maintenance mode, performing health check...");
         // Only check health if not in maintenance mode
         await checkHealth();
       }
+
+      console.log("✅ Application initialized successfully");
     }
+
+    // Override console methods to include timestamps if needed
+    const originalLog = console.log;
+    console.log = function () {
+      const timestamp = new Date().toISOString().replace('T', ' ').substring(0, 19);
+      originalLog.apply(console, [`[${timestamp}]`, ...arguments]);
+    };
+
+    const originalWarn = console.warn;
+    console.warn = function () {
+      const timestamp = new Date().toISOString().replace('T', ' ').substring(0, 19);
+      originalWarn.apply(console, [`[${timestamp}] ⚠️`, ...arguments]);
+    };
+
+    const originalError = console.error;
+    console.error = function () {
+      const timestamp = new Date().toISOString().replace('T', ' ').substring(0, 19);
+      originalError.apply(console, [`[${timestamp}] ❌`, ...arguments]);
+    };
+
+    const originalDebug = console.debug;
+    console.debug = function () {
+      const timestamp = new Date().toISOString().replace('T', ' ').substring(0, 19);
+      originalDebug.apply(console, [`[${timestamp}] 🔍`, ...arguments]);
+    };
 
     init();
   </script>

@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Financial Estimates 0.1 alfa</title>
+  <title>Login 0.1</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
   <link rel="icon" type="image/png" href="images/icon-finest.png">
   <style>
@@ -339,6 +339,9 @@
   </div>
 
   <script>
+    console.log("=== FinEst Login v0.31 ===");
+    console.log("📅 " + new Date().toISOString());
+
     const apiBaseNew = "https://new-user-tunnel.fe-web.eu";
     const apiBaseUser = "https://user-tunnel.fe-web.eu";
 
@@ -349,8 +352,8 @@
     let availableLanguages = [];
     let isLogin = true;
 
-    console.log("=== FinEst Login v0.31 ===");
     console.log("🌍 Default language:", language);
+    console.log("🔗 API endpoints:", { apiBaseUser, apiBaseNew });
 
     // ========== CLOSE BUTTON ==========
     //document.getElementById('closeButton').addEventListener('click', () => {
@@ -379,42 +382,44 @@
       try {
         const response = await fetch('lang/manifest.json');
         if (!response.ok) {
-          console.error("Cannot load manifest.json");
+          console.warn("⚠️ Cannot load manifest.json, status:", response.status);
           return [];
         }
 
         const manifest = await response.json();
-        console.log("✅ Manifest loaded:", manifest.languages);
+        console.log("✅ Manifest loaded, languages:", manifest.languages || []);
         return manifest.languages || [];
       } catch (error) {
-        console.error("Error loading manifest:", error);
+        console.error("❌ Error loading manifest:", error);
         return [];
       }
     }
 
     // Carica un singolo file di lingua
     async function loadLanguageFile(langCode) {
+      console.log("📚 Loading language file:", langCode);
       try {
         const response = await fetch(`lang/${langCode}.json`);
         if (!response.ok) {
-          console.warn(`File not found: lang/${langCode}.json`);
+          console.warn("⚠️ Language file not found:", langCode, "status:", response.status);
           return null;
         }
 
         const data = await response.json();
 
         if (data['int.language.code'] && data['int.language.description'] && data['img.language.flag']) {
+          console.log("✅ Language file loaded:", langCode);
           return {
             code: data['int.language.code'],
             description: data['int.language.description'],
             flag: data['img.language.flag']
           };
         } else {
-          console.warn(`Invalid structure in ${langCode}.json`);
+          console.warn("⚠️ Invalid structure in", langCode + ".json");
           return null;
         }
       } catch (error) {
-        console.error(`Error loading ${langCode}.json:`, error);
+        console.error("❌ Error loading", langCode + ".json:", error);
         return null;
       }
     }
@@ -424,26 +429,27 @@
       console.log("🌍 Initializing languages...");
 
       const langCodes = await loadLanguageManifest();
+      console.log("📋 Found", langCodes.length, "languages in manifest");
 
       for (const langCode of langCodes) {
         const langData = await loadLanguageFile(langCode);
         if (langData) {
           availableLanguages.push(langData);
-          console.log(`✅ Language loaded: ${langData.code}`);
+          console.log("✅ Language added:", langData.code, langData.description);
         }
       }
 
-      // Mantieni l'ordine dal manifest (non ordinare alfabeticamente)
-      console.log("✅ Languages initialized:", availableLanguages.length);
+      console.log("✅ Languages initialized, total:", availableLanguages.length);
     }
 
     // Aggiorna combobox lingue
     function updateLanguageCombo() {
+      console.log("🔄 Updating language combo, available:", availableLanguages.length);
       const combo = document.getElementById('languageCombo');
       combo.innerHTML = '';
 
       if (availableLanguages.length === 0) {
-        console.warn("No languages available");
+        console.warn("⚠️ No languages available to populate combo");
         combo.innerHTML = '<option value="">No languages</option>';
         return;
       }
@@ -454,11 +460,12 @@
         option.textContent = `${lang.flag} ${lang.description}`;
         if (lang.code === language) {
           option.selected = true;
+          console.log("🎯 Selected language:", lang.code);
         }
         combo.appendChild(option);
       });
 
-      console.log("✅ Language combo updated. Selected:", language);
+      console.log("✅ Language combo updated, current language:", language);
     }
 
     // Carica traduzioni
@@ -466,22 +473,30 @@
       console.log("📚 Loading translations for:", lang);
       try {
         const response = await fetch(`lang/${lang}.json`);
-        if (!response.ok) throw new Error(`Translation file not found lang/${lang}.json`);
+        if (!response.ok) {
+          console.warn("⚠️ Translation file not found:", lang, "status:", response.status);
+          throw new Error(`Translation file not found lang/${lang}.json`);
+        }
         translations = await response.json();
-        console.log("✅ Translations loaded for", lang);
+        console.log("✅ Translations loaded for", lang, "keys:", Object.keys(translations).length);
 
         await loadCurrencies(lang);
         await loadTimezones();
       } catch (error) {
         console.error('❌ Error loading translations:', error);
+        // Keep previous translations as fallback
       }
     }
 
     // Carica valute
     async function loadCurrencies(lang) {
+      console.log("💱 Loading currencies for:", lang);
       try {
         const response = await fetch(`currency/${lang}.json`);
-        if (!response.ok) throw new Error(`Currency file not found currency/${lang}.json`);
+        if (!response.ok) {
+          console.warn("⚠️ Currency file not found:", lang, "status:", response.status);
+          throw new Error(`Currency file not found currency/${lang}.json`);
+        }
         currencies = await response.json();
         console.log("✅ Currencies loaded:", currencies.length);
       } catch (error) {
@@ -492,9 +507,13 @@
 
     // Carica timezone
     async function loadTimezones() {
+      console.log("🕐 Loading timezones...");
       try {
         const response = await fetch(`timezone/timezone.json`);
-        if (!response.ok) throw new Error("Timezone file not found");
+        if (!response.ok) {
+          console.warn("⚠️ Timezone file not found, status:", response.status);
+          throw new Error("Timezone file not found");
+        }
         timezones = await response.json();
         console.log("✅ Timezones loaded:", timezones.length);
       } catch (error) {
@@ -505,7 +524,11 @@
 
     // Ottieni traduzione
     function getTranslation(key) {
-      return translations[key] || key;
+      const result = translations[key] || key;
+      if (!translations[key]) {
+        console.debug("🔍 Translation missing for key:", key);
+      }
+      return result;
     }
 
     // Aggiorna traduzioni pagina
@@ -515,39 +538,71 @@
       // Update close button text
       const closeText = document.getElementById('closeText');
       if (closeText) {
-        closeText.textContent = getTranslation('int.close');
+        const text = getTranslation('int.close');
+        closeText.textContent = text;
+        console.log("   closeText:", text);
       }
 
       const formTitle = document.getElementById('form-title');
       if (formTitle) {
-        formTitle.textContent = isLogin ? getTranslation('int.login') : getTranslation('int.registration');
+        const text = isLogin ? getTranslation('int.login') : getTranslation('int.registration');
+        formTitle.textContent = text;
+        console.log("   form-title:", text, "(isLogin:", isLogin + ")");
       }
 
       const usernameInput = document.getElementById('username');
       const passwordInput = document.getElementById('password');
       if (usernameInput) {
-        usernameInput.placeholder = getTranslation('int.username');
+        const text = getTranslation('int.username');
+        usernameInput.placeholder = text;
         usernameInput.title = getTranslation('int.username.validation');
+        console.log("   username placeholder:", text);
       }
-      if (passwordInput) passwordInput.placeholder = getTranslation('int.password');
+      if (passwordInput) {
+        const text = getTranslation('int.password');
+        passwordInput.placeholder = text;
+        console.log("   password placeholder:", text);
+      }
 
       const submitBtn = document.getElementById('submit-btn');
       if (submitBtn) {
-        submitBtn.textContent = isLogin ? getTranslation('int.signin') : getTranslation('int.create.account');
+        const text = isLogin ? getTranslation('int.signin') : getTranslation('int.create.account');
+        submitBtn.textContent = text;
+        console.log("   submit-btn:", text, "(isLogin:", isLogin + ")");
       }
 
       const forgotPassword = document.getElementById('forgot-password');
       const switchForm = document.getElementById('switch-form');
-      if (forgotPassword) forgotPassword.textContent = getTranslation('int.forgot.password');
-      if (switchForm) switchForm.textContent = isLogin ? getTranslation('int.no.account') : getTranslation('int.have.account');
+      if (forgotPassword) {
+        const text = getTranslation('int.forgot.password');
+        forgotPassword.textContent = text;
+        console.log("   forgot-password:", text);
+      }
+      if (switchForm) {
+        const text = isLogin ? getTranslation('int.no.account') : getTranslation('int.have.account');
+        switchForm.textContent = text;
+        console.log("   switch-form:", text, "(isLogin:", isLogin + ")");
+      }
 
       const logoFinancial = document.getElementById('logo-financial');
       const logoEstimates = document.getElementById('logo-estimates');
-      if (logoFinancial) logoFinancial.textContent = getTranslation('int.logo.financial');
-      if (logoEstimates) logoEstimates.textContent = getTranslation('int.logo.estimates');
+      if (logoFinancial) {
+        const text = getTranslation('int.logo.financial');
+        logoFinancial.textContent = text;
+        console.log("   logo-financial:", text);
+      }
+      if (logoEstimates) {
+        const text = getTranslation('int.logo.estimates');
+        logoEstimates.textContent = text;
+        console.log("   logo-estimates:", text);
+      }
 
       const loadingOption = document.getElementById('loadingOption');
-      if (loadingOption) loadingOption.textContent = getTranslation('int.loading');
+      if (loadingOption) {
+        const text = getTranslation('int.loading');
+        loadingOption.textContent = text;
+        console.log("   loadingOption:", text);
+      }
 
       console.log("✅ Page translations updated");
     }
@@ -569,7 +624,7 @@
     // Event listener per combobox lingue - usa 'input' per catturare anche i clic sulla stessa opzione
     document.getElementById('languageCombo').addEventListener('input', async (e) => {
       const selectedLang = e.target.value;
-      console.log("🔍 Language selector changed to:", selectedLang);
+      console.log("🔍 Language selector (input) changed to:", selectedLang);
 
       if (selectedLang) {
         await changeLanguage(selectedLang);
@@ -581,6 +636,7 @@
       const selectedLang = e.target.value;
       setTimeout(async () => {
         if (selectedLang && selectedLang !== language) {
+          console.log("🔍 Language selector (click) changed to:", selectedLang);
           await changeLanguage(selectedLang);
         }
       }, 10);
@@ -590,9 +646,11 @@
 
     // Switch login/registration
     document.getElementById("switch-form").addEventListener("click", () => {
+      console.log("🔄 Switching form: isLogin =", isLogin, "->", !isLogin);
       isLogin = !isLogin;
       updatePageTranslations();
       document.getElementById("forgot-password").style.display = isLogin ? "block" : "none";
+      console.log("✅ Form switched, forgot-password visible:", isLogin);
     });
 
     // Health check
@@ -602,31 +660,44 @@
     // Solo un errore di rete reale (tunnel completamente giù) lancia eccezione
     // e mostra la schermata offline.
     async function checkHealth() {
+      console.log("🏥 Performing health check with no-cors mode...");
       try {
-        await fetch(`${apiBaseUser}/health`, { cache: "no-cache", mode: "no-cors" });
-        await fetch(`${apiBaseNew}/health`,  { cache: "no-cache", mode: "no-cors" });
+        console.log("📡 Checking user-tunnel (no-cors):", apiBaseUser + "/health");
+        const resUser = await fetch(`${apiBaseUser}/health`, { cache: "no-cache", mode: "no-cors" });
+        console.log("📡 user-tunnel response (opaque):", resUser.type, resUser.status);
+
+        console.log("📡 Checking new-user-tunnel (no-cors):", apiBaseNew + "/health");
+        const resNew = await fetch(`${apiBaseNew}/health`, { cache: "no-cache", mode: "no-cors" });
+        console.log("📡 new-user-tunnel response (opaque):", resNew.type, resNew.status);
 
         console.log("✅ " + (getTranslation('int.services.healthy') || "Services healthy"));
         document.getElementById("app-container").style.display = "block";
         document.querySelector(".top-controls").style.display = "flex";
+        console.log("🖥️ App container and top controls displayed");
       } catch (err) {
         console.error("❌ " + (getTranslation('int.service.check.failed') || "Service check failed") + ":", err);
         document.body.innerHTML = '<div style="display:flex;justify-content:center;align-items:center;height:100vh;"><img src="status/images/off-line.svg" alt="Offline" class="offline"></div>';
+        console.log("🖥️ Offline screen displayed");
       }
     }
 
     // Submit
     document.getElementById('submit-btn').addEventListener("click", async () => {
+      console.log("🔐 Submit button clicked, isLogin:", isLogin);
       const username = document.getElementById("username").value.trim();
       const password = document.getElementById("password").value.trim();
+      console.log("👤 Username:", username);
 
       if (!username || !password) {
+        console.warn("⚠️ Empty fields detected");
         alert(getTranslation("int.complete.all.fields") || "Please fill in all fields");
         return;
       }
 
       const apiUrl = isLogin ? `${apiBaseUser}/login` : `${apiBaseNew}/create`;
       const payload = { username, password, language };
+      console.log("📡 Sending request to:", apiUrl);
+      console.log("📦 Payload:", { username, language });
 
       try {
         const response = await fetch(apiUrl, {
@@ -636,34 +707,45 @@
           headers: { "Content-Type": "application/json", "Accept": "application/json" },
           body: JSON.stringify(payload)
         });
+        console.log("📡 Response status:", response.status, response.statusText);
 
         const contentType = response.headers.get("content-type");
         let data;
         if (contentType && contentType.includes("application/json")) {
           data = await response.json();
+          console.log("📦 Response data (JSON):", data);
         } else {
           data = await response.text();
+          console.log("📦 Response data (text):", data);
         }
 
         if (response.ok) {
+          console.log("✅ Request successful");
           if (isLogin) {
+            console.log("🔐 Login successful for user:", username);
             await loadTranslations(data.language || language);
             if (data.info && (!data.info.email || !data.info.language || !data.info.timezone || !data.info.currency)) {
+              console.log("⚠️ User profile incomplete, requesting missing info");
               requestMissingInfo(data.info, username, password);
             } else {
+              console.log("✅ User profile complete, opening dashboard");
               openDashboard(username, data.token, data.language, data.currency);
             }
           } else {
+            console.log("✅ Registration successful for user:", username);
             alert(getTranslation('int.creation.success') || "Account created successfully!");
             isLogin = true;
             updatePageTranslations();
             document.getElementById("username").value = username;
             document.getElementById("password").value = "";
+            console.log("🔄 Switched to login mode after successful registration");
           }
         } else {
+          console.warn("⚠️ Request failed, status:", response.status);
           alert(isLogin ? getTranslation('int.login.failed') : getTranslation('int.creation.failed'));
         }
       } catch (err) {
+        console.error("❌ Connection error:", err);
         alert((getTranslation('int.connection.error') || "Connection error") + ": " + err.message);
       }
     });
@@ -672,12 +754,17 @@
     document.getElementById("forgot-password").addEventListener("click", () => {
       const username = document.getElementById("username").value.trim();
       const url = username ? `dashboard-settings-changepassword.html?email=${encodeURIComponent(username)}&mode=forgot` : 'dashboard-dataentry-changepassword.html?mode=forgot';
+      console.log("🔑 Forgot password clicked, username:", username || "(empty)");
+      console.log("🔗 Navigating to:", url);
       window.location.href = url;
     });
 
     // Richiesta info mancanti
     function requestMissingInfo(info, username, password) {
+      console.log("📝 Requesting missing profile info for user:", username);
+      console.log("📋 Current info:", info);
       document.querySelector('.top-controls').style.display = 'none';
+      console.log("🖥️ Top controls hidden");
 
       const container = document.getElementById("app-container");
 
@@ -685,16 +772,19 @@
       currencies.forEach(curr => {
         currencyOptions += `<option value="${curr.currency}">${curr['img.currency.flag']} ${curr.currency} - ${curr.description}</option>`;
       });
+      console.log("💱 Currency options:", currencies.length);
 
       let timezoneOptions = `<option value="">${getTranslation('int.select.timezone')}</option>`;
       timezones.forEach(tz => {
         timezoneOptions += `<option value="${tz.timezone}">${tz.timezone} (GMT${tz.offset_from_gmt}) - ${tz.reference_city}</option>`;
       });
+      console.log("🕐 Timezone options:", timezones.length);
 
       let languageOptions = `<option value="">${getTranslation('int.select.language')}</option>`;
       availableLanguages.forEach(lang => {
         languageOptions += `<option value="${lang.code}">${lang.flag} ${lang.description}</option>`;
       });
+      console.log("🌍 Language options:", availableLanguages.length);
 
       container.innerHTML = `
         <h2>${getTranslation('int.complete.profile')}</h2>
@@ -716,34 +806,46 @@
         </div>
         <button id="save-info">${getTranslation('int.update')}</button>
       `;
+      console.log("🖥️ Profile completion form rendered");
 
       document.getElementById("save-info").addEventListener("click", async () => {
+        console.log("💾 Save profile info clicked");
         const email = document.getElementById("email").value.trim();
         const lang = document.getElementById("language").value.trim();
         const currency = document.getElementById("currency").value.trim();
         const tz = document.getElementById("timezone").value.trim();
+        console.log("📋 Info to save:", { email, language: lang, currency, timezone: tz });
 
         if (!email || !lang || !currency || !tz) {
+          console.warn("⚠️ Missing required fields:", { email, lang, currency, tz });
           alert(getTranslation('int.complete.all.fields'));
           return;
         }
 
         try {
+          console.log("📡 Sending update request to:", `${apiBaseUser}/update`);
           const response = await fetch(`${apiBaseUser}/update`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ username, password, email, language: lang, currency, timezone: tz })
           });
+          console.log("📡 Response status:", response.status);
 
           const data = await response.json();
+          console.log("📦 Response data:", data);
+
           if (response.ok && data.status === "ok") {
+            console.log("✅ Profile info saved successfully");
             alert(getTranslation('int.info.saved'));
             document.querySelector('.top-controls').style.display = 'flex';
+            console.log("🔄 Redirecting to login page");
             window.location.href = "login.html";
           } else {
+            console.warn("⚠️ Update failed:", data);
             alert(getTranslation("int.error.update"));
           }
         } catch (err) {
+          console.error("❌ Error saving profile:", err);
           alert(getTranslation("int.error.saving"));
         }
       });
@@ -751,28 +853,37 @@
 
     // Apertura dashboard
     function openDashboard(username, token, lang, currency) {
+      console.log("🚪 Opening dashboard for user:", username);
+      console.log("📋 Data:", { token: token ? "present" : "missing", language: lang, currency });
       localStorage.setItem("username", username);
       localStorage.setItem("token", token);
       localStorage.setItem("language", lang);
       if (currency) localStorage.setItem("currency", currency);
+      console.log("💾 Saved to localStorage");
+      console.log("🔗 Navigating to dashboard.html");
       window.location.href = "dashboard.html";
     }
 
     // ========== INITIALIZATION ==========
     async function init() {
       console.log("🚀 Initializing application...");
+      console.log("📅 " + new Date().toISOString());
 
       // 0. Controlla se c'è una lingua salvata da index.html
       const savedLanguage = localStorage.getItem('selectedLanguage');
       if (savedLanguage) {
         language = savedLanguage;
         console.log("🌍 Using saved language from index.html:", language);
+      } else {
+        console.log("🌍 No saved language, using default:", language);
       }
 
       // 1. Inizializza le lingue disponibili
+      console.log("📚 Loading languages...");
       await initializeLanguages();
 
       // 2. Carica le traduzioni per la lingua di default
+      console.log("📚 Loading translations...");
       await loadTranslations(language);
 
       // 3. Aggiorna il combo per mostrare la lingua di default selezionata
@@ -786,6 +897,31 @@
 
       console.log("✅ Application initialized successfully");
     }
+
+    // Override console methods to include timestamps if needed
+    const originalLog = console.log;
+    console.log = function () {
+      const timestamp = new Date().toISOString().replace('T', ' ').substring(0, 19);
+      originalLog.apply(console, [`[${timestamp}]`, ...arguments]);
+    };
+
+    const originalWarn = console.warn;
+    console.warn = function () {
+      const timestamp = new Date().toISOString().replace('T', ' ').substring(0, 19);
+      originalWarn.apply(console, [`[${timestamp}] ⚠️`, ...arguments]);
+    };
+
+    const originalError = console.error;
+    console.error = function () {
+      const timestamp = new Date().toISOString().replace('T', ' ').substring(0, 19);
+      originalError.apply(console, [`[${timestamp}] ❌`, ...arguments]);
+    };
+
+    const originalDebug = console.debug;
+    console.debug = function () {
+      const timestamp = new Date().toISOString().replace('T', ' ').substring(0, 19);
+      originalDebug.apply(console, [`[${timestamp}] 🔍`, ...arguments]);
+    };
 
     init();
   </script>
