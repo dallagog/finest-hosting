@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>FinEst 0.2</title>
+    <title>FinEst 0.3</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <script src="js/dashboard-shared.js"></script>
     <link rel="icon" type="image/png" href="images/icon-finest.png">
@@ -1211,6 +1211,7 @@
                 border-color: #0284c7;
             }
         }
+
         /* ── DEBUG PANEL ── */
         #debug-panel {
             position: fixed;
@@ -1271,10 +1272,22 @@
             line-height: 1.4;
         }
 
-        .debug-entry.lvl-DEBUG { color: #64748b; }
-        .debug-entry.lvl-INFO  { color: #7dd3fc; }
-        .debug-entry.lvl-WARN  { color: #fbbf24; }
-        .debug-entry.lvl-ERROR { color: #f87171; font-weight: 700; }
+        .debug-entry.lvl-DEBUG {
+            color: #64748b;
+        }
+
+        .debug-entry.lvl-INFO {
+            color: #7dd3fc;
+        }
+
+        .debug-entry.lvl-WARN {
+            color: #fbbf24;
+        }
+
+        .debug-entry.lvl-ERROR {
+            color: #f87171;
+            font-weight: 700;
+        }
     </style>
 </head>
 
@@ -1613,7 +1626,8 @@
     <div id="debug-panel">
         <div id="debug-panel-header">
             <span>🐛 Debug Log</span>
-            <button id="debug-panel-close" onclick="document.getElementById('debug-panel').classList.remove('visible')" title="Chiudi">✕</button>
+            <button id="debug-panel-close" onclick="document.getElementById('debug-panel').classList.remove('visible')"
+                title="Chiudi">✕</button>
         </div>
         <div id="debug-log-body"></div>
     </div>
@@ -1686,7 +1700,7 @@
                     if (body) {
                         let dataStr = '';
                         if (data !== undefined && data !== null) {
-                            try { dataStr = ' ' + (typeof data === 'object' ? JSON.stringify(data) : String(data)); } catch(e) { dataStr = ' [non-serializable]'; }
+                            try { dataStr = ' ' + (typeof data === 'object' ? JSON.stringify(data) : String(data)); } catch (e) { dataStr = ' [non-serializable]'; }
                         }
                         const entry = document.createElement('div');
                         entry.className = `debug-entry lvl-${level}`;
@@ -1971,7 +1985,9 @@
                 const payload = {
                     username: credentials.username || "",
                     token: credentials.token || "",
-                    language: credentials.language || ""
+                    language: credentials.language || "",
+                    filter: "",
+                    code: ""
                 };
                 Logger.debug('PORTAFOGLIO', 'Payload richiesta', { username: payload.username, language: payload.language });
 
@@ -2199,7 +2215,9 @@
                 const payload = {
                     username: credentials.username || "",
                     token: credentials.token || "",
-                    language: credentials.language || ""
+                    language: credentials.language || "",
+                    filter: "",
+                    code: ""
                 };
                 Logger.debug('RENDIMENTO', 'Payload richiesta', { username: payload.username, language: payload.language });
 
