@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Market 0.2</title>
+    <title>Market 0.3</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <link rel="icon" type="image/png" href="images/icon-finest.png">
     <style>
@@ -958,6 +958,39 @@
                 if (!tableColumns.includes('azioni')) {
                     tableColumns.push('azioni');
                 }
+
+                // ── Persist / restore market-value columns across sessions ──
+                // Storage key (per-user to avoid cross-user collisions)
+                const MARKET_COLS_KEY = `mkt_table_cols_${credentials.username || 'default'}`;
+                const MARKET_VALUE_COLS = new Set(['CTVMKTTQ', '$price_mkt', 'M/P', 'M/P%']);
+
+                const hasMarketValues = tableColumns.some(c => MARKET_VALUE_COLS.has(c));
+
+                if (hasMarketValues) {
+                    // Dati completi: salva la struttura colonne per le sessioni future
+                    try {
+                        localStorage.setItem(MARKET_COLS_KEY, JSON.stringify(tableColumns));
+                        console.log('[Columns] Struttura colonne con controvalori salvata in localStorage');
+                    } catch (e) { /* quota exceeded o simili: ignora */ }
+                } else {
+                    // Dati senza controvalori: ripristina struttura salvata se disponibile
+                    try {
+                        const saved = localStorage.getItem(MARKET_COLS_KEY);
+                        if (saved) {
+                            const savedCols = JSON.parse(saved);
+                            // Base = colonne salvate (senza 'azioni'), poi aggiungi
+                            // eventuali nuove colonne presenti nei dati correnti
+                            const base = savedCols.filter(c => c !== 'azioni');
+                            tableColumns.filter(c => c !== 'azioni').forEach(c => {
+                                if (!base.includes(c)) base.push(c);
+                            });
+                            base.push('azioni');
+                            tableColumns = base;
+                            console.log('[Columns] Struttura colonne ripristinata da localStorage (dati iniziali senza controvalori)');
+                        }
+                    } catch (e) { /* localStorage non disponibile: ignora */ }
+                }
+                // ────────────────────────────────────────────────────────────
             }
 
             populateMarketSelector();

@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>FinEst 0.1</title>
+    <title>FinEst 0.2</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <script src="js/dashboard-shared.js"></script>
     <link rel="icon" type="image/png" href="images/icon-finest.png">
@@ -1211,6 +1211,70 @@
                 border-color: #0284c7;
             }
         }
+        /* ── DEBUG PANEL ── */
+        #debug-panel {
+            position: fixed;
+            bottom: calc(var(--nav-h) + var(--safe-bottom));
+            left: 0;
+            right: 0;
+            height: 200px;
+            background: rgba(10, 10, 20, 0.97);
+            border-top: 2px solid #334155;
+            z-index: 9999;
+            display: none;
+            flex-direction: column;
+            font-family: 'Courier New', monospace;
+            font-size: 0.7rem;
+        }
+
+        #debug-panel.visible {
+            display: flex;
+        }
+
+        #debug-panel-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 4px 10px;
+            background: #1e293b;
+            border-bottom: 1px solid #334155;
+            flex-shrink: 0;
+        }
+
+        #debug-panel-header span {
+            color: #94a3b8;
+            font-weight: 700;
+            font-size: 0.68rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        #debug-panel-close {
+            background: none;
+            border: none;
+            color: #ef4444;
+            font-size: 1rem;
+            cursor: pointer;
+            padding: 0 4px;
+        }
+
+        #debug-log-body {
+            flex: 1;
+            overflow-y: auto;
+            padding: 6px 10px;
+        }
+
+        .debug-entry {
+            padding: 1px 0;
+            white-space: pre-wrap;
+            word-break: break-all;
+            line-height: 1.4;
+        }
+
+        .debug-entry.lvl-DEBUG { color: #64748b; }
+        .debug-entry.lvl-INFO  { color: #7dd3fc; }
+        .debug-entry.lvl-WARN  { color: #fbbf24; }
+        .debug-entry.lvl-ERROR { color: #f87171; font-weight: 700; }
     </style>
 </head>
 
@@ -1545,6 +1609,15 @@
         </div>
     </section>
 
+    <!-- ── DEBUG PANEL (visible when URL has ?debug=1) ── -->
+    <div id="debug-panel">
+        <div id="debug-panel-header">
+            <span>🐛 Debug Log</span>
+            <button id="debug-panel-close" onclick="document.getElementById('debug-panel').classList.remove('visible')" title="Chiudi">✕</button>
+        </div>
+        <div id="debug-log-body"></div>
+    </div>
+
     <!-- ── BOTTOM NAVIGATION ── -->
     <nav class="bottom-nav">
         <button class="nav-item active" onclick="switchTab('portfolio')">
@@ -1573,6 +1646,11 @@
         // ============================================================
         // LOGGER UTILITY
         // ============================================================
+        const _debugMode = new URLSearchParams(window.location.search).get('debug') === '1';
+        if (_debugMode) {
+            document.getElementById('debug-panel').classList.add('visible');
+        }
+
         const Logger = {
             _enabled: true,
             _level: 'DEBUG', // DEBUG, INFO, WARN, ERROR
@@ -1586,18 +1664,36 @@
                 const levels = { DEBUG: 0, INFO: 1, WARN: 2, ERROR: 3 };
                 if (levels[level] < levels[this._level]) return;
 
-                const timestamp = new Date().toISOString();
+                const now = new Date();
+                const timestamp = now.toISOString();
+                const timeShort = now.toTimeString().slice(0, 8);
                 const prefix = `[${timestamp}] [${level}] [${module}]`;
 
+                // ── Console output ──
                 if (data !== undefined && data !== null) {
                     try {
-                        const dataStr = typeof data === 'object' ? JSON.stringify(data) : String(data);
                         console.log(`${prefix} ${message}`, data);
                     } catch (e) {
                         console.log(`${prefix} ${message} [Data non serializzabile]`);
                     }
                 } else {
                     console.log(`${prefix} ${message}`);
+                }
+
+                // ── Visual debug panel output ──
+                if (_debugMode) {
+                    const body = document.getElementById('debug-log-body');
+                    if (body) {
+                        let dataStr = '';
+                        if (data !== undefined && data !== null) {
+                            try { dataStr = ' ' + (typeof data === 'object' ? JSON.stringify(data) : String(data)); } catch(e) { dataStr = ' [non-serializable]'; }
+                        }
+                        const entry = document.createElement('div');
+                        entry.className = `debug-entry lvl-${level}`;
+                        entry.textContent = `${timeShort} [${level}] [${module}] ${message}${dataStr}`;
+                        body.appendChild(entry);
+                        body.scrollTop = body.scrollHeight;
+                    }
                 }
             },
 
@@ -2091,13 +2187,8 @@
             Logger.debug('PORTAFOGLIO', `✅ Render completata: ${rowCount} card generate`);
         }
 
-        function translateGroupLabel(group, grouping) {
-            // Simple translation for group labels
-            if (grouping === 'sector') return getSectorLabel(group);
-            if (grouping === 'instrument_type') return getTranslation('dom.type:' + group) || group;
-            if (grouping === 'code_market') return group;
-            return group;
-        }
+        // translateGroupLabel è definita in dashboard-shared.js
+        // Qui viene usata dalla renderPortfolioTable per tradurre i gruppi.
 
         // ── 2. RENDIMENTO SECTION ─────────────────────────────────────
         async function loadYieldData() {
