@@ -396,11 +396,33 @@
 
         function getCredentials() {
             const p = new URLSearchParams(window.location.search);
+            const urlUsername = p.get('username');
+            const urlToken = p.get('token');
+            const urlLanguage = p.get('language');
+
+            console.log('[AUTH] URL params ->', { urlUsername, urlToken: urlToken ? urlToken.substring(0, 8) + '…' : null, urlLanguage });
+            console.log('[AUTH] localStorage ->', {
+                username: localStorage.getItem('username'),
+                token: localStorage.getItem('token') ? localStorage.getItem('token').substring(0, 8) + '…' : null,
+                language: localStorage.getItem('language'),
+            });
+
             credentials = {
-                username: p.get('username') || localStorage.getItem('username') || 'admin',
-                token: p.get('token') || localStorage.getItem('token') || '',
-                language: p.get('language') || localStorage.getItem('language') || 'it_IT',
+                username: urlUsername || localStorage.getItem('username') || 'admin',
+                token: urlToken || localStorage.getItem('token') || '',
+                language: urlLanguage || localStorage.getItem('language') || 'it_IT',
             };
+
+            // Persist to localStorage so future reloads (without URL params) still work
+            if (urlUsername) localStorage.setItem('username', urlUsername);
+            if (urlToken) localStorage.setItem('token', urlToken);
+            if (urlLanguage) localStorage.setItem('language', urlLanguage);
+
+            console.log('[AUTH] credentials resolved ->', {
+                username: credentials.username,
+                token: credentials.token ? credentials.token.substring(0, 8) + '…' : '(empty)',
+                language: credentials.language,
+            });
         }
 
         function initTerminal() {
@@ -485,18 +507,22 @@
         }
 
         function connect() {
+            console.log('[WS] connect() called');
             if (ws) { try { ws.close(); } catch (e) { } ws = null; }
 
             setStatus('connecting');
             showOverlay('Connessione in corso…', 'Apertura WebSocket verso il server remoto');
 
             const url = `${WS_URL}/ws/terminal/${encodeURIComponent(credentials.username)}`;
+            console.log('[WS] connecting to:', url);
             document.getElementById('sbServerLabel').textContent = new URL(API_URL).hostname;
 
             try {
                 ws = new WebSocket(url);
                 ws.binaryType = 'arraybuffer';
+                console.log('[WS] WebSocket object created, readyState:', ws.readyState);
             } catch (e) {
+                console.error('[WS] WebSocket creation failed:', e);
                 showToast('Errore durante la creazione del WebSocket: ' + e.message);
                 setStatus('disconnected');
                 hideOverlay();
@@ -504,6 +530,7 @@
             }
 
             ws.onopen = () => {
+                console.log('[WS] onopen – sending auth, token:', credentials.token ? credentials.token.substring(0, 8) + '…' : '(empty)', 'rows:', termRows, 'cols:', termCols);
                 ws.send(JSON.stringify({
                     type: 'auth',
                     token: credentials.token,
@@ -517,36 +544,44 @@
 
             ws.onmessage = (event) => {
                 if (event.data instanceof ArrayBuffer) {
+                    console.log('[WS] binary frame received, bytes:', event.data.byteLength);
                     if (term) {
                         term.write(new Uint8Array(event.data));
                         if (!document.getElementById('overlay').classList.contains('hidden')) {
+                            console.log('[WS] first data received → setting connected');
                             setStatus('connected');
                             hideOverlay();
                         }
                     }
                 } else {
+                    console.log('[WS] text frame received:', event.data);
                     try {
                         const msg = JSON.parse(event.data);
                         if (msg.type === 'error') {
+                            console.error('[WS] server error:', msg.msg);
                             showToast('Errore server: ' + msg.msg);
                             setStatus('disconnected');
                             hideOverlay();
                             if (term) term.writeln('\r\n\x1b[31m[ERRORE] ' + msg.msg + '\x1b[0m\r\n');
+                        } else {
+                            console.log('[WS] JSON message type:', msg.type, msg);
                         }
                     } catch (e) {
+                        console.warn('[WS] non-JSON text frame, writing to terminal:', event.data.substring(0, 120));
                         if (term) term.write(event.data);
                     }
                 }
             };
 
             ws.onerror = (err) => {
-                console.error("WebSocket Error Event:", err);
+                console.error('[WS] onerror event:', err);
                 showToast('Impossibile stabilire una connessione WebSocket con il server');
                 setStatus('disconnected');
                 hideOverlay();
             };
 
             ws.onclose = (event) => {
+                console.log('[WS] onclose – code:', event.code, 'reason:', event.reason, 'wasClean:', event.wasClean);
                 stopPing();
                 setStatus('disconnected');
                 hideOverlay();
@@ -633,21 +668,25 @@
         window.addEventListener('resize', () => { fitTerm(); });
 
         document.addEventListener('DOMContentLoaded', () => {
+            console.log('[INIT] DOMContentLoaded');
             getCredentials();
             document.getElementById('usernameDisplay').textContent = credentials.username;
 
             initTerminal();
 
             if (!credentials.token) {
+                console.error('[INIT] token missing! URL params:', window.location.search, '| localStorage.token:', localStorage.getItem('token'));
                 setStatus('disconnected');
                 hideOverlay();
                 if (term) {
                     term.writeln('\x1b[31mErrore: token di autenticazione mancante.\x1b[0m');
-                    term.writeln('\x1b[33mRicarica la pagina passando il parametro token corretti.\x1b[0m');
+                    term.writeln('\x1b[33mRicarica la pagina passando il parametro token corretto.\x1b[0m');
+                    term.writeln('\x1b[90mURL corrente: ' + window.location.href + '\x1b[0m');
                 }
                 return;
             }
 
+            console.log('[INIT] token present, calling connect()');
             connect();
         });
     </script>
