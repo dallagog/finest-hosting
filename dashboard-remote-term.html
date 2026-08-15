@@ -10,7 +10,7 @@
         style-src   'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://fonts.googleapis.com;
         font-src    'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com;
         img-src     'self' data: https: blob:;
-        connect-src 'self' https://feweb-tunnel.fe-web.eu wss://feweb-tunnel.fe-web.eu;
+        connect-src 'self' https://feweb-tunnel.fe-web.eu wss://feweb-tunnel.fe-web.eu ws://feweb-tunnel.fe-web.eu wss: ws:;
         worker-src  blob:;
     ">
     <title>Remote Terminal – Finest</title>
@@ -26,14 +26,13 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&display=swap');
 
-        /* ── Variabili (identiche a dashboard.html) ── */
         :root {
-            --bg-color:    #f5f5f0;
-            --neon-cyan:   #000000;
-            --neon-blue:   #333333;
-            --glass-bg:    #ffffff;
-            --text-color:  #333333;
-            --border-color:#000000;
+            --bg-color: #f5f5f0;
+            --neon-cyan: #000000;
+            --neon-blue: #333333;
+            --glass-bg: #ffffff;
+            --text-color: #333333;
+            --border-color: #000000;
         }
 
         * {
@@ -53,7 +52,6 @@
             gap: 20px;
         }
 
-        /* ── Header (identico a dashboard.html) ── */
         .header-bar {
             display: flex;
             justify-content: space-between;
@@ -92,7 +90,6 @@
             gap: 8px;
         }
 
-        /* Indicatore stato connessione */
         .status-dot {
             display: inline-block;
             width: 8px;
@@ -113,11 +110,17 @@
         }
 
         @keyframes pulse-dot {
-            0%, 100% { opacity: 1; }
-            50%       { opacity: 0.35; }
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.35;
+            }
         }
 
-        /* Pulsanti header (stesso stile dashboard.html) */
         .logout-container {
             flex: 1;
             text-align: right;
@@ -160,7 +163,6 @@
             box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
         }
 
-        /* ── Pannello terminale (stile collapsible-container) ── */
         .terminal-panel {
             background: var(--glass-bg);
             border: 1px solid #ddd;
@@ -173,7 +175,6 @@
             overflow: hidden;
         }
 
-        /* Barra titolo terminale */
         .terminal-titlebar {
             display: flex;
             justify-content: space-between;
@@ -193,7 +194,6 @@
             gap: 8px;
         }
 
-        /* Badge stato */
         .connection-badge {
             font-size: 11px;
             padding: 3px 10px;
@@ -221,7 +221,6 @@
             border: 1px solid #fca5a5;
         }
 
-        /* ── xterm container ── */
         #terminal-container {
             flex: 1;
             min-height: 0;
@@ -230,7 +229,6 @@
             overflow: hidden;
         }
 
-        /* ── Status bar in fondo al pannello ── */
         .statusbar {
             display: flex;
             gap: 20px;
@@ -248,9 +246,10 @@
             gap: 4px;
         }
 
-        .statusbar i { font-size: 10px; }
+        .statusbar i {
+            font-size: 10px;
+        }
 
-        /* ── Overlay loading ── */
         #overlay {
             position: fixed;
             inset: 0;
@@ -280,7 +279,9 @@
         }
 
         @keyframes spin {
-            to { transform: rotate(360deg); }
+            to {
+                transform: rotate(360deg);
+            }
         }
 
         #overlay-msg {
@@ -295,7 +296,6 @@
             font-size: 11px;
         }
 
-        /* ── Toast errore ── */
         #toast {
             position: fixed;
             bottom: 24px;
@@ -311,7 +311,7 @@
             opacity: 0;
             transition: all 0.3s;
             z-index: 200;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
         }
 
         #toast.show {
@@ -322,7 +322,6 @@
 </head>
 
 <body>
-    <!-- Header identico a dashboard.html -->
     <div class="header-bar">
         <div class="user-info-left">
             <div class="user-info-row">
@@ -352,7 +351,6 @@
         </div>
     </div>
 
-    <!-- Pannello terminale -->
     <div class="terminal-panel">
         <div class="terminal-titlebar">
             <div class="terminal-title">
@@ -374,22 +372,18 @@
         </div>
     </div>
 
-    <!-- Loading overlay -->
     <div id="overlay">
         <div class="spinner"></div>
         <div id="overlay-msg">Connessione in corso…</div>
         <div id="overlay-sub">Autenticazione al server remoto</div>
     </div>
 
-    <!-- Error toast -->
     <div id="toast"></div>
 
     <script>
-        // ─────────────────────────────────────────────────────────────────────
-        // Config
-        // ─────────────────────────────────────────────────────────────────────
         const API_URL = "https://feweb-tunnel.fe-web.eu";
-        const WS_URL = API_URL.replace(/^https?/, ws => ws === 'https' ? 'wss' : 'ws');
+        const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const WS_URL = `${wsProtocol}//feweb-tunnel.fe-web.eu`;
         const PING_INTERVAL_MS = 25_000;
 
         let credentials = { username: '', token: '', language: '' };
@@ -400,21 +394,15 @@
         let resizeObserver = null;
         let termRows = 24, termCols = 80;
 
-        // ─────────────────────────────────────────────────────────────────────
-        // Credenziali
-        // ─────────────────────────────────────────────────────────────────────
         function getCredentials() {
             const p = new URLSearchParams(window.location.search);
             credentials = {
                 username: p.get('username') || localStorage.getItem('username') || 'admin',
-                token:    p.get('token')    || localStorage.getItem('token')    || '',
+                token: p.get('token') || localStorage.getItem('token') || '',
                 language: p.get('language') || localStorage.getItem('language') || 'it_IT',
             };
         }
 
-        // ─────────────────────────────────────────────────────────────────────
-        // xterm.js
-        // ─────────────────────────────────────────────────────────────────────
         function initTerminal() {
             if (term) { term.dispose(); }
 
@@ -425,26 +413,26 @@
                 fontSize: 14,
                 lineHeight: 1.35,
                 theme: {
-                    background:    '#1e1e1e',
-                    foreground:    '#d4d4d4',
-                    cursor:        '#ffffff',
-                    cursorAccent:  '#1e1e1e',
-                    black:         '#1e1e1e',
-                    red:           '#f44747',
-                    green:         '#6a9955',
-                    yellow:        '#dcdcaa',
-                    blue:          '#569cd6',
-                    magenta:       '#c586c0',
-                    cyan:          '#4ec9b0',
-                    white:         '#d4d4d4',
-                    brightBlack:   '#808080',
-                    brightRed:     '#f44747',
-                    brightGreen:   '#b5cea8',
-                    brightYellow:  '#dcdcaa',
-                    brightBlue:    '#9cdcfe',
+                    background: '#1e1e1e',
+                    foreground: '#d4d4d4',
+                    cursor: '#ffffff',
+                    cursorAccent: '#1e1e1e',
+                    black: '#1e1e1e',
+                    red: '#f44747',
+                    green: '#6a9955',
+                    yellow: '#dcdcaa',
+                    blue: '#569cd6',
+                    magenta: '#c586c0',
+                    cyan: '#4ec9b0',
+                    white: '#d4d4d4',
+                    brightBlack: '#808080',
+                    brightRed: '#f44747',
+                    brightGreen: '#b5cea8',
+                    brightYellow: '#dcdcaa',
+                    brightBlue: '#9cdcfe',
                     brightMagenta: '#c586c0',
-                    brightCyan:    '#4ec9b0',
-                    brightWhite:   '#ffffff',
+                    brightCyan: '#4ec9b0',
+                    brightWhite: '#ffffff',
                     selectionBackground: 'rgba(255,255,255,0.2)',
                 },
                 allowProposedApi: true,
@@ -496,9 +484,6 @@
             document.getElementById('sbDim').innerHTML = `<i class="fa fa-expand"></i> ${txt}`;
         }
 
-        // ─────────────────────────────────────────────────────────────────────
-        // WebSocket
-        // ─────────────────────────────────────────────────────────────────────
         function connect() {
             if (ws) { try { ws.close(); } catch (e) { } ws = null; }
 
@@ -512,7 +497,7 @@
                 ws = new WebSocket(url);
                 ws.binaryType = 'arraybuffer';
             } catch (e) {
-                showToast('Errore WebSocket: ' + e.message);
+                showToast('Errore durante la creazione del WebSocket: ' + e.message);
                 setStatus('disconnected');
                 hideOverlay();
                 return;
@@ -554,17 +539,18 @@
                 }
             };
 
-            ws.onerror = () => {
-                showToast('Errore connessione WebSocket');
+            ws.onerror = (err) => {
+                console.error("WebSocket Error Event:", err);
+                showToast('Impossibile stabilire una connessione WebSocket con il server');
                 setStatus('disconnected');
                 hideOverlay();
             };
 
-            ws.onclose = () => {
+            ws.onclose = (event) => {
                 stopPing();
                 setStatus('disconnected');
                 hideOverlay();
-                if (term) term.writeln('\r\n\x1b[33m[Connessione chiusa]\x1b[0m');
+                if (term) term.writeln('\r\n\x1b[33m[Connessione chiusa dall\'host o dal gateway]\x1b[0m');
             };
         }
 
@@ -573,9 +559,6 @@
             setTimeout(connect, 300);
         }
 
-        // ─────────────────────────────────────────────────────────────────────
-        // Ping keepalive
-        // ─────────────────────────────────────────────────────────────────────
         function startPing() {
             stopPing();
             pingTimer = setInterval(() => {
@@ -589,16 +572,13 @@
             if (pingTimer) { clearInterval(pingTimer); pingTimer = null; }
         }
 
-        // ─────────────────────────────────────────────────────────────────────
-        // UI helpers
-        // ─────────────────────────────────────────────────────────────────────
         function setStatus(state) {
-            const dot   = document.getElementById('statusDot');
+            const dot = document.getElementById('statusDot');
             const label = document.getElementById('connectionStatus');
             const badge = document.getElementById('connBadge');
             const title = document.getElementById('termTitle');
 
-            dot.className   = 'status-dot';
+            dot.className = 'status-dot';
             badge.className = 'connection-badge';
 
             if (state === 'connected') {
@@ -652,9 +632,6 @@
 
         window.addEventListener('resize', () => { fitTerm(); });
 
-        // ─────────────────────────────────────────────────────────────────────
-        // Init
-        // ─────────────────────────────────────────────────────────────────────
         document.addEventListener('DOMContentLoaded', () => {
             getCredentials();
             document.getElementById('usernameDisplay').textContent = credentials.username;
@@ -666,7 +643,7 @@
                 hideOverlay();
                 if (term) {
                     term.writeln('\x1b[31mErrore: token di autenticazione mancante.\x1b[0m');
-                    term.writeln('\x1b[33mRicarica la pagina con i parametri corretti.\x1b[0m');
+                    term.writeln('\x1b[33mRicarica la pagina passando il parametro token corretti.\x1b[0m');
                 }
                 return;
             }

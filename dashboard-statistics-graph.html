@@ -1281,22 +1281,33 @@
         // ============================================================
         async function fetchStatistics() {
             document.getElementById('loadingStatus').textContent = 'Chiamata /getstatistics...';
+
+            // 1. Log dettagliato del payload di richiesta
+            const requestPayload = {
+                username: credentials.username,
+                token: credentials.token,
+                currency: credentials.currency,
+                language: credentials.language,
+                filter: null
+            };
+            console.log("[DEBUG API] Richiesta in uscita verso /getstatistics:", JSON.stringify(requestPayload));
+
             try {
                 const resp = await fetch(`${API_URL}/getstatistics`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        username: credentials.username,
-                        token: credentials.token,
-                        currency: credentials.currency,
-                        language: credentials.language,
-                        filter: null
-                    })
+                    body: JSON.stringify(requestPayload)
                 });
+
+                // 2. Log dello stato HTTP
+                console.log("[DEBUG API] HTTP Status:", resp.status);
 
                 if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
 
                 const result = await resp.json();
+
+                // 3. Log dell'intero oggetto di risposta
+                console.log("[DEBUG API] Payload ricevuto:", result);
 
                 if (result.status !== 'ok') {
                     showMessage(result.msg || 'Errore API', 'error');
@@ -1309,26 +1320,27 @@
                 }
 
                 _allData = result.data || [];
+
+                // 4. Log mirato in caso di assenza dati
                 if (_allData.length === 0) {
+                    console.warn("[DEBUG API] L'API ha risposto con array vuoto per l'utente:", credentials.username, "e valuta:", credentials.currency);
                     showMessage('Nessun dato disponibile (PE 0-20).', 'warning');
                     document.getElementById('loadingOverlay').style.display = 'none';
                     return;
                 }
 
                 setDateRangeDefaults(_allData);
-
                 document.getElementById('loadingStatus').textContent = `${_allData.length} strumenti ricevuti. Rendering...`;
                 populateMarketSelector(_allData);
                 populateSectorSelector(_allData);
                 applyFilters();
 
             } catch (err) {
-                console.error(err);
+                console.error("[DEBUG API] Errore critico in fetchStatistics:", err);
                 showMessage('Impossibile raggiungere il server: ' + err.message, 'error');
                 document.getElementById('loadingOverlay').style.display = 'none';
             }
         }
-
         // ============================================================
         // FILTRI
         // ============================================================
