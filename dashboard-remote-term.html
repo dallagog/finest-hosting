@@ -595,6 +595,10 @@
                             setStatus('disconnected');
                             hideOverlay();
                             if (term) term.writeln('\r\n\x1b[31m[ERRORE] ' + msg.msg + '\x1b[0m\r\n');
+                        } else if (msg.type === 'pong') {
+                            if (_pingSent) {
+                                updateLatency(Date.now() - _pingSent);
+                            }
                         }
                     } catch (e) {
                         // potrebbe essere testo raw
