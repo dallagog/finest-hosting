@@ -527,18 +527,21 @@
             display: none;
         }
 
-        /* ── Variazioni in intestazione (prezzo a sx / cambio a dx dell'ISIN) ── */
+        /* ── Variazioni in intestazione (prezzo a sx del codice strumento / cambio a dx della divisa) ── */
         .hdr-var-group {
             display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            padding: 3px 10px;
-            border: 1px solid #ddd;
-            border-radius: 20px;
-            background: #fafafa;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 5px;
+            max-width: 300px;
+            padding: 7px 12px;
+            border: 1px solid #e3e3e3;
+            border-radius: 12px;
+            background: linear-gradient(180deg, #ffffff 0%, #f7f7f8 100%);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
             font-size: 0.72rem;
-            line-height: 1;
-            white-space: nowrap;
+            line-height: 1.1;
+            text-align: left;
         }
 
         .hdr-var-group:empty {
@@ -546,35 +549,81 @@
         }
 
         .hdr-var-title {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
             font-weight: 800;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
-            color: #000;
-            font-size: 0.68rem;
+            letter-spacing: 0.6px;
+            color: #111;
+            font-size: 0.66rem;
+        }
+
+        .hdr-var-title::before {
+            content: '';
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: #000;
+            flex-shrink: 0;
+        }
+
+        .hdr-var-items {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 5px 6px;
         }
 
         .hdr-var-item {
             display: inline-flex;
-            align-items: center;
-            gap: 4px;
+            align-items: baseline;
+            gap: 5px;
+            padding: 3px 8px;
+            border-radius: 8px;
+            background: #f0f0f2;
+            white-space: nowrap;
         }
 
         .hdr-var-item .lbl {
-            color: #777;
+            color: #6b6b70;
             text-transform: uppercase;
-            font-size: 0.66rem;
-            letter-spacing: 0.3px;
+            font-size: 0.62rem;
+            font-weight: 600;
+            letter-spacing: 0.4px;
         }
 
         .hdr-var-item .val {
             font-weight: 700;
-            color: #000;
+            color: #111;
+            font-variant-numeric: tabular-nums;
+            font-size: 0.74rem;
         }
 
-        .hdr-var-sep {
-            width: 1px;
-            height: 12px;
-            background: #ddd;
+        .hdr-var-item-main {
+            background: #111;
+        }
+
+        .hdr-var-item-main .lbl {
+            color: #bdbdbd;
+        }
+
+        .hdr-var-item-main .val {
+            color: #fff;
+        }
+
+        .hdr-var-item-main .val.yield-positive {
+            color: #4ade80;
+        }
+
+        .hdr-var-item-main .val.yield-negative {
+            color: #f87171;
+        }
+
+        @media (max-width: 1100px) {
+            .hdr-var-group {
+                max-width: 210px;
+            }
         }
     </style>
 </head>
@@ -604,11 +653,11 @@
             <input type="text" id="page-title-input" class="header-title-input" placeholder="Titolo Grafico">
             <div class="instrument-card">
                 <div class="instrument-title-row">
-                    <span id="chip-code" class="inst-chip inst-chip-code" style="display:none"></span>
                     <div id="hdr-var-price" class="hdr-var-group"></div>
+                    <span id="chip-code" class="inst-chip inst-chip-code" style="display:none"></span>
                     <span id="chip-isin" class="inst-chip inst-chip-isin" style="display:none"></span>
-                    <div id="hdr-var-exchange" class="hdr-var-group"></div>
                     <span id="chip-currency" class="inst-chip inst-chip-currency" style="display:none"></span>
+                    <div id="hdr-var-exchange" class="hdr-var-group"></div>
                 </div>
                 <div id="inst-desc" class="inst-description"></div>
             </div>
@@ -1525,22 +1574,23 @@
                     t.className = 'hdr-var-title';
                     t.textContent = text;
                     box.appendChild(t);
+
+                    const items = document.createElement('div');
+                    items.className = 'hdr-var-items';
+                    box.appendChild(items);
+                    return items;
                 };
 
-                const addItem = (box, label, value, cls = '', bold = false) => {
-                    const sep = document.createElement('span');
-                    sep.className = 'hdr-var-sep';
-                    box.appendChild(sep);
-
+                const addItem = (items, label, value, cls = '', main = false) => {
+                    if (!items) return;
                     const item = document.createElement('span');
-                    item.className = 'hdr-var-item';
-                    const boldClass = bold ? ' tooltip-max-bold' : '';
+                    item.className = 'hdr-var-item' + (main ? ' hdr-var-item-main' : '');
                     const colorClass = cls ? ` ${cls}` : '';
-                    item.innerHTML = `<span class="lbl">${label}</span><span class="val${boldClass}${colorClass}">${value}</span>`;
-                    box.appendChild(item);
+                    item.innerHTML = `<span class="lbl">${label}</span><span class="val${colorClass}">${value}</span>`;
+                    items.appendChild(item);
                 };
 
-                // Prezzo → a sinistra del codice ISIN
+                // Prezzo → a sinistra del codice strumento
                 const validPrices = prices.filter(p => p !== null && p !== undefined);
                 if (validPrices.length >= 2) {
                     const firstP = validPrices[0];
@@ -1551,13 +1601,13 @@
                     const minPrice = Math.min(...validPrices);
                     const maxPrice = Math.max(...validPrices);
 
-                    addTitle(priceBox, getTranslation('int.prices') || 'Prezzo');
-                    addItem(priceBox, 'Var', `${sign}${yieldP.toFixed(2)}%`, cls);
-                    addItem(priceBox, getTranslation('int.price.min') || 'Min', minPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 4 }));
-                    addItem(priceBox, getTranslation('int.price.max') || 'Max', maxPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 4 }), '', true);
+                    const priceItems = addTitle(priceBox, getTranslation('int.prices') || 'Prezzo');
+                    addItem(priceItems, 'Var', `${sign}${yieldP.toFixed(2)}%`, cls, true);
+                    addItem(priceItems, getTranslation('int.price.min') || 'Min', minPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 4 }));
+                    addItem(priceItems, getTranslation('int.price.max') || 'Max', maxPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 4 }));
                 }
 
-                // Cambio → a destra del codice ISIN
+                // Cambio → a destra della divisa
                 const validExchanges = exchanges.filter(e => e !== null && e !== undefined && e !== 0);
                 if (validExchanges.length >= 2) {
                     const firstE = validExchanges[0];
@@ -1568,10 +1618,10 @@
                     const minEx = Math.min(...validExchanges);
                     const maxEx = Math.max(...validExchanges);
 
-                    addTitle(exBox, getTranslation('int.exchange') || 'Cambio');
-                    addItem(exBox, 'Var', `${sign}${yieldE.toFixed(2)}%`, cls);
-                    addItem(exBox, getTranslation('int.exchange.min') || 'Min', minEx.toFixed(4));
-                    addItem(exBox, getTranslation('int.exchange.max') || 'Max', maxEx.toFixed(4), '', true);
+                    const exItems = addTitle(exBox, getTranslation('int.exchange') || 'Cambio');
+                    addItem(exItems, 'Var', `${sign}${yieldE.toFixed(2)}%`, cls, true);
+                    addItem(exItems, getTranslation('int.exchange.min') || 'Min', minEx.toFixed(4));
+                    addItem(exItems, getTranslation('int.exchange.max') || 'Max', maxEx.toFixed(4));
                 }
             };
 
