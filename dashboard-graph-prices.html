@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Market Trend 0.21</title>
+    <title>Market Trend 0.3</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <link rel="icon" type="image/png" href="images/icon-finest.png">
@@ -126,17 +126,28 @@
             margin-top: 6px;
         }
 
+        /* MODIFICATO: layout a 3 colonne (exchange | strumento 3 righe | prezzo) */
         .instrument-title-row {
             display: flex;
             align-items: center;
-            gap: 10px;
-            flex-wrap: wrap;
             justify-content: center;
+            gap: 14px;
+            flex-wrap: nowrap;
+        }
+
+        /* ── Blocco centrale: strumento / ISIN / currency su 3 righe ── */
+        .instrument-stack {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 3px;
+            line-height: 1.15;
         }
 
         .inst-chip {
             display: inline-flex;
             align-items: center;
+            justify-content: center;
             gap: 4px;
             padding: 3px 10px;
             border-radius: 20px;
@@ -144,6 +155,7 @@
             font-weight: 700;
             letter-spacing: 0.5px;
             text-transform: uppercase;
+            white-space: nowrap;
         }
 
         .inst-chip-code {
@@ -527,7 +539,7 @@
             display: none;
         }
 
-        /* ── Variazioni in intestazione (prezzo a sx del codice strumento / cambio a dx della divisa) ── */
+        /* ── Variazioni in intestazione (cambio a sx / prezzo a dx dell'ISIN) ── */
         .hdr-var-group {
             display: inline-flex;
             flex-direction: column;
@@ -568,11 +580,12 @@
             flex-shrink: 0;
         }
 
+        /* MODIFICATO: items incolonnati verticalmente */
         .hdr-var-items {
             display: flex;
-            flex-wrap: wrap;
-            align-items: center;
-            gap: 5px 6px;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 3px;
         }
 
         .hdr-var-item {
@@ -653,11 +666,13 @@
             <input type="text" id="page-title-input" class="header-title-input" placeholder="Titolo Grafico">
             <div class="instrument-card">
                 <div class="instrument-title-row">
-                    <div id="hdr-var-price" class="hdr-var-group"></div>
-                    <span id="chip-code" class="inst-chip inst-chip-code" style="display:none"></span>
-                    <span id="chip-isin" class="inst-chip inst-chip-isin" style="display:none"></span>
-                    <span id="chip-currency" class="inst-chip inst-chip-currency" style="display:none"></span>
                     <div id="hdr-var-exchange" class="hdr-var-group"></div>
+                    <div class="instrument-stack">
+                        <span id="chip-code" class="inst-chip inst-chip-code" style="display:none"></span>
+                        <span id="chip-isin" class="inst-chip inst-chip-isin" style="display:none"></span>
+                        <span id="chip-currency" class="inst-chip inst-chip-currency" style="display:none"></span>
+                    </div>
+                    <div id="hdr-var-price" class="hdr-var-group"></div>
                 </div>
                 <div id="inst-desc" class="inst-description"></div>
             </div>
@@ -1560,7 +1575,7 @@
                 }
             };
 
-            // Funzione per popolare le variazioni in intestazione (prezzo a sx / cambio a dx dell'ISIN)
+            // Funzione per popolare le variazioni in intestazione (cambio a sx / prezzo a dx dell'ISIN)
             const buildHeaderVariations = () => {
                 const priceBox = document.getElementById('hdr-var-price');
                 const exBox = document.getElementById('hdr-var-exchange');
@@ -1590,24 +1605,7 @@
                     items.appendChild(item);
                 };
 
-                // Prezzo → a sinistra del codice strumento
-                const validPrices = prices.filter(p => p !== null && p !== undefined);
-                if (validPrices.length >= 2) {
-                    const firstP = validPrices[0];
-                    const lastP = validPrices[validPrices.length - 1];
-                    const yieldP = ((lastP - firstP) / firstP) * 100;
-                    const sign = yieldP >= 0 ? '+' : '';
-                    const cls = yieldP >= 0 ? 'yield-positive' : 'yield-negative';
-                    const minPrice = Math.min(...validPrices);
-                    const maxPrice = Math.max(...validPrices);
-
-                    const priceItems = addTitle(priceBox, getTranslation('int.prices') || 'Prezzo');
-                    addItem(priceItems, 'Var', `${sign}${yieldP.toFixed(2)}%`, cls, true);
-                    addItem(priceItems, getTranslation('int.price.min') || 'Min', minPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 4 }));
-                    addItem(priceItems, getTranslation('int.price.max') || 'Max', maxPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 4 }));
-                }
-
-                // Cambio → a destra della divisa
+                // Cambio → a sinistra del codice strumento
                 const validExchanges = exchanges.filter(e => e !== null && e !== undefined && e !== 0);
                 if (validExchanges.length >= 2) {
                     const firstE = validExchanges[0];
@@ -1622,6 +1620,23 @@
                     addItem(exItems, 'Var', `${sign}${yieldE.toFixed(2)}%`, cls, true);
                     addItem(exItems, getTranslation('int.exchange.min') || 'Min', minEx.toFixed(4));
                     addItem(exItems, getTranslation('int.exchange.max') || 'Max', maxEx.toFixed(4));
+                }
+
+                // Prezzo → a destra della divisa
+                const validPrices = prices.filter(p => p !== null && p !== undefined);
+                if (validPrices.length >= 2) {
+                    const firstP = validPrices[0];
+                    const lastP = validPrices[validPrices.length - 1];
+                    const yieldP = ((lastP - firstP) / firstP) * 100;
+                    const sign = yieldP >= 0 ? '+' : '';
+                    const cls = yieldP >= 0 ? 'yield-positive' : 'yield-negative';
+                    const minPrice = Math.min(...validPrices);
+                    const maxPrice = Math.max(...validPrices);
+
+                    const priceItems = addTitle(priceBox, getTranslation('int.prices') || 'Prezzo');
+                    addItem(priceItems, 'Var', `${sign}${yieldP.toFixed(2)}%`, cls, true);
+                    addItem(priceItems, getTranslation('int.price.min') || 'Min', minPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 4 }));
+                    addItem(priceItems, getTranslation('int.price.max') || 'Max', maxPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 4 }));
                 }
             };
 
