@@ -527,75 +527,54 @@
             display: none;
         }
 
-        /* Tooltip sul chip codice */
-        .chip-tooltip-wrap {
-            position: relative;
-            display: inline-block;
-        }
-
-        .chip-tooltip {
-            visibility: hidden;
-            opacity: 0;
-            pointer-events: none;
-            position: absolute;
-            top: calc(100% + 8px);
-            left: 50%;
-            transform: translateX(-50%);
-            background: #fff;
-            border: 1px solid #000;
-            border-radius: 8px;
-            box-shadow: 0 4px 18px rgba(0, 0, 0, 0.15);
-            padding: 10px 14px;
-            min-width: 220px;
-            font-size: 0.74rem;
+        /* ── Variazioni in intestazione (prezzo a sx / cambio a dx dell'ISIN) ── */
+        .hdr-var-group {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 3px 10px;
+            border: 1px solid #ddd;
+            border-radius: 20px;
+            background: #fafafa;
+            font-size: 0.72rem;
+            line-height: 1;
             white-space: nowrap;
-            z-index: 3000;
-            transition: opacity 0.15s, visibility 0.15s;
-            font-family: inherit;
         }
 
-        .chip-tooltip::after {
-            content: '';
-            position: absolute;
-            bottom: 100%;
-            left: 50%;
-            transform: translateX(-50%);
-            border: 7px solid transparent;
-            border-bottom-color: #000;
+        .hdr-var-group:empty {
+            display: none;
         }
 
-        .chip-tooltip-wrap:hover .chip-tooltip {
-            visibility: visible;
-            opacity: 1;
-        }
-
-        .chip-tooltip-title {
+        .hdr-var-title {
             font-weight: 800;
             text-transform: uppercase;
             letter-spacing: 0.5px;
-            border-bottom: 1px solid #eee;
-            margin-bottom: 7px;
-            padding-bottom: 5px;
             color: #000;
-            font-size: 0.75rem;
+            font-size: 0.68rem;
         }
 
-        .chip-tooltip-row {
-            display: flex;
-            justify-content: space-between;
+        .hdr-var-item {
+            display: inline-flex;
             align-items: center;
-            gap: 16px;
-            padding: 2px 0;
-            color: #444;
+            gap: 4px;
         }
 
-        .chip-tooltip-row .lbl {
+        .hdr-var-item .lbl {
             color: #777;
+            text-transform: uppercase;
+            font-size: 0.66rem;
+            letter-spacing: 0.3px;
         }
 
-        .chip-tooltip-row .val {
+        .hdr-var-item .val {
             font-weight: 700;
             color: #000;
+        }
+
+        .hdr-var-sep {
+            width: 1px;
+            height: 12px;
+            background: #ddd;
         }
     </style>
 </head>
@@ -625,13 +604,10 @@
             <input type="text" id="page-title-input" class="header-title-input" placeholder="Titolo Grafico">
             <div class="instrument-card">
                 <div class="instrument-title-row">
-                    <div class="chip-tooltip-wrap">
-                        <span id="chip-code" class="inst-chip inst-chip-code" style="display:none"></span>
-                        <div class="chip-tooltip" id="chip-tooltip">
-                            <div class="chip-tooltip-title">Variazioni</div>
-                        </div>
-                    </div>
+                    <span id="chip-code" class="inst-chip inst-chip-code" style="display:none"></span>
+                    <div id="hdr-var-price" class="hdr-var-group"></div>
                     <span id="chip-isin" class="inst-chip inst-chip-isin" style="display:none"></span>
+                    <div id="hdr-var-exchange" class="hdr-var-group"></div>
                     <span id="chip-currency" class="inst-chip inst-chip-currency" style="display:none"></span>
                 </div>
                 <div id="inst-desc" class="inst-description"></div>
@@ -1535,30 +1511,36 @@
                 }
             };
 
-            // Funzione per popolare il tooltip del chip codice
-            const buildChipTooltip = () => {
-                const chipTooltip = document.getElementById('chip-tooltip');
-                if (!chipTooltip) return;
+            // Funzione per popolare le variazioni in intestazione (prezzo a sx / cambio a dx dell'ISIN)
+            const buildHeaderVariations = () => {
+                const priceBox = document.getElementById('hdr-var-price');
+                const exBox = document.getElementById('hdr-var-exchange');
+                if (!priceBox || !exBox) return;
 
-                // Pulisce il tooltip (mantiene solo il titolo)
-                while (chipTooltip.children.length > 1) chipTooltip.removeChild(chipTooltip.lastChild);
+                priceBox.innerHTML = '';
+                exBox.innerHTML = '';
 
-                const addChipTooltipRow = (label, value, cls = '') => {
-                    const row = document.createElement('div');
-                    row.className = 'chip-tooltip-row';
-
-                    // Determina se è un valore Max per applicare il grassetto
-                    const isMax = label.includes('Max');
-                    const maxClass = isMax ? 'tooltip-max-bold' : '';
-
-                    // Applica il colore della classe se fornita
-                    const colorClass = cls ? ` ${cls}` : '';
-
-                    row.innerHTML = `<span class="lbl">${label}</span><span class="val ${maxClass}${colorClass}">${value}</span>`;
-                    chipTooltip.appendChild(row);
+                const addTitle = (box, text) => {
+                    const t = document.createElement('span');
+                    t.className = 'hdr-var-title';
+                    t.textContent = text;
+                    box.appendChild(t);
                 };
 
-                // Prezzo
+                const addItem = (box, label, value, cls = '', bold = false) => {
+                    const sep = document.createElement('span');
+                    sep.className = 'hdr-var-sep';
+                    box.appendChild(sep);
+
+                    const item = document.createElement('span');
+                    item.className = 'hdr-var-item';
+                    const boldClass = bold ? ' tooltip-max-bold' : '';
+                    const colorClass = cls ? ` ${cls}` : '';
+                    item.innerHTML = `<span class="lbl">${label}</span><span class="val${boldClass}${colorClass}">${value}</span>`;
+                    box.appendChild(item);
+                };
+
+                // Prezzo → a sinistra del codice ISIN
                 const validPrices = prices.filter(p => p !== null && p !== undefined);
                 if (validPrices.length >= 2) {
                     const firstP = validPrices[0];
@@ -1569,13 +1551,13 @@
                     const minPrice = Math.min(...validPrices);
                     const maxPrice = Math.max(...validPrices);
 
-                    const priceLabel = getTranslation('int.prices') || 'Prezzo';
-                    addChipTooltipRow(priceLabel, `${sign}${yieldP.toFixed(2)}%`, cls);
-                    addChipTooltipRow(getTranslation('int.price.min') || 'Min', minPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 4 }));
-                    addChipTooltipRow(getTranslation('int.price.max') || 'Max', maxPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 4 }));
+                    addTitle(priceBox, getTranslation('int.prices') || 'Prezzo');
+                    addItem(priceBox, 'Var', `${sign}${yieldP.toFixed(2)}%`, cls);
+                    addItem(priceBox, getTranslation('int.price.min') || 'Min', minPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 4 }));
+                    addItem(priceBox, getTranslation('int.price.max') || 'Max', maxPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 4 }), '', true);
                 }
 
-                // Cambio
+                // Cambio → a destra del codice ISIN
                 const validExchanges = exchanges.filter(e => e !== null && e !== undefined && e !== 0);
                 if (validExchanges.length >= 2) {
                     const firstE = validExchanges[0];
@@ -1586,20 +1568,16 @@
                     const minEx = Math.min(...validExchanges);
                     const maxEx = Math.max(...validExchanges);
 
-                    // Separator nel tooltip
-                    const sep = document.createElement('div');
-                    sep.style.cssText = 'border-top:1px solid #eee;margin:5px 0';
-                    chipTooltip.appendChild(sep);
-
-                    addChipTooltipRow(getTranslation('int.exchange') || 'Cambio', `${sign}${yieldE.toFixed(2)}%`, cls);
-                    addChipTooltipRow(getTranslation('int.exchange.min') || 'Min', minEx.toFixed(4));
-                    addChipTooltipRow(getTranslation('int.exchange.max') || 'Max', maxEx.toFixed(4));
+                    addTitle(exBox, getTranslation('int.exchange') || 'Cambio');
+                    addItem(exBox, 'Var', `${sign}${yieldE.toFixed(2)}%`, cls);
+                    addItem(exBox, getTranslation('int.exchange.min') || 'Min', minEx.toFixed(4));
+                    addItem(exBox, getTranslation('int.exchange.max') || 'Max', maxEx.toFixed(4), '', true);
                 }
             };
 
             // Aggiorna il tooltip solo per il periodo attivo (gli altri non hanno dati)
             buildPeriodTooltip(activePeriod);
-            buildChipTooltip();
+            buildHeaderVariations();
 
             const gradient = ctx.createLinearGradient(0, 0, 0, 400);
             gradient.addColorStop(0, 'rgba(75, 192, 192, 0.4)');
