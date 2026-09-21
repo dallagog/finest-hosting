@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Statistics 0.2</title>
+    <title>Statistics 0.1</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <script src="js/dashboard-shared.js"></script>
     <link rel="icon" type="image/png" href="images/icon-finest.png">
@@ -594,8 +594,9 @@
             background: var(--glass-bg);
             border: 1px solid #ddd;
             border-radius: 8px;
-            margin-bottom: 30px;
+            margin-bottom: 12px;
             box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+            overflow: hidden;
         }
 
         .sector-group:last-child {
@@ -608,10 +609,19 @@
             align-items: center;
             background: #f0f2f5;
             padding: 10px 16px;
-            border-bottom: 1px solid #ddd;
-            border-radius: 7px 7px 0 0;
+            cursor: pointer;
             flex-wrap: wrap;
             gap: 10px;
+            user-select: none;
+            transition: background 0.15s;
+        }
+
+        .sector-group-header:hover {
+            background: #e8ebef;
+        }
+
+        .sector-group.expanded .sector-group-header {
+            border-bottom: 1px solid #ddd;
         }
 
         .sector-group-title {
@@ -624,7 +634,27 @@
             letter-spacing: 0.5px;
         }
 
-        .sector-group-title i {
+        .sector-toggle-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: #222;
+            color: #fff;
+            font-size: 0.8rem;
+            font-weight: 900;
+            transition: transform 0.25s ease, background 0.15s;
+            flex-shrink: 0;
+        }
+
+        .sector-group.expanded .sector-toggle-icon {
+            background: #000;
+            transform: rotate(45deg);
+        }
+
+        .sector-group-title i.fa-layer-group {
             color: #555;
             font-size: 0.95rem;
         }
@@ -637,6 +667,14 @@
             border-radius: 12px;
             font-weight: 600;
             letter-spacing: 0.3px;
+        }
+
+        .sector-group-body {
+            display: none;
+        }
+
+        .sector-group.expanded .sector-group-body {
+            display: block;
         }
 
         .sector-table-wrapper {
@@ -724,6 +762,13 @@
             padding: 0 4px;
             color: #888;
             font-weight: bold;
+        }
+
+        /* Evita che i click sui controlli di paginazione attivino il toggle del settore */
+        .sector-group-header .sector-pagination-top,
+        .sector-group-body .pagination-buttons,
+        .sector-group-body .sector-pagination-bottom {
+            cursor: default;
         }
     </style>
 </head>
@@ -967,7 +1012,6 @@
         function _setApplyBtnState(state) {
             const btn = document.getElementById('apply-btn');
             if (!btn) return;
-            // Remove any pending restore timer
             if (btn._restoreTimer) { clearTimeout(btn._restoreTimer); btn._restoreTimer = null; }
             if (state === 'loading') {
                 btn.disabled = true;
@@ -991,7 +1035,6 @@
                 btn.style.border = '2px solid #c62828';
                 btn._restoreTimer = setTimeout(() => _setApplyBtnState('default'), 2000);
             } else {
-                // default: restore original
                 btn.disabled = false;
                 btn.classList.remove('is-loading');
                 btn.style.background = '';
@@ -1070,6 +1113,8 @@
         let _lastData = [];
         let _sectorPages = {};
         let _sectorGroups = [];
+        // Settori espansi: Set di sectorKey
+        let _expandedSectors = new Set();
 
         let _instrumentIndex = [];
         let _instSelIdx = -1;
@@ -1299,7 +1344,7 @@
             }
 
             if (startPage > 1) {
-                html += `<button class="pg-btn" onclick="changeSectorPage(${secIndex}, 1, true)">1</button>`;
+                html += `<button class="pg-btn" onclick="changeSectorPage(event, ${secIndex}, 1, true)">1</button>`;
                 if (startPage > 2) {
                     html += `<span class="pg-dots">...</span>`;
                 }
@@ -1307,14 +1352,14 @@
 
             for (let p = startPage; p <= endPage; p++) {
                 const activeClass = p === currentPage ? 'active' : '';
-                html += `<button class="pg-btn ${activeClass}" onclick="changeSectorPage(${secIndex}, ${p}, true)" ${p === currentPage ? 'disabled' : ''}>${p}</button>`;
+                html += `<button class="pg-btn ${activeClass}" onclick="changeSectorPage(event, ${secIndex}, ${p}, true)" ${p === currentPage ? 'disabled' : ''}>${p}</button>`;
             }
 
             if (endPage < totalPages) {
                 if (endPage < totalPages - 1) {
                     html += `<span class="pg-dots">...</span>`;
                 }
-                html += `<button class="pg-btn" onclick="changeSectorPage(${secIndex}, ${totalPages}, true)">${totalPages}</button>`;
+                html += `<button class="pg-btn" onclick="changeSectorPage(event, ${secIndex}, ${totalPages}, true)">${totalPages}</button>`;
             }
 
             return html;
@@ -1333,22 +1378,6 @@
 
             const marketColTitle = getTranslation('code_market') !== 'code_market' ? getTranslation('code_market') : 'Mercato';
 
-            let topPagination = '';
-            if (totalPages > 1) {
-                topPagination = `
-                <div class="sector-pagination-top">
-                    <span class="pagination-info">Pagina ${currentPage} / ${totalPages} (${startIdx + 1}-${endIdx} di ${totalRows})</span>
-                    <div class="pagination-buttons">
-                        <button class="pg-btn" title="Pagina precedente" onclick="changeSectorPage(${sec.index}, ${currentPage - 1}, false)" ${currentPage === 1 ? 'disabled' : ''}>
-                            <i class="fas fa-chevron-left"></i>
-                        </button>
-                        <button class="pg-btn" title="Pagina successiva" onclick="changeSectorPage(${sec.index}, ${currentPage + 1}, false)" ${currentPage === totalPages ? 'disabled' : ''}>
-                            <i class="fas fa-chevron-right"></i>
-                        </button>
-                    </div>
-                </div>`;
-            }
-
             let bottomPagination = '';
             if (totalPages > 1) {
                 bottomPagination = `
@@ -1357,17 +1386,17 @@
                         Mostrati <strong>${startIdx + 1} - ${endIdx}</strong> di <strong>${totalRows}</strong> record
                     </div>
                     <div class="pagination-buttons">
-                        <button class="pg-btn" title="Prima pagina" onclick="changeSectorPage(${sec.index}, 1, true)" ${currentPage === 1 ? 'disabled' : ''}>
+                        <button class="pg-btn" title="Prima pagina" onclick="changeSectorPage(event, ${sec.index}, 1, true)" ${currentPage === 1 ? 'disabled' : ''}>
                             <i class="fas fa-angle-double-left"></i>
                         </button>
-                        <button class="pg-btn" title="Pagina precedente" onclick="changeSectorPage(${sec.index}, ${currentPage - 1}, true)" ${currentPage === 1 ? 'disabled' : ''}>
+                        <button class="pg-btn" title="Pagina precedente" onclick="changeSectorPage(event, ${sec.index}, ${currentPage - 1}, true)" ${currentPage === 1 ? 'disabled' : ''}>
                             <i class="fas fa-chevron-left"></i> Prec
                         </button>
                         ${renderPageButtons(sec.index, currentPage, totalPages)}
-                        <button class="pg-btn" title="Pagina successiva" onclick="changeSectorPage(${sec.index}, ${currentPage + 1}, true)" ${currentPage === totalPages ? 'disabled' : ''}>
+                        <button class="pg-btn" title="Pagina successiva" onclick="changeSectorPage(event, ${sec.index}, ${currentPage + 1}, true)" ${currentPage === totalPages ? 'disabled' : ''}>
                             Succ <i class="fas fa-chevron-right"></i>
                         </button>
-                        <button class="pg-btn" title="Ultima pagina" onclick="changeSectorPage(${sec.index}, ${totalPages}, true)" ${currentPage === totalPages ? 'disabled' : ''}>
+                        <button class="pg-btn" title="Ultima pagina" onclick="changeSectorPage(event, ${sec.index}, ${totalPages}, true)" ${currentPage === totalPages ? 'disabled' : ''}>
                             <i class="fas fa-angle-double-right"></i>
                         </button>
                     </div>
@@ -1375,14 +1404,6 @@
             }
 
             return `
-                <div class="sector-group-header">
-                    <div class="sector-group-title">
-                        <i class="fas fa-layer-group"></i>
-                        <span>${sec.sectorLabel}</span>
-                        <span class="sector-badge">${totalRows} ${totalRows === 1 ? 'record' : 'record'}</span>
-                    </div>
-                    ${topPagination}
-                </div>
                 <div class="sector-table-wrapper">
                     <table class="data-table">
                         <thead>
@@ -1406,7 +1427,31 @@
             `;
         }
 
-        function changeSectorPage(secIndex, newPage, shouldScroll) {
+        function toggleSectorGroup(secIndex) {
+            const groupEl = document.getElementById(`sector-group-${secIndex}`);
+            if (!groupEl) return;
+            const sec = _sectorGroups[secIndex];
+            if (!sec) return;
+
+            if (_expandedSectors.has(sec.sectorKey)) {
+                _expandedSectors.delete(sec.sectorKey);
+                groupEl.classList.remove('expanded');
+            } else {
+                _expandedSectors.add(sec.sectorKey);
+                groupEl.classList.add('expanded');
+                // Renderizza il contenuto solo la prima volta che si espande
+                const bodyEl = groupEl.querySelector('.sector-group-body');
+                if (bodyEl && bodyEl.dataset.rendered !== '1') {
+                    bodyEl.innerHTML = renderSectorContent(sec);
+                    bodyEl.dataset.rendered = '1';
+                }
+            }
+        }
+
+        function changeSectorPage(event, secIndex, newPage, shouldScroll) {
+            if (event) {
+                event.stopPropagation();
+            }
             const sec = _sectorGroups[secIndex];
             if (!sec) return;
             const totalPages = Math.ceil(sec.rows.length / PAGE_SIZE);
@@ -1417,7 +1462,11 @@
 
             const groupEl = document.getElementById(`sector-group-${secIndex}`);
             if (groupEl) {
-                groupEl.innerHTML = renderSectorContent(sec);
+                const bodyEl = groupEl.querySelector('.sector-group-body');
+                if (bodyEl) {
+                    bodyEl.innerHTML = renderSectorContent(sec);
+                    bodyEl.dataset.rendered = '1';
+                }
                 if (shouldScroll) {
                     groupEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
                 }
@@ -1426,10 +1475,16 @@
 
         function jumpToSector(targetId) {
             if (!targetId) return;
-            const el = document.getElementById(targetId);
-            if (el) {
-                el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            const groupEl = document.getElementById(targetId);
+            if (!groupEl) return;
+
+            // Trova l'indice del settore
+            const idx = parseInt(targetId.replace('sector-group-', ''));
+            const sec = _sectorGroups[idx];
+            if (sec && !_expandedSectors.has(sec.sectorKey)) {
+                toggleSectorGroup(idx);
             }
+            groupEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
 
         function populateSectorSelector(data) {
@@ -1503,6 +1558,9 @@
         function renderTable(data) {
             _lastData = data;
             _sectorPages = {};
+            // Reset espansione settori quando si ricaricano i dati
+            _expandedSectors = new Set();
+
             populateInstrumentSelector(data);
             const sectorItems = document.getElementById('sectorSelectorItems');
             if (sectorItems.children.length === 0 || (_selectedSectors.length === 0)) {
@@ -1590,9 +1648,49 @@
             </div>`;
 
             _sectorGroups.forEach(sec => {
-                html += `<div class="sector-group" id="sector-group-${sec.index}">`;
-                html += renderSectorContent(sec);
-                html += `</div>`;
+                const isExpanded = _expandedSectors.has(sec.sectorKey);
+                const expandedClass = isExpanded ? 'expanded' : '';
+                const iconSymbol = isExpanded ? '−' : '+';
+                const totalRows = sec.rows.length;
+                const totalPages = Math.ceil(totalRows / PAGE_SIZE);
+
+                let headerPagination = '';
+                if (isExpanded && totalPages > 1) {
+                    const currentPage = sec.currentPage;
+                    const startIdx = (currentPage - 1) * PAGE_SIZE;
+                    const endIdx = Math.min(startIdx + PAGE_SIZE, totalRows);
+                    headerPagination = `
+                        <div class="sector-pagination-top">
+                            <span class="pagination-info">Pagina ${currentPage} / ${totalPages} (${startIdx + 1}-${endIdx} di ${totalRows})</span>
+                            <div class="pagination-buttons">
+                                <button class="pg-btn" title="Pagina precedente" onclick="changeSectorPage(event, ${sec.index}, ${currentPage - 1}, false)" ${currentPage === 1 ? 'disabled' : ''}>
+                                    <i class="fas fa-chevron-left"></i>
+                                </button>
+                                <button class="pg-btn" title="Pagina successiva" onclick="changeSectorPage(event, ${sec.index}, ${currentPage + 1}, false)" ${currentPage === totalPages ? 'disabled' : ''}>
+                                    <i class="fas fa-chevron-right"></i>
+                                </button>
+                            </div>
+                        </div>`;
+                }
+
+                // Contenuto del body: se espanso lo renderizziamo subito
+                const bodyContent = isExpanded ? renderSectorContent(sec) : '';
+
+                html += `
+                <div class="sector-group ${expandedClass}" id="sector-group-${sec.index}">
+                    <div class="sector-group-header" onclick="toggleSectorGroup(${sec.index})">
+                        <div class="sector-group-title">
+                            <span class="sector-toggle-icon">${iconSymbol}</span>
+                            <i class="fas fa-layer-group"></i>
+                            <span>${sec.sectorLabel}</span>
+                            <span class="sector-badge">${totalRows} ${totalRows === 1 ? 'record' : 'record'}</span>
+                        </div>
+                        ${headerPagination}
+                    </div>
+                    <div class="sector-group-body" data-rendered="${isExpanded ? '1' : '0'}">
+                        ${bodyContent}
+                    </div>
+                </div>`;
             });
 
             container.innerHTML = html;
