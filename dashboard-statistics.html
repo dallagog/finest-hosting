@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Statistics 0.2</title>
+    <title>Statistics 0.1</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <script src="js/dashboard-shared.js"></script>
     <link rel="icon" type="image/png" href="images/icon-finest.png">
@@ -791,7 +791,7 @@
         <div id="message" class="message"></div>
 
         <div class="collapsible-container">
-            <!-- RIGA 1: Data iniziale, Data finale, Forza min, Forza max, Settore -->
+            <!-- RIGA 1: Data iniziale, Data finale, Forza min, Forza max -->
             <div class="filters-row">
                 <div class="filter-group">
                     <label>Data iniziale:</label>
@@ -808,16 +808,6 @@
                 <div class="filter-group">
                     <label>Forza max:</label>
                     <input type="number" id="value-max" step="0.01">
-                </div>
-                <div class="filter-group">
-                    <label>Settore:</label>
-                    <div id="sector-filter-container" class="dropdown-check-list">
-                        <span class="anchor" onclick="toggleSectorDropdown()" id="sectorSelectorAnchor">Tutti i
-                            settori</span>
-                        <div id="sectorSelectorItems" class="items">
-                            <!-- Checkboxes injected here -->
-                        </div>
-                    </div>
                 </div>
             </div>
 
@@ -919,6 +909,9 @@
             setDefaultDates();
             initInstrumentSearch();
             await loadStaticData();
+
+            // Applica direttamente il filtro di default in entrata (ultimi 5 giorni, forza >= 0)
+            fetchMarketData();
         }
 
         async function loadStaticData() {
@@ -944,23 +937,7 @@
             }
         }
 
-        let _selectedSectors = [];
         let _selectedMarkets = [];
-
-        function toggleSectorDropdown() {
-            const container = document.getElementById('sector-filter-container');
-            container.classList.toggle('visible');
-
-            if (container.classList.contains('visible')) {
-                const closeHandler = (e) => {
-                    if (!container.contains(e.target)) {
-                        container.classList.remove('visible');
-                        document.removeEventListener('click', closeHandler);
-                    }
-                };
-                setTimeout(() => document.addEventListener('click', closeHandler), 10);
-            }
-        }
 
         function toggleMarketDropdown() {
             const container = document.getElementById('market-filter-container');
@@ -1001,11 +978,11 @@
 
         function setDefaultDates() {
             const today = new Date();
-            const lastMonth = new Date(today.getFullYear(), today.getMonth() - 1, today.getDate());
+            const fiveDaysAgo = new Date(today.getFullYear(), today.getMonth(), today.getDate() - 5);
 
-            document.getElementById('date-start').value = lastMonth.toISOString().split('T')[0];
+            document.getElementById('date-start').value = fiveDaysAgo.toISOString().split('T')[0];
             document.getElementById('date-end').value = today.toISOString().split('T')[0];
-            document.getElementById('value-min').value = 4;
+            document.getElementById('value-min').value = 0;
             document.getElementById('value-max').value = 9999;
         }
 
@@ -1067,8 +1044,7 @@
                 token: credentials.token,
                 currency: credentials.currency,
                 date_start: date_start,
-                date_end: date_end,
-                sector: _selectedSectors.length > 0 ? _selectedSectors : null
+                date_end: date_end
             };
 
             console.log("Fetching market data from:", `${API_URL_MARKET}/getmarket`);
@@ -1487,51 +1463,6 @@
             groupEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
 
-        function populateSectorSelector(data) {
-            const container = document.getElementById('sectorSelectorItems');
-            const sectors = [...new Set(data.map(r => r.sector).filter(Boolean))].sort();
-
-            const previousSelection = [..._selectedSectors];
-
-            container.innerHTML = '';
-            sectors.forEach(sector => {
-                const label = document.createElement('label');
-                const cb = document.createElement('input');
-                cb.type = 'checkbox';
-                cb.value = sector;
-                cb.checked = previousSelection.includes(sector);
-                cb.onchange = onSectorChange;
-                label.appendChild(cb);
-                label.appendChild(document.createTextNode(getSectorLabel(sector)));
-                container.appendChild(label);
-            });
-
-            _selectedSectors = _selectedSectors.filter(s => sectors.includes(s));
-            updateSectorAnchorText();
-        }
-
-        function onSectorChange() {
-            const items = document.getElementById('sectorSelectorItems');
-            const checkboxes = items.querySelectorAll('input[type="checkbox"]');
-            _selectedSectors = [];
-            checkboxes.forEach(cb => {
-                if (cb.checked) _selectedSectors.push(cb.value);
-            });
-            updateSectorAnchorText();
-            if (_lastData.length > 0) applyFiltersAndRender();
-        }
-
-        function updateSectorAnchorText() {
-            const anchor = document.getElementById('sectorSelectorAnchor');
-            if (_selectedSectors.length === 0) {
-                anchor.textContent = "Tutti i settori";
-            } else if (_selectedSectors.length === 1) {
-                anchor.textContent = `Escludi: ${getSectorLabel(_selectedSectors[0])}`;
-            } else {
-                anchor.textContent = `Escludi: ${_selectedSectors.length} settori`;
-            }
-        }
-
         function populateMarketSelector(data) {
             const container = document.getElementById('marketSelectorItems');
             const markets = [...new Set(data.map(r => r.code_market).filter(Boolean))].sort();
@@ -1562,10 +1493,6 @@
             _expandedSectors = new Set();
 
             populateInstrumentSelector(data);
-            const sectorItems = document.getElementById('sectorSelectorItems');
-            if (sectorItems.children.length === 0 || (_selectedSectors.length === 0)) {
-                populateSectorSelector(data);
-            }
             populateMarketSelector(data);
             applyFiltersAndRender();
         }
@@ -1585,7 +1512,6 @@
                 if (!isNaN(vMin) && absVal < vMin) return false;
                 if (!isNaN(vMax) && absVal > vMax) return false;
                 if (instrumentFilter && (row.id_instrument || '').toLowerCase() !== instrumentFilter) return false;
-                if (_selectedSectors.length > 0 && _selectedSectors.includes(row.sector)) return false;
                 if (_selectedMarkets.length > 0 && !_selectedMarkets.includes(row.code_market)) return false;
 
                 if (inversionFilter) {
