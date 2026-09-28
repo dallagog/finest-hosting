@@ -2,2997 +2,742 @@
 <html lang="it">
 
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>FinEst 0.3</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-    <script src="js/dashboard-shared.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+    <title>Mobile 1.0</title>
     <link rel="icon" type="image/png" href="images/icon-finest.png">
-
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
-
         :root {
-            --bg: #f5f7fa;
-            --white: #ffffff;
-            --border: #e8ecf1;
-            --text: #1a1a2e;
-            --text-secondary: #6b7280;
-            --text-muted: #9ca3af;
-            --accent: #2563eb;
-            --accent-light: #dbeafe;
-            --red: #dc2626;
-            --red-light: #fee2e2;
-            --green: #16a34a;
-            --green-light: #dcfce7;
-            --orange: #f59e0b;
-            --orange-light: #fef3c7;
-            --shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
-            --shadow-hover: 0 8px 32px rgba(0, 0, 0, 0.12);
-            --radius: 16px;
-            --radius-sm: 10px;
-            --header-h: 60px;
-            --nav-h: 64px;
-            --safe-bottom: env(safe-area-inset-bottom, 0px);
+            --bg: #f3f5f8;
+            --card: #fff;
+            --line: #e4e8ee;
+            --ink: #141a26;
+            --sub: #667085;
+            --accent: #2454d6;
+            --pos: #0e8a48;
+            --neg: #c62828;
+            --pos-bg: #e3f5ea;
+            --neg-bg: #fde9e9;
+            --open: #1fae5b;
+            --closed: #d64545;
+            --unk: #e0a800
+        }
+
+        @media(prefers-color-scheme:dark) {
+            :root {
+                --bg: #0e1118;
+                --card: #171c27;
+                --line: #262d3c;
+                --ink: #e9edf5;
+                --sub: #8f9bb0;
+                --accent: #6f96ff;
+                --pos: #3ecf82;
+                --neg: #ff6b6b;
+                --pos-bg: #12301f;
+                --neg-bg: #3a1a1a
+            }
         }
 
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            -webkit-tap-highlight-color: transparent;
+            -webkit-tap-highlight-color: transparent
+        }
+
+        html,
+        body {
+            min-height: 100%
         }
 
         body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            font-family: Inter, -apple-system, system-ui, sans-serif;
             background: var(--bg);
-            color: var(--text);
-            min-height: 100vh;
-            padding-bottom: calc(var(--nav-h) + 20px + var(--safe-bottom));
-            overflow-x: hidden;
+            color: var(--ink);
+            padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px));
+            overflow-x: hidden
         }
 
-        /* ── SCROLLBAR ── */
-        ::-webkit-scrollbar {
-            width: 4px;
-            height: 4px;
+        .app {
+            max-width: 480px;
+            margin: 0 auto
         }
 
-        ::-webkit-scrollbar-track {
-            background: transparent;
+        button {
+            font: inherit;
+            color: inherit;
+            border: 0;
+            background: none;
+            cursor: pointer
         }
 
-        ::-webkit-scrollbar-thumb {
-            background: var(--text-muted);
-            border-radius: 10px;
+        .pos {
+            color: var(--pos)
         }
 
-        /* ── TOP HEADER ── */
-        .top-header {
+        .neg {
+            color: var(--neg)
+        }
+
+        .num {
+            font-variant-numeric: tabular-nums
+        }
+
+        /* header */
+        header {
             position: sticky;
             top: 0;
-            z-index: 100;
-            background: rgba(255, 255, 255, 0.92);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border-bottom: 1px solid var(--border);
-            height: var(--header-h);
+            z-index: 20;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 0 16px;
+            gap: 12px;
+            padding: calc(10px + env(safe-area-inset-top, 0px)) 16px 10px;
+            background: var(--bg);
+            border-bottom: 1px solid var(--line)
         }
 
-        .top-header .brand {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .top-header .brand .logo {
-            width: 32px;
-            height: 32px;
-            background: var(--accent);
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-weight: 900;
-            font-size: 14px;
-        }
-
-        .top-header .brand h1 {
-            font-size: 0.9rem;
-            font-weight: 800;
-            letter-spacing: -0.5px;
-            background: linear-gradient(135deg, var(--text), var(--accent));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-
-        .top-header .user-badge {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .top-header .user-badge .user-info {
-            display: flex;
-            flex-direction: column;
-            align-items: flex-end;
-            font-size: 0.65rem;
-            color: var(--text-secondary);
-            line-height: 1.3;
-        }
-
-        .top-header .user-badge .user-info strong {
-            color: var(--text);
-            font-size: 0.7rem;
-        }
-
-        .top-header .user-badge .avatar {
-            width: 34px;
-            height: 34px;
-            border-radius: 50%;
-            background: var(--accent-light);
-            color: var(--accent);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 700;
-            font-size: 14px;
-        }
-
-        /* ── BOTTOM NAVBAR ── */
-        .bottom-nav {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            height: calc(var(--nav-h) + var(--safe-bottom));
-            padding-bottom: var(--safe-bottom);
-            background: rgba(255, 255, 255, 0.96);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            border-top: 1px solid var(--border);
-            display: flex;
-            align-items: center;
-            justify-content: space-around;
-            z-index: 1000;
-            box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.05);
-        }
-
-        .nav-item {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            gap: 3px;
-            color: var(--text-secondary);
-            text-decoration: none;
-            font-size: 0.62rem;
-            font-weight: 600;
-            padding: 6px 12px;
-            border-radius: 12px;
-            transition: all 0.2s ease;
-            cursor: pointer;
-            border: none;
-            background: none;
-            width: 20%;
-        }
-
-        .nav-item i {
+        header h1 {
             font-size: 1.15rem;
-            transition: transform 0.2s ease;
-        }
-
-        .nav-item.active {
-            color: var(--accent);
-        }
-
-        .nav-item.active i {
-            transform: translateY(-2px) scale(1.1);
-        }
-
-        .nav-item.logout-item {
-            color: var(--red);
-        }
-
-        .nav-item:active {
-            transform: scale(0.92);
-        }
-
-        /* ── TAB SECTIONS ── */
-        .tab-section {
-            display: none;
-            animation: fadeIn 0.25s ease;
-        }
-
-        .tab-section.active {
-            display: block;
-        }
-
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-                transform: translateY(6px);
-            }
-
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        /* ── MESSAGE ── */
-        .message {
-            margin: 12px 16px 0;
-            padding: 12px 16px;
-            border-radius: var(--radius-sm);
-            font-size: 0.78rem;
-            font-weight: 500;
-            display: none;
-        }
-
-        .message.error {
-            background: var(--red-light);
-            color: var(--red);
-            display: block;
-        }
-
-        .message.warning {
-            background: var(--orange-light);
-            color: var(--orange);
-            display: block;
-        }
-
-        .message.info {
-            background: var(--accent-light);
-            color: var(--accent);
-            display: block;
-        }
-
-        /* ── FILTER PANEL ── */
-        .filter-panel {
-            margin: 12px 16px 0;
-            background: var(--white);
-            border-radius: var(--radius);
-            box-shadow: var(--shadow);
-            overflow: hidden;
-        }
-
-        .filter-toggle {
-            width: 100%;
-            background: none;
-            border: none;
-            padding: 14px 18px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            font-family: inherit;
-            font-size: 0.8rem;
-            font-weight: 600;
-            cursor: pointer;
-            color: var(--text);
-        }
-
-        .filter-toggle .left {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .filter-toggle .left i {
-            color: var(--accent);
-        }
-
-        .filter-toggle .badge-count {
-            background: var(--accent);
-            color: white;
-            font-size: 0.6rem;
-            font-weight: 700;
-            padding: 1px 8px;
-            border-radius: 12px;
-        }
-
-        .filter-body {
-            display: none;
-            padding: 0 18px 18px;
-            flex-direction: column;
-            gap: 12px;
-        }
-
-        .filter-body.open {
-            display: flex;
-        }
-
-        .filter-group {
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-        }
-
-        .filter-group label {
-            font-size: 0.68rem;
-            font-weight: 600;
-            color: var(--text-secondary);
-            text-transform: uppercase;
-            letter-spacing: 0.3px;
-        }
-
-        .filter-group input,
-        .filter-group select {
-            width: 100%;
-            padding: 10px 12px;
-            border: 1.5px solid var(--border);
-            border-radius: var(--radius-sm);
-            font-family: inherit;
-            font-size: 0.82rem;
-            background: var(--white);
-            color: var(--text);
-        }
-
-        .filter-group input:focus,
-        .filter-group select:focus {
-            outline: none;
-            border-color: var(--accent);
-        }
-
-        .date-row,
-        .force-row {
-            display: flex;
-            gap: 10px;
-        }
-
-        .date-row .filter-group,
-        .force-row .filter-group {
-            flex: 1;
-        }
-
-        .inversion-row {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 4px 0;
-        }
-
-        .inversion-row input[type="checkbox"] {
-            width: 18px;
-            height: 18px;
-            accent-color: var(--accent);
-        }
-
-        .inversion-row label {
-            font-size: 0.78rem;
-            font-weight: 500;
-            color: var(--text);
-        }
-
-        /* Dropdown Check List */
-        .dropdown-check-list {
-            position: relative;
-            width: 100%;
-        }
-
-        .dropdown-check-list .anchor {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 10px 12px;
-            border: 1.5px solid var(--border);
-            border-radius: var(--radius-sm);
-            background: var(--white);
-            font-size: 0.82rem;
-            cursor: pointer;
-            color: var(--text);
-        }
-
-        .dropdown-check-list .items {
-            display: none;
-            position: absolute;
-            top: calc(100% + 4px);
-            left: 0;
-            right: 0;
-            z-index: 200;
-            background: var(--white);
-            border: 1.5px solid var(--border);
-            border-radius: var(--radius-sm);
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
-            max-height: 200px;
-            overflow-y: auto;
-            padding: 6px;
-        }
-
-        .dropdown-check-list.visible .items {
-            display: block;
-        }
-
-        .dropdown-check-list .items label {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 8px 10px;
-            font-size: 0.78rem;
-            border-radius: 6px;
-            cursor: pointer;
-            color: var(--text);
-        }
-
-        .dropdown-check-list input[type="checkbox"] {
-            width: 16px;
-            height: 16px;
-            accent-color: var(--accent);
-        }
-
-        /* Instrument search */
-        .instrument-search-wrapper {
-            position: relative;
-            width: 100%;
-        }
-
-        .instrument-search-field {
-            width: 100%;
-            padding: 10px 36px 10px 36px;
-            border: 1.5px solid var(--border);
-            border-radius: var(--radius-sm);
-            font-size: 0.82rem;
-            background: var(--white);
-            color: var(--text);
-        }
-
-        .instrument-search-icon {
-            position: absolute;
-            left: 12px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: var(--text-muted);
-            font-size: 14px;
-        }
-
-        .instrument-search-clear {
-            position: absolute;
-            right: 10px;
-            top: 50%;
-            transform: translateY(-50%);
-            cursor: pointer;
-            color: var(--text-muted);
-            font-size: 14px;
-            display: none;
-            background: none;
-            border: none;
-        }
-
-        .instrument-search-dropdown {
-            position: absolute;
-            top: calc(100% + 4px);
-            left: 0;
-            right: 0;
-            background: var(--white);
-            border: 1.5px solid var(--border);
-            z-index: 300;
-            max-height: 200px;
-            overflow-y: auto;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
-            border-radius: 0 0 var(--radius-sm) var(--radius-sm);
-            display: none;
-        }
-
-        .inst-item {
-            padding: 10px 12px;
-            cursor: pointer;
-            border-bottom: 1px solid var(--border);
-            display: flex;
-            flex-direction: column;
-            gap: 2px;
-        }
-
-        .inst-item-main {
-            display: flex;
-            align-items: baseline;
-            gap: 8px;
-        }
-
-        .inst-item-id {
-            font-weight: 700;
-            color: var(--text);
-            font-size: 0.82rem;
-        }
-
-        .inst-item-desc {
-            font-size: 0.72rem;
-            color: var(--text-secondary);
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        .apply-btn {
-            width: 100%;
-            padding: 12px;
-            background: var(--accent);
-            color: white;
-            border: none;
-            border-radius: var(--radius-sm);
-            font-size: 0.82rem;
-            font-weight: 700;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            margin-top: 4px;
-        }
-
-        /* ── TABLE STYLING FOR MOBILE ── */
-        .table-card {
-            margin: 12px 16px;
-            background: var(--white);
-            border-radius: var(--radius);
-            box-shadow: var(--shadow);
-            overflow: hidden;
-        }
-
-        .table-responsive {
-            width: 100%;
-            overflow-x: auto;
-            -webkit-overflow-scrolling: touch;
-        }
-
-        .mobile-table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 0.75rem;
-            text-align: left;
-            white-space: nowrap;
-        }
-
-        .mobile-table th {
-            background: #f8fafc;
-            padding: 10px 12px;
-            font-weight: 700;
-            color: var(--text-secondary);
-            border-bottom: 1.5px solid var(--border);
-            font-size: 0.68rem;
-            text-transform: uppercase;
-            letter-spacing: 0.3px;
-        }
-
-        .mobile-table td {
-            padding: 10px 12px;
-            border-bottom: 1px solid var(--border);
-            color: var(--text);
-        }
-
-        .mobile-table tr:last-child td {
-            border-bottom: none;
-        }
-
-        .mobile-table .col-row-num {
-            text-align: center;
-            width: 36px;
-            min-width: 36px;
-            color: var(--text-muted);
-            font-size: 0.7rem;
-        }
-
-        .mobile-table .num-val {
-            text-align: right;
-            font-variant-numeric: tabular-nums;
-        }
-
-        .mobile-table .val-pos {
-            color: var(--green);
-            font-weight: 600;
-        }
-
-        .mobile-table .val-neg {
-            color: var(--red);
-            font-weight: 600;
-        }
-
-        .mobile-table a,
-        .mobile-table span.link {
-            color: var(--text);
-            text-decoration: underline;
-            cursor: pointer;
-        }
-
-        .table-controls {
-            padding: 12px 16px;
-            background: #fafbfd;
-            border-bottom: 1px solid var(--border);
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 10px;
-            flex-wrap: wrap;
-        }
-
-        .table-controls select,
-        .table-controls label {
-            font-size: 0.75rem;
-            color: var(--text);
-        }
-
-        .table-controls select {
-            padding: 6px 10px;
-            border: 1px solid var(--border);
-            border-radius: 6px;
-            background: white;
-        }
-
-        /* ── CARDS FOR STATISTICS ── */
-        .results-header {
-            margin: 16px 16px 0;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 4px;
-        }
-
-        .results-header .count {
-            font-size: 0.78rem;
-            font-weight: 600;
-            color: var(--text-secondary);
-        }
-
-        .card-list {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-            margin: 10px 16px;
-        }
-
-        .stat-card {
-            background: var(--white);
-            border-radius: var(--radius);
-            box-shadow: var(--shadow);
-            padding: 14px 16px;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-
-        .stat-card .card-header {
-            display: flex;
-            align-items: flex-start;
-            justify-content: space-between;
-            gap: 8px;
-        }
-
-        .stat-card .card-id {
-            font-size: 0.9rem;
             font-weight: 800;
-            color: var(--text);
-            cursor: pointer;
+            letter-spacing: -.02em
         }
 
-        .stat-card .card-desc {
-            font-size: 0.72rem;
-            color: var(--text-secondary);
-            cursor: pointer;
+        #status {
+            font-size: .7rem;
+            color: var(--sub);
+            margin-top: 2px
         }
 
-        .stat-card .card-badges {
+        #status.err {
+            color: var(--neg)
+        }
+
+        #refresh {
             display: flex;
-            gap: 6px;
-            flex-wrap: wrap;
-        }
-
-        .stat-card .badge {
-            font-size: 0.55rem;
-            font-weight: 700;
-            padding: 2px 8px;
-            border-radius: 10px;
-            text-transform: uppercase;
-        }
-
-        .badge-sector {
-            background: var(--accent-light);
-            color: var(--accent);
-        }
-
-        .badge-market {
-            background: #f3e8ff;
-            color: #7c3aed;
-        }
-
-        .badge-currency {
-            background: #ecfdf5;
-            color: #059669;
-        }
-
-        .stat-card .metrics-grid {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
+            align-items: center;
             gap: 8px;
-            padding-top: 10px;
-            border-top: 1px solid var(--border);
-        }
-
-        .stat-card .metric-item {
-            display: flex;
-            flex-direction: column;
-            gap: 1px;
-        }
-
-        .stat-card .metric-item .label {
-            font-size: 0.55rem;
-            font-weight: 600;
-            color: var(--text-muted);
-            text-transform: uppercase;
-        }
-
-        .stat-card .metric-item .value {
-            font-size: 0.85rem;
+            padding: 10px 16px;
+            border-radius: 999px;
+            background: var(--accent);
+            color: #fff;
             font-weight: 700;
-            color: var(--text);
+            font-size: .82rem
         }
 
-        .loading-text {
-            text-align: center;
-            color: var(--text-muted);
-            font-size: 0.82rem;
-            padding: 40px 20px;
+        #refresh:disabled {
+            opacity: .7
         }
 
-        .loading-text .spinner {
-            display: inline-block;
-            width: 28px;
-            height: 28px;
-            border: 3px solid var(--border);
-            border-top-color: var(--accent);
-            border-radius: 50%;
-            animation: spin 0.8s linear infinite;
-            margin-bottom: 8px;
+        #refresh svg {
+            width: 16px;
+            height: 16px
+        }
+
+        #refresh.loading svg {
+            animation: spin .9s linear infinite
         }
 
         @keyframes spin {
             to {
-                transform: rotate(360deg);
+                transform: rotate(360deg)
             }
         }
 
-        /* ── PORTRAIT ORIENTATION LOCK OVERLAY ── */
-        .portrait-lock-overlay {
+        /* summary */
+        .summary {
+            margin: 14px 16px 0;
+            padding: 18px 16px 16px;
+            background: var(--card);
+            border: 1px solid var(--line);
+            border-radius: 18px
+        }
+
+        .mp-label {
+            font-size: .75rem;
+            color: var(--sub);
+            font-weight: 600
+        }
+
+        .mp-value {
+            font-size: 2rem;
+            font-weight: 800;
+            letter-spacing: -.03em;
+            line-height: 1.15;
+            margin-top: 2px
+        }
+
+        .mp-pct {
+            display: inline-block;
+            margin-top: 6px;
+            padding: 3px 10px;
+            border-radius: 999px;
+            font-size: .8rem;
+            font-weight: 700
+        }
+
+        .mp-pct.pos {
+            background: var(--pos-bg)
+        }
+
+        .mp-pct.neg {
+            background: var(--neg-bg)
+        }
+
+        .pair {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            margin-top: 16px;
+            border-top: 1px solid var(--line)
+        }
+
+        .pair div {
+            padding-top: 12px
+        }
+
+        .pair div+div {
+            padding-left: 16px;
+            border-left: 1px solid var(--line)
+        }
+
+        .pair span {
+            display: block;
+            font-size: .72rem;
+            color: var(--sub);
+            font-weight: 600
+        }
+
+        .pair b {
+            display: block;
+            margin-top: 2px;
+            font-size: 1.05rem;
+            font-weight: 700
+        }
+
+        .note {
+            margin-top: 10px;
+            font-size: .7rem;
+            color: var(--sub)
+        }
+
+        /* toolbar */
+        .tools {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            margin: 16px 16px 8px
+        }
+
+        .tools h2 {
+            font-size: .9rem;
+            font-weight: 700
+        }
+
+        .tools h2 small {
+            color: var(--sub);
+            font-weight: 500
+        }
+
+        .tools select {
+            padding: 7px 10px;
+            border: 1px solid var(--line);
+            border-radius: 10px;
+            background: var(--card);
+            color: var(--ink);
+            font: 600 .76rem Inter, sans-serif
+        }
+
+        .chk {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: .76rem;
+            font-weight: 600;
+            color: var(--sub)
+        }
+
+        .chk input {
+            width: 16px;
+            height: 16px;
+            accent-color: var(--accent)
+        }
+
+        /* list */
+        ul {
+            list-style: none;
+            margin: 0 16px;
+            background: var(--card);
+            border: 1px solid var(--line);
+            border-radius: 18px;
+            overflow: hidden
+        }
+
+        li+li {
+            border-top: 1px solid var(--line)
+        }
+
+        .row-main {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 13px 14px;
+            text-align: left
+        }
+
+        .row-main:active {
+            background: var(--bg)
+        }
+
+        .l {
+            min-width: 0;
+            flex: 1
+        }
+
+        .l b {
+            font-size: .92rem;
+            font-weight: 700
+        }
+
+        .l small {
+            display: block;
+            margin-top: 2px;
+            font-size: .72rem;
+            color: var(--sub);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis
+        }
+
+        .dot {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-left: 7px;
+            vertical-align: middle
+        }
+
+        .dot.o {
+            background: var(--open)
+        }
+
+        .dot.c {
+            background: var(--closed)
+        }
+
+        .dot.u {
+            background: var(--unk)
+        }
+
+        .r {
+            text-align: right;
+            flex-shrink: 0
+        }
+
+        .r b {
+            display: block;
+            font-size: .92rem;
+            font-weight: 700
+        }
+
+        .r em {
+            display: block;
+            margin-top: 2px;
+            font-style: normal;
+            font-size: .74rem;
+            font-weight: 600
+        }
+
+        .detail {
+            padding: 2px 14px 14px;
+            background: var(--bg)
+        }
+
+        .detail dl {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px 14px;
+            padding-top: 12px
+        }
+
+        .detail dt {
+            font-size: .68rem;
+            color: var(--sub);
+            font-weight: 600
+        }
+
+        .detail dd {
+            font-size: .85rem;
+            font-weight: 700;
+            margin-top: 1px
+        }
+
+        .acts {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 14px
+        }
+
+        .acts button {
+            padding: 10px;
+            border-radius: 12px;
+            border: 1.5px solid var(--accent);
+            color: var(--accent);
+            font-weight: 700;
+            font-size: .8rem
+        }
+
+        .acts button:first-child {
+            background: var(--accent);
+            color: #fff
+        }
+
+        .empty {
+            padding: 36px 20px;
+            text-align: center;
+            color: var(--sub);
+            font-size: .85rem
+        }
+
+        .chev {
+            display: inline-block;
+            margin-left: 6px;
+            color: var(--sub);
+            font-size: .7rem;
+            transition: transform .15s
+        }
+
+        li.open .chev {
+            transform: rotate(180deg)
+        }
+
+        /* portrait lock */
+        #lock {
             display: none;
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            background: rgba(15, 23, 42, 0.97);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            z-index: 99999;
+            inset: 0;
+            z-index: 999;
+            background: #0f172a;
+            color: #f8fafc;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             text-align: center;
-            color: #ffffff;
             padding: 32px;
+            gap: 8px
         }
 
-        @media screen and (orientation: landscape) and (max-width: 950px) {
-            .portrait-lock-overlay {
-                display: flex !important;
-            }
+        #lock h2 {
+            font-size: 1.15rem
         }
 
-        .lock-icon-wrapper {
-            position: relative;
-            width: 80px;
-            height: 80px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-bottom: 20px;
-        }
-
-        .lock-phone-icon {
-            font-size: 48px;
-            color: #60a5fa;
-            animation: rotatePhone 2.5s ease-in-out infinite;
-        }
-
-        .lock-rotate-icon {
-            position: absolute;
-            top: -4px;
-            right: -4px;
-            font-size: 20px;
-            color: #38bdf8;
-        }
-
-        @keyframes rotatePhone {
-
-            0%,
-            10% {
-                transform: rotate(90deg);
-            }
-
-            40%,
-            60% {
-                transform: rotate(0deg);
-            }
-
-            90%,
-            100% {
-                transform: rotate(90deg);
-            }
-        }
-
-        .portrait-lock-overlay h2 {
-            font-size: 1.25rem;
-            font-weight: 800;
-            margin-bottom: 8px;
-            color: #f8fafc;
-        }
-
-        .portrait-lock-overlay p {
-            font-size: 0.85rem;
+        #lock p {
+            font-size: .85rem;
             color: #94a3b8;
-            max-width: 320px;
-            line-height: 1.4;
+            max-width: 300px
         }
 
-        /* ── MODERN MOBILE CARDS (PORTAFOGLIO & RENDIMENTO) ── */
-        .mobile-card-list {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-            margin: 12px 16px;
-        }
-
-        .mobile-data-card {
-            background: var(--white);
-            border-radius: var(--radius);
-            box-shadow: var(--shadow);
-            padding: 14px 16px;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            border: 1px solid var(--border);
-            transition: transform 0.15s ease, box-shadow 0.15s ease;
-        }
-
-        .mobile-data-card:active {
-            transform: scale(0.99);
-        }
-
-        .card-top-bar {
-            display: flex;
-            align-items: flex-start;
-            justify-content: space-between;
-            gap: 10px;
-        }
-
-        .card-title-box {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            flex: 1;
-            min-width: 0;
-        }
-
-        .row-index-badge {
-            min-width: 28px;
-            height: 28px;
-            border-radius: 8px;
-            background: #f1f5f9;
-            color: var(--text-secondary);
-            font-size: 0.7rem;
-            font-weight: 700;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .card-inst-info {
-            display: flex;
-            flex-direction: column;
-            min-width: 0;
-        }
-
-        .card-inst-code {
-            font-size: 0.92rem;
-            font-weight: 800;
-            color: var(--accent);
-            text-decoration: underline;
-            cursor: pointer;
-            line-height: 1.2;
-        }
-
-        .card-inst-desc {
-            font-size: 0.75rem;
-            font-weight: 500;
-            color: var(--text-secondary);
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            cursor: pointer;
-        }
-
-        .zero-balance-badge {
-            font-size: 0.6rem;
-            font-weight: 700;
-            background: #fee2e2;
-            color: #dc2626;
-            padding: 3px 8px;
-            border-radius: 20px;
-            white-space: nowrap;
-            text-transform: uppercase;
-            letter-spacing: 0.3px;
-        }
-
-        .card-metrics-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 8px 12px;
-            padding-top: 10px;
-            border-top: 1px solid var(--border);
-            background: #fafbfc;
-            margin: 0 -16px -14px -16px;
-            padding: 12px 16px;
-            border-radius: 0 0 var(--radius) var(--radius);
-        }
-
-        .card-metric-cell {
-            display: flex;
-            flex-direction: column;
-            gap: 2px;
-        }
-
-        .card-metric-cell.span-2 {
-            grid-column: span 2;
-        }
-
-        .card-metric-label {
-            font-size: 0.62rem;
-            font-weight: 700;
-            color: var(--text-muted);
-            text-transform: uppercase;
-            letter-spacing: 0.4px;
-        }
-
-        .card-metric-value {
-            font-size: 0.85rem;
-            font-weight: 700;
-            color: var(--text);
-            font-variant-numeric: tabular-nums;
-        }
-
-        .card-metric-value.val-pos {
-            color: var(--green);
-        }
-
-        .card-metric-value.val-neg {
-            color: var(--red);
-        }
-
-        /* Group header card */
-        .mobile-group-card {
-            background: linear-gradient(135deg, #1e293b, #0f172a);
-            color: #ffffff;
-            border-radius: var(--radius);
-            padding: 14px 16px;
-            margin: 12px 16px 4px 16px;
-            box-shadow: 0 4px 14px rgba(15, 23, 42, 0.15);
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-
-        .group-card-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-
-        .group-card-title {
-            font-size: 0.88rem;
-            font-weight: 800;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .group-card-metrics {
-            display: flex;
-            gap: 12px;
-            font-size: 0.72rem;
-            color: #cbd5e1;
-            border-top: 1px solid rgba(255, 255, 255, 0.1);
-            padding-top: 6px;
-            justify-content: space-between;
-            flex-wrap: wrap;
-        }
-
-        /* ── SECTION SUMMARY CARDS ── */
-        .section-summary-card {
-            background: var(--white);
-            border-radius: var(--radius);
-            padding: 16px;
-            margin: 12px 16px;
-            box-shadow: var(--shadow);
-            border: 1px solid var(--border);
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-        }
-
-        .summary-header-row {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 8px;
-        }
-
-        .summary-title-badge {
-            font-size: 0.88rem;
-            font-weight: 800;
-            color: var(--text);
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .summary-badge-sub {
-            font-size: 0.68rem;
-            font-weight: 700;
-            background: var(--accent-light);
-            color: var(--accent);
-            padding: 3px 8px;
-            border-radius: 12px;
-        }
-
-        .summary-metrics-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 10px;
-            background: #f8fafc;
-            padding: 12px;
-            border-radius: var(--radius-sm);
-            border: 1px solid var(--border);
-        }
-
-        .summary-metric-item {
-            display: flex;
-            flex-direction: column;
-            gap: 2px;
-        }
-
-        .summary-metric-item.span-2 {
-            grid-column: span 2;
-        }
-
-        .summary-metric-label {
-            font-size: 0.62rem;
-            font-weight: 700;
-            color: var(--text-muted);
-            text-transform: uppercase;
-            letter-spacing: 0.4px;
-        }
-
-        .summary-metric-value {
-            font-size: 0.95rem;
-            font-weight: 800;
-            color: var(--text);
-            font-variant-numeric: tabular-nums;
-        }
-
-        .summary-actions-bar {
-            display: flex;
-            align-items: center;
-            justify-content: flex-end;
-            gap: 8px;
-            border-top: 1px solid var(--border);
-            padding-top: 10px;
-            margin-top: 2px;
-        }
-
-        .btn-summary-action {
-            background: #f1f5f9;
-            color: var(--text);
-            border: 1px solid var(--border);
-            padding: 8px 14px;
-            border-radius: var(--radius-sm);
-            font-size: 0.78rem;
-            font-weight: 700;
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-
-        .btn-summary-action:active {
-            transform: scale(0.97);
-        }
-
-        .btn-summary-action.active {
-            background: var(--accent);
-            color: #ffffff;
-            border-color: var(--accent);
-        }
-
-        .btn-summary-action.btn-refresh {
-            background: #e0f2fe;
-            color: #0284c7;
-            border-color: #bae6fd;
-        }
-
-        .details-wrapper {
-            display: none;
-            flex-direction: column;
-        }
-
-        .details-wrapper.open {
-            display: flex;
-        }
-
-        /* Dark mode */
-        @media (prefers-color-scheme: dark) {
-            :root {
-                --bg: #0f0f1a;
-                --white: #1a1a2e;
-                --border: #2a2a44;
-                --text: #e8e8f0;
-                --text-secondary: #9ca3af;
-                --text-muted: #6b7280;
-                --shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
-                --accent-light: #1e3a5f;
+        @media(orientation:landscape) and (max-width:950px) {
+            #lock {
+                display: flex
             }
-
-            .top-header,
-            .bottom-nav {
-                background: rgba(26, 26, 46, 0.95);
-            }
-
-            .mobile-table th {
-                background: #14142a;
-            }
-
-            .table-controls {
-                background: #14142a;
-            }
-
-            .filter-group input,
-            .filter-group select,
-            .dropdown-check-list .anchor,
-            .instrument-search-field {
-                background: #14142a;
-                color: #e8e8f0;
-            }
-
-            .mobile-data-card {
-                background: #1e1e32;
-                border-color: #2a2a44;
-            }
-
-            .card-metrics-grid {
-                background: #14142a;
-                border-top-color: #2a2a44;
-            }
-
-            .row-index-badge {
-                background: #2a2a44;
-                color: #9ca3af;
-            }
-
-            .card-inst-desc {
-                color: #9ca3af;
-            }
-
-            .card-metric-value {
-                color: #f3f4f6;
-            }
-
-            .section-summary-card {
-                background: #1e1e32;
-                border-color: #2a2a44;
-            }
-
-            .summary-metrics-grid {
-                background: #14142a;
-                border-color: #2a2a44;
-            }
-
-            .btn-summary-action {
-                background: #2a2a44;
-                color: #e8e8f0;
-                border-color: #3b3b5c;
-            }
-
-            .btn-summary-action.btn-refresh {
-                background: #0369a1;
-                color: #e0f2fe;
-                border-color: #0284c7;
-            }
-        }
-
-        /* ── DEBUG PANEL ── */
-        #debug-panel {
-            position: fixed;
-            bottom: calc(var(--nav-h) + var(--safe-bottom));
-            left: 0;
-            right: 0;
-            height: 200px;
-            background: rgba(10, 10, 20, 0.97);
-            border-top: 2px solid #334155;
-            z-index: 9999;
-            display: none;
-            flex-direction: column;
-            font-family: 'Courier New', monospace;
-            font-size: 0.7rem;
-        }
-
-        #debug-panel.visible {
-            display: flex;
-        }
-
-        #debug-panel-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 4px 10px;
-            background: #1e293b;
-            border-bottom: 1px solid #334155;
-            flex-shrink: 0;
-        }
-
-        #debug-panel-header span {
-            color: #94a3b8;
-            font-weight: 700;
-            font-size: 0.68rem;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-
-        #debug-panel-close {
-            background: none;
-            border: none;
-            color: #ef4444;
-            font-size: 1rem;
-            cursor: pointer;
-            padding: 0 4px;
-        }
-
-        #debug-log-body {
-            flex: 1;
-            overflow-y: auto;
-            padding: 6px 10px;
-        }
-
-        .debug-entry {
-            padding: 1px 0;
-            white-space: pre-wrap;
-            word-break: break-all;
-            line-height: 1.4;
-        }
-
-        .debug-entry.lvl-DEBUG {
-            color: #64748b;
-        }
-
-        .debug-entry.lvl-INFO {
-            color: #7dd3fc;
-        }
-
-        .debug-entry.lvl-WARN {
-            color: #fbbf24;
-        }
-
-        .debug-entry.lvl-ERROR {
-            color: #f87171;
-            font-weight: 700;
         }
     </style>
 </head>
 
 <body>
-
-    <!-- PORTRAIT ORIENTATION LOCK OVERLAY -->
-    <div id="portraitLockOverlay" class="portrait-lock-overlay">
-        <div class="lock-icon-wrapper">
-            <i class="fas fa-mobile-alt lock-phone-icon"></i>
-            <i class="fas fa-redo lock-rotate-icon"></i>
-        </div>
-        <h2>Modalità Verticale Richiesta</h2>
-        <p>Per una fruizione ottimale, la rotazione dello schermo è disabilitata. Ruota il tuo smartphone in posizione
-            verticale.</p>
+    <div id="lock">
+        <h2>Ruota il telefono</h2>
+        <p>La dashboard è pensata per la visualizzazione verticale.</p>
     </div>
 
-    <!-- TOP HEADER -->
-    <header class="top-header">
-        <div class="brand">
-            <div class="logo" id="headerLogo">💼</div>
-            <h1 id="headerTitle">Portafoglio</h1>
-        </div>
-        <div class="user-badge">
-            <div class="user-info">
-                <strong id="usernameDisplay">-</strong>
-                <span id="currencyDisplay">EUR</span>
+    <div class="app">
+        <header>
+            <div>
+                <h1>Portafoglio</h1>
+                <div id="status">Caricamento…</div>
             </div>
-            <div class="avatar" id="avatarLetter">U</div>
-        </div>
-    </header>
-
-    <div id="message" class="message"></div>
-
-    <!-- ── TAB 1: PORTAFOGLIO ── -->
-    <section id="view-portfolio" class="tab-section active">
-        <!-- Summary Card with totals -->
-        <div class="section-summary-card">
-            <div class="summary-header-row">
-                <span class="summary-title-badge">
-                    <i class="fas fa-briefcase" style="color:var(--accent);"></i> Portafoglio
-                </span>
-                <span class="summary-badge-sub">Titoli con quantità</span>
-            </div>
-            <div class="summary-metrics-grid">
-                <div class="summary-metric-item">
-                    <span class="summary-metric-label">Costo Totale</span>
-                    <span class="summary-metric-value" id="pf-sum-cost">-</span>
-                </div>
-                <div class="summary-metric-item">
-                    <span class="summary-metric-label">Controvalore Totale</span>
-                    <span class="summary-metric-value" id="pf-sum-ctv">-</span>
-                </div>
-                <div class="summary-metric-item">
-                    <span class="summary-metric-label">Totale M/P</span>
-                    <span class="summary-metric-value" id="pf-sum-mp">-</span>
-                </div>
-                <div class="summary-metric-item">
-                    <span class="summary-metric-label">Titoli Presenti</span>
-                    <span class="summary-metric-value" id="pf-sum-count">0</span>
-                </div>
-            </div>
-            <div class="summary-actions-bar">
-                <button class="btn-summary-action" id="btn-toggle-portfolio-details" onclick="togglePortfolioDetails()">
-                    <i class="fas fa-list"></i>
-                    <span id="label-portfolio-details">Mostra Dettagli</span>
-                </button>
-            </div>
-        </div>
-
-        <!-- Details Wrapper -->
-        <div id="portfolio-details-wrapper" class="details-wrapper">
-            <div class="filter-panel" style="margin: 0 16px 8px;">
-                <div class="table-controls" style="border-radius: var(--radius); border: 1px solid var(--border);">
-                    <div style="display:flex; align-items:center; gap:8px;">
-                        <label for="portfolio-grouping">Raggruppa:</label>
-                        <select id="portfolio-grouping" onchange="onPortfolioGroupingChange()">
-                            <option value="">Nessun raggruppamento</option>
-                            <option value="sector">Settore</option>
-                            <option value="instrument_type">Tipo Strumento</option>
-                            <option value="code_market">Mercato</option>
-                        </select>
-                    </div>
-                    <div style="display:flex; align-items:center; gap:6px;">
-                        <input type="checkbox" id="expand-portfolio-details" onchange="renderPortfolioTable()" checked>
-                        <label for="expand-portfolio-details">Espandi</label>
-                    </div>
-                </div>
-            </div>
-
-            <div id="portfolio-card-list" class="mobile-card-list">
-                <div class="loading-text">
-                    <div class="spinner"></div>Caricamento Portafoglio...
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- ── TAB 2: RENDIMENTO ── -->
-    <section id="view-yield" class="tab-section">
-        <!-- Summary Card with totals -->
-        <div class="section-summary-card">
-            <div class="summary-header-row">
-                <span class="summary-title-badge">
-                    <i class="fas fa-chart-line" style="color:var(--green);"></i> Rendimento
-                </span>
-                <span class="summary-badge-sub" style="background:var(--green-light); color:var(--green);">Riepilogo
-                    Totali</span>
-            </div>
-            <div class="summary-metrics-grid">
-                <div class="summary-metric-item">
-                    <span class="summary-metric-label">Totale RISTOT</span>
-                    <span class="summary-metric-value" id="yield-sum-ristot">-</span>
-                </div>
-                <div class="summary-metric-item">
-                    <span class="summary-metric-label">Totale GIACMED</span>
-                    <span class="summary-metric-value" id="yield-sum-giacmed">-</span>
-                </div>
-                <div class="summary-metric-item">
-                    <span class="summary-metric-label">Rendimento Media %</span>
-                    <span class="summary-metric-value" id="yield-sum-perc">-</span>
-                </div>
-                <div class="summary-metric-item">
-                    <span class="summary-metric-label">Strumenti</span>
-                    <span class="summary-metric-value" id="yield-sum-count">0</span>
-                </div>
-            </div>
-            <div class="summary-actions-bar">
-                <button class="btn-summary-action" id="btn-toggle-yield-details" onclick="toggleYieldDetails()">
-                    <i class="fas fa-list"></i>
-                    <span id="label-yield-details">Mostra Dettagli</span>
-                </button>
-            </div>
-        </div>
-
-        <!-- Details Wrapper -->
-        <div id="yield-details-wrapper" class="details-wrapper">
-            <div class="filter-panel" style="margin: 0 16px 8px;">
-                <div class="table-controls" style="border-radius: var(--radius); border: 1px solid var(--border);">
-                    <div style="display:flex; align-items:center; gap:8px;">
-                        <label for="yield-grouping">Raggruppa:</label>
-                        <select id="yield-grouping" onchange="onYieldGroupingChange()">
-                            <option value="">Nessun raggruppamento</option>
-                            <option value="sector">Settore</option>
-                            <option value="instrument_type">Tipo Strumento</option>
-                            <option value="code_market">Mercato</option>
-                        </select>
-                    </div>
-                    <div style="display:flex; align-items:center; gap:6px;">
-                        <input type="checkbox" id="expand-yield-details" onchange="renderYieldTable()" checked>
-                        <label for="expand-yield-details">Espandi</label>
-                    </div>
-                </div>
-            </div>
-
-            <div id="yield-card-list" class="mobile-card-list">
-                <div class="loading-text">
-                    <div class="spinner"></div>Caricamento Rendimento...
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- ── TAB 3: MERCATO ── -->
-    <section id="view-market" class="tab-section">
-        <!-- Summary Card with totals & refresh button -->
-        <div class="section-summary-card">
-            <div class="summary-header-row">
-                <span class="summary-title-badge">
-                    <i class="fas fa-store" style="color:var(--orange);"></i> Mercato
-                </span>
-                <span class="summary-badge-sub" style="background:var(--orange-light); color:var(--orange);">Analisi
-                    Trend</span>
-            </div>
-            <div class="summary-metrics-grid">
-                <div class="summary-metric-item">
-                    <span class="summary-metric-label">Strumenti Totali</span>
-                    <span class="summary-metric-value" id="mkt-sum-count">0</span>
-                </div>
-                <div class="summary-metric-item">
-                    <span class="summary-metric-label">Segnali Positivi</span>
-                    <span class="summary-metric-value val-pos" id="mkt-sum-pos">0</span>
-                </div>
-                <div class="summary-metric-item">
-                    <span class="summary-metric-label">Segnali Negativi</span>
-                    <span class="summary-metric-value val-neg" id="mkt-sum-neg">0</span>
-                </div>
-                <div class="summary-metric-item">
-                    <span class="summary-metric-label">Forza Media</span>
-                    <span class="summary-metric-value" id="mkt-sum-forza">-</span>
-                </div>
-            </div>
-            <div class="summary-actions-bar">
-                <button class="btn-summary-action btn-refresh" onclick="fetchMarketSectionData()">
-                    <i class="fas fa-sync-alt"></i> Aggiorna
-                </button>
-                <button class="btn-summary-action" id="btn-toggle-market-details" onclick="toggleMarketDetails()">
-                    <i class="fas fa-list"></i>
-                    <span id="label-market-details">Mostra Dettagli</span>
-                </button>
-            </div>
-        </div>
-
-        <div class="filter-panel" style="margin: 0 16px 8px;">
-            <button class="filter-toggle" onclick="toggleMarketFilters()">
-                <span class="left"><i class="fas fa-sliders-h"></i> <span>Filtri Mercato</span></span>
-                <span class="arrow">▾</span>
+            <button id="refresh" onclick="runUpdateOnline()" aria-label="Aggiorna i dati">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"
+                    stroke-linejoin="round">
+                    <path d="M21 12a9 9 0 1 1-2.64-6.36" />
+                    <path d="M21 3v6h-6" />
+                </svg>
+                <span id="refreshTxt">Aggiorna</span>
             </button>
-            <div class="filter-body" id="marketFilterBody">
-                <div class="date-row">
-                    <div class="filter-group">
-                        <label>Dal</label>
-                        <input type="date" id="mkt-date-start">
-                    </div>
-                    <div class="filter-group">
-                        <label>Al</label>
-                        <input type="date" id="mkt-date-end">
-                    </div>
-                </div>
-                <button class="apply-btn" onclick="fetchMarketSectionData()">
-                    <i class="fas fa-sync-alt"></i> Aggiorna Filtri Mercato
-                </button>
+        </header>
+
+        <section class="summary">
+            <div class="mp-label">Minus/plus</div>
+            <div class="mp-value num" id="sumMp">–</div>
+            <span class="mp-pct" id="sumPct" hidden></span>
+            <div class="pair">
+                <div><span>Costo</span><b class="num" id="sumCost">–</b></div>
+                <div><span>Valore di mercato</span><b class="num" id="sumCtv">–</b></div>
             </div>
+            <div class="note" id="sumNote" hidden></div>
+        </section>
+
+        <div class="tools">
+            <h2>Strumenti <small id="count"></small></h2>
+            <label class="chk"><input type="checkbox" id="openOnly"> Solo aperti</label>
+        </div>
+        <div class="tools" style="margin-top:0">
+            <span class="chk">Ordina per</span>
+            <select id="sortBy">
+                <option value="ctv">Valore di mercato</option>
+                <option value="mp">Minus/plus</option>
+                <option value="mppct">Minus/plus %</option>
+                <option value="name">Nome</option>
+            </select>
         </div>
 
-        <!-- Details Wrapper for Market -->
-        <div id="market-details-wrapper" class="details-wrapper">
-            <div id="market-card-list" class="mobile-card-list">
-                <div class="loading-text">
-                    <div class="spinner"></div>Caricamento Mercato...
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- ── TAB 4: STATISTICA ── -->
-    <section id="view-statistics" class="tab-section">
-        <div class="filter-panel" id="filterPanel">
-            <button class="filter-toggle" id="filterToggleBtn" onclick="toggleStatFilters()">
-                <span class="left">
-                    <i class="fas fa-sliders-h"></i>
-                    <span>Filtri Statistica</span>
-                    <span class="badge-count" id="filterBadge" style="display:none;">0</span>
-                </span>
-                <span class="arrow">▾</span>
-            </button>
-            <div class="filter-body open" id="statFilterBody">
-
-                <div class="date-row">
-                    <div class="filter-group">
-                        <label>Dal</label>
-                        <input type="date" id="stat-date-start">
-                    </div>
-                    <div class="filter-group">
-                        <label>Al</label>
-                        <input type="date" id="stat-date-end">
-                    </div>
-                </div>
-
-                <div class="force-row">
-                    <div class="filter-group">
-                        <label>Forza min</label>
-                        <input type="number" id="value-min" step="0.01" placeholder="0">
-                    </div>
-                    <div class="filter-group">
-                        <label>Forza max</label>
-                        <input type="number" id="value-max" step="0.01" placeholder="∞">
-                    </div>
-                </div>
-
-                <!-- SELEZIONE MERCATO (NEW) -->
-                <div class="filter-group">
-                    <label>Mercato</label>
-                    <div id="market-filter-container" class="dropdown-check-list">
-                        <span class="anchor" onclick="toggleMarketDropdown()" id="marketSelectorAnchor">
-                            <span>Tutti i mercati</span>
-                            <span class="arrow-down">▾</span>
-                        </span>
-                        <div id="marketSelectorItems" class="items"></div>
-                    </div>
-                </div>
-
-                <!-- SELEZIONE SETTORE -->
-                <div class="filter-group">
-                    <label>Settore</label>
-                    <div id="sector-filter-container" class="dropdown-check-list">
-                        <span class="anchor" onclick="toggleSectorDropdown()" id="sectorSelectorAnchor">
-                            <span>Tutti i settori</span>
-                            <span class="arrow-down">▾</span>
-                        </span>
-                        <div id="sectorSelectorItems" class="items"></div>
-                    </div>
-                </div>
-
-                <div class="filter-group">
-                    <label>Strumento</label>
-                    <div class="instrument-search-wrapper">
-                        <span class="instrument-search-icon"><i class="fas fa-search"></i></span>
-                        <input type="text" id="instrument-search-input" class="instrument-search-field"
-                            placeholder="Cerca per codice o nome..." autocomplete="off">
-                        <button type="button" class="instrument-search-clear" id="instrument-search-clear"
-                            aria-label="Cancella">✕</button>
-                        <div class="instrument-search-dropdown" id="instrument-search-dropdown"></div>
-                    </div>
-                    <input type="hidden" id="instrument-filter" value="">
-                </div>
-
-                <div class="inversion-row">
-                    <input type="checkbox" id="inversion-filter">
-                    <label for="inversion-filter">Solo inversione</label>
-                </div>
-
-                <button class="apply-btn" id="btn-apply-stat" onclick="onApplyStatisticsClicked()">
-                    <i class="fas fa-arrow-right"></i>
-                    <span>Applica</span>
-                </button>
-            </div>
-        </div>
-
-        <div class="results-header" id="resultsHeader" style="display:none;">
-            <span class="count"><strong id="resultsCount">0</strong> strumenti trovati</span>
-        </div>
-
-        <div class="card-list" id="cardList">
-            <div class="loading-text" style="padding: 30px 20px;">
-                <i class="fas fa-chart-pie" style="font-size: 36px; color: var(--accent); margin-bottom: 12px;"></i>
-                <div style="font-size: 0.92rem; font-weight: 700; color: var(--text); margin-bottom: 4px;">Calcolo
-                    Statistica</div>
-                <div style="font-size: 0.78rem; color: var(--text-secondary);">Imposta i filtri desiderati e premi
-                    <strong>"Applica"</strong> per eseguire la statistica.
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- ── DEBUG PANEL (visible when URL has ?debug=1) ── -->
-    <div id="debug-panel">
-        <div id="debug-panel-header">
-            <span>🐛 Debug Log</span>
-            <button id="debug-panel-close" onclick="document.getElementById('debug-panel').classList.remove('visible')"
-                title="Chiudi">✕</button>
-        </div>
-        <div id="debug-log-body"></div>
+        <ul id="list">
+            <li class="empty">Caricamento portafoglio…</li>
+        </ul>
     </div>
-
-    <!-- ── BOTTOM NAVIGATION ── -->
-    <nav class="bottom-nav">
-        <button class="nav-item active" onclick="switchTab('portfolio')">
-            <i class="fas fa-briefcase"></i>
-            <span>Portafoglio</span>
-        </button>
-        <button class="nav-item" onclick="switchTab('yield')">
-            <i class="fas fa-chart-line"></i>
-            <span>Rendimento</span>
-        </button>
-        <button class="nav-item" onclick="switchTab('market')">
-            <i class="fas fa-store"></i>
-            <span>Mercato</span>
-        </button>
-        <button class="nav-item" onclick="switchTab('statistics')">
-            <i class="fas fa-chart-pie"></i>
-            <span>Statistica</span>
-        </button>
-        <button class="nav-item logout-item" onclick="logout()">
-            <i class="fas fa-sign-out-alt"></i>
-            <span>Logout</span>
-        </button>
-    </nav>
 
     <script>
-        // ============================================================
-        // LOGGER UTILITY
-        // ============================================================
-        const _debugMode = new URLSearchParams(window.location.search).get('debug') === '1';
-        if (_debugMode) {
-            document.getElementById('debug-panel').classList.add('visible');
-        }
-
-        const Logger = {
-            _enabled: true,
-            _level: 'DEBUG', // DEBUG, INFO, WARN, ERROR
-
-            setLevel(level) {
-                this._level = level;
-            },
-
-            _log(level, module, message, data) {
-                if (!this._enabled) return;
-                const levels = { DEBUG: 0, INFO: 1, WARN: 2, ERROR: 3 };
-                if (levels[level] < levels[this._level]) return;
-
-                const now = new Date();
-                const timestamp = now.toISOString();
-                const timeShort = now.toTimeString().slice(0, 8);
-                const prefix = `[${timestamp}] [${level}] [${module}]`;
-
-                // ── Console output ──
-                if (data !== undefined && data !== null) {
-                    try {
-                        console.log(`${prefix} ${message}`, data);
-                    } catch (e) {
-                        console.log(`${prefix} ${message} [Data non serializzabile]`);
-                    }
-                } else {
-                    console.log(`${prefix} ${message}`);
-                }
-
-                // ── Visual debug panel output ──
-                if (_debugMode) {
-                    const body = document.getElementById('debug-log-body');
-                    if (body) {
-                        let dataStr = '';
-                        if (data !== undefined && data !== null) {
-                            try { dataStr = ' ' + (typeof data === 'object' ? JSON.stringify(data) : String(data)); } catch (e) { dataStr = ' [non-serializable]'; }
-                        }
-                        const entry = document.createElement('div');
-                        entry.className = `debug-entry lvl-${level}`;
-                        entry.textContent = `${timeShort} [${level}] [${module}] ${message}${dataStr}`;
-                        body.appendChild(entry);
-                        body.scrollTop = body.scrollHeight;
-                    }
-                }
-            },
-
-            debug(module, message, data) {
-                this._log('DEBUG', module, message, data);
-            },
-
-            info(module, message, data) {
-                this._log('INFO', module, message, data);
-            },
-
-            warn(module, message, data) {
-                this._log('WARN', module, message, data);
-            },
-
-            error(module, message, data) {
-                this._log('ERROR', module, message, data);
-            }
+        const API_URL = 'https://feweb-tunnel.fe-web.eu';
+        const ls = k => { try { return localStorage.getItem(k) } catch (e) { return null } };
+        const qs = new URLSearchParams(location.search);
+        const cred = {
+            username: qs.get('username') || ls('username') || '',
+            token: qs.get('token') || ls('token') || '',
+            language: qs.get('language') || ls('language') || 'it_IT',
+            currency: ls('currency') || 'EUR'
         };
 
-        // Abilita logging dettagliato
-        Logger.info('SYSTEM', '🚀 Avvio applicazione dashboard mobile');
-        Logger.info('SYSTEM', '📱 Finest 1.0 - Mobile Dashboard');
+        let portfolio = [], translations = {}, lastJson = '', ws = null, wsTimer = null;
+        const openIds = new Set();
 
-        // ============================================================
-        // CONFIGURAZIONE
-        // ============================================================
-        const API_URL = "https://feweb-tunnel.fe-web.eu";
-        const API_URL_MARKET = "https://market-tunnel.fe-web.eu";
+        /* ── utils ── */
+        const $ = id => document.getElementById(id);
+        const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+        const tr = k => translations[k] || null;
+        const isNum = v => typeof v === 'number' && isFinite(v);
+        const fmt = (v, d = 2) => isNum(v) ? v.toLocaleString('it-IT', { minimumFractionDigits: d, maximumFractionDigits: d }) : '–';
+        const sgn = v => (v > 0 ? '+' : '') + fmt(v);
+        const sgnPct = v => isNum(v) ? (v > 0 ? '+' : '') + fmt(v) + '%' : '';
+        const cls = v => v >= 0 ? 'pos' : 'neg';
 
-        const credentials = {
-            username: localStorage.getItem('username'),
-            token: localStorage.getItem('token'),
-            currency: localStorage.getItem('currency') || 'EUR',
-            language: localStorage.getItem('language') || 'it_IT'
+        function setStatus(t, err) { const s = $('status'); s.textContent = t; s.classList.toggle('err', !!err); }
+
+        function parseVal(v) {
+            if (typeof v === 'string' && v.trim() !== '') {
+                const n = parseFloat(v.replace(',', '.'));
+                if (!isNaN(n) && String(n) === v.trim()) return n;
+            }
+            return v;
+        }
+
+        /* Stessa logica di dashboard-market.html: CTV = qta * prezzo / divisore / cambio; M/P = CTV - costo */
+        function normalize(raw) {
+            const it = {};
+            Object.keys(raw).forEach(k => it[k] = parseVal(raw[k]));
+            const qty = parseFloat(it.quantity ?? it['Quantità'] ?? it.qta);
+            const price = parseFloat(it.$price_mkt);
+            const div = parseFloat(it.price_divisor ?? 1) || 1;
+            const exch = parseFloat(it.$exchange_mkt ?? 1) || 1;
+            const cost = parseFloat(it.$amount_cost ?? it.$cost_amount_curr);
+            if (isNaN(qty) || isNaN(price)) { it.CTVMKTTQ = isNum(it.CTVMKTTQ) ? it.CTVMKTTQ : null; }
+            else it.CTVMKTTQ = Math.round((qty * price / div) / exch * 100) / 100;
+            if (isNum(it.CTVMKTTQ) && !isNaN(cost)) {
+                it['M/P'] = Math.round((it.CTVMKTTQ - cost) * 100) / 100;
+                it['M/P%'] = cost !== 0 ? Math.round(it['M/P'] / cost * 10000) / 100 : null;
+            } else { it['M/P'] = null; it['M/P%'] = null; }
+            it._qty = qty; it._cost = isNaN(cost) ? null : cost;
+            return it;
+        }
+
+        function loadRows(rawPortfolio) {
+            let list = [];
+            if (Array.isArray(rawPortfolio)) {
+                rawPortfolio.forEach(x => {
+                    if (x && x.id_instrument) list.push(normalize(x));
+                    else if (Array.isArray(x) && x.length === 2) list.push(normalize(Object.assign({ id_instrument: x[0] }, x[1])));
+                });
+            } else if (rawPortfolio && typeof rawPortfolio === 'object') {
+                Object.keys(rawPortfolio).forEach(k => list.push(normalize(Object.assign({ id_instrument: k }, rawPortfolio[k]))));
+            }
+            portfolio = list;
+        }
+
+        const marketState = it => {
+            const f = it.market && typeof it.market === 'object' ? it.market.fase : null;
+            return f === 'int.open' ? 'o' : f === 'int.closed' ? 'c' : 'u';
+        };
+        const marketLabel = it => tr('dom.code_market:' + it.code_market) || it.code_market || '–';
+        const hours = it => {
+            const m = it.market; if (!m || !m.start || !m.end) return '–';
+            const a = new Date(m.start), b = new Date(m.end); if (isNaN(a) || isNaN(b)) return '–';
+            const p = n => String(n).padStart(2, '0');
+            return `${p(a.getHours())}:${p(a.getMinutes())} – ${p(b.getHours())}:${p(b.getMinutes())}`;
         };
 
-        Logger.info('INIT', 'Credenziali recuperate da localStorage', {
-            username: credentials.username,
-            currency: credentials.currency,
-            language: credentials.language,
-            hasToken: !!credentials.token
+        /* ── render ── */
+        function render() {
+            let rows = portfolio.filter(i => isNum(i._qty) && Math.abs(i._qty) > 1e-6);
+            if ($('openOnly').checked) rows = rows.filter(i => !i.market || marketState(i) !== 'c');
+
+            const priced = rows.filter(i => isNum(i.CTVMKTTQ) && isNum(i._cost));
+            const cost = priced.reduce((s, i) => s + i._cost, 0);
+            const ctv = priced.reduce((s, i) => s + i.CTVMKTTQ, 0);
+            const mp = ctv - cost;
+            const pct = cost !== 0 ? mp / cost * 100 : null;
+            const cur = cred.currency === 'EUR' ? '€' : cred.currency;
+
+            $('sumCost').textContent = `${cur} ${fmt(cost)}`;
+            $('sumCtv').textContent = `${cur} ${fmt(ctv)}`;
+            const mpEl = $('sumMp'); mpEl.textContent = `${cur} ${sgn(mp)}`; mpEl.className = 'mp-value num ' + cls(mp);
+            const pEl = $('sumPct'); pEl.hidden = pct === null; if (pct !== null) { pEl.textContent = sgnPct(pct); pEl.className = 'mp-pct ' + cls(pct); }
+            const missing = rows.length - priced.length;
+            const note = $('sumNote'); note.hidden = !missing;
+            if (missing) note.textContent = `${missing} ${missing === 1 ? 'strumento senza prezzo escluso' : 'strumenti senza prezzo esclusi'} dai totali.`;
+            $('count').textContent = `(${rows.length})`;
+
+            const key = $('sortBy').value;
+            rows.sort((a, b) => key === 'name' ? String(a.id_instrument).localeCompare(String(b.id_instrument))
+                : (b[{ ctv: 'CTVMKTTQ', mp: 'M/P', mppct: 'M/P%' }[key]] ?? -Infinity) - (a[{ ctv: 'CTVMKTTQ', mp: 'M/P', mppct: 'M/P%' }[key]] ?? -Infinity));
+
+            if (!rows.length) { $('list').innerHTML = '<li class="empty">Nessun titolo con quantità in portafoglio.</li>'; return; }
+
+            $('list').innerHTML = rows.map(it => {
+                const id = it.id_instrument, open = openIds.has(id), m = it['M/P'], p = it['M/P%'];
+                const pctTxt = isNum(p) && Math.abs(p) <= 5000 ? ' · ' + sgnPct(p) : '';
+                return `<li class="${open ? 'open' : ''}" data-id="${esc(id)}">
+      <button class="row-main" data-toggle>
+        <span class="l"><b>${esc(id)}</b><i class="dot ${marketState(it)}"></i><span class="chev">▾</span><small>${esc(it.instrument_description || '')}</small></span>
+        <span class="r"><b class="num">${fmt(it.CTVMKTTQ)}</b><em class="num ${isNum(m) ? cls(m) : ''}">${isNum(m) ? sgn(m) + pctTxt : '–'}</em></span>
+      </button>
+      <div class="detail" ${open ? '' : 'hidden'}>
+        <dl>
+          <div><dt>Quantità</dt><dd class="num">${fmt(it._qty)}</dd></div>
+          <div><dt>Valuta</dt><dd>${esc(it.id_currency || '–')}</dd></div>
+          <div><dt>Prezzo di costo</dt><dd class="num">${fmt(it.$price_cost, 3)}</dd></div>
+          <div><dt>Prezzo di mercato</dt><dd class="num">${fmt(it.$price_mkt, 3)}</dd></div>
+          <div><dt>Costo</dt><dd class="num">${fmt(it._cost)}</dd></div>
+          <div><dt>Valore di mercato</dt><dd class="num">${fmt(it.CTVMKTTQ)}</dd></div>
+          <div><dt>Mercato</dt><dd>${esc(marketLabel(it))}</dd></div>
+          <div><dt>Orari</dt><dd class="num">${hours(it)}</dd></div>
+        </dl>
+        <div class="acts">
+          <button data-graph>Grafico prezzi</button>
+          <button data-detail>Scheda strumento</button>
+        </div>
+      </div>
+    </li>`;
+            }).join('');
+        }
+
+        $('list').addEventListener('click', e => {
+            const li = e.target.closest('li[data-id]'); if (!li) return;
+            const id = li.dataset.id;
+            if (e.target.closest('[data-graph]')) return openPriceGraph(id);
+            if (e.target.closest('[data-detail]')) return openInstrumentDetails(id);
+            if (e.target.closest('[data-toggle]')) {
+                const open = !openIds.has(id);
+                open ? openIds.add(id) : openIds.delete(id);
+                li.classList.toggle('open', open);
+                li.querySelector('.detail').hidden = !open;
+            }
         });
+        $('openOnly').addEventListener('change', render);
+        $('sortBy').addEventListener('change', render);
 
-        let translations = {};
-        let portfolioRawData = [];
-        let yieldRawData = [];
-        let marketRawData = [];
-        let statisticsRawData = [];
-
-        let _selectedSectors = [];
-        let _selectedMarkets = [];
-        let classificationMap = {};
-
-        // ── PORTRAIT ORIENTATION CONTROL ──
-        function lockOrientationPortrait() {
-            Logger.debug('ORIENTATION', 'Tentativo blocco orientamento portrait');
-            if (window.screen && window.screen.orientation && typeof window.screen.orientation.lock === 'function') {
-                window.screen.orientation.lock('portrait').catch(err => {
-                    Logger.warn('ORIENTATION', 'Lock orientamento non permesso dal browser', err.message);
-                });
-            } else {
-                Logger.warn('ORIENTATION', 'Screen Orientation API non disponibile');
-            }
-        }
-
-        window.addEventListener('orientationchange', () => {
-            Logger.debug('ORIENTATION', 'Orientamento cambiato, riapplico lock');
-            lockOrientationPortrait();
-        });
-
-        let _portfolioDetailsOpen = false;
-        let _yieldDetailsOpen = false;
-        let _marketDetailsOpen = false;
-
-        function togglePortfolioDetails() {
-            _portfolioDetailsOpen = !_portfolioDetailsOpen;
-            const wrapper = document.getElementById('portfolio-details-wrapper');
-            const btn = document.getElementById('btn-toggle-portfolio-details');
-            const lbl = document.getElementById('label-portfolio-details');
-            Logger.info('UI', `Toggle dettagli portafoglio: ${_portfolioDetailsOpen ? 'APERTO' : 'CHIUSO'}`);
-            if (_portfolioDetailsOpen) {
-                wrapper.classList.add('open');
-                btn.classList.add('active');
-                lbl.textContent = 'Nascondi Dettagli';
-            } else {
-                wrapper.classList.remove('open');
-                btn.classList.remove('active');
-                lbl.textContent = 'Mostra Dettagli';
-            }
-        }
-
-        function toggleYieldDetails() {
-            _yieldDetailsOpen = !_yieldDetailsOpen;
-            const wrapper = document.getElementById('yield-details-wrapper');
-            const btn = document.getElementById('btn-toggle-yield-details');
-            const lbl = document.getElementById('label-yield-details');
-            Logger.info('UI', `Toggle dettagli rendimento: ${_yieldDetailsOpen ? 'APERTO' : 'CHIUSO'}`);
-            if (_yieldDetailsOpen) {
-                wrapper.classList.add('open');
-                btn.classList.add('active');
-                lbl.textContent = 'Nascondi Dettagli';
-            } else {
-                wrapper.classList.remove('open');
-                btn.classList.remove('active');
-                lbl.textContent = 'Mostra Dettagli';
-            }
-        }
-
-        function toggleMarketDetails() {
-            _marketDetailsOpen = !_marketDetailsOpen;
-            const wrapper = document.getElementById('market-details-wrapper');
-            const btn = document.getElementById('btn-toggle-market-details');
-            const lbl = document.getElementById('label-market-details');
-            Logger.info('UI', `Toggle dettagli mercato: ${_marketDetailsOpen ? 'APERTO' : 'CHIUSO'}`);
-            if (_marketDetailsOpen) {
-                wrapper.classList.add('open');
-                btn.classList.add('active');
-                lbl.textContent = 'Nascondi Dettagli';
-            } else {
-                wrapper.classList.remove('open');
-                btn.classList.remove('active');
-                lbl.textContent = 'Mostra Dettagli';
-            }
-        }
-
-        // Helper to check if a portfolio record has positive/non-zero quantity (REQUIREMENT 1)
-        function hasQuantity(item) {
-            if (!item) return false;
-            const q = item.quantity;
-            if (q === undefined || q === null || q === '') {
-                const ctv = parseFloat(item.CTVMKTTQ || item.mp || item.controvalore || 0);
-                return ctv > 0;
-            }
-            const numQ = parseFloat(String(q).replace(',', '.'));
-            return !isNaN(numQ) && Math.abs(numQ) > 0.000001;
-        }
-
-        // ── INIT ──────────────────────────────────────────────────────
-        async function init() {
-            Logger.info('INIT', '=== INIZIO INIZIALIZZAZIONE ===');
-            lockOrientationPortrait();
-
-            if (!credentials.username) {
-                Logger.warn('INIT', 'Nessun username trovato, reindirizzamento alla login');
-                window.location.href = 'index.html';
-                return;
-            }
-
-            Logger.debug('INIT', 'Impostazione header utente', { username: credentials.username });
-            document.getElementById('usernameDisplay').textContent = credentials.username;
-            document.getElementById('currencyDisplay').textContent = credentials.currency;
-            document.getElementById('avatarLetter').textContent = credentials.username.charAt(0).toUpperCase();
-
-            Logger.debug('INIT', 'Caricamento traduzioni');
-            await loadTranslations();
-
-            Logger.debug('INIT', 'Impostazione date default');
-            setDefaultDates();
-
-            Logger.debug('INIT', 'Inizializzazione ricerca strumenti');
-            initInstrumentSearch();
-
-            Logger.debug('INIT', 'Precaricamento filtri statistica');
-            await preloadStatFilters();
-
-            // Load initial view (Portafoglio)
-            Logger.info('INIT', 'Caricamento dati portafoglio iniziale');
-            loadPortfolioData();
-            Logger.info('INIT', '=== INIZIALIZZAZIONE COMPLETATA ===');
-        }
-
-        async function loadTranslations() {
-            Logger.debug('TRANSLATIONS', `Caricamento traduzioni per lingua: ${credentials.language}`);
-            try {
-                const resp = await fetch(`lang/${credentials.language}.json`);
-                if (resp.ok) {
-                    translations = await resp.json();
-                    Logger.info('TRANSLATIONS', `Traduzioni caricate: ${Object.keys(translations).length} chiavi`);
-                } else {
-                    Logger.warn('TRANSLATIONS', `File traduzioni non trovato: lang/${credentials.language}.json (HTTP ${resp.status})`);
-                }
-            } catch (err) {
-                Logger.error('TRANSLATIONS', 'Errore caricamento traduzioni', err.message);
-            }
-        }
-
-        function getTranslation(key) {
-            const result = translations[key] || key;
-            if (result === key && key.startsWith('dom.')) {
-                Logger.debug('TRANSLATIONS', `Chiave non tradotta: ${key}`);
-            }
-            return result;
-        }
-
-        function setDefaultDates() {
-            const today = new Date();
-            const lastMonth = new Date(today.getFullYear(), today.getMonth() - 1, today.getDate());
-            const todayStr = today.toISOString().split('T')[0];
-            const lastMonthStr = lastMonth.toISOString().split('T')[0];
-
-            Logger.debug('DATES', `Date default: dal ${lastMonthStr} al ${todayStr}`);
-            document.getElementById('mkt-date-start').value = lastMonthStr;
-            document.getElementById('mkt-date-end').value = todayStr;
-            document.getElementById('stat-date-start').value = lastMonthStr;
-            document.getElementById('stat-date-end').value = todayStr;
-
-            document.getElementById('value-min').value = 4;
-            document.getElementById('value-max').value = 9999;
-        }
-
-        // ── TAB SWITCHING ──
-        function switchTab(tabName) {
-            Logger.info('TAB', `➡️ Cambio tab a: ${tabName}`);
-            lockOrientationPortrait();
-            document.querySelectorAll('.tab-section').forEach(el => el.classList.remove('active'));
-            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
-
-            const targetSection = document.getElementById(`view-${tabName}`);
-            if (targetSection) targetSection.classList.add('active');
-
-            const btnIndex = { portfolio: 0, yield: 1, market: 2, statistics: 3 }[tabName];
-            if (btnIndex !== undefined) {
-                document.querySelectorAll('.nav-item')[btnIndex].classList.add('active');
-            }
-
-            const headerTitles = {
-                portfolio: { title: 'Portafoglio', logo: '💼' },
-                yield: { title: 'Rendimento', logo: '📈' },
-                market: { title: 'Mercato', logo: '🏛️' },
-                statistics: { title: 'Statistica', logo: '📊' }
-            };
-
-            if (headerTitles[tabName]) {
-                document.getElementById('headerTitle').textContent = headerTitles[tabName].title;
-                document.getElementById('headerLogo').textContent = headerTitles[tabName].logo;
-            }
-
-            // Lazy data loading on tab selection
-            if (tabName === 'portfolio' && portfolioRawData.length === 0) {
-                Logger.debug('TAB', 'Caricamento lazy dati portafoglio');
-                loadPortfolioData();
-            }
-            if (tabName === 'yield' && yieldRawData.length === 0) {
-                Logger.debug('TAB', 'Caricamento lazy dati rendimento');
-                loadYieldData();
-            }
-            if (tabName === 'market' && marketRawData.length === 0) {
-                Logger.debug('TAB', 'Caricamento lazy dati mercato');
-                fetchMarketSectionData();
-            }
-        }
-
-        function logout() {
-            Logger.info('AUTH', '🚪 Logout eseguito, pulizia localStorage');
-            localStorage.clear();
-            window.location.href = 'index.html';
-        }
-
-        function showMessage(text, type) {
-            Logger.info('UI', `Messaggio: [${type}] ${text}`);
-            const d = document.getElementById('message');
-            d.textContent = text;
-            d.className = `message ${type}`;
-            d.style.display = 'block';
-            setTimeout(() => { d.style.display = 'none'; }, 4000);
-        }
-
-        // ── 1. PORTAFOGLIO SECTION ─────────────────────────────────────
-        async function loadPortfolioData() {
-            const container = document.getElementById('portfolio-card-list');
-            Logger.info('PORTAFOGLIO', '📥 Inizio caricamento dati portafoglio');
-
-            try {
-                const payload = {
-                    username: credentials.username || "",
-                    token: credentials.token || "",
-                    language: credentials.language || "",
-                    filter: "",
-                    code: ""
-                };
-                Logger.debug('PORTAFOGLIO', 'Payload richiesta', { username: payload.username, language: payload.language });
-
-                const resp = await fetch(`${API_URL}/getportfolio`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-
-                Logger.debug('PORTAFOGLIO', `Risposta HTTP: ${resp.status} ${resp.statusText}`);
-                const data = await resp.json();
-                Logger.debug('PORTAFOGLIO', 'Dati ricevuti', { status: data.status, hasData: !!data });
-
-                if (data.status === 'ok') {
-                    Logger.info('PORTAFOGLIO', '✅ Dati portafoglio ricevuti con successo');
-
-                    classificationMap = {};
-                    let cList = data.classification;
-                    if (typeof cList === 'string') {
-                        Logger.debug('PORTAFOGLIO', 'Parsing classification da stringa JSON');
-                        try { cList = JSON.parse(cList.replace(/'/g, '"')); } catch (e) {
-                            Logger.error('PORTAFOGLIO', 'Errore parsing classification', e.message);
-                            cList = [];
-                        }
-                    }
-                    if (Array.isArray(cList)) {
-                        Logger.info('PORTAFOGLIO', `Classification caricata: ${cList.length} elementi`);
-                        cList.forEach(item => {
-                            if (item.id_instrument) classificationMap[item.id_instrument] = item;
-                        });
-                    } else {
-                        Logger.warn('PORTAFOGLIO', 'Classification non è un array', typeof cList);
-                    }
-
-                    let rawPf = data.portfolio;
-                    if (!Array.isArray(rawPf) && Array.isArray(data)) {
-                        Logger.warn('PORTAFOGLIO', 'Dati portafoglio non in formato atteso, tentativo fallback');
-                        rawPf = data;
-                    }
-                    portfolioRawData = Array.isArray(rawPf) ? rawPf : [];
-                    Logger.info('PORTAFOGLIO', `📊 Portfolio caricato: ${portfolioRawData.length} elementi`);
-
-                    renderPortfolioTable();
-                } else {
-                    Logger.error('PORTAFOGLIO', `Errore server: ${data.msg || 'Unknown error'}`);
-                    container.innerHTML = `<div class="loading-text" style="color:var(--red); padding:20px;">${data.msg || 'Non ci sono dati disponibili'}</div>`;
-                    showMessage(data.msg || 'Non ci sono dati disponibili', 'error');
-                }
-            } catch (err) {
-                Logger.error('PORTAFOGLIO', '❌ Errore fetch portafoglio', err.message);
-                container.innerHTML = `<div class="loading-text" style="color:var(--red); padding:20px;">Impossibile caricare il portafoglio</div>`;
-                showMessage('Impossibile caricare il portafoglio', 'error');
-            }
-        }
-
-        function onPortfolioGroupingChange() {
-            const grouping = document.getElementById('portfolio-grouping').value;
-            Logger.debug('PORTAFOGLIO', `Raggruppamento cambiato: ${grouping || 'nessuno'}`);
-            renderPortfolioTable();
-        }
-
-        function renderPortfolioTable() {
-            Logger.debug('PORTAFOGLIO', '🔄 Renderizzazione tabella portafoglio');
-            const container = document.getElementById('portfolio-card-list');
-            const grouping = document.getElementById('portfolio-grouping').value;
-            const isExpanded = document.getElementById('expand-portfolio-details').checked;
-
-            const fmtNum = (v) => {
-                if (v === null || v === undefined || isNaN(v)) return '-';
-                return parseFloat(v).toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-            };
-
-            // REQUIREMENT 1: Filter portfolio records to display ONLY titles with quantity (> 0)
-            const filteredData = (portfolioRawData || []).filter(item => hasQuantity(item));
-            Logger.debug('PORTAFOGLIO', `Elementi totali: ${portfolioRawData.length}, filtrati con quantità: ${filteredData.length}`);
-
-            // REQUIREMENT 2: Calculate summary totals (Costo, Controvalore, M/P)
-            let totCosto = 0;
-            let totCtv = 0;
-            let totMp = 0;
-
-            filteredData.forEach(item => {
-                totCosto += parseFloat(item['$cost_amount_curr'] || item['cost_amount'] || item['quantity'] || 0) || 0;
-                totCtv += parseFloat(item['CTVMKTTQ'] || item['mp'] || item['controvalore'] || 0) || 0;
-                totMp += parseFloat(item['M/P'] || item['Minus/Plus'] || item['valutazioni_ctv_minusplus'] || 0) || 0;
-            });
-
-            let totMpPerc = (totCosto !== 0) ? (totMp / Math.abs(totCosto)) * 100 : null;
-
-            // Populate Portfolio Summary Card
-            const elCost = document.getElementById('pf-sum-cost');
-            const elCtv = document.getElementById('pf-sum-ctv');
-            const elMp = document.getElementById('pf-sum-mp');
-            const elCount = document.getElementById('pf-sum-count');
-
-            if (elCost) elCost.textContent = `€ ${fmtNum(totCosto)}`;
-            if (elCtv) elCtv.textContent = `€ ${fmtNum(totCtv)}`;
-            if (elMp) {
-                const mpClass = totMp >= 0 ? 'val-pos' : 'val-neg';
-                const percText = totMpPerc !== null ? ` (${totMpPerc >= 0 ? '+' : ''}${totMpPerc.toFixed(2)}%)` : '';
-                elMp.innerHTML = `<span class="${mpClass}">€ ${fmtNum(totMp)}${percText}</span>`;
-            }
-            if (elCount) elCount.textContent = `${filteredData.length} titoli`;
-
-            Logger.debug('PORTAFOGLIO', `Riepilogo: Costo=${fmtNum(totCosto)}, CTV=${fmtNum(totCtv)}, M/P=${fmtNum(totMp)}, Titoli=${filteredData.length}`);
-
-            if (filteredData.length === 0) {
-                Logger.warn('PORTAFOGLIO', 'Nessun titolo con quantità presente in portafoglio');
-                container.innerHTML = `<div class="loading-text">Nessun titolo con quantità presente in portafoglio</div>`;
-                return;
-            }
-
-            let rowCount = 0;
-            let html = '';
-
-            const renderSingleCard = (item, rIndex) => {
-                const mpVal = parseFloat(item['M/P'] || item['Minus/Plus'] || item['valutazioni_ctv_minusplus'] || 0);
-                const costVal = parseFloat(item['$cost_amount_curr'] || item['cost_amount'] || item['quantity'] || 0);
-                const ctvVal = parseFloat(item['CTVMKTTQ'] || item['mp'] || item['controvalore'] || 0);
-
-                let mpPerc = null;
-                if (!isNaN(mpVal) && !isNaN(costVal) && costVal !== 0) {
-                    mpPerc = (mpVal / Math.abs(costVal)) * 100;
-                }
-
-                const mpClass = mpVal >= 0 ? 'val-pos' : 'val-neg';
-                const instCode = item.id_instrument || item.Ticker || '-';
-                const instDesc = item.instrument_description || item.description || '-';
-                const qtyVal = item.quantity !== undefined && item.quantity !== null ? item.quantity : 0;
-                const pesoVal = (totCtv > 0 && !isNaN(ctvVal)) ? ((ctvVal / totCtv) * 100).toFixed(2) + '%' : '-';
-
-                return `
-                <div class="mobile-data-card">
-                    <div class="card-top-bar">
-                        <div class="card-title-box">
-                            <span class="row-index-badge">#${rIndex}</span>
-                            <div class="card-inst-info">
-                                <span class="card-inst-code" onclick="openPriceGraph('${instCode}')">${instCode}</span>
-                                <span class="card-inst-desc" onclick="openInstrumentDetail('${instCode}')">${instDesc}</span>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="card-metrics-grid">
-                        <div class="card-metric-cell">
-                            <span class="card-metric-label">Quantità</span>
-                            <span class="card-metric-value">${fmtNum(qtyVal)}</span>
-                        </div>
-                        <div class="card-metric-cell">
-                            <span class="card-metric-label">Costo</span>
-                            <span class="card-metric-value">${fmtNum(costVal)}</span>
-                        </div>
-                        <div class="card-metric-cell">
-                            <span class="card-metric-label">C.Valore</span>
-                            <span class="card-metric-value">${fmtNum(ctvVal)}</span>
-                        </div>
-                        <div class="card-metric-cell">
-                            <span class="card-metric-label">M/P %</span>
-                            <span class="card-metric-value ${mpClass}">${mpPerc !== null ? (mpPerc >= 0 ? '+' : '') + mpPerc.toFixed(2) + '%' : '-'}</span>
-                        </div>
-                        <div class="card-metric-cell span-2">
-                            <span class="card-metric-label">Peso %</span>
-                            <span class="card-metric-value">${pesoVal}</span>
-                        </div>
-                    </div>
-                </div>`;
-            };
-
-            if (grouping) {
-                const groups = {};
-                filteredData.forEach(item => {
-                    let gVal = 'Altro';
-                    const instId = item.id_instrument || item.Ticker;
-                    if (instId && classificationMap[instId] && classificationMap[instId][grouping]) {
-                        gVal = classificationMap[instId][grouping];
-                    }
-                    if (!groups[gVal]) groups[gVal] = [];
-                    groups[gVal].push(item);
-                });
-
-                Logger.debug('PORTAFOGLIO', `Gruppi creati: ${Object.keys(groups).length}`);
-                Object.keys(groups).sort().forEach(group => {
-                    const items = groups[group];
-                    const groupCost = items.reduce((sum, i) => sum + (parseFloat(i['$cost_amount_curr'] || i['cost_amount'] || 0) || 0), 0);
-                    const groupCtv = items.reduce((sum, i) => sum + (parseFloat(i['CTVMKTTQ'] || i['mp'] || 0) || 0), 0);
-                    const groupName = translateGroupLabel(group, grouping);
-
-                    html += `
-                    <div class="mobile-group-card">
-                        <div class="group-card-header">
-                            <span class="group-card-title"><i class="fas fa-layer-group"></i> ${groupName} (${items.length})</span>
-                        </div>
-                        <div class="group-card-metrics">
-                            <span>Costo: <strong>${fmtNum(groupCost)}</strong></span>
-                            <span>CTV: <strong>${fmtNum(groupCtv)}</strong></span>
-                        </div>
-                    </div>`;
-
-                    if (isExpanded) {
-                        items.forEach(item => {
-                            rowCount++;
-                            html += renderSingleCard(item, rowCount);
-                        });
-                    }
-                });
-            } else {
-                filteredData.forEach(item => {
-                    rowCount++;
-                    html += renderSingleCard(item, rowCount);
-                });
-            }
-
-            container.innerHTML = html;
-            Logger.debug('PORTAFOGLIO', `✅ Render completata: ${rowCount} card generate`);
-        }
-
-        // translateGroupLabel è definita in dashboard-shared.js
-        // Qui viene usata dalla renderPortfolioTable per tradurre i gruppi.
-
-        // ── 2. RENDIMENTO SECTION ─────────────────────────────────────
-        async function loadYieldData() {
-            const container = document.getElementById('yield-card-list');
-            Logger.info('RENDIMENTO', '📥 Inizio caricamento dati rendimento');
-
-            try {
-                const payload = {
-                    username: credentials.username || "",
-                    token: credentials.token || "",
-                    language: credentials.language || "",
-                    filter: "",
-                    code: ""
-                };
-                Logger.debug('RENDIMENTO', 'Payload richiesta', { username: payload.username, language: payload.language });
-
-                const resp = await fetch(`${API_URL}/getportfolioyield`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-
-                Logger.debug('RENDIMENTO', `Risposta HTTP: ${resp.status} ${resp.statusText}`);
-                const data = await resp.json();
-                Logger.debug('RENDIMENTO', 'Dati ricevuti', { status: data.status, hasData: !!data });
-
-                if (data.status === 'ok') {
-                    Logger.info('RENDIMENTO', '✅ Dati rendimento ricevuti con successo');
-                    let rawY = data.portfolioyield;
-                    if (!Array.isArray(rawY) && Array.isArray(data)) {
-                        Logger.warn('RENDIMENTO', 'Dati rendimento non in formato atteso, tentativo fallback');
-                        rawY = data;
-                    }
-                    yieldRawData = Array.isArray(rawY) ? rawY.filter(i => i.RISTOT !== undefined && i.RISTOT !== null && i.RISTOT !== '') : [];
-                    Logger.info('RENDIMENTO', `📊 Rendimento caricato: ${yieldRawData.length} elementi`);
-
-                    renderYieldTable();
-                } else {
-                    Logger.error('RENDIMENTO', `Errore server: ${data.msg || 'Unknown error'}`);
-                    container.innerHTML = `<div class="loading-text" style="color:var(--red); padding:20px;">${data.msg || 'Errore caricamento rendimento'}</div>`;
-                    showMessage(data.msg || 'Errore caricamento rendimento', 'error');
-                }
-            } catch (err) {
-                Logger.error('RENDIMENTO', '❌ Errore fetch rendimento', err.message);
-                container.innerHTML = `<div class="loading-text" style="color:var(--red); padding:20px;">Impossibile caricare il rendimento</div>`;
-                showMessage('Impossibile caricare il rendimento', 'error');
-            }
-        }
-
-        function onYieldGroupingChange() {
-            const grouping = document.getElementById('yield-grouping').value;
-            Logger.debug('RENDIMENTO', `Raggruppamento cambiato: ${grouping || 'nessuno'}`);
-            renderYieldTable();
-        }
-
-        function renderYieldTable() {
-            Logger.debug('RENDIMENTO', '🔄 Renderizzazione tabella rendimento');
-            const container = document.getElementById('yield-card-list');
-            const grouping = document.getElementById('yield-grouping').value;
-            const isExpanded = document.getElementById('expand-yield-details').checked;
-
-            const fmtNum = (v) => {
-                if (v === null || v === undefined || isNaN(v)) return '-';
-                return parseFloat(v).toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-            };
-
-            // Calculate Totals for Yield Summary
-            let totRistot = 0;
-            let totGiacmed = 0;
-            (yieldRawData || []).forEach(item => {
-                totRistot += parseFloat(item.RISTOT || 0);
-                totGiacmed += parseFloat(item.GIACMED || 0);
-            });
-
-            let totYieldPerc = totGiacmed !== 0 ? (totRistot / totGiacmed) * 100 : null;
-
-            // Populate Yield Summary Card UI
-            const elRistot = document.getElementById('yield-sum-ristot');
-            const elGiacmed = document.getElementById('yield-sum-giacmed');
-            const elPerc = document.getElementById('yield-sum-perc');
-            const elCount = document.getElementById('yield-sum-count');
-
-            if (elRistot) {
-                const rClass = totRistot >= 0 ? 'val-pos' : 'val-neg';
-                elRistot.innerHTML = `<span class="${rClass}">€ ${fmtNum(totRistot)}</span>`;
-            }
-            if (elGiacmed) elGiacmed.textContent = `€ ${fmtNum(totGiacmed)}`;
-            if (elPerc) {
-                const pClass = totYieldPerc >= 0 ? 'val-pos' : 'val-neg';
-                elPerc.innerHTML = totYieldPerc !== null ? `<span class="${pClass}">${totYieldPerc >= 0 ? '+' : ''}${totYieldPerc.toFixed(2)}%</span>` : '-';
-            }
-            if (elCount) elCount.textContent = `${yieldRawData.length} strumenti`;
-
-            Logger.debug('RENDIMENTO', `Riepilogo: RISTOT=${fmtNum(totRistot)}, GIACMED=${fmtNum(totGiacmed)}, Rend%=${totYieldPerc !== null ? totYieldPerc.toFixed(2) : '-'}, Strumenti=${yieldRawData.length}`);
-
-            if (!yieldRawData || yieldRawData.length === 0) {
-                Logger.warn('RENDIMENTO', 'Nessun dato di rendimento disponibile');
-                container.innerHTML = `<div class="loading-text">Nessun dato di rendimento disponibile</div>`;
-                return;
-            }
-
-            let rowCount = 0;
-            let html = '';
-
-            const renderSingleCard = (item, rIndex) => {
-                const ristot = parseFloat(item.RISTOT || 0);
-                const giacmed = parseFloat(item.GIACMED || 0);
-                const yieldPerc = (giacmed !== 0) ? (ristot / giacmed) * 100 : null;
-                const yieldClass = ristot >= 0 ? 'val-pos' : 'val-neg';
-                const instCode = item.id_instrument || item.Ticker || '-';
-                const instDesc = item.instrument_description || item.description || '-';
-
-                return `
-                <div class="mobile-data-card">
-                    <div class="card-top-bar">
-                        <div class="card-title-box">
-                            <span class="row-index-badge">#${rIndex}</span>
-                            <div class="card-inst-info">
-                                <span class="card-inst-code" onclick="openPriceGraph('${instCode}')">${instCode}</span>
-                                <span class="card-inst-desc" onclick="openInstrumentDetail('${instCode}')">${instDesc}</span>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="card-metrics-grid">
-                        <div class="card-metric-cell">
-                            <span class="card-metric-label">RISTOT</span>
-                            <span class="card-metric-value ${yieldClass}">${fmtNum(ristot)}</span>
-                        </div>
-                        <div class="card-metric-cell">
-                            <span class="card-metric-label">GIACMED</span>
-                            <span class="card-metric-value">${fmtNum(giacmed)}</span>
-                        </div>
-                        <div class="card-metric-cell span-2">
-                            <span class="card-metric-label">Rendimento %</span>
-                            <span class="card-metric-value ${yieldClass}">${yieldPerc !== null ? (yieldPerc >= 0 ? '+' : '') + yieldPerc.toFixed(2) + '%' : '-'}</span>
-                        </div>
-                    </div>
-                </div>`;
-            };
-
-            if (grouping) {
-                const groups = {};
-                yieldRawData.forEach(item => {
-                    let gVal = 'Altro';
-                    const instId = item.id_instrument || item.Ticker;
-                    if (instId && classificationMap[instId] && classificationMap[instId][grouping]) {
-                        gVal = classificationMap[instId][grouping];
-                    }
-                    if (!groups[gVal]) groups[gVal] = [];
-                    groups[gVal].push(item);
-                });
-
-                Logger.debug('RENDIMENTO', `Gruppi creati: ${Object.keys(groups).length}`);
-                Object.keys(groups).sort().forEach(group => {
-                    const items = groups[group];
-                    const totalRistot = items.reduce((sum, i) => sum + (parseFloat(i.RISTOT) || 0), 0);
-                    const totalGiacmed = items.reduce((sum, i) => sum + (parseFloat(i.GIACMED) || 0), 0);
-                    const groupYieldPerc = totalGiacmed !== 0 ? (totalRistot / totalGiacmed) * 100 : null;
-                    const groupName = getTranslation(group) || group;
-                    const ristotClass = totalRistot >= 0 ? 'val-pos' : 'val-neg';
-
-                    html += `
-                    <div class="mobile-group-card">
-                        <div class="group-card-header">
-                            <span class="group-card-title"><i class="fas fa-layer-group"></i> ${groupName} (${items.length})</span>
-                        </div>
-                        <div class="group-card-metrics">
-                            <span>Tot. RISTOT: <strong class="${ristotClass}">${fmtNum(totalRistot)}</strong></span>
-                            <span>Tot. GIACMED: <strong>${fmtNum(totalGiacmed)}</strong></span>
-                            <span>Rend: <strong>${groupYieldPerc !== null ? groupYieldPerc.toFixed(2) + '%' : '-'}</strong></span>
-                        </div>
-                    </div>`;
-
-                    if (isExpanded) {
-                        items.forEach(item => {
-                            rowCount++;
-                            html += renderSingleCard(item, rowCount);
-                        });
-                    }
-                });
-            } else {
-                yieldRawData.forEach(item => {
-                    rowCount++;
-                    html += renderSingleCard(item, rowCount);
-                });
-            }
-
-            container.innerHTML = html;
-            Logger.debug('RENDIMENTO', `✅ Render completata: ${rowCount} card generate`);
-        }
-
-        // ── 3. MERCATO SECTION ─────────────────────────────────────────
-        function toggleMarketFilters() {
-            const body = document.getElementById('marketFilterBody');
-            body.classList.toggle('open');
-            Logger.debug('MERCATO', `Filtri mercato ${body.classList.contains('open') ? 'aperti' : 'chiusi'}`);
-        }
-
-        async function fetchMarketSectionData() {
-            const container = document.getElementById('market-card-list');
-            Logger.info('MERCATO', '📥 Inizio caricamento dati mercato');
-
-            if (container) container.innerHTML = `<div class="loading-text"><div class="spinner"></div>Caricamento dati Mercato...</div>`;
-
-            const date_start = document.getElementById('mkt-date-start').value;
-            const date_end = document.getElementById('mkt-date-end').value;
-            Logger.debug('MERCATO', `Periodo: ${date_start} → ${date_end}`);
-
-            const payload = {
-                username: credentials.username,
-                token: credentials.token,
-                currency: credentials.currency,
-                date_start,
-                date_end
-            };
-            Logger.debug('MERCATO', 'Payload richiesta', { username: payload.username, currency: payload.currency });
-
-            try {
-                const resp = await fetch(`${API_URL_MARKET}/getmarket`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-
-                Logger.debug('MERCATO', `Risposta HTTP: ${resp.status} ${resp.statusText}`);
-                const result = await resp.json();
-                Logger.debug('MERCATO', 'Dati ricevuti', { status: result.status, hasData: !!result.data });
-
-                if (result.status === 'ok') {
-                    marketRawData = result.data || [];
-                    Logger.info('MERCATO', `✅ Dati mercato ricevuti: ${marketRawData.length} elementi`);
-                    renderMarketTable();
-                } else {
-                    Logger.error('MERCATO', `Errore server: ${result.msg || 'Unknown error'}`);
-                    if (container) container.innerHTML = `<div class="loading-text" style="color:var(--red); padding:20px;">${result.msg || 'Errore mercato'}</div>`;
-                    showMessage(result.msg || 'Errore mercato', 'error');
-                }
-            } catch (err) {
-                Logger.error('MERCATO', '❌ Errore fetch mercato', err.message);
-                if (container) container.innerHTML = `<div class="loading-text" style="color:var(--red); padding:20px;">Impossibile collegarsi al server mercato</div>`;
-                showMessage('Impossibile collegarsi al server mercato', 'error');
-            }
-        }
-
-        function renderMarketTable() {
-            Logger.debug('MERCATO', '🔄 Renderizzazione tabella mercato');
-            const container = document.getElementById('market-card-list');
-
-            let posCount = 0;
-            let negCount = 0;
-            let sumForza = 0;
-            let validForzaCount = 0;
-
-            (marketRawData || []).forEach(row => {
-                const f = parseFloat(row.forza);
-                if (!isNaN(f)) {
-                    sumForza += f;
-                    validForzaCount++;
-                    if (f >= 0) posCount++; else negCount++;
-                }
-            });
-
-            const avgForza = validForzaCount > 0 ? (sumForza / validForzaCount).toFixed(2) : '-';
-
-            // Populate Market Summary Card UI
-            const elCount = document.getElementById('mkt-sum-count');
-            const elPos = document.getElementById('mkt-sum-pos');
-            const elNeg = document.getElementById('mkt-sum-neg');
-            const elAvgForza = document.getElementById('mkt-sum-forza');
-
-            if (elCount) elCount.textContent = `${marketRawData.length} strumenti`;
-            if (elPos) elPos.textContent = `${posCount}`;
-            if (elNeg) elNeg.textContent = `${negCount}`;
-            if (elAvgForza) {
-                const fVal = parseFloat(avgForza);
-                const fClass = !isNaN(fVal) ? (fVal >= 0 ? 'val-pos' : 'val-neg') : '';
-                elAvgForza.innerHTML = `<span class="${fClass}">${avgForza}</span>`;
-            }
-
-            Logger.debug('MERCATO', `Riepilogo: Totali=${marketRawData.length}, Pos=${posCount}, Neg=${negCount}, Forza Media=${avgForza}`);
-
-            if (!marketRawData || marketRawData.length === 0) {
-                Logger.warn('MERCATO', 'Nessun dato di mercato presente');
-                if (container) container.innerHTML = `<div class="loading-text">Nessun dato di mercato presente</div>`;
-                return;
-            }
-
-            let rowCount = 0;
-            let html = '';
-
-            marketRawData.forEach(row => {
-                rowCount++;
-                const forzaVal = parseFloat(row.forza);
-                const isNegForza = forzaVal < 0;
-                const invVal = parseInt(row.invariance_days) || 0;
-                const isNegInv = invVal < 0;
-                const sectorLabel = row.sector ? getSectorLabel(row.sector) : '-';
-
-                html += `
-                <div class="mobile-data-card">
-                    <div class="card-top-bar">
-                        <div class="card-title-box">
-                            <span class="row-index-badge">#${rowCount}</span>
-                            <div class="card-inst-info">
-                                <span class="card-inst-code" onclick="openPriceGraph('${row.id_instrument}')">${row.id_instrument}</span>
-                                <span class="card-inst-desc" onclick="openInstrumentDetail('${row.id_instrument}')">${row.instrument_description || '-'}</span>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="card-metrics-grid">
-                        <div class="card-metric-cell">
-                            <span class="card-metric-label">Settore</span>
-                            <span class="card-metric-value" style="font-size:0.75rem;">${sectorLabel}</span>
-                        </div>
-                        <div class="card-metric-cell">
-                            <span class="card-metric-label">Mercato</span>
-                            <span class="card-metric-value" style="font-size:0.75rem;">${row.code_market || '-'}</span>
-                        </div>
-                        <div class="card-metric-cell">
-                            <span class="card-metric-label">Forza</span>
-                            <span class="card-metric-value ${isNegForza ? 'val-neg' : 'val-pos'}">${row.forza || '-'}</span>
-                        </div>
-                        <div class="card-metric-cell">
-                            <span class="card-metric-label">Invarianza</span>
-                            <span class="card-metric-value ${isNegInv ? 'val-neg' : ''}">${invVal} gg</span>
-                        </div>
-                    </div>
-                </div>`;
-            });
-
-            if (container) container.innerHTML = html;
-            Logger.debug('MERCATO', `✅ Render completata: ${rowCount} card generate`);
-        }
-
-        // ── 4. STATISTICA SECTION (WITH MARKET FILTER) ───────────────
-        function toggleStatFilters() {
-            const btn = document.getElementById('filterToggleBtn');
-            const body = document.getElementById('statFilterBody');
-            btn.classList.toggle('open');
-            body.classList.toggle('open');
-            Logger.debug('STATISTICA', `Filtri ${body.classList.contains('open') ? 'aperti' : 'chiusi'}`);
-        }
-
-        function toggleSectorDropdown() {
-            const container = document.getElementById('sector-filter-container');
-            container.classList.toggle('visible');
-            Logger.debug('STATISTICA', `Dropdown settori ${container.classList.contains('visible') ? 'aperto' : 'chiuso'}`);
-        }
-
-        function toggleMarketDropdown() {
-            const container = document.getElementById('market-filter-container');
-            container.classList.toggle('visible');
-            Logger.debug('STATISTICA', `Dropdown mercati ${container.classList.contains('visible') ? 'aperto' : 'chiuso'}`);
-        }
-
-        function updateSectorAnchorText() {
-            const anchor = document.getElementById('sectorSelectorAnchor').querySelector('span:first-child');
-            if (_selectedSectors.length === 0) {
-                anchor.textContent = 'Tutti i settori';
-            } else if (_selectedSectors.length === 1) {
-                anchor.textContent = getSectorLabel(_selectedSectors[0]);
-            } else {
-                anchor.textContent = `${_selectedSectors.length} settori`;
-            }
-        }
-
-        function updateMarketAnchorText() {
-            const anchor = document.getElementById('marketSelectorAnchor').querySelector('span:first-child');
-            if (_selectedMarkets.length === 0) {
-                anchor.textContent = 'Tutti i mercati';
-            } else if (_selectedMarkets.length === 1) {
-                anchor.textContent = _selectedMarkets[0];
-            } else {
-                anchor.textContent = `${_selectedMarkets.length} mercati`;
-            }
-        }
-
-        let _statisticsRequested = false;
-
-        function onSectorChange() {
-            const cbs = document.getElementById('sectorSelectorItems').querySelectorAll('input[type="checkbox"]');
-            _selectedSectors = [];
-            cbs.forEach(cb => { if (cb.checked) _selectedSectors.push(cb.value); });
-            updateSectorAnchorText();
-            Logger.debug('STATISTICA', `Settori selezionati: ${_selectedSectors.length}`, _selectedSectors);
-            if (_statisticsRequested) applyStatisticsFilters();
-        }
-
-        function onMarketChange() {
-            const cbs = document.getElementById('marketSelectorItems').querySelectorAll('input[type="checkbox"]');
-            _selectedMarkets = [];
-            cbs.forEach(cb => { if (cb.checked) _selectedMarkets.push(cb.value); });
-            updateMarketAnchorText();
-            Logger.debug('STATISTICA', `Mercati selezionati: ${_selectedMarkets.length}`, _selectedMarkets);
-            if (_statisticsRequested) applyStatisticsFilters();
-        }
-
-        function getSectorLabel(sector) {
-            const translated = getTranslation('dom.sector:' + sector);
-            return translated && translated !== ('dom.sector:' + sector) ? translated : sector;
-        }
-
-        function populateSectorSelector(data) {
-            const container = document.getElementById('sectorSelectorItems');
-            const sectors = [...new Set(data.map(r => r.sector).filter(Boolean))].sort();
-            Logger.debug('STATISTICA', `Popolamento settori: ${sectors.length} settori trovati`);
-            container.innerHTML = '';
-            sectors.forEach(sector => {
-                const label = document.createElement('label');
-                const cb = document.createElement('input');
-                cb.type = 'checkbox';
-                cb.value = sector;
-                cb.checked = _selectedSectors.includes(sector);
-                cb.onchange = onSectorChange;
-                label.appendChild(cb);
-                label.appendChild(document.createTextNode(' ' + getSectorLabel(sector)));
-                container.appendChild(label);
-            });
-            updateSectorAnchorText();
-        }
-
-        function populateMarketSelector(data) {
-            const container = document.getElementById('marketSelectorItems');
-            const markets = [...new Set(data.map(r => r.code_market).filter(Boolean))].sort();
-            Logger.debug('STATISTICA', `Popolamento mercati: ${markets.length} mercati trovati`);
-            container.innerHTML = '';
-            markets.forEach(mkt => {
-                const label = document.createElement('label');
-                const cb = document.createElement('input');
-                cb.type = 'checkbox';
-                cb.value = mkt;
-                cb.checked = _selectedMarkets.includes(mkt);
-                cb.onchange = onMarketChange;
-                label.appendChild(cb);
-                label.appendChild(document.createTextNode(' ' + mkt));
-                container.appendChild(label);
-            });
-            updateMarketAnchorText();
-        }
-
-        async function preloadStatFilters() {
-            Logger.info('STATISTICA', '📥 Precaricamento filtri statistica');
-            try {
-                const resp = await fetch('statistics.json.gz?_=' + Date.now());
-                if (!resp.ok) {
-                    Logger.warn('STATISTICA', `statistics.json.gz non trovato (HTTP ${resp.status}), utilizzo fallback`);
-                    return;
-                }
-                Logger.debug('STATISTICA', 'Decompressione stream GZIP');
-                const ds = new DecompressionStream('gzip');
-                const decompressed = resp.body.pipeThrough(ds);
-                const text = await new Response(decompressed).text();
-                const result = JSON.parse(text);
-                if (result.status === 'ok') {
-                    statisticsRawData = result.data || [];
-                    Logger.info('STATISTICA', `✅ Dati statistici precaricati: ${statisticsRawData.length} elementi`);
-                    populateSectorSelector(statisticsRawData);
-                    populateMarketSelector(statisticsRawData);
-                    populateInstrumentSelector(statisticsRawData);
-                } else {
-                    Logger.warn('STATISTICA', `Precaricamento fallito: ${result.msg || 'Unknown error'}`);
-                }
-            } catch (e) {
-                Logger.warn('STATISTICA', '❌ Errore precaricamento statistiche', e.message);
-            }
-        }
-
-        async function onApplyStatisticsClicked() {
-            Logger.info('STATISTICA', '🔍 Applicazione filtri statistica');
-            _statisticsRequested = true;
-            const cardList = document.getElementById('cardList');
-            cardList.innerHTML = `<div class="loading-text"><div class="spinner"></div>Elaborazione statistica in corso...</div>`;
-
-            if (statisticsRawData.length === 0) {
-                Logger.debug('STATISTICA', 'Dati non caricati, caricamento da source');
-                await loadStaticStatisticsData();
-            } else {
-                Logger.debug('STATISTICA', `Dati già presenti (${statisticsRawData.length}), applico filtri`);
-                applyStatisticsFilters();
-            }
-        }
-
-        async function loadStaticStatisticsData() {
-            Logger.info('STATISTICA', '📥 Caricamento dati statistici da source');
-            try {
-                const resp = await fetch('statistics.json.gz?_=' + Date.now());
-                if (!resp.ok) {
-                    Logger.error('STATISTICA', `statistics.json.gz non trovato (HTTP ${resp.status})`);
-                    throw new Error(`HTTP ${resp.status}`);
-                }
-                Logger.debug('STATISTICA', 'Decompressione stream GZIP');
-                const ds = new DecompressionStream('gzip');
-                const decompressed = resp.body.pipeThrough(ds);
-                const text = await new Response(decompressed).text();
-                const result = JSON.parse(text);
-                if (result.status === 'ok') {
-                    statisticsRawData = result.data || [];
-                    Logger.info('STATISTICA', `✅ Dati statistici caricati: ${statisticsRawData.length} elementi`);
-                    populateSectorSelector(statisticsRawData);
-                    populateMarketSelector(statisticsRawData);
-                    populateInstrumentSelector(statisticsRawData);
-                    if (_statisticsRequested) {
-                        applyStatisticsFilters();
-                    }
-                } else {
-                    Logger.warn('STATISTICA', `Errore caricamento: ${result.msg || 'Unknown error'}`);
-                }
-            } catch (err) {
-                Logger.warn('STATISTICA', 'statistics.json.gz error, trying server fetch:', err.message);
-                fetchStatisticsData();
-            }
-        }
-
-        async function fetchStatisticsData() {
-            const date_start = document.getElementById('stat-date-start').value;
-            const date_end = document.getElementById('stat-date-end').value;
-            Logger.debug('STATISTICA', `Periodo: ${date_start} → ${date_end}`);
-
-            const cardList = document.getElementById('cardList');
-            cardList.innerHTML = `<div class="loading-text"><div class="spinner"></div>Caricamento Statistica...</div>`;
-
-            const payload = {
-                username: credentials.username,
-                token: credentials.token,
-                currency: credentials.currency,
-                date_start,
-                date_end,
-                sector: _selectedSectors.length > 0 ? _selectedSectors : null
-            };
-            Logger.debug('STATISTICA', 'Payload richiesta', { username: payload.username, sectors: payload.sector });
-
-            try {
-                const resp = await fetch(`${API_URL_MARKET}/getmarket`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-
-                Logger.debug('STATISTICA', `Risposta HTTP: ${resp.status} ${resp.statusText}`);
-                const result = await resp.json();
-                Logger.debug('STATISTICA', 'Dati ricevuti', { status: result.status, hasData: !!result.data });
-
-                if (result.status === 'ok') {
-                    statisticsRawData = result.data || [];
-                    Logger.info('STATISTICA', `✅ Dati statistici da server: ${statisticsRawData.length} elementi`);
-                    populateSectorSelector(statisticsRawData);
-                    populateMarketSelector(statisticsRawData);
-                    populateInstrumentSelector(statisticsRawData);
-                    applyStatisticsFilters();
-                } else {
-                    Logger.error('STATISTICA', `Errore server: ${result.msg || 'Unknown error'}`);
-                    cardList.innerHTML = `<div class="loading-text" style="color:var(--red);">${result.msg || 'Errore API'}</div>`;
-                    showMessage(result.msg || 'Errore API statistica', 'error');
-                }
-            } catch (err) {
-                Logger.error('STATISTICA', '❌ Errore fetch statistica', err.message);
-                cardList.innerHTML = `<div class="loading-text" style="color:var(--red);">Impossibile collegarsi al server</div>`;
-                showMessage('Impossibile collegarsi al server statistica', 'error');
-            }
-        }
-
-        function applyStatisticsFilters() {
-            Logger.info('STATISTICA', '🔄 Applicazione filtri ai dati statistici');
-
-            const vMin = parseFloat(document.getElementById('value-min').value);
-            const vMax = parseFloat(document.getElementById('value-max').value);
-            const instrFilter = document.getElementById('instrument-filter').value.trim().toLowerCase();
-            const invFilter = document.getElementById('inversion-filter').checked;
-
-            Logger.debug('STATISTICA', `Filtri: Forza [${vMin || '-∞'}, ${vMax || '∞'}], Strumento=${instrFilter || 'tutti'}, Inversione=${invFilter}`);
-
-            const filtered = statisticsRawData.filter(row => {
-                const val = parseFloat(row.forza);
-                if (isNaN(val)) return false;
-                const abs = Math.abs(val);
-                if (!isNaN(vMin) && abs < vMin) return false;
-                if (!isNaN(vMax) && abs > vMax) return false;
-                if (instrFilter && (row.id_instrument || '').toLowerCase() !== instrFilter) return false;
-                if (_selectedSectors.length > 0 && !_selectedSectors.includes(row.sector)) return false;
-                if (_selectedMarkets.length > 0 && !_selectedMarkets.includes(row.code_market)) return false;
-                if (invFilter) {
-                    const iVal = parseInt(row.invariance_days) || 0;
-                    if (val >= 0 || iVal >= 0) return false;
-                }
-                return true;
-            });
-
-            Logger.info('STATISTICA', `📊 Risultato filtri: ${filtered.length} strumenti su ${statisticsRawData.length} totali`);
-
-            const cardList = document.getElementById('cardList');
-            const resultsHdr = document.getElementById('resultsHeader');
-
-            if (filtered.length === 0) {
-                Logger.warn('STATISTICA', 'Nessun risultato corrispondente ai filtri');
-                cardList.innerHTML = `<div class="loading-text">Nessun risultato corrispondente ai filtri.</div>`;
-                resultsHdr.style.display = 'none';
-                return;
-            }
-
-            resultsHdr.style.display = 'flex';
-            document.getElementById('resultsCount').textContent = filtered.length;
-
-            cardList.innerHTML = '';
-            filtered.forEach(row => {
-                const forzaVal = parseFloat(row.forza);
-                const invVal = parseInt(row.invariance_days) || 0;
-
-                const card = document.createElement('div');
-                card.className = 'stat-card';
-                card.innerHTML = `
-                    <div class="card-header">
-                        <div>
-                            <div class="card-id" onclick="openPriceGraph('${row.id_instrument}')">${row.id_instrument}</div>
-                            <div class="card-desc" onclick="openInstrumentDetail('${row.id_instrument}')">${row.instrument_description || '—'}</div>
-                        </div>
-                    </div>
-                    <div class="card-badges">
-                        <span class="badge badge-sector">${row.sector ? getSectorLabel(row.sector) : '—'}</span>
-                        <span class="badge badge-market">${row.code_market || '—'}</span>
-                        <span class="badge badge-currency">${row.currency || 'EUR'}</span>
-                    </div>
-                    <div class="metrics-grid">
-                        <div class="metric-item">
-                            <span class="label">Forza</span>
-                            <span class="value ${forzaVal < 0 ? 'val-neg' : 'val-pos'}">${forzaVal}</span>
-                        </div>
-                        <div class="metric-item">
-                            <span class="label">Inv. Days</span>
-                            <span class="value ${invVal < 0 ? 'val-neg' : ''}">${invVal}</span>
-                        </div>
-                        <div class="metric-item">
-                            <span class="label">Close</span>
-                            <span class="value">${row['price@close'] ? parseFloat(row['price@close']).toFixed(2) : '-'}</span>
-                        </div>
-                        <div class="metric-item">
-                            <span class="label">Volume</span>
-                            <span class="value">${row['instrument@volume'] ? parseFloat(row['instrument@volume']).toLocaleString('it-IT') : '-'}</span>
-                        </div>
-                    </div>
-                `;
-                cardList.appendChild(card);
-            });
-            Logger.debug('STATISTICA', `✅ Render completata: ${filtered.length} card generate`);
-        }
-
-        // ── INSTRUMENT SEARCH HELPERS ──
-        let _instrumentIndex = [];
-        let _instSelIdx = -1;
-        let _instFiltered = [];
-
-        function initInstrumentSearch() {
-            Logger.debug('SEARCH', 'Inizializzazione ricerca strumenti');
-            const searchInput = document.getElementById('instrument-search-input');
-            const clearBtn = document.getElementById('instrument-search-clear');
-            const dropdown = document.getElementById('instrument-search-dropdown');
-            const hidden = document.getElementById('instrument-filter');
-
-            searchInput.addEventListener('input', () => {
-                const q = searchInput.value.trim();
-                clearBtn.style.display = q ? 'block' : 'none';
-                renderInstDropdown(q);
-            });
-
-            searchInput.addEventListener('focus', () => {
-                renderInstDropdown(searchInput.value.trim());
-            });
-
-            clearBtn.addEventListener('click', () => {
-                Logger.debug('SEARCH', 'Pulizia campo ricerca');
-                searchInput.value = '';
-                hidden.value = '';
-                clearBtn.style.display = 'none';
-                closeInstDropdown();
-                applyStatisticsFilters();
-            });
-
-            document.addEventListener('click', (e) => {
-                if (!e.target.closest('.instrument-search-wrapper')) {
-                    closeInstDropdown();
-                }
-            });
-            Logger.info('SEARCH', '✅ Ricerca strumenti inizializzata');
-        }
-
-        function populateInstrumentSelector(data) {
-            const current = document.getElementById('instrument-filter').value;
-            const seen = new Set();
-            _instrumentIndex = [];
-            data.forEach(r => {
-                if (r.id_instrument && !seen.has(r.id_instrument)) {
-                    seen.add(r.id_instrument);
-                    _instrumentIndex.push({
-                        id: r.id_instrument,
-                        description: r.instrument_description || '',
-                        sector: r.sector || ''
-                    });
-                }
-            });
-            _instrumentIndex.sort((a, b) => a.id.localeCompare(b.id));
-            Logger.debug('SEARCH', `Popolamento strumenti: ${_instrumentIndex.length} strumenti unici`);
-
-            if (current && _instrumentIndex.find(i => i.id === current)) {
-                const inst = _instrumentIndex.find(i => i.id === current);
-                document.getElementById('instrument-search-input').value = inst.description
-                    ? `${inst.id} — ${inst.description}` : inst.id;
-                Logger.debug('SEARCH', `Strumento pre-selezionato: ${current}`);
-            }
-        }
-
-        function renderInstDropdown(query) {
-            const dropdown = document.getElementById('instrument-search-dropdown');
-            const q = query.toLowerCase();
-            _instFiltered = q
-                ? _instrumentIndex.filter(i =>
-                    i.id.toLowerCase().includes(q) ||
-                    i.description.toLowerCase().includes(q) ||
-                    i.sector.toLowerCase().includes(q)
-                )
-                : _instrumentIndex;
-            _instFiltered = _instFiltered.slice(0, 50);
-
-            if (_instFiltered.length === 0) {
-                dropdown.innerHTML = `<div style="padding:10px; color:var(--text-muted); text-align:center;">Nessun risultato</div>`;
-            } else {
-                dropdown.innerHTML = [
-                    `<div class="inst-item" onclick="clearInstrumentSelection()">
-                        <div class="inst-item-main"><span class="inst-item-id">— Tutti gli strumenti —</span></div>
-                     </div>`
-                ].concat(_instFiltered.map((inst, i) => `
-                    <div class="inst-item" onclick="selectInstrumentByIndex(${i})">
-                        <div class="inst-item-main">
-                            <span class="inst-item-id">${inst.id}</span>
-                            <span class="inst-item-desc">${inst.description}</span>
-                        </div>
-                    </div>
-                `)).join('');
-            }
-            dropdown.style.display = 'block';
-            Logger.debug('SEARCH', `Dropdown aggiornato: ${_instFiltered.length} risultati`);
-        }
-
-        function selectInstrumentByIndex(idx) {
-            if (_instFiltered[idx]) {
-                Logger.debug('SEARCH', `Strumento selezionato per indice ${idx}: ${_instFiltered[idx].id}`);
-                selectInstrument(_instFiltered[idx]);
-            }
-        }
-
-        function selectInstrument(inst) {
-            Logger.debug('SEARCH', `Strumento selezionato: ${inst.id} - ${inst.description}`);
-            document.getElementById('instrument-search-input').value = inst.description ? `${inst.id} — ${inst.description}` : inst.id;
-            document.getElementById('instrument-filter').value = inst.id;
-            document.getElementById('instrument-search-clear').style.display = 'block';
-            closeInstDropdown();
-            applyStatisticsFilters();
-        }
-
-        function clearInstrumentSelection() {
-            Logger.debug('SEARCH', 'Clear selezione strumento');
-            document.getElementById('instrument-search-input').value = '';
-            document.getElementById('instrument-filter').value = '';
-            document.getElementById('instrument-search-clear').style.display = 'none';
-            closeInstDropdown();
-            applyStatisticsFilters();
-        }
-
-        function closeInstDropdown() {
-            document.getElementById('instrument-search-dropdown').style.display = 'none';
-        }
-
-        // ── NAVIGATION EXTERNAL LINKS ──
+        /* ── navigazione al dettaglio ── */
         function openPriceGraph(id) {
-            Logger.debug('NAV', `Apertura grafico prezzi: ${id}`);
-            const url = `dashboard-graph-prices.html?id_instrument=${id}&username=${credentials.username}&token=${credentials.token}&instrument_currency=${credentials.currency}`;
-            window.open(url, '_blank');
+            const p = new URLSearchParams({ id_instrument: id, username: cred.username, token: cred.token, instrument_currency: cred.currency });
+            window.open('dashboard-graph-prices.html?' + p, '_blank');
+        }
+        function openInstrumentDetails(id) {
+            const p = new URLSearchParams({ id_instrument: id, username: cred.username, token: cred.token, language: cred.language, currency: cred.currency });
+            window.open('dashboard-detail-instrument.html?' + p, '_blank');
         }
 
-        function openInstrumentDetail(id) {
-            Logger.debug('NAV', `Apertura dettaglio strumento: ${id}`);
-            const url = `dashboard-detail-instrument.html?id_instrument=${id}&username=${credentials.username}&token=${credentials.token}&language=${credentials.language}&currency=${credentials.currency}`;
-            window.open(url, '_blank');
+        /* ── caricamento dati (/getportfolioonline) ── */
+        async function loadPortfolio() {
+            try {
+                const r = await fetch(`${API_URL}/getportfolioonline`, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: cred.username, token: cred.token, language: cred.language, code: '', filter: '' })
+                });
+                if (!r.ok) throw new Error('HTTP ' + r.status);
+                const data = await r.json();
+                if (data.status !== 'ok') throw new Error(data.msg || 'Errore server');
+                lastJson = JSON.stringify(data.portfolio);
+                loadRows(data.portfolio); render();
+                setStatus('Aggiornato alle ' + new Date().toTimeString().slice(0, 5));
+                return true;
+            } catch (err) {
+                setStatus('Dati non disponibili: ' + err.message, true);
+                if (!portfolio.length) $('list').innerHTML = '<li class="empty">Impossibile caricare il portafoglio. Premi Aggiorna per riprovare.</li>';
+                return false;
+            }
         }
 
-        // ============================================================
-        // AVVIO APPLICAZIONE
-        // ============================================================
-        Logger.info('SYSTEM', '🚀 Avvio init()');
-        window.onload = init;
+        /* ── aggiornamento online: /getfilter → /putfilter → WebSocket ── */
+        async function post(path, body) {
+            const r = await fetch(API_URL + path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+            if (!r.ok) throw new Error(`${path} HTTP ${r.status}`);
+            const j = await r.json();
+            if (j.status !== 'ok') throw new Error(j.msg || j.error || `${path} non riuscito`);
+            return j;
+        }
+
+        function setBusy(busy) {
+            const b = $('refresh'); b.disabled = busy; b.classList.toggle('loading', busy);
+            $('refreshTxt').textContent = busy ? 'In corso…' : 'Aggiorna';
+        }
+
+        async function runUpdateOnline() {
+            if (!cred.username) return setStatus('Username mancante', true);
+            setBusy(true); setStatus('Richiesta aggiornamento…');
+            try {
+                const f = await post('/getfilter', { username: cred.username, token: cred.token, language: cred.language, filter: '' });
+                await post('/putfilter', { username: cred.username, token: cred.token, language: cred.language, currency: cred.currency, filter: JSON.stringify(f.filter) });
+            } catch (err) { setBusy(false); return setStatus('Aggiornamento non riuscito: ' + err.message, true); }
+
+            if (ws && ws.readyState === WebSocket.OPEN) ws.close();
+            clearTimeout(wsTimer);
+            const proto = location.protocol === 'http:' ? 'ws:' : 'wss:';
+            ws = new WebSocket(`${proto}//feweb-tunnel.fe-web.eu/ws/updateportfolioonline/${encodeURIComponent(cred.username)}/${cred.currency}`);
+            setStatus('Ricezione prezzi…');
+            wsTimer = setTimeout(() => { if (ws) ws.close(); }, 90000);
+
+            ws.onmessage = ev => {
+                try {
+                    const d = JSON.parse(ev.data);
+                    if (d.status === 'ok') {
+                        const j = JSON.stringify(d.portfolio);
+                        if (j !== lastJson) { lastJson = j; loadRows(d.portfolio); render(); }
+                        setStatus('Aggiornato alle ' + new Date().toTimeString().slice(0, 5));
+                    } else if (d.error) ws.close(1008, d.error);
+                } catch (e) { /* messaggio non valido: ignora */ }
+            };
+            ws.onerror = () => { clearTimeout(wsTimer); setBusy(false); setStatus('Errore di connessione', true); };
+            ws.onclose = ev => {
+                clearTimeout(wsTimer); setBusy(false);
+                if (ev.code === 1000 || ev.code === 1005) setStatus('Aggiornato alle ' + new Date().toTimeString().slice(0, 5));
+                else setStatus(ev.reason || 'Connessione interrotta', true);
+            };
+        }
+
+        /* ── init ── */
+        async function init() {
+            if (!cred.username || !cred.token) { location.href = 'index.html'; return; }
+            try { const s = screen.orientation; if (s && s.lock) s.lock('portrait').catch(() => { }); } catch (e) { }
+            const p = loadPortfolio();
+            try { const r = await fetch(`lang/${cred.language}.json`); if (r.ok) translations = await r.json(); } catch (e) { }
+            await p; if (portfolio.length) render();
+        }
+        window.addEventListener('load', init);
     </script>
 </body>
 
