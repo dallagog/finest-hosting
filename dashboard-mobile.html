@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>Mobile 0.1</title>
+    <title>Mobile 0.2</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <script src="js/dashboard-shared.js"></script>
     <link rel="icon" type="image/png" href="images/icon-finest.png">
@@ -1132,6 +1132,211 @@
             display: flex;
         }
 
+        /* ── PORTAFOGLIO: card dettaglio strumento ── */
+        .pf-card {
+            background: var(--white);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            box-shadow: var(--shadow);
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+
+        .pf-head {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 10px;
+        }
+
+        .pf-id {
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+        }
+
+        .pf-code {
+            font-size: 1rem;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            color: var(--text);
+            cursor: pointer;
+        }
+
+        .pf-desc {
+            font-size: 0.74rem;
+            color: var(--text-secondary);
+            margin-top: 2px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            cursor: pointer;
+        }
+
+        .pf-tags {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+
+        .pf-cur {
+            font-size: 0.68rem;
+            font-weight: 700;
+            padding: 3px 9px;
+            border-radius: 999px;
+            background: var(--accent-light);
+            color: var(--accent);
+        }
+
+        .pf-dot {
+            width: 9px;
+            height: 9px;
+            border-radius: 50%;
+        }
+
+        .pf-dot.open {
+            background: #22c55e;
+            box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.2);
+        }
+
+        .pf-dot.closed {
+            background: #ef4444;
+            box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.2);
+        }
+
+        .pf-dot.unk {
+            background: #f59e0b;
+            box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.2);
+        }
+
+        .pf-lbl {
+            display: block;
+            font-size: 0.66rem;
+            font-weight: 600;
+            color: var(--text-muted);
+        }
+
+        .pf-val {
+            display: block;
+            margin-top: 2px;
+            font-size: 0.86rem;
+            font-weight: 700;
+            color: var(--text);
+            font-variant-numeric: tabular-nums;
+        }
+
+        .pf-value {
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-between;
+            gap: 10px;
+        }
+
+        .pf-big {
+            display: block;
+            margin-top: 2px;
+            font-size: 1.45rem;
+            font-weight: 800;
+            letter-spacing: -0.03em;
+            color: var(--text);
+            font-variant-numeric: tabular-nums;
+            line-height: 1.1;
+        }
+
+        .pf-mp {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            padding: 6px 12px;
+            border-radius: 14px;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .pf-mp.pos {
+            background: rgba(22, 163, 74, 0.12);
+            color: var(--green);
+        }
+
+        .pf-mp.neg {
+            background: rgba(220, 38, 38, 0.12);
+            color: var(--red);
+        }
+
+        .pf-mp-amt {
+            font-size: 0.9rem;
+            font-weight: 800;
+        }
+
+        .pf-mp-pct {
+            font-size: 0.72rem;
+            font-weight: 700;
+            opacity: 0.9;
+        }
+
+        .pf-prices {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1px;
+            background: var(--border);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            overflow: hidden;
+        }
+
+        .pf-price {
+            background: var(--bg);
+            padding: 10px 12px;
+        }
+
+        .pf-price-mkt .pf-val {
+            color: var(--accent);
+        }
+
+        .pf-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+        }
+
+        .pf-weight {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding-top: 12px;
+            border-top: 1px solid var(--border);
+        }
+
+        .pf-weight .pf-lbl {
+            flex-shrink: 0;
+        }
+
+        .pf-weight b {
+            font-size: 0.76rem;
+            font-weight: 700;
+            color: var(--text);
+            min-width: 46px;
+            text-align: right;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .pf-bar {
+            flex: 1;
+            height: 6px;
+            border-radius: 999px;
+            background: var(--border);
+            overflow: hidden;
+        }
+
+        .pf-bar i {
+            display: block;
+            height: 100%;
+            border-radius: 999px;
+            background: var(--accent);
+        }
+
         .btn-summary-action:disabled {
             opacity: 0.7;
             cursor: not-allowed;
@@ -2126,44 +2331,65 @@
                     mpPerc = (mpVal / Math.abs(costVal)) * 100;
                 }
 
-                const mpClass = mpVal >= 0 ? 'val-pos' : 'val-neg';
+                const mpClass = mpVal >= 0 ? 'pos' : 'neg';
                 const instCode = item.id_instrument || item.Ticker || '-';
                 const instDesc = item.instrument_description || item.description || '-';
                 const qtyVal = item.quantity !== undefined && item.quantity !== null ? item.quantity : 0;
-                const pesoVal = (totCtv > 0 && !isNaN(ctvVal)) ? ((ctvVal / totCtv) * 100).toFixed(2) + '%' : '-';
+                const pesoNum = (totCtv > 0 && !isNaN(ctvVal)) ? (ctvVal / totCtv) * 100 : null;
+
+                const fmtPrice = (v) => {
+                    const n = parseFloat(v);
+                    return isNaN(n) ? '-' : n.toLocaleString('it-IT', { minimumFractionDigits: 3, maximumFractionDigits: 3 });
+                };
+                const divisa = item.id_currency || item.currency || '-';
+                const phase = item.market && typeof item.market === 'object' ? item.market.fase : null;
+                const dot = phase === 'int.open' ? 'open' : phase === 'int.closed' ? 'closed' : 'unk';
 
                 return `
-                <div class="mobile-data-card">
-                    <div class="card-top-bar">
-                        <div class="card-title-box">
-                            <span class="row-index-badge">#${rIndex}</span>
-                            <div class="card-inst-info">
-                                <span class="card-inst-code" onclick="openPriceGraph('${instCode}')">${instCode}</span>
-                                <span class="card-inst-desc" onclick="openInstrumentDetail('${instCode}')">${instDesc}</span>
-                            </div>
+                <div class="pf-card">
+                    <div class="pf-head">
+                        <div class="pf-id">
+                            <span class="pf-code" onclick="openPriceGraph('${instCode}')">${instCode}</span>
+                            <span class="pf-desc" onclick="openInstrumentDetail('${instCode}')">${instDesc}</span>
+                        </div>
+                        <div class="pf-tags">
+                            <span class="pf-cur">${divisa}</span>
+                            <span class="pf-dot ${dot}"></span>
                         </div>
                     </div>
-                    <div class="card-metrics-grid">
-                        <div class="card-metric-cell">
-                            <span class="card-metric-label">Quantità</span>
-                            <span class="card-metric-value">${fmtNum(qtyVal)}</span>
+
+                    <div class="pf-value">
+                        <div class="pf-value-main">
+                            <span class="pf-lbl">Controvalore</span>
+                            <span class="pf-big">${fmtNum(ctvVal)}</span>
                         </div>
-                        <div class="card-metric-cell">
-                            <span class="card-metric-label">Costo</span>
-                            <span class="card-metric-value">${fmtNum(costVal)}</span>
+                        <div class="pf-mp ${mpClass}">
+                            <span class="pf-mp-amt">${(mpVal >= 0 ? '+' : '') + fmtNum(mpVal)}</span>
+                            <span class="pf-mp-pct">${mpPerc !== null ? (mpPerc >= 0 ? '+' : '') + mpPerc.toFixed(2) + '%' : '-'}</span>
                         </div>
-                        <div class="card-metric-cell">
-                            <span class="card-metric-label">C.Valore</span>
-                            <span class="card-metric-value">${fmtNum(ctvVal)}</span>
+                    </div>
+
+                    <div class="pf-prices">
+                        <div class="pf-price">
+                            <span class="pf-lbl">Prezzo di costo</span>
+                            <span class="pf-val">${fmtPrice(item['$price_cost'])}</span>
                         </div>
-                        <div class="card-metric-cell">
-                            <span class="card-metric-label">Minus/Plus</span>
-                            <span class="card-metric-value ${mpClass}">${(mpVal >= 0 ? '+' : '') + fmtNum(mpVal)}${mpPerc !== null ? ' (' + (mpPerc >= 0 ? '+' : '') + mpPerc.toFixed(2) + '%)' : ''}</span>
+                        <div class="pf-price pf-price-mkt">
+                            <span class="pf-lbl">Prezzo di mercato</span>
+                            <span class="pf-val">${fmtPrice(item['$price_mkt'])}</span>
                         </div>
-                        <div class="card-metric-cell span-2">
-                            <span class="card-metric-label">Peso %</span>
-                            <span class="card-metric-value">${pesoVal}</span>
-                        </div>
+                    </div>
+
+                    <div class="pf-grid">
+                        <div><span class="pf-lbl">Quantità</span><span class="pf-val">${fmtNum(qtyVal)}</span></div>
+                        <div><span class="pf-lbl">Divisa</span><span class="pf-val">${divisa}</span></div>
+                        <div><span class="pf-lbl">Costo</span><span class="pf-val">${fmtNum(costVal)}</span></div>
+                    </div>
+
+                    <div class="pf-weight">
+                        <span class="pf-lbl">Peso</span>
+                        <div class="pf-bar"><i style="width:${pesoNum !== null ? Math.min(100, Math.max(0, pesoNum)).toFixed(1) : 0}%"></i></div>
+                        <b>${pesoNum !== null ? pesoNum.toFixed(2) + '%' : '-'}</b>
                     </div>
                 </div>`;
             };
