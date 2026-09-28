@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>Mobile 0.3</title>
+    <title>Mobile 0.1</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <script src="js/dashboard-shared.js"></script>
     <link rel="icon" type="image/png" href="images/icon-finest.png">
@@ -1576,7 +1576,7 @@
 
         <!-- Details Wrapper -->
         <div id="portfolio-details-wrapper" class="details-wrapper">
-            <div class="filter-panel" style="margin: 0 16px 8px;">
+            <div class="filter-panel" id="portfolio-grouping-panel" style="margin: 0 16px 8px;">
                 <div class="table-controls" style="border-radius: var(--radius); border: 1px solid var(--border);">
                     <div style="display:flex; align-items:center; gap:8px;">
                         <label for="portfolio-grouping">Raggruppa:</label>
@@ -1867,23 +1867,9 @@
                 if (data.status === 'ok') {
                     Logger.info('PORTAFOGLIO', '✅ Dati portafoglio ricevuti con successo');
 
-                    classificationMap = {};
-                    let cList = data.classification;
-                    if (typeof cList === 'string') {
-                        Logger.debug('PORTAFOGLIO', 'Parsing classification da stringa JSON');
-                        try { cList = JSON.parse(cList.replace(/'/g, '"')); } catch (e) {
-                            Logger.error('PORTAFOGLIO', 'Errore parsing classification', e.message);
-                            cList = [];
-                        }
-                    }
-                    if (Array.isArray(cList)) {
-                        Logger.info('PORTAFOGLIO', `Classification caricata: ${cList.length} elementi`);
-                        cList.forEach(item => {
-                            if (item.id_instrument) classificationMap[item.id_instrument] = item;
-                        });
-                    } else {
-                        Logger.warn('PORTAFOGLIO', 'Classification non è un array', typeof cList);
-                    }
+                    classificationMap = buildClassificationMap(data.classification);
+                    Logger.info('PORTAFOGLIO', `Classification: ${Object.keys(classificationMap).length} strumenti`);
+
 
                     let rawPf = data.portfolio;
                     if (!Array.isArray(rawPf) && Array.isArray(data)) {
@@ -1892,6 +1878,7 @@
                     }
                     portfolioRawData = normalizePortfolio(rawPf);
                     lastPortfolioJson = JSON.stringify(rawPf);
+                    refreshGroupingControl();
                     Logger.info('PORTAFOGLIO', `📊 Portfolio caricato: ${portfolioRawData.length} elementi`);
 
                     renderPortfolioTable();
@@ -1905,6 +1892,66 @@
                 container.innerHTML = `<div class="loading-text" style="color:var(--red); padding:20px;">Impossibile caricare il portafoglio</div>`;
                 showMessage('Impossibile caricare il portafoglio', 'error');
             }
+        }
+
+        // ── RAGGRUPPAMENTO ──
+        function buildClassificationMap(c) {
+            const map = {};
+            if (typeof c === 'string') {
+                try { c = JSON.parse(c); } catch (e) {
+                    try {
+                        c = JSON.parse(c.replace(/\bNone\b/g, 'null').replace(/\bTrue\b/g, 'true').replace(/\bFalse\b/g, 'false').replace(/'/g, '"'));
+                    } catch (e2) { Logger.warn('PORTAFOGLIO', 'Classification non interpretabile', e2.message); c = null; }
+                }
+            }
+            if (Array.isArray(c)) {
+                c.forEach(x => { if (x && x.id_instrument) map[x.id_instrument] = x; });
+            } else if (c && typeof c === 'object') {
+                Object.keys(c).forEach(k => { const v = c[k]; if (v && typeof v === 'object') map[v.id_instrument || k] = v; });
+            }
+            return map;
+        }
+
+        // Valore di raggruppamento: prima il campo sul titolo (come nei dati market), poi la classification
+        function getGroupValue(item, grouping) {
+            const id = item.id_instrument || item.Ticker;
+            const empty = (v) => v === undefined || v === null || v === '';
+            let v = item[grouping];
+            if (empty(v) && id && classificationMap[id]) v = classificationMap[id][grouping];
+            if (empty(v) && grouping === 'sector') {
+                const k = Object.keys(item).find(x => x.toLowerCase().includes('sector'));
+                if (k) v = item[k];
+            }
+            return (empty(v) || typeof v === 'object') ? null : String(v);
+        }
+
+        function groupLabel(group, grouping) {
+            try {
+                if (typeof translateGroupLabel === 'function') {
+                    const r = translateGroupLabel(group, grouping);
+                    if (r) return r;
+                }
+            } catch (e) { /* uso la traduzione locale */ }
+            return translations[`dom.${grouping}:${group}`] || group;
+        }
+
+        // Abilita solo i raggruppamenti per cui esistono dati; se non ce n'è nessuno nasconde il combobox
+        function refreshGroupingControl() {
+            const sel = document.getElementById('portfolio-grouping');
+            const panel = document.getElementById('portfolio-grouping-panel');
+            if (!sel || !panel) return;
+            const rows = (portfolioRawData || []).filter(hasQuantity);
+            let available = 0;
+            Array.from(sel.options).forEach(opt => {
+                if (!opt.value) return;
+                const has = rows.some(i => getGroupValue(i, opt.value) !== null);
+                opt.disabled = !has;
+                opt.hidden = !has;
+                if (has) available++;
+            });
+            if (sel.value && sel.selectedOptions[0] && sel.selectedOptions[0].disabled) sel.value = '';
+            panel.style.display = available ? '' : 'none';
+            Logger.info('PORTAFOGLIO', `Raggruppamenti disponibili: ${available}`);
         }
 
         function onPortfolioGroupingChange() {
@@ -2043,21 +2090,18 @@
             if (grouping) {
                 const groups = {};
                 filteredData.forEach(item => {
-                    let gVal = 'Altro';
-                    const instId = item.id_instrument || item.Ticker;
-                    if (instId && classificationMap[instId] && classificationMap[instId][grouping]) {
-                        gVal = classificationMap[instId][grouping];
-                    }
+                    const gVal = getGroupValue(item, grouping) || 'Altro';
                     if (!groups[gVal]) groups[gVal] = [];
                     groups[gVal].push(item);
                 });
 
                 Logger.debug('PORTAFOGLIO', `Gruppi creati: ${Object.keys(groups).length}`);
-                Object.keys(groups).sort().forEach(group => {
+                Object.keys(groups).sort((x, y) => x === 'Altro' ? 1 : y === 'Altro' ? -1 : x.localeCompare(y)).forEach(group => {
                     const items = groups[group];
                     const groupCost = items.reduce((sum, i) => sum + (parseFloat(i['$cost_amount_curr'] || i['cost_amount'] || 0) || 0), 0);
                     const groupCtv = items.reduce((sum, i) => sum + (parseFloat(i['CTVMKTTQ'] || i['mp'] || 0) || 0), 0);
-                    const groupName = translateGroupLabel(group, grouping);
+                    const groupMp = items.reduce((sum, i) => sum + (parseFloat(i['M/P']) || 0), 0);
+                    const groupName = groupLabel(group, grouping);
 
                     html += `
                     <div class="mobile-group-card">
@@ -2067,6 +2111,7 @@
                         <div class="group-card-metrics">
                             <span>Costo: <strong>${fmtNum(groupCost)}</strong></span>
                             <span>CTV: <strong>${fmtNum(groupCtv)}</strong></span>
+                            <span>M/P: <strong>${(groupMp >= 0 ? '+' : '') + fmtNum(groupMp)}</strong></span>
                         </div>
                     </div>`;
 
@@ -2207,6 +2252,11 @@
                         if (j !== lastPortfolioJson) {
                             lastPortfolioJson = j;
                             portfolioRawData = normalizePortfolio(data.portfolio);
+                            if (data.classification) {
+                                const m = buildClassificationMap(data.classification);
+                                if (Object.keys(m).length) classificationMap = m;
+                            }
+                            refreshGroupingControl();
                             renderPortfolioTable();
                             Logger.info('AGGIORNA', '✅ Portafoglio aggiornato');
                         }
