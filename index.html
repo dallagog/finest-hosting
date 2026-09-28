@@ -17,6 +17,7 @@
       --paper-bg: #fff;
       --shadow-color: rgba(0, 0, 0, 0.08);
       --border-color: #000;
+      --sidebar-width: 90px;
     }
 
     * {
@@ -36,95 +37,125 @@
       background-color: var(--bg-color);
       background-image: url('images/background.png');
       background-size: cover;
-      background-position: center bottom;
+      background-position: center center;
       background-repeat: no-repeat;
       background-attachment: fixed;
       min-height: 100vh;
       margin: 0;
+      padding-right: var(--sidebar-width);
       color: var(--text-color);
     }
 
-    .header-bar {
-      position: absolute;
-      top: 20px;
-      right: 20px;
+    /* ========== SIDEBAR NERA A DESTRA ========== */
+    .sidebar {
+      position: fixed;
+      top: 0;
+      right: 0;
+      width: var(--sidebar-width);
+      height: 100vh;
+      background: #000;
       z-index: 10000;
       display: flex;
-      flex-direction: column-reverse;
-      align-items: flex-end;
-      gap: 10px;
+      flex-direction: column;
+      align-items: center;
+      padding: 30px 0;
+      gap: 20px;
+      box-shadow: -2px 0 15px rgba(0, 0, 0, 0.4);
+    }
+
+    .sidebar-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      color: #00ffff;
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      text-align: center;
+      padding: 8px 4px;
+      width: 100%;
+      background: transparent;
+      border: none;
+    }
+
+    .sidebar-item:hover {
+      color: #fff;
+      text-shadow: 0 0 8px #00ffff;
+      background: rgba(0, 255, 255, 0.08);
+    }
+
+    .sidebar-item i {
+      font-size: 1.4rem;
+      margin-bottom: 4px;
+    }
+
+    .sidebar-item.static {
+      cursor: default;
+    }
+
+    .sidebar-item.static:hover {
+      background: transparent;
+      color: #00ffff;
+      text-shadow: none;
+    }
+
+    .sidebar-divider {
+      width: 60%;
+      height: 1px;
+      background: rgba(0, 255, 255, 0.3);
+      margin: 5px 0;
     }
 
     #languageCombo {
-      padding: 8px 12px;
-      border: 2px solid #00ffff;
-      background: rgba(0, 0, 0, 0.5);
+      width: 78px;
+      padding: 5px 2px;
+      border: 1px solid #00ffff;
+      background: rgba(0, 0, 0, 0.8);
       color: #00ffff;
       cursor: pointer;
       font-family: 'Cormorant Garamond', serif;
-      font-size: 1rem;
+      font-size: 0.7rem;
       outline: none;
-      box-shadow: 0 0 5px #00ffff, 0 0 10px #00ffff, inset 0 0 5px #00ffff;
+      box-shadow: 0 0 5px #00ffff;
       text-shadow: 0 0 5px #00ffff;
-      border-radius: 4px;
+      border-radius: 3px;
+      text-align: center;
       transition: all 0.3s ease;
+      margin-top: 2px;
     }
 
     #languageCombo:hover {
-      box-shadow: 0 0 10px #00ffff, 0 0 20px #00ffff, inset 0 0 10px #00ffff;
-      transform: scale(1.02);
+      box-shadow: 0 0 12px #00ffff;
+      transform: scale(1.03);
     }
 
-    @keyframes flash {
-
-      0%,
-      100% {
-        opacity: 1;
-      }
-
-      50% {
-        opacity: 0.4;
-      }
+    #languageCombo option {
+      background: #000;
+      color: #00ffff;
     }
 
-    .header-signin-btn {
-      padding: 10px 20px;
-      border: 1px solid var(--border-color);
-      background: var(--accent-color);
-      color: #fff;
-      font-size: 0.9rem;
-      font-weight: normal;
-      font-family: 'Cormorant Garamond', serif;
-      border-radius: 0;
-      cursor: pointer;
-      transition: all 0.2s ease;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .header-signin-btn:hover {
-      background: #333;
-      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-    }
-
-    .header-signin-btn i {
-      margin: 0;
-    }
-
+    /* ========== OFFLINE OVERLAY ========== */
     .offline-container {
       display: none;
       position: fixed;
       top: 0;
       left: 0;
-      width: 100%;
+      width: calc(100% - var(--sidebar-width));
       height: 100%;
       justify-content: center;
       align-items: center;
       z-index: 9999;
       background: rgba(255, 255, 255, 0.9);
+      flex-direction: column;
+    }
+
+    .offline-container img {
+      max-width: 80%;
+      max-height: 70%;
     }
 
     .offline-text {
@@ -139,9 +170,8 @@
     }
 
     .maintenance-info {
-      position: absolute;
-      bottom: 50px;
-      display: flex;
+      margin-top: 30px;
+      display: none;
       flex-direction: column;
       gap: 15px;
       background: var(--paper-bg);
@@ -150,7 +180,6 @@
       box-shadow: 0 4px 15px var(--shadow-color);
       font-family: 'Cormorant Garamond', serif;
       text-align: left;
-      z-index: 10001;
       min-width: 350px;
     }
 
@@ -182,17 +211,16 @@
       text-align: right;
     }
 
-    /* Tron style footer */
+    /* ========== TRON FOOTER ========== */
     .tron-footer {
       position: fixed;
       bottom: 20px;
-      left: 50%;
+      left: calc(50% - var(--sidebar-width) / 2);
       transform: translateX(-50%);
       z-index: 11000;
       font-family: 'Courier New', Courier, monospace;
       font-size: 0.85rem;
       color: #00ffff;
-      /* Neon cyan */
       text-shadow: 0 0 5px #00ffff, 0 0 10px #00ffff;
       letter-spacing: 1px;
       padding: 8px 20px;
@@ -200,7 +228,6 @@
       border: 1px solid rgba(0, 255, 255, 0.2);
       border-radius: 4px;
       display: none;
-      /* hidden by default */
       pointer-events: none;
       white-space: nowrap;
     }
@@ -208,22 +235,23 @@
 </head>
 
 <body>
-  <div class="header-bar">
-    <select id="languageCombo">
-      <option value="" id="loadingOption">Loading...</option>
-    </select>
 
-    <!-- Close button: same style as signin button, text populated via getTranslation('int.close') -->
-    <button class="header-signin-btn" id="signin-btn" onclick="goToLogin()">
-      <i class="fa fa-sign-in"></i> <span id="signin-text"></span>
+  <!-- Sidebar nera a destra -->
+  <div class="sidebar">
+    <button class="sidebar-item" id="signin-btn" onclick="goToLogin()">
+      <i class="fa fa-sign-in"></i>
+      <span id="signin-text"></span>
     </button>
 
-    <!--
-    <button class="header-signin-btn" id="close-btn" onclick="closePage()" title="">
-      <i class="fa fa-times"></i> <span id="close-text"></span>
-    </button>
-    -->
+    <div class="sidebar-divider"></div>
 
+    <div class="sidebar-item static">
+      <i class="fa fa-globe"></i>
+      <span>LANG</span>
+      <select id="languageCombo">
+        <option value="" id="loadingOption">Loading...</option>
+      </select>
+    </div>
   </div>
 
   <!-- Offline overlay -->
@@ -231,8 +259,6 @@
     <img src="status/images/off-line.svg" alt="Server Offline">
     <div id="maintenance-info" class="maintenance-info" style="display: none;"></div>
   </div>
-
-  <div id="tron-footer" class="tron-footer"></div>
 
   <div id="tron-footer" class="tron-footer"></div>
 
@@ -321,7 +347,7 @@
       availableLanguages.forEach(lang => {
         const option = document.createElement('option');
         option.value = lang.code;
-        option.textContent = `${lang.flag} ${lang.description}`;
+        option.textContent = `${lang.flag} ${lang.code.toUpperCase()}`;
         if (lang.code === language) {
           option.selected = true;
           console.log("🎯 Selected language:", lang.code);
@@ -344,11 +370,10 @@
         console.log("✅ Translations loaded for:", lang, "keys:", Object.keys(translations).length);
       } catch (error) {
         console.error('❌ Error loading translations:', error);
-        // Keep previous translations as fallback
       }
     }
 
-    // Get translation (use this everywhere)
+    // Get translation
     function getTranslation(key) {
       const result = translations[key] || key;
       if (!translations[key]) {
@@ -357,7 +382,7 @@
       return result;
     }
 
-    // Update page translations (no hardcoded titles)
+    // Update page translations
     function updatePageTranslations() {
       console.log("🔄 Updating page translations for language:", language);
       const signinText = document.getElementById('signin-text');
@@ -367,29 +392,12 @@
         console.log("   signin-text:", text);
       }
 
-      const closeText = document.getElementById('close-text');
-      if (closeText) {
-        const text = getTranslation('int.close');
-        closeText.textContent = text;
-        console.log("   close-text:", text);
-      }
-
-      // Optionally set title attributes for accessibility
-      const closeBtn = document.getElementById('close-btn');
-      if (closeBtn) {
-        const text = getTranslation('int.close');
-        closeBtn.title = text;
-        console.log("   close-btn title:", text);
-      }
-
       const signinBtn = document.getElementById('signin-btn');
       if (signinBtn) {
         const text = getTranslation('int.signin');
         signinBtn.title = text;
-        console.log("   signin-btn title:", text);
       }
 
-      // Re-render maintenance info if present
       if (maintenanceManifestGlobal) {
         console.log("🔄 Re-rendering maintenance info on language change");
         renderMaintenanceInfo(maintenanceManifestGlobal);
@@ -407,7 +415,6 @@
       updateLanguageCombo();
       updatePageTranslations();
 
-      // Re-render maintenance info if present
       if (maintenanceManifestGlobal) {
         console.log("🔄 Re-rendering maintenance info after language change");
         renderMaintenanceInfo(maintenanceManifestGlobal);
@@ -430,12 +437,6 @@
       window.location.href = 'login.html';
     }
 
-    // Close page - best-effort to close the window/tab
-    function closePage() {
-      console.log("❌ Attempting to close page");
-      history.length > 1 ? history.back() : window.location.href = 'about:blank';
-    }
-
     // Check maintenance status
     async function checkMaintenanceStatus() {
       console.log("🔍 Checking maintenance status...");
@@ -449,7 +450,6 @@
         const manifest = await response.json();
         console.log("✅ Maintenance manifest loaded:", manifest);
 
-        // Handle login button based on status.stop
         const signinBtn = document.getElementById('signin-btn');
         if (signinBtn) {
           if (manifest['status.stop'] === "True") {
@@ -487,7 +487,6 @@
       const offlineImg = offlineContainer.querySelector('img');
       const infoContainer = document.getElementById('maintenance-info');
 
-      // Update image only if show.status is True
       const showStatus = manifest['show.status'] || manifest.show;
       console.log("📊 show.status:", showStatus);
 
@@ -497,38 +496,27 @@
           offlineImg.src = imgPath;
           console.log("🖼️ Status image set to:", imgPath);
         } else if (manifest.image) {
-          // Fallback to explicit image path if status is missing
           offlineImg.src = "status/" + manifest.image;
           console.log("🖼️ Fallback image set to:", "status/" + manifest.image);
         }
         offlineImg.style.display = 'block';
-        // Ensure container blocks interaction and has background if status is showing
         offlineContainer.style.pointerEvents = 'auto';
-        offlineContainer.style.background = 'rgba(0, 0, 0, 0.5)'; // Add dimming if needed
-        console.log("🖼️ Status image displayed, container blocks interaction");
+        offlineContainer.style.background = 'rgba(255, 255, 255, 0.9)';
       } else {
-        // Hide image if just showing version info
         offlineImg.style.display = 'none';
-        // Make container click-through if only showing info, or ensure it doesn't block critical UI
-        // If we want version info to be visible but not block the whole screen:
         offlineContainer.style.pointerEvents = 'none';
         offlineContainer.style.background = 'transparent';
-        console.log("🖼️ Status image hidden, container is click-through");
       }
 
       offlineContainer.style.display = 'flex';
-      console.log("📦 Offline container displayed");
 
-      // Login button logic is already handled in checkMaintenanceStatus
-
-      // Display version info if enabled
       let infoHTML = '';
 
       if (manifest['int.status.message'] === "True") {
         const message = getTranslation('int.status.message');
         infoHTML += `
           <p style="justify-content: center; margin-bottom: 15px;">
-            <span class="value" style="color: var(--neon-cyan); font-size: 1.2rem; text-align: center;">${message}</span>
+            <span class="value" style="color: #00ffff; font-size: 1.2rem; text-align: center;">${message}</span>
           </p>
         `;
         console.log("📝 Status message displayed:", message);
@@ -586,7 +574,6 @@
         console.error("❌ Server offline:", err);
         console.log("🖥️ Showing offline container");
         document.getElementById('offline-container').style.display = 'flex';
-        // Header stays visible
       }
     }
 
@@ -603,7 +590,6 @@
         console.log("🌍 No saved language, using default:", language);
       }
 
-      // Always load translations and languages first to caption the maintenance screen if needed
       console.log("📚 Loading languages and translations...");
       await initializeLanguages();
       await loadTranslations(language);
@@ -619,14 +605,13 @@
         renderMaintenanceInfo(maintenanceManifest);
       } else {
         console.log("ℹ️ No maintenance mode, performing health check...");
-        // Only check health if not in maintenance mode
         await checkHealth();
       }
 
       console.log("✅ Application initialized successfully");
     }
 
-    // Override console methods to include timestamps if needed
+    // Console timestamp override
     const originalLog = console.log;
     console.log = function () {
       const timestamp = new Date().toISOString().replace('T', ' ').substring(0, 19);

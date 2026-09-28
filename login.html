@@ -18,6 +18,7 @@
       --shadow-color: rgba(0, 0, 0, 0.08);
       --border-color: #000;
       --error-color: #d32f2f;
+      --sidebar-width: 90px;
     }
 
     html {
@@ -31,7 +32,7 @@
       background-color: var(--bg-color);
       background-image: url('images/background.png');
       background-size: cover;
-      background-position: center bottom;
+      background-position: center center;
       background-repeat: no-repeat;
       background-attachment: fixed;
       display: flex;
@@ -39,59 +40,103 @@
       align-items: center;
       min-height: 100vh;
       margin: 0;
+      padding-right: var(--sidebar-width);
       color: var(--text-color);
     }
 
-    .top-controls {
-      position: absolute;
-      top: 20px;
-      right: 20px;
-      z-index: 1000;
+    /* ========== SIDEBAR NERA A DESTRA ========== */
+    .sidebar {
+      position: fixed;
+      top: 0;
+      right: 0;
+      width: var(--sidebar-width);
+      height: 100vh;
+      background: #000;
+      z-index: 10000;
       display: flex;
       flex-direction: column;
-      gap: 10px;
-      align-items: flex-end;
-    }
-
-    .close-button {
-      padding: 8px 16px;
-      border: 1px solid var(--border-color);
-      border-radius: 0;
-      background: transparent;
-      color: var(--text-color);
-      cursor: pointer;
-      font-family: 'Cormorant Garamond', serif;
-      font-size: 0.9rem;
-      transition: all 0.2s;
-      display: flex;
       align-items: center;
-      gap: 8px;
+      padding: 30px 0;
+      gap: 20px;
+      box-shadow: -2px 0 15px rgba(0, 0, 0, 0.4);
     }
 
-    .close-button:hover {
-      background: #eee;
+    .sidebar-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      color: #00ffff;
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      text-align: center;
+      padding: 8px 4px;
+      width: 100%;
+      background: transparent;
+      border: none;
+    }
+
+    .sidebar-item:hover {
+      color: #fff;
+      text-shadow: 0 0 8px #00ffff;
+      background: rgba(0, 255, 255, 0.08);
+    }
+
+    .sidebar-item i {
+      font-size: 1.4rem;
+      margin-bottom: 4px;
+    }
+
+    .sidebar-item.static {
+      cursor: default;
+    }
+
+    .sidebar-item.static:hover {
+      background: transparent;
+      color: #00ffff;
+      text-shadow: none;
+    }
+
+    .sidebar-divider {
+      width: 60%;
+      height: 1px;
+      background: rgba(0, 255, 255, 0.3);
+      margin: 5px 0;
     }
 
     #languageCombo {
-      padding: 8px 12px;
-      border: 2px solid #00ffff;
-      background: rgba(0, 0, 0, 0.5);
+      width: 78px;
+      padding: 5px 2px;
+      border: 1px solid #00ffff;
+      background: rgba(0, 0, 0, 0.8);
       color: #00ffff;
       cursor: pointer;
       font-family: 'Cormorant Garamond', serif;
-      font-size: 1rem;
+      font-size: 0.7rem;
       outline: none;
-      box-shadow: 0 0 5px #00ffff, 0 0 10px #00ffff, inset 0 0 5px #00ffff;
+      box-shadow: 0 0 5px #00ffff;
       text-shadow: 0 0 5px #00ffff;
-      border-radius: 4px;
+      border-radius: 3px;
+      text-align: center;
       transition: all 0.3s ease;
+      margin-top: 2px;
     }
 
     #languageCombo:hover {
-      box-shadow: 0 0 10px #00ffff, 0 0 20px #00ffff, inset 0 0 10px #00ffff;
-      transform: scale(1.02);
+      box-shadow: 0 0 12px #00ffff;
+      transform: scale(1.03);
     }
 
+    #languageCombo option {
+      background: #000;
+      color: #00ffff;
+    }
+
+    /* ========== LOGIN CONTAINER ========== */
     .container {
       background: var(--paper-bg);
       padding: 60px 50px;
@@ -292,16 +337,23 @@
 </head>
 
 <body>
-  <div class="top-controls" style="display: none;">
-    <!--
-    <button class="close-button" id="closeButton">
+
+  <!-- Sidebar nera a destra -->
+  <div class="sidebar" id="sidebar" style="display: none;">
+    <button class="sidebar-item" id="closeButton">
       <i class="fa fa-times"></i>
       <span id="closeText">Close</span>
     </button>
-  -->
-    <select id="languageCombo">
-      <option value="" id="loadingOption">Loading...</option>
-    </select>
+
+    <div class="sidebar-divider"></div>
+
+    <div class="sidebar-item static">
+      <i class="fa fa-globe"></i>
+      <span>LANG</span>
+      <select id="languageCombo">
+        <option value="" id="loadingOption">Loading...</option>
+      </select>
+    </div>
   </div>
 
   <div class="container" id="app-container" style="display: none;">
@@ -345,7 +397,7 @@
     const apiBaseNew = "https://new-user-tunnel.fe-web.eu";
     const apiBaseUser = "https://user-tunnel.fe-web.eu";
 
-    let language = 'en_UK'; // Lingua di default
+    let language = 'en_UK';
     let translations = {};
     let currencies = [];
     let timezones = [];
@@ -356,27 +408,20 @@
     console.log("🔗 API endpoints:", { apiBaseUser, apiBaseNew });
 
     // ========== CLOSE BUTTON ==========
-    //document.getElementById('closeButton').addEventListener('click', () => {
-
-    // Se è una PWA può chiudere davvero
-    //  if (window.matchMedia('(display-mode: standalone)').matches) {
-    //    window.close();
-    //    return;
-    // }
-
-    // Se esiste una pagina precedente, torna indietro
-    //  if (history.length > 1) {
-    //    history.back();
-    //    return;
-    // }
-
-    // Fallback universale per mobile
-    //  window.location.href = "about:blank";
-    //});
+    document.getElementById('closeButton').addEventListener('click', () => {
+      console.log("❌ Close button clicked");
+      if (window.matchMedia('(display-mode: standalone)').matches) {
+        window.close();
+        return;
+      }
+      if (history.length > 1) {
+        history.back();
+        return;
+      }
+      window.location.href = "about:blank";
+    });
 
     // ========== LANGUAGE SYSTEM ==========
-
-    // Leggi l'elenco delle lingue dal manifest
     async function loadLanguageManifest() {
       console.log("📋 Loading language manifest...");
       try {
@@ -385,7 +430,6 @@
           console.warn("⚠️ Cannot load manifest.json, status:", response.status);
           return [];
         }
-
         const manifest = await response.json();
         console.log("✅ Manifest loaded, languages:", manifest.languages || []);
         return manifest.languages || [];
@@ -395,7 +439,6 @@
       }
     }
 
-    // Carica un singolo file di lingua
     async function loadLanguageFile(langCode) {
       console.log("📚 Loading language file:", langCode);
       try {
@@ -404,9 +447,7 @@
           console.warn("⚠️ Language file not found:", langCode, "status:", response.status);
           return null;
         }
-
         const data = await response.json();
-
         if (data['int.language.code'] && data['int.language.description'] && data['img.language.flag']) {
           console.log("✅ Language file loaded:", langCode);
           return {
@@ -424,10 +465,8 @@
       }
     }
 
-    // Inizializza le lingue
     async function initializeLanguages() {
       console.log("🌍 Initializing languages...");
-
       const langCodes = await loadLanguageManifest();
       console.log("📋 Found", langCodes.length, "languages in manifest");
 
@@ -442,7 +481,6 @@
       console.log("✅ Languages initialized, total:", availableLanguages.length);
     }
 
-    // Aggiorna combobox lingue
     function updateLanguageCombo() {
       console.log("🔄 Updating language combo, available:", availableLanguages.length);
       const combo = document.getElementById('languageCombo');
@@ -457,7 +495,7 @@
       availableLanguages.forEach(lang => {
         const option = document.createElement('option');
         option.value = lang.code;
-        option.textContent = `${lang.flag} ${lang.description}`;
+        option.textContent = `${lang.flag} ${lang.code.toUpperCase()}`;
         if (lang.code === language) {
           option.selected = true;
           console.log("🎯 Selected language:", lang.code);
@@ -468,7 +506,6 @@
       console.log("✅ Language combo updated, current language:", language);
     }
 
-    // Carica traduzioni
     async function loadTranslations(lang) {
       console.log("📚 Loading translations for:", lang);
       try {
@@ -484,11 +521,9 @@
         await loadTimezones();
       } catch (error) {
         console.error('❌ Error loading translations:', error);
-        // Keep previous translations as fallback
       }
     }
 
-    // Carica valute
     async function loadCurrencies(lang) {
       console.log("💱 Loading currencies for:", lang);
       try {
@@ -505,7 +540,6 @@
       }
     }
 
-    // Carica timezone
     async function loadTimezones() {
       console.log("🕐 Loading timezones...");
       try {
@@ -522,7 +556,6 @@
       }
     }
 
-    // Ottieni traduzione
     function getTranslation(key) {
       const result = translations[key] || key;
       if (!translations[key]) {
@@ -531,11 +564,9 @@
       return result;
     }
 
-    // Aggiorna traduzioni pagina
     function updatePageTranslations() {
       console.log("🔄 Updating page translations for language:", language);
 
-      // Update close button text
       const closeText = document.getElementById('closeText');
       if (closeText) {
         const text = getTranslation('int.close');
@@ -607,44 +638,24 @@
       console.log("✅ Page translations updated");
     }
 
-    // Cambia lingua
     async function changeLanguage(langCode) {
       console.log("🌍 Changing language from", language, "to", langCode);
-
       language = langCode;
-
-      // Carica SEMPRE le traduzioni, anche se è la stessa lingua
       await loadTranslations(langCode);
       updateLanguageCombo();
       updatePageTranslations();
-
       console.log("✅ Language changed successfully to", langCode);
     }
 
-    // Event listener per combobox lingue - usa 'input' per catturare anche i clic sulla stessa opzione
     document.getElementById('languageCombo').addEventListener('input', async (e) => {
       const selectedLang = e.target.value;
       console.log("🔍 Language selector (input) changed to:", selectedLang);
-
       if (selectedLang) {
         await changeLanguage(selectedLang);
       }
     });
 
-    // Fallback con 'click' per assicurare che catturi sempre la selezione
-    document.getElementById('languageCombo').addEventListener('click', async (e) => {
-      const selectedLang = e.target.value;
-      setTimeout(async () => {
-        if (selectedLang && selectedLang !== language) {
-          console.log("🔍 Language selector (click) changed to:", selectedLang);
-          await changeLanguage(selectedLang);
-        }
-      }, 10);
-    });
-
     // ========== LOGIN/REGISTRATION LOGIC ==========
-
-    // Switch login/registration
     document.getElementById("switch-form").addEventListener("click", () => {
       console.log("🔄 Switching form: isLogin =", isLogin, "->", !isLogin);
       isLogin = !isLogin;
@@ -653,12 +664,6 @@
       console.log("✅ Form switched, forgot-password visible:", isLogin);
     });
 
-    // Health check
-    // Usa mode:'no-cors' per evitare il blocco CORS quando il reverse proxy
-    // (Cloudflare) restituisce un 502: la risposta è "opaque" ma la fetch
-    // non lancia eccezione, quindi sappiamo che il tunnel è raggiungibile.
-    // Solo un errore di rete reale (tunnel completamente giù) lancia eccezione
-    // e mostra la schermata offline.
     async function checkHealth() {
       console.log("🏥 Performing health check with no-cors mode...");
       try {
@@ -672,16 +677,15 @@
 
         console.log("✅ " + (getTranslation('int.services.healthy') || "Services healthy"));
         document.getElementById("app-container").style.display = "block";
-        document.querySelector(".top-controls").style.display = "flex";
-        console.log("🖥️ App container and top controls displayed");
+        document.getElementById("sidebar").style.display = "flex";
+        console.log("🖥️ App container and sidebar displayed");
       } catch (err) {
         console.error("❌ " + (getTranslation('int.service.check.failed') || "Service check failed") + ":", err);
-        document.body.innerHTML = '<div style="display:flex;justify-content:center;align-items:center;height:100vh;"><img src="status/images/off-line.svg" alt="Offline" class="offline"></div>';
+        document.body.innerHTML = '<div style="display:flex;justify-content:center;align-items:center;height:100vh;padding-right:90px;"><img src="status/images/off-line.svg" alt="Offline" class="offline"></div>';
         console.log("🖥️ Offline screen displayed");
       }
     }
 
-    // Submit
     document.getElementById('submit-btn').addEventListener("click", async () => {
       console.log("🔐 Submit button clicked, isLogin:", isLogin);
       const username = document.getElementById("username").value.trim();
@@ -750,7 +754,6 @@
       }
     });
 
-    // Forgot password
     document.getElementById("forgot-password").addEventListener("click", () => {
       const username = document.getElementById("username").value.trim();
       const url = username ? `dashboard-settings-changepassword.html?email=${encodeURIComponent(username)}&mode=forgot` : 'dashboard-dataentry-changepassword.html?mode=forgot';
@@ -759,12 +762,11 @@
       window.location.href = url;
     });
 
-    // Richiesta info mancanti
     function requestMissingInfo(info, username, password) {
       console.log("📝 Requesting missing profile info for user:", username);
       console.log("📋 Current info:", info);
-      document.querySelector('.top-controls').style.display = 'none';
-      console.log("🖥️ Top controls hidden");
+      document.getElementById('sidebar').style.display = 'none';
+      console.log("🖥️ Sidebar hidden");
 
       const container = document.getElementById("app-container");
 
@@ -837,7 +839,7 @@
           if (response.ok && data.status === "ok") {
             console.log("✅ Profile info saved successfully");
             alert(getTranslation('int.info.saved'));
-            document.querySelector('.top-controls').style.display = 'flex';
+            document.getElementById('sidebar').style.display = 'flex';
             console.log("🔄 Redirecting to login page");
             window.location.href = "login.html";
           } else {
@@ -851,7 +853,6 @@
       });
     }
 
-    // Apertura dashboard
     function openDashboard(username, token, lang, currency) {
       console.log("🚪 Opening dashboard for user:", username);
       console.log("📋 Data:", { token: token ? "present" : "missing", language: lang, currency });
@@ -869,7 +870,6 @@
       console.log("🚀 Initializing application...");
       console.log("📅 " + new Date().toISOString());
 
-      // 0. Controlla se c'è una lingua salvata da index.html
       const savedLanguage = localStorage.getItem('selectedLanguage');
       if (savedLanguage) {
         language = savedLanguage;
@@ -878,27 +878,21 @@
         console.log("🌍 No saved language, using default:", language);
       }
 
-      // 1. Inizializza le lingue disponibili
       console.log("📚 Loading languages...");
       await initializeLanguages();
 
-      // 2. Carica le traduzioni per la lingua di default
       console.log("📚 Loading translations...");
       await loadTranslations(language);
 
-      // 3. Aggiorna il combo per mostrare la lingua di default selezionata
       updateLanguageCombo();
-
-      // 4. Traduci la pagina
       updatePageTranslations();
 
-      // 5. Health check
       await checkHealth();
 
       console.log("✅ Application initialized successfully");
     }
 
-    // Override console methods to include timestamps if needed
+    // Console timestamp override
     const originalLog = console.log;
     console.log = function () {
       const timestamp = new Date().toISOString().replace('T', ' ').substring(0, 19);
