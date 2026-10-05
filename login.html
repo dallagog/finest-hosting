@@ -33,19 +33,14 @@
       background-color: #000;
       color: var(--text-color);
       overflow: hidden;
-      display: flex;
     }
 
-    /* ========== AREA IMMAGINE (sfondo + login centrato) ========== */
+    /* ========== SFONDO A TUTTA PAGINA + login centrato ========== */
     .image-area {
-      flex: 1;
-      height: 100vh;
-      background-color: #000;
-      background-image: url('images/background.png');
-      background-size: contain;
-      background-position: center center;
-      background-repeat: no-repeat;
-      position: relative;
+      position: fixed;
+      inset: 0;
+      padding-right: var(--sidebar-width);
+      background: #000 url('images/background.png') center / cover no-repeat;
       overflow: hidden;
       display: flex;
       justify-content: center;
@@ -54,10 +49,14 @@
 
     /* ========== SIDEBAR NERA A DESTRA ========== */
     .sidebar {
-      flex: 0 0 var(--sidebar-width);
+      position: fixed;
+      top: 0;
+      right: 0;
       width: var(--sidebar-width);
-      height: 100vh;
-      background: #000;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
       z-index: 10000;
       display: flex;
       flex-direction: column;
@@ -342,12 +341,161 @@
       border: none;
       box-shadow: none;
     }
+
+    /* ========== MESSAGGI (info / warning / errore) ========== */
+    .toasts {
+      position: fixed;
+      top: 16px;
+      left: 16px;
+      z-index: 20000;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      width: min(460px, calc(100vw - var(--sidebar-width) - 48px));
+      pointer-events: none;
+    }
+
+    .toast {
+      --tc: #00ffff;
+      pointer-events: auto;
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      column-gap: 12px;
+      row-gap: 4px;
+      padding: 14px 16px;
+      background: rgba(0, 0, 0, 0.88);
+      backdrop-filter: blur(6px);
+      border: 1px solid var(--tc);
+      border-left-width: 4px;
+      color: #ddd;
+      font-size: 1.05rem;
+      line-height: 1.3;
+      box-shadow: 0 4px 18px rgba(0, 0, 0, 0.5);
+      animation: toast-in 0.25s ease-out;
+    }
+
+    .toast.success {
+      --tc: #4ade80;
+    }
+
+    .toast.warning {
+      --tc: #fbbf24;
+    }
+
+    .toast.error {
+      --tc: #ff5c5c;
+    }
+
+    .toast>* {
+      grid-column: 2;
+    }
+
+    .toast .ti {
+      grid-column: 1;
+      grid-row: 1 / span 5;
+      color: var(--tc);
+      font-size: 1.3rem;
+      margin-top: 2px;
+    }
+
+    .toast .tt {
+      color: var(--tc);
+      font-weight: 700;
+      font-size: 0.85rem;
+      letter-spacing: 1px;
+    }
+
+    .toast .tm {
+      color: #fff;
+      font-weight: 700;
+      font-size: 1.15rem;
+    }
+
+    .toast .tx {
+      color: #9ab;
+      font: 0.78rem 'Courier New', monospace;
+      word-break: break-word;
+    }
+
+    .toast .tc {
+      grid-column: 3;
+      grid-row: 1;
+      background: none;
+      border: 0;
+      color: #aaa;
+      cursor: pointer;
+      font-size: 1rem;
+    }
+
+    .toast .tc:hover,
+    .toast .tc:focus-visible {
+      color: #fff;
+    }
+
+    @keyframes toast-in {
+      from {
+        opacity: 0;
+        transform: translateX(-12px);
+      }
+
+      to {
+        opacity: 1;
+        transform: none;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .toast {
+        animation: none;
+      }
+    }
+
+    /* ========== MOBILE: opzioni in barra inferiore ========== */
+    @media (max-width: 720px) {
+      .toasts {
+        width: calc(100vw - 32px);
+      }
+
+      .sidebar {
+        top: auto;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        width: 100%;
+        height: auto;
+        flex-direction: row;
+        justify-content: space-around;
+        align-items: flex-start;
+        padding: 10px;
+        gap: 10px;
+        border-left: 0;
+        border-top: 1px solid rgba(0, 255, 255, 0.15);
+      }
+
+      .sidebar-divider {
+        display: none;
+      }
+
+      .sidebar-item {
+        width: auto;
+      }
+
+      .tron-footer {
+        bottom: 110px;
+      }
+
+      .image-area {
+        padding-right: 0 !important;
+        padding-bottom: 110px;
+        overflow-y: auto;
+      }
+    }
   </style>
 </head>
 
 <body>
 
-  <!-- Area immagine + login centrato -->
+  <!-- Immagine di sfondo a tutta pagina + login centrato -->
   <div class="image-area">
     <div class="container" id="app-container" style="display: none;">
       <div class="logo-header">
@@ -384,7 +532,7 @@
     </div>
   </div>
 
-  <!-- Sidebar nera a destra -->
+  <!-- Opzioni a destra, sopra l'immagine -->
   <div class="sidebar" id="sidebar" style="display: none;">
     <button class="sidebar-item" id="closeButton">
       <i class="fa fa-times"></i>
@@ -402,6 +550,8 @@
     </div>
   </div>
 
+  <div class="toasts" id="toasts" aria-live="polite"></div>
+
   <script>
     console.log("=== FinEst Login v0.31 ===");
     console.log("📅 " + new Date().toISOString());
@@ -411,6 +561,45 @@
 
     let language = 'en_UK';
     let translations = {};
+
+    // ===== Messaggi info/warning/errore: titolo + motivo (web.msg.*) =====
+    const MSG_FALLBACK = { "web.msg.type.info": "INFORMATION", "web.msg.type.warning": "WARNING", "web.msg.type.error": "ERROR", "web.msg.type.success": "SUCCESS", "web.msg.technical": "Technical detail", "web.msg.http.status": "Server response: HTTP {status}", "web.msg.login.success": "Signed in", "web.msg.login.success.detail": "Welcome, {user}. Opening the dashboard...", "web.msg.login.failed": "Sign-in failed", "web.msg.login.failed.detail": "Wrong username or password. Check your credentials.", "web.msg.login.locked": "Account locked", "web.msg.login.locked.detail": "This account is locked. Contact the administrator to unlock it.", "web.msg.login.notfound": "User not found", "web.msg.login.notfound.detail": "No user has this name. Check the username or sign up.", "web.msg.login.disabled": "Sign-in suspended", "web.msg.login.disabled.detail": "Sign-in is temporarily disabled: the system is under maintenance.", "web.msg.fields.required": "Required fields missing", "web.msg.fields.required.detail": "Fill in all required fields to continue.", "web.msg.fields.missing": "Missing fields: {fields}.", "web.msg.connection.error": "Connection error", "web.msg.connection.error.detail": "Cannot reach the server. Check your network connection.", "web.msg.server.offline": "Server offline", "web.msg.server.offline.detail": "The service servers are not responding or are temporarily unreachable.", "web.msg.service.degraded": "Partial service", "web.msg.service.degraded.detail": "One or more backend services failed the health check.", "web.msg.service.list": "Services with problems: {services}.", "web.msg.server.error": "Server error", "web.msg.server.error.detail": "The server returned an internal error. Try again shortly; if it persists contact support.", "web.msg.request.invalid": "Invalid data", "web.msg.request.invalid.detail": "The server rejected the submitted data. Check the values and try again.", "web.msg.registration.success": "Registration complete", "web.msg.registration.success.detail": "The account was created. You can now sign in.", "web.msg.registration.failed": "Registration failed", "web.msg.registration.failed.detail": "The account could not be created. Try again with valid data.", "web.msg.registration.exists": "User already registered", "web.msg.registration.exists.detail": "This username is already taken. Choose another or sign in.", "web.msg.profile.saved": "Profile updated", "web.msg.profile.saved.detail": "Your profile information was saved.", "web.msg.profile.error": "Profile update failed", "web.msg.profile.error.detail": "An error occurred while updating the profile data.", "web.msg.profile.incomplete": "Profile incomplete", "web.msg.profile.incomplete.detail": "Complete the missing profile information to continue.", "web.msg.maintenance": "System under maintenance", "web.msg.maintenance.detail": "The service is temporarily suspended for maintenance.", "web.msg.lang.manifest.failed": "Language list unavailable", "web.msg.lang.manifest.failed.detail": "Cannot load lang/manifest.json: the language selector may be empty.", "web.msg.lang.file.failed": "Language files not loaded", "web.msg.lang.file.failed.detail": "These language files are missing or invalid: {langs}.", "web.msg.translations.failed": "Translations not loaded", "web.msg.translations.failed.detail": "Cannot load language file {lang}: default texts are shown.", "web.msg.currencies.failed": "Currencies unavailable", "web.msg.currencies.failed.detail": "Cannot load the currency list: the profile selector will be empty.", "web.msg.timezones.failed": "Time zones unavailable", "web.msg.timezones.failed.detail": "Cannot load the time zone list: the profile selector will be empty.", "web.msg.field.username": "Username", "web.msg.field.password": "Password", "web.msg.field.email": "Email address", "web.msg.field.language": "Language", "web.msg.field.timezone": "Time zone", "web.msg.field.currency": "Currency" };
+    const issues = [], langFails = [];
+    const later = (...a) => issues.push(a);
+    const has = k => translations[k] || MSG_FALLBACK[k];
+    function t(key, p) {
+      return (has(key) || key).replace(/\{(\w+)\}/g, (m, k) => (p && p[k] !== undefined ? p[k] : m));
+    }
+    // type: info | success | warning | error;  key: web.msg.<nome> (+ .detail);  o: {params, extra, technical}
+    function notify(type, key, o = {}) {
+      const box = document.getElementById('toasts');
+      box.querySelector(`[data-k="${key}"]`)?.remove();
+      const el = document.createElement('div');
+      el.className = 'toast ' + type;
+      el.dataset.k = key;
+      el.setAttribute('role', type === 'error' ? 'alert' : 'status');
+      const icon = { info: 'circle-info', success: 'circle-check', warning: 'triangle-exclamation', error: 'circle-xmark' }[type];
+      el.innerHTML = `<i class="fa-solid fa-${icon} ti" aria-hidden="true"></i>` +
+        `<button type="button" class="tc"><i class="fa-solid fa-xmark"></i></button>`;
+      const add = (c, txt) => { if (!txt) return; const d = document.createElement('div'); d.className = c; d.textContent = txt; el.appendChild(d); };
+      add('tt', t('web.msg.type.' + type));
+      add('tm', t(key, o.params));
+      add('td', has(key + '.detail') && t(key + '.detail', o.params));
+      add('td', o.extra);
+      add('tx', o.technical && t('web.msg.technical') + ': ' + o.technical);
+      const btn = el.querySelector('.tc');
+      btn.setAttribute('aria-label', translations['int.close'] || 'Close');
+      btn.onclick = () => el.remove();
+      box.appendChild(el);
+      while (box.children.length > 4) box.firstChild.remove();
+      const ms = { success: 6000, info: 8000, warning: 12000 }[type];
+      if (ms) setTimeout(() => el.remove(), ms);
+      console.log(`💬 [${type}] ${key}`, o.technical || '');
+    }
+    function flushIssues() {
+      if (langFails.length) notify('warning', 'web.msg.lang.file.failed', { params: { langs: langFails.splice(0).join(', ') } });
+      issues.splice(0).forEach(a => notify(...a));
+    }
     let currencies = [];
     let timezones = [];
     let availableLanguages = [];
@@ -432,6 +621,7 @@
         const response = await fetch('lang/manifest.json');
         if (!response.ok) {
           console.warn("⚠️ Cannot load manifest.json, status:", response.status);
+          later('warning', 'web.msg.lang.manifest.failed', { technical: t('web.msg.http.status', { status: response.status }) });
           return [];
         }
         const manifest = await response.json();
@@ -439,6 +629,7 @@
         return manifest.languages || [];
       } catch (error) {
         console.error("❌ Error loading manifest:", error);
+        later('warning', 'web.msg.lang.manifest.failed', { technical: error.message });
         return [];
       }
     }
@@ -479,6 +670,8 @@
         if (langData) {
           availableLanguages.push(langData);
           console.log("✅ Language added:", langData.code, langData.description);
+        } else {
+          langFails.push(langCode);
         }
       }
 
@@ -525,6 +718,7 @@
         await loadTimezones();
       } catch (error) {
         console.error('❌ Error loading translations:', error);
+        notify('warning', 'web.msg.translations.failed', { params: { lang }, technical: error.message });
       }
     }
 
@@ -659,6 +853,30 @@
       }
     });
 
+    // ===== Errori HTTP -> messaggio con motivo =====
+    const REASONS = {
+      'int.wrong.credentials': 'login.failed', 'int.locked.user': 'login.locked',
+      'int.user.notfound': 'login.notfound', 'int.user.alreadyregistered': 'registration.exists'
+    };
+    function serverReason(data) {
+      const raw = data && typeof data === 'object' ? (data.detail || data.message || data.error || data.reason) : data;
+      return typeof raw === 'string' && raw.length < 200 && !raw.includes('<') ? raw : '';
+    }
+    function httpTech(status, data) {
+      const r = serverReason(data);
+      return t('web.msg.http.status', { status }) + (r ? ' — ' + r : '');
+    }
+    function notifyHttpError(status, data) {
+      let k = REASONS[serverReason(data)];
+      if (!k) {
+        if (status >= 500) k = 'server.error';
+        else if (status === 400 || status === 422) k = 'request.invalid';
+        else if (isLogin) k = { 404: 'login.notfound', 423: 'login.locked' }[status] || 'login.failed';
+        else k = status === 409 ? 'registration.exists' : 'registration.failed';
+      }
+      notify('error', 'web.msg.' + k, { technical: httpTech(status, data) });
+    }
+
     // ========== LOGIN/REGISTRATION LOGIC ==========
     document.getElementById("switch-form").addEventListener("click", () => {
       console.log("🔄 Switching form: isLogin =", isLogin, "->", !isLogin);
@@ -670,25 +888,26 @@
 
     async function checkHealth() {
       console.log("🏥 Performing health check with no-cors mode...");
-      try {
-        console.log("📡 Checking user-tunnel (no-cors):", apiBaseUser + "/health");
-        const resUser = await fetch(`${apiBaseUser}/health`, { cache: "no-cache", mode: "no-cors" });
-        console.log("📡 user-tunnel response (opaque):", resUser.type, resUser.status);
-
-        console.log("📡 Checking new-user-tunnel (no-cors):", apiBaseNew + "/health");
-        const resNew = await fetch(`${apiBaseNew}/health`, { cache: "no-cache", mode: "no-cors" });
-        console.log("📡 new-user-tunnel response (opaque):", resNew.type, resNew.status);
-
-        console.log("✅ " + (getTranslation('int.services.healthy') || "Services healthy"));
-        document.getElementById("app-container").style.display = "block";
-        document.getElementById("sidebar").style.display = "flex";
-        console.log("🖥️ App container and sidebar displayed");
-      } catch (err) {
-        console.error("❌ " + (getTranslation('int.service.check.failed') || "Service check failed") + ":", err);
-        const imageArea = document.querySelector('.image-area');
-        imageArea.innerHTML = '<img src="status/images/off-line.svg" alt="Offline" class="offline">';
-        console.log("🖥️ Offline screen displayed");
+      const fails = [];
+      for (const [name, base] of [['user-tunnel', apiBaseUser], ['new-user-tunnel', apiBaseNew]]) {
+        try {
+          await fetch(`${base}/health`, { cache: "no-cache", mode: "no-cors" });
+        } catch (err) {
+          fails.push({ name, reason: err.message });
+        }
       }
+      document.getElementById("sidebar").style.display = "flex";
+      if (!fails.length) {
+        console.log("✅ Services healthy");
+        document.getElementById("app-container").style.display = "block";
+        return;
+      }
+      document.querySelector('.image-area').innerHTML = '<img src="status/images/off-line.svg" alt="Offline" class="offline">';
+      const all = fails.length === 2;
+      notify(all ? 'error' : 'warning', all ? 'web.msg.server.offline' : 'web.msg.service.degraded', {
+        extra: t('web.msg.service.list', { services: fails.map(f => f.name).join(', ') }),
+        technical: fails.map(f => `${f.name}: ${f.reason}`).join(' | ')
+      });
     }
 
     document.getElementById('submit-btn').addEventListener("click", async () => {
@@ -699,7 +918,8 @@
 
       if (!username || !password) {
         console.warn("⚠️ Empty fields detected");
-        alert(getTranslation("int.complete.all.fields") || "Please fill in all fields");
+        const miss = [!username && t('web.msg.field.username'), !password && t('web.msg.field.password')].filter(Boolean);
+        notify('warning', 'web.msg.fields.required', { extra: t('web.msg.fields.missing', { fields: miss.join(', ') }) });
         return;
       }
 
@@ -732,6 +952,7 @@
           console.log("✅ Request successful");
           if (isLogin) {
             console.log("🔐 Login successful for user:", username);
+            notify('success', 'web.msg.login.success', { params: { user: username } });
             await loadTranslations(data.language || language);
             if (data.info && (!data.info.email || !data.info.language || !data.info.timezone || !data.info.currency)) {
               console.log("⚠️ User profile incomplete, requesting missing info");
@@ -742,7 +963,7 @@
             }
           } else {
             console.log("✅ Registration successful for user:", username);
-            alert(getTranslation('int.creation.success') || "Account created successfully!");
+            notify('success', 'web.msg.registration.success');
             isLogin = true;
             updatePageTranslations();
             document.getElementById("username").value = username;
@@ -751,11 +972,11 @@
           }
         } else {
           console.warn("⚠️ Request failed, status:", response.status);
-          alert(isLogin ? getTranslation('int.login.failed') : getTranslation('int.creation.failed'));
+          notifyHttpError(response.status, data);
         }
       } catch (err) {
         console.error("❌ Connection error:", err);
-        alert((getTranslation('int.connection.error') || "Connection error") + ": " + err.message);
+        notify('error', 'web.msg.connection.error', { technical: err.message });
       }
     });
 
@@ -770,6 +991,10 @@
     function requestMissingInfo(info, username, password) {
       console.log("📝 Requesting missing profile info for user:", username);
       console.log("📋 Current info:", info);
+      const miss = ['email', 'language', 'timezone', 'currency'].filter(k => !info[k]).map(k => t('web.msg.field.' + k));
+      notify('info', 'web.msg.profile.incomplete', { extra: t('web.msg.fields.missing', { fields: miss.join(', ') }) });
+      if (!currencies.length) notify('warning', 'web.msg.currencies.failed');
+      if (!timezones.length) notify('warning', 'web.msg.timezones.failed');
       document.getElementById('sidebar').style.display = 'none';
       console.log("🖥️ Sidebar hidden");
 
@@ -825,7 +1050,9 @@
 
         if (!email || !lang || !currency || !tz) {
           console.warn("⚠️ Missing required fields:", { email, lang, currency, tz });
-          alert(getTranslation('int.complete.all.fields'));
+          const miss = [[email, 'email'], [lang, 'language'], [tz, 'timezone'], [currency, 'currency']]
+            .filter(([v]) => !v).map(([, k]) => t('web.msg.field.' + k));
+          notify('warning', 'web.msg.fields.required', { extra: t('web.msg.fields.missing', { fields: miss.join(', ') }) });
           return;
         }
 
@@ -843,17 +1070,17 @@
 
           if (response.ok && data.status === "ok") {
             console.log("✅ Profile info saved successfully");
-            alert(getTranslation('int.info.saved'));
+            notify('success', 'web.msg.profile.saved');
             document.getElementById('sidebar').style.display = 'flex';
             console.log("🔄 Redirecting to login page");
-            window.location.href = "login.html";
+            setTimeout(() => { window.location.href = "login.html"; }, 1200);
           } else {
             console.warn("⚠️ Update failed:", data);
-            alert(getTranslation("int.error.update"));
+            notify('error', response.status >= 500 ? 'web.msg.server.error' : 'web.msg.profile.error', { technical: httpTech(response.status, data) });
           }
         } catch (err) {
           console.error("❌ Error saving profile:", err);
-          alert(getTranslation("int.error.saving"));
+          notify('error', 'web.msg.connection.error', { technical: err.message });
         }
       });
     }
@@ -867,7 +1094,7 @@
       if (currency) localStorage.setItem("currency", currency);
       console.log("💾 Saved to localStorage");
       console.log("🔗 Navigating to dashboard.html");
-      window.location.href = "dashboard.html";
+      setTimeout(() => { window.location.href = "dashboard.html"; }, 800);
     }
 
     // ========== INITIALIZATION ==========
@@ -892,6 +1119,7 @@
       updateLanguageCombo();
       updatePageTranslations();
 
+      flushIssues();
       await checkHealth();
 
       console.log("✅ Application initialized successfully");
