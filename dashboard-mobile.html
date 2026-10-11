@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>Mobile 0.1</title>
+    <title>Mobile 0.2</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <script src="js/dashboard-shared.js"></script>
     <link rel="icon" type="image/png" href="images/icon-finest.png">
@@ -1543,9 +1543,12 @@
                 <span class="summary-title-badge">
                     <i class="fas fa-briefcase" style="color:var(--accent);"></i> Portafoglio
                 </span>
-                <span class="summary-badge-sub">Titoli con quantità</span>
             </div>
             <div class="summary-metrics-grid">
+                <div class="summary-metric-item span-2">
+                    <span class="summary-metric-label">Periodo elaborato</span>
+                    <span class="summary-metric-value" id="pf-sum-range">-</span>
+                </div>
                 <div class="summary-metric-item">
                     <span class="summary-metric-label">Costo Totale</span>
                     <span class="summary-metric-value" id="pf-sum-cost">-</span>
@@ -1794,6 +1797,14 @@
 
 
 
+
+            // All'accesso elabora con date_end = data odierna
+            try {
+                await syncFilterDateEnd();
+            } catch (err) {
+                Logger.warn('INIT', 'Impossibile impostare date_end odierna', err.message);
+                showDateRange(null, todayISO());
+            }
 
             // Load initial view (Portafoglio)
             Logger.info('INIT', 'Caricamento dati portafoglio iniziale');
@@ -2210,6 +2221,61 @@
             return j;
         }
 
+        // ── DATE DI ELABORAZIONE: date_end = data odierna ──
+        function todayISO() {
+            const d = new Date();
+            return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        }
+
+        function fmtDateIT(s) {
+            if (!s) return '';
+            const m = String(s).match(/^(\d{4})-(\d{2})-(\d{2})/);
+            return m ? `${m[3]}/${m[2]}/${m[1]}` : String(s);
+        }
+
+        // Cerca in profondità l'oggetto che contiene la chiave indicata
+        function findKeyHolder(obj, key) {
+            if (!obj || typeof obj !== 'object') return null;
+            if (Object.prototype.hasOwnProperty.call(obj, key)) return obj;
+            for (const k of Object.keys(obj)) {
+                const r = findKeyHolder(obj[k], key);
+                if (r) return r;
+            }
+            return null;
+        }
+
+        function showDateRange(dateStart, dateEnd) {
+            const el = document.getElementById('pf-sum-range');
+            if (!el) return;
+            const s = fmtDateIT(dateStart);
+            const e = fmtDateIT(dateEnd);
+            el.textContent = s && e ? `${s} → ${e}` : (e ? `fino al ${e}` : '-');
+        }
+
+        // Legge il filtro, imposta date_end alla data odierna, lo salva e mostra il range elaborato
+        async function syncFilterDateEnd() {
+            const f = await postApi('/getfilter', {
+                username: credentials.username, token: credentials.token,
+                language: credentials.language, filter: ''
+            });
+            let flt = f.filter;
+            if (typeof flt === 'string') {
+                try { flt = JSON.parse(flt); } catch (e) { flt = {}; }
+            }
+            if (!flt || typeof flt !== 'object') flt = {};
+            const today = todayISO();
+            (findKeyHolder(flt, 'date_end') || flt).date_end = today;
+            await postApi('/putfilter', {
+                username: credentials.username, token: credentials.token,
+                language: credentials.language, currency: credentials.currency,
+                filter: JSON.stringify(flt)
+            });
+            const startHolder = findKeyHolder(flt, 'date_start');
+            showDateRange(startHolder ? startHolder.date_start : null, today);
+            Logger.info('FILTRO', `date_end impostata a ${today}`, { date_start: startHolder ? startHolder.date_start : null });
+            return flt;
+        }
+
         async function runUpdateOnline() {
             const btn = document.getElementById('btn-refresh-portfolio');
             const lbl = document.getElementById('label-refresh-portfolio');
@@ -2224,15 +2290,7 @@
             };
 
             try {
-                const f = await postApi('/getfilter', {
-                    username: credentials.username, token: credentials.token,
-                    language: credentials.language, filter: ''
-                });
-                await postApi('/putfilter', {
-                    username: credentials.username, token: credentials.token,
-                    language: credentials.language, currency: credentials.currency,
-                    filter: JSON.stringify(f.filter)
-                });
+                await syncFilterDateEnd();
             } catch (err) {
                 Logger.error('AGGIORNA', 'Errore avvio aggiornamento', err.message);
                 done(false, 'Aggiornamento non riuscito: ' + err.message);
