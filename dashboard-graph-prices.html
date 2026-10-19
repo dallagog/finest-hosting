@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Market Trend 0.5</title>
+    <title>Market Trend 0.6</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <link rel="icon" type="image/png" href="images/icon-finest.png">
@@ -57,7 +57,6 @@
             flex-shrink: 0;
         }
 
-        /* MODIFICATO: header-left in orizzontale per affiancare utente e date */
         .header-left {
             display: flex;
             align-items: center;
@@ -91,7 +90,6 @@
             font-size: 18px;
         }
 
-        /* Stile per i controlli data/periodo spostati a sinistra */
         .date-period-controls {
             display: flex;
             flex-direction: column;
@@ -122,7 +120,6 @@
         .header-center {
             text-align: center;
             min-width: 300px;
-            /* Evita che il titolo/ISIN si schiacci troppo */
         }
 
         h1 {
@@ -209,16 +206,38 @@
             border: 1px solid #a5d6a7;
         }
 
+        /* ── MODIFICATO: Riga per descrizione + prossimo evento ── */
+        .inst-desc-row {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            margin-top: 4px;
+        }
+
         .inst-description {
             font-size: 0.82rem;
             color: #555;
             font-weight: 500;
             letter-spacing: 0.3px;
-            max-width: 400px;
             text-align: center;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
+        }
+
+        /* ── NUOVO: Badge per prossimo evento ── */
+        .inst-next-event {
+            font-size: 0.75rem;
+            color: #16a34a;
+            font-weight: 700;
+            background: #f0fdf4;
+            padding: 2px 10px;
+            border-radius: 20px;
+            border: 1px solid #bbf7d0;
+            white-space: nowrap;
+            font-family: inherit;
+            letter-spacing: 0.5px;
         }
 
         .header-title-input::placeholder {
@@ -579,7 +598,8 @@
             flex-direction: column;
             align-items: flex-start;
             gap: 5px;
-            max-width: 300px;
+            max-width: 350px;
+            /* Aumentato per accomodare due colonne */
             padding: 7px 12px;
             border: 1px solid #e3e3e3;
             border-radius: 12px;
@@ -619,6 +639,25 @@
             flex-direction: column;
             align-items: flex-start;
             gap: 3px;
+        }
+
+        /* ── NUOVO: Layout a due colonne per variazioni ── */
+        .hdr-var-items-row {
+            flex-direction: row !important;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .hdr-var-left-col {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .hdr-var-right-col {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
         }
 
         .hdr-var-item {
@@ -668,7 +707,7 @@
 
         @media (max-width: 1100px) {
             .hdr-var-group {
-                max-width: 210px;
+                max-width: 250px;
             }
         }
     </style>
@@ -682,7 +721,6 @@
     </div>
 
     <div class="header-bar">
-        <!-- MODIFICATO: header-left ora contiene i controlli data/periodo accanto all'utente -->
         <div class="header-left">
             <div class="user-info-block">
                 <div class="user-info-row">
@@ -749,7 +787,10 @@
                     </div>
                     <div id="hdr-var-price" class="hdr-var-group"></div>
                 </div>
-                <div id="inst-desc" class="inst-description"></div>
+                <div class="inst-desc-row">
+                    <div id="inst-desc" class="inst-description"></div>
+                    <div id="inst-next-event" class="inst-next-event" style="display: none;"></div>
+                </div>
             </div>
             <div id="yield-display" class="yield-container"></div>
         </div>
@@ -1421,7 +1462,48 @@
             if (code) { chipCode.textContent = code; chipCode.style.display = 'inline-flex'; } else { chipCode.style.display = 'none'; }
             if (isin) { chipIsin.textContent = isin; chipIsin.style.display = 'inline-flex'; } else { chipIsin.style.display = 'none'; }
             if (curr) { chipCurr.textContent = curr; chipCurr.style.display = 'inline-flex'; } else { chipCurr.style.display = 'none'; }
-            if (desc && desc !== code) { instDesc.textContent = desc; } else { instDesc.textContent = ''; }
+
+            // Descrizione
+            if (desc && desc !== code) {
+                instDesc.textContent = desc;
+                instDesc.style.display = 'inline-block';
+            } else {
+                instDesc.textContent = '';
+                instDesc.style.display = 'none';
+            }
+
+            // Calcolo prossimo evento futuro
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            let nextEventDate = null;
+            let nextEventItems = [];
+
+            Object.keys(eventInstrumentRaw).forEach(dateStr => {
+                const d = new Date(dateStr);
+                if (!isNaN(d) && d >= today) {
+                    if (!nextEventDate || d < new Date(nextEventDate)) {
+                        nextEventDate = dateStr;
+                        nextEventItems = eventInstrumentRaw[dateStr];
+                    }
+                }
+            });
+
+            const nextEventEl = document.getElementById('inst-next-event');
+            if (nextEventEl) {
+                if (nextEventDate && nextEventItems.length > 0) {
+                    const parts = nextEventDate.split('-');
+                    const formattedDate = parts.length === 3 ? `${parts[2]}/${parts[1]}/${parts[0]}` : nextEventDate;
+
+                    let eventStr = formattedDate;
+                    if (nextEventItems[0].type_news) {
+                        eventStr += `: ${nextEventItems[0].type_news}`;
+                    }
+                    nextEventEl.textContent = `📅 ${eventStr}`;
+                    nextEventEl.style.display = 'inline-block';
+                } else {
+                    nextEventEl.style.display = 'none';
+                }
+            }
 
             const firstRow = trendDataRaw[0];
             const priceField = Object.keys(firstRow).find(k => k.startsWith('price@')) || 'price_mkt';
@@ -1652,20 +1734,27 @@
                     box.appendChild(t);
 
                     const items = document.createElement('div');
-                    items.className = 'hdr-var-items';
+                    items.className = 'hdr-var-items hdr-var-items-row';
                     box.appendChild(items);
                     return items;
                 };
 
-                const addItem = (items, label, value, cls = '', main = false) => {
-                    if (!items) return;
+                const createVarItem = (label, value, cls = '') => {
                     const item = document.createElement('span');
-                    item.className = 'hdr-var-item' + (main ? ' hdr-var-item-main' : '');
+                    item.className = 'hdr-var-item hdr-var-item-main';
                     const colorClass = cls ? ` ${cls}` : '';
                     item.innerHTML = `<span class="lbl">${label}</span><span class="val${colorClass}">${value}</span>`;
-                    items.appendChild(item);
+                    return item;
                 };
 
+                const createSubItem = (label, value) => {
+                    const item = document.createElement('span');
+                    item.className = 'hdr-var-item';
+                    item.innerHTML = `<span class="lbl">${label}</span><span class="val">${value}</span>`;
+                    return item;
+                };
+
+                // Cambio
                 const validExchanges = exchanges.filter(e => e !== null && e !== undefined && e !== 0);
                 if (validExchanges.length >= 2) {
                     const firstE = validExchanges[0];
@@ -1677,11 +1766,21 @@
                     const maxEx = Math.max(...validExchanges);
 
                     const exItems = addTitle(exBox, getTranslation('int.exchange') || 'Cambio');
-                    addItem(exItems, 'Var', `${sign}${yieldE.toFixed(2)}%`, cls, true);
-                    addItem(exItems, getTranslation('int.exchange.min') || 'Min', minEx.toFixed(4));
-                    addItem(exItems, getTranslation('int.exchange.max') || 'Max', maxEx.toFixed(4));
+
+                    const leftCol = document.createElement('div');
+                    leftCol.className = 'hdr-var-left-col';
+                    leftCol.appendChild(createVarItem('Var', `${sign}${yieldE.toFixed(2)}%`, cls));
+
+                    const rightCol = document.createElement('div');
+                    rightCol.className = 'hdr-var-right-col';
+                    rightCol.appendChild(createSubItem(getTranslation('int.exchange.min') || 'Min', minEx.toFixed(4)));
+                    rightCol.appendChild(createSubItem(getTranslation('int.exchange.max') || 'Max', maxEx.toFixed(4)));
+
+                    exItems.appendChild(leftCol);
+                    exItems.appendChild(rightCol);
                 }
 
+                // Prezzo
                 const validPrices = prices.filter(p => p !== null && p !== undefined);
                 if (validPrices.length >= 2) {
                     const firstP = validPrices[0];
@@ -1693,9 +1792,18 @@
                     const maxPrice = Math.max(...validPrices);
 
                     const priceItems = addTitle(priceBox, getTranslation('int.prices') || 'Prezzo');
-                    addItem(priceItems, 'Var', `${sign}${yieldP.toFixed(2)}%`, cls, true);
-                    addItem(priceItems, getTranslation('int.price.min') || 'Min', minPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 4 }));
-                    addItem(priceItems, getTranslation('int.price.max') || 'Max', maxPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 4 }));
+
+                    const leftCol = document.createElement('div');
+                    leftCol.className = 'hdr-var-left-col';
+                    leftCol.appendChild(createVarItem('Var', `${sign}${yieldP.toFixed(2)}%`, cls));
+
+                    const rightCol = document.createElement('div');
+                    rightCol.className = 'hdr-var-right-col';
+                    rightCol.appendChild(createSubItem(getTranslation('int.price.min') || 'Min', minPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 4 })));
+                    rightCol.appendChild(createSubItem(getTranslation('int.price.max') || 'Max', maxPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 4 })));
+
+                    priceItems.appendChild(leftCol);
+                    priceItems.appendChild(rightCol);
                 }
             };
 
@@ -1919,7 +2027,6 @@
                                 display: false
                             }
                         },
-                        // Asse dei volumi spostato a destra (position: 'right')
                         y2: {
                             type: 'linear',
                             display: hasVolume && !!document.getElementById('layer-volume')?.checked,
@@ -2177,7 +2284,10 @@
             updateUserInfoUI();
 
             document.getElementById('btn-confirm').textContent = getTranslation('int.apply') || 'Applica';
-            document.getElementById('page-title-input').value = initialTitle || getTranslation('int.detail.prices') || "";
+
+            // Modifica 1: Titolo con int.trend.market
+            document.getElementById('page-title-input').value = initialTitle || getTranslation('int.trend.market') || "Market Trend";
+
             document.getElementById('close-btn').textContent = getTranslation('int.close') || 'Close';
             if (document.getElementById('user-label-text')) document.getElementById('user-label-text').textContent = (getTranslation('int.user') || 'User') + ':';
             if (document.getElementById('label-start-date')) document.getElementById('label-start-date').textContent = (getTranslation('int.date.start') || 'Start') + ':';
