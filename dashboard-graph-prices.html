@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Market Trend 0.5</title>
+    <title>Market Trend 0.1</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <link rel="icon" type="image/png" href="images/icon-finest.png">
@@ -85,6 +85,34 @@
             font-size: 18px;
         }
 
+        /* ── NUOVO: controlli data/periodo spostati nell'header-left ── */
+        .date-period-controls {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 6px;
+            margin-top: 6px;
+            width: 100%;
+        }
+
+        .date-period-controls .control-group {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .date-period-controls .date-input {
+            padding: 5px 6px;
+            font-size: 0.72rem;
+            width: 125px;
+        }
+
+        .date-period-controls .time-filter-btn {
+            padding: 5px 8px;
+            font-size: 0.72rem;
+            margin-right: 2px;
+        }
+
         .header-center {
             text-align: center;
         }
@@ -126,7 +154,6 @@
             margin-top: 6px;
         }
 
-        /* MODIFICATO: layout a 3 colonne (exchange | strumento 3 righe | prezzo) */
         .instrument-title-row {
             display: flex;
             align-items: center;
@@ -135,7 +162,6 @@
             flex-wrap: nowrap;
         }
 
-        /* ── Blocco centrale: strumento / ISIN / currency su 3 righe ── */
         .instrument-stack {
             display: flex;
             flex-direction: column;
@@ -539,7 +565,7 @@
             display: none;
         }
 
-        /* ── Variazioni in intestazione (cambio a sx / prezzo a dx dell'ISIN) ── */
+        /* ── Variazioni in intestazione ── */
         .hdr-var-group {
             display: inline-flex;
             flex-direction: column;
@@ -580,7 +606,6 @@
             flex-shrink: 0;
         }
 
-        /* MODIFICATO: items incolonnati verticalmente */
         .hdr-var-items {
             display: flex;
             flex-direction: column;
@@ -660,6 +685,50 @@
                 <span style="margin: 0 5px; color: var(--neon-blue);">|</span>
                 <span id="currencyDisplay"></span>
             </div>
+
+            <!-- ══════════ MODIFICA 2 ══════════
+                 Selezione periodo (M01/M03/M06/M12) e date Start/End
+                 spostate qui, tra il blocco utente e l'ISIN (header-center). -->
+            <div class="date-period-controls">
+                <div class="control-group">
+                    <span class="time-filter-wrap">
+                        <button class="time-filter-btn" onclick="setTimeFilter('M01')" data-period="M01"
+                            data-i18n="dom.timenode.price:M01">M01</button>
+                        <div class="period-tooltip" id="tooltip-M01">
+                            <div class="period-tooltip-title">M01</div>
+                        </div>
+                    </span>
+                    <span class="time-filter-wrap">
+                        <button class="time-filter-btn" onclick="setTimeFilter('M03')" data-period="M03"
+                            data-i18n="dom.timenode.price:M03">M03</button>
+                        <div class="period-tooltip" id="tooltip-M03">
+                            <div class="period-tooltip-title">M03</div>
+                        </div>
+                    </span>
+                    <span class="time-filter-wrap">
+                        <button class="time-filter-btn" onclick="setTimeFilter('M06')" data-period="M06"
+                            data-i18n="dom.timenode.price:M06">M06</button>
+                        <div class="period-tooltip" id="tooltip-M06">
+                            <div class="period-tooltip-title">M06</div>
+                        </div>
+                    </span>
+                    <span class="time-filter-wrap">
+                        <button class="time-filter-btn active" onclick="setTimeFilter('M12')" data-period="M12"
+                            data-i18n="dom.timenode.price:M12">M12</button>
+                        <div class="period-tooltip" id="tooltip-M12">
+                            <div class="period-tooltip-title">M12</div>
+                        </div>
+                    </span>
+                </div>
+                <div class="control-group">
+                    <label for="start-date" id="label-start-date">Start:</label>
+                    <input type="date" id="start-date" class="date-input">
+                </div>
+                <div class="control-group">
+                    <label for="end-date" id="label-end-date">End:</label>
+                    <input type="date" id="end-date" class="date-input">
+                </div>
+            </div>
         </div>
 
         <div class="header-center">
@@ -679,46 +748,8 @@
             <div id="yield-display" class="yield-container"></div>
         </div>
 
+        <!-- ══════════ header-right: solo Layers + Applica + Close ══════════ -->
         <div class="header-right">
-            <div class="control-group">
-                <span class="time-filter-wrap">
-                    <button class="time-filter-btn" onclick="setTimeFilter('M01')" data-period="M01"
-                        data-i18n="dom.timenode.price:M01">M01</button>
-                    <div class="period-tooltip" id="tooltip-M01">
-                        <div class="period-tooltip-title">M01</div>
-                    </div>
-                </span>
-                <span class="time-filter-wrap">
-                    <button class="time-filter-btn" onclick="setTimeFilter('M03')" data-period="M03"
-                        data-i18n="dom.timenode.price:M03">M03</button>
-                    <div class="period-tooltip" id="tooltip-M03">
-                        <div class="period-tooltip-title">M03</div>
-                    </div>
-                </span>
-                <span class="time-filter-wrap">
-                    <button class="time-filter-btn" onclick="setTimeFilter('M06')" data-period="M06"
-                        data-i18n="dom.timenode.price:M06">M06</button>
-                    <div class="period-tooltip" id="tooltip-M06">
-                        <div class="period-tooltip-title">M06</div>
-                    </div>
-                </span>
-                <span class="time-filter-wrap">
-                    <button class="time-filter-btn active" onclick="setTimeFilter('M12')" data-period="M12"
-                        data-i18n="dom.timenode.price:M12">M12</button>
-                    <div class="period-tooltip" id="tooltip-M12">
-                        <div class="period-tooltip-title">M12</div>
-                    </div>
-                </span>
-            </div>
-            <div class="control-group">
-                <label for="start-date" id="label-start-date">Start:</label>
-                <input type="date" id="start-date" class="date-input">
-            </div>
-            <div class="control-group">
-                <label for="end-date" id="label-end-date">End:</label>
-                <input type="date" id="end-date" class="date-input">
-            </div>
-
             <div class="control-group">
                 <div class="select-container" id="layers-container">
                     <div class="select-btn" onclick="toggleDropdown('layers')">
@@ -820,11 +851,11 @@
 
         const API_URL = "https://feweb-tunnel.fe-web.eu";
         let trendDataRaw = [];
-        let eventDataRaw = {}; // New: store news events
-        let eventInstrumentRaw = {}; // Eventi sul singolo titolo: { "YYYY-MM-DD": [ {type_news, field, date_insert, value} ] }
-        let volumeDataRaw = {}; // Volume data: { "YYYY-MM-DD": number }
-        let newsSymbols = []; // New: store coordinates for news tooltips
-        let filterData = {}; // Global filter data
+        let eventDataRaw = {};
+        let eventInstrumentRaw = {};
+        let volumeDataRaw = {};
+        let newsSymbols = [];
+        let filterData = {};
         let chartInstance = null;
 
         async function loadLanguageManifest() {
@@ -946,7 +977,6 @@
             const layersOptionsList = document.getElementById('layers-options-list');
             console.log('layersOptionsList:', layersOptionsList);
 
-            // Inizializza i set con tutti i campi disponibili
             patternFields.forEach(field => {
                 selectedPatterns.add(field);
             });
@@ -973,11 +1003,6 @@
             invFieldOptions = invFields;
 
             if (layersOptionsList) {
-                // I pattern sono gestiti con la singola checkbox 'Pattern' (layer-pattern)
-                // selectedPatterns contiene sempre tutti i pattern disponibili
-
-                // I force field sono gestiti con la singola checkbox 'Forza' (layer-force)
-                // selectedForceField è già impostato al primo campo disponibile
                 if (forceFields.length > 0) {
                     forceFieldOptions = forceFields;
                 }
@@ -1152,11 +1177,10 @@
                     Object.entries(rsiObj).forEach(([field, value]) => {
                         const { x, y } = point;
                         const arrowSize = 12;
-                        const offset = 40; // Above or below Force arrows
+                        const offset = 40;
 
                         if (field === 'RSI@overbought') {
-                            // Triangolo in alto per overbought
-                            const color = '#e67300'; // Dark orange
+                            const color = '#e67300';
                             ctx.beginPath();
                             ctx.strokeStyle = color;
                             ctx.fillStyle = color;
@@ -1171,8 +1195,7 @@
                             ctx.textAlign = 'center';
                             ctx.fillText(Math.round(parseFloat(value)), x, y - offset - arrowSize - 5);
                         } else if (field === 'RSI@oversold') {
-                            // Triangolo in basso per oversold
-                            const color = '#3498db'; // Bright blue
+                            const color = '#3498db';
                             ctx.beginPath();
                             ctx.strokeStyle = color;
                             ctx.fillStyle = color;
@@ -1268,7 +1291,6 @@
                     if (deltaRaw !== undefined && deltaRaw !== null) {
                         const delta = parseValue(deltaRaw);
                         const { x } = point;
-                        // Disegna il punto in fondo all'area del grafico
                         const y = chartArea.bottom - 10;
                         const color = delta >= 0 ? 'blue' : 'red';
 
@@ -1381,7 +1403,6 @@
 
             if (!trendDataRaw || trendDataRaw.length === 0) return;
 
-            // ── Instrument info chips ──
             const code = idInstrument || instrumentNameFromUrl || '';
             const isin = (filterData && filterData.code_isin) || '';
             const desc = (filterData && filterData.instrument_description) || (instrumentNameFromUrl || '');
@@ -1401,7 +1422,6 @@
             const priceField = Object.keys(firstRow).find(k => k.startsWith('price@')) || 'price_mkt';
             const priceCurrencyField = `price_mkt@${targetCurrency}`;
             const hasPriceCurrency = trendDataRaw.some(item => item[priceCurrencyField] !== undefined);
-            // Scansiona TUTTI i record per trovare i campi pattern@* (non solo il primo)
             const patternFieldSet = new Set();
             trendDataRaw.forEach(item => Object.keys(item).filter(k => k.startsWith('pattern@')).forEach(k => patternFieldSet.add(k)));
             const patternFieldList = Array.from(patternFieldSet);
@@ -1415,7 +1435,6 @@
             const exchanges = [];
             let dualExchangeLabel = "";
 
-            // Filtra i dati per intervallo di date selezionato
             const filterStartDate = document.getElementById('start-date').value;
             const filterEndDate = document.getElementById('end-date').value;
             const filterStart = filterStartDate ? new Date(filterStartDate) : null;
@@ -1477,7 +1496,6 @@
                 patternFieldList.forEach(field => {
                     if (item[field] !== undefined && item[field] !== null && item[field] !== '') {
                         const patternName = field.replace('pattern@', '');
-                        // I valori pattern@ arrivano già come stringa percentuale (es. "12.34%")
                         aggregatedData[date].patterns.push({ [patternName]: item[field] });
                     }
                 });
@@ -1492,7 +1510,6 @@
                 }
             });
 
-            // Ensure event dates are included in labels (even without price data)
             const ensureDateEntry = (date) => {
                 if (!aggregatedData[date]) {
                     aggregatedData[date] = {
@@ -1509,7 +1526,6 @@
                 }
             };
 
-            // Eventi news/dividendi: solo dentro il periodo selezionato
             Object.keys(eventDataRaw).forEach(date => {
                 const d = new Date(date);
                 if ((!filterStart || d >= filterStart) && (!filterEnd || d <= filterEnd)) {
@@ -1517,8 +1533,6 @@
                 }
             });
 
-            // Eventi sul titolo (event_instrument): la data va sempre esposta sull'asse,
-            // anche se successiva a date_end (es. eventi futuri come bilanci/comunicazioni)
             Object.keys(eventInstrumentRaw).forEach(date => {
                 const d = new Date(date);
                 if (isNaN(d)) return;
@@ -1552,18 +1566,15 @@
                 invValuesArr.push(data.inv && Object.keys(data.inv).length > 0 ? data.inv : null);
             });
 
-            // ── Volumi: allineati alle date del grafico ──
             const volumeValues = sortedDates.map(date => {
                 const v = volumeDataRaw[date];
                 return (v !== undefined && v !== null) ? parseFloat(v) : null;
             });
             const hasVolume = volumeValues.some(v => v !== null && v > 0);
 
-            // Mostra/nasconde la voce Volume nel dropdown Layers
             const layerVolumeItem = document.getElementById('layer-volume-item');
             if (layerVolumeItem) layerVolumeItem.style.display = hasVolume ? '' : 'none';
 
-            // ── Calcolo rendimenti → tooltip sui bottoni periodicità ──
             const activeBtn = document.querySelector('.time-filter-btn.active');
             const activePeriod = activeBtn ? (activeBtn.getAttribute('data-period') || 'M12') : 'M12';
 
@@ -1571,25 +1582,20 @@
                 const tooltip = document.getElementById(`tooltip-${periodId}`);
                 if (!tooltip) return;
 
-                // Pulisce il tooltip (mantiene solo il titolo)
                 while (tooltip.children.length > 1) tooltip.removeChild(tooltip.lastChild);
 
                 const addTooltipRow = (label, value, cls = '') => {
                     const row = document.createElement('div');
                     row.className = 'period-tooltip-row';
 
-                    // Determina se è un valore Max per applicare il grassetto
                     const isMax = label.includes('Max');
                     const maxClass = isMax ? 'tooltip-max-bold' : '';
-
-                    // Applica il colore della classe se fornita
                     const colorClass = cls ? ` ${cls}` : '';
 
                     row.innerHTML = `<span class="lbl">${label}</span><span class="val ${maxClass}${colorClass}">${value}</span>`;
                     tooltip.appendChild(row);
                 };
 
-                // Prezzo
                 const validPrices = prices.filter(p => p !== null && p !== undefined);
                 if (validPrices.length >= 2) {
                     const firstP = validPrices[0];
@@ -1606,7 +1612,6 @@
                     addTooltipRow(getTranslation('int.price.max') || 'Max', maxPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 4 }));
                 }
 
-                // Cambio
                 const validExchanges = exchanges.filter(e => e !== null && e !== undefined && e !== 0);
                 if (validExchanges.length >= 2) {
                     const firstE = validExchanges[0];
@@ -1617,7 +1622,6 @@
                     const minEx = Math.min(...validExchanges);
                     const maxEx = Math.max(...validExchanges);
 
-                    // Separator nel tooltip
                     const sep = document.createElement('div');
                     sep.style.cssText = 'border-top:1px solid #eee;margin:5px 0';
                     tooltip.appendChild(sep);
@@ -1628,7 +1632,6 @@
                 }
             };
 
-            // Funzione per popolare le variazioni in intestazione (cambio a sx / prezzo a dx dell'ISIN)
             const buildHeaderVariations = () => {
                 const priceBox = document.getElementById('hdr-var-price');
                 const exBox = document.getElementById('hdr-var-exchange');
@@ -1658,7 +1661,6 @@
                     items.appendChild(item);
                 };
 
-                // Cambio → a sinistra del codice strumento
                 const validExchanges = exchanges.filter(e => e !== null && e !== undefined && e !== 0);
                 if (validExchanges.length >= 2) {
                     const firstE = validExchanges[0];
@@ -1675,7 +1677,6 @@
                     addItem(exItems, getTranslation('int.exchange.max') || 'Max', maxEx.toFixed(4));
                 }
 
-                // Prezzo → a destra della divisa
                 const validPrices = prices.filter(p => p !== null && p !== undefined);
                 if (validPrices.length >= 2) {
                     const firstP = validPrices[0];
@@ -1693,7 +1694,6 @@
                 }
             };
 
-            // Aggiorna il tooltip solo per il periodo attivo (gli altri non hanno dati)
             buildPeriodTooltip(activePeriod);
             buildHeaderVariations();
 
@@ -1798,7 +1798,7 @@
                         ctx.save();
                         ctx.strokeStyle = 'red';
                         ctx.lineWidth = 1;
-                        newsSymbols = []; // Reset symbols for this draw
+                        newsSymbols = [];
 
                         xLabels.forEach((label, index) => {
                             if (eventDataRaw[label]) {
@@ -1827,7 +1827,6 @@
                                     }
                                 }
 
-                                // Disegna simbolo news (cerchietto con N) o dividendo (cerchietto con D) in alto
                                 const isDividend = event && event.dividend;
                                 ctx.fillStyle = isDividend ? 'green' : 'red';
                                 ctx.beginPath();
@@ -1840,16 +1839,13 @@
                                 ctx.textBaseline = 'middle';
                                 ctx.fillText(isDividend ? 'D' : 'N', x, y);
 
-                                // Store for tooltip hit testing
                                 newsSymbols.push({ x, y, radius, label, kind: 'news' });
                             }
 
-                            // Eventi sul singolo titolo (event_instrument): cerchietto verde con "I"
                             const instEvents = eventInstrumentRaw[label];
                             if (Array.isArray(instEvents) && instEvents.length > 0) {
                                 const x = scales.x.getPixelForValue(label);
                                 const radius = 8;
-                                // Se nello stesso giorno c'è anche un'icona N/D, la sposta sotto per non sovrapporle
                                 const y = chartArea.top + 10 + (eventDataRaw[label] ? 2 * radius + 4 : 0);
 
                                 ctx.fillStyle = '#16a34a';
@@ -1918,10 +1914,15 @@
                                 display: false
                             }
                         },
+                        // ══════════ MODIFICA 1 ══════════
+                        // Asse volumi spostato a DESTRA (prima era 'left').
+                        // Chart.js impila automaticamente gli assi sullo stesso lato:
+                        // y1 (prezzi) più interno, y2 (volumi) più esterno, così il
+                        // volume risulta "a fianco dei prezzi" sul lato destro.
                         y2: {
                             type: 'linear',
                             display: hasVolume && !!document.getElementById('layer-volume')?.checked,
-                            position: 'left',
+                            position: 'right',
                             beginAtZero: true,
                             grid: {
                                 drawOnChartArea: false
@@ -1951,7 +1952,6 @@
                     plugins: {
                         legend: {
                             labels: {
-                                // Rimuove le legende per i dataset nascosti (hidden: true)
                                 filter: function (item, chart) {
                                     if (!chart || !chart.data || !chart.data.datasets || !chart.data.datasets[item.datasetIndex]) {
                                         return false;
@@ -2023,7 +2023,6 @@
                                             lines.push(`🔍 Pattern:`);
                                             filteredPatterns.forEach(p => {
                                                 Object.entries(p).forEach(([key, val]) => {
-                                                    // val è già una stringa percentuale (es. "12.34%")
                                                     lines.push(`  • ${key}: ${val}`);
                                                 });
                                             });
@@ -2052,7 +2051,6 @@
                 }
             });
 
-            // News Tooltip hover detection
             const newsTooltipElement = document.getElementById('news-tooltip');
 
             canvas.onmousemove = (e) => {
@@ -2067,7 +2065,7 @@
                 let hoveredSymbol = null;
                 for (const symbol of newsSymbols) {
                     const dist = Math.sqrt((mouseX - symbol.x) ** 2 + (mouseY - symbol.y) ** 2);
-                    if (dist <= symbol.radius + 5) { // Add some padding for easier hovering
+                    if (dist <= symbol.radius + 5) {
                         hoveredSymbol = symbol;
                         break;
                     }
@@ -2111,7 +2109,6 @@
                         newsTooltipElement.innerHTML = html;
                         newsTooltipElement.style.display = 'block';
 
-                        // Position tooltip near the symbol
                         const tooltipWidth = newsTooltipElement.offsetWidth;
                         let leftPos = hoveredSymbol.x + 15;
                         if (leftPos + tooltipWidth > rect.width) {
@@ -2143,7 +2140,6 @@
             const endDateInput = document.getElementById('end-date').value;
             let end = new Date(endDateInput);
 
-            // Fallback a oggi se il campo end-date è vuoto o invalido
             if (isNaN(end.getTime())) {
                 end = new Date();
                 document.getElementById('end-date').value = end.toISOString().split('T')[0];
