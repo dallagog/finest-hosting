@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Market 0.4</title>
+    <title>Market 0.6</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <link rel="icon" type="image/png" href="images/icon-finest.png">
     <style>
@@ -1098,7 +1098,9 @@
                     const th = document.createElement('th');
                     let translationKey = col === 'market' ? 'int.market' : col;
                     if (col === 'azioni') translationKey = 'int.trading';
-                    let label = getTranslation(translationKey) || (col === 'azioni' ? 'Trading' : col);
+                    if (col === '$price_type') translationKey = 'int.market.hours';
+
+                    let label = getTranslation(translationKey) || (col === 'azioni' ? 'Trading' : (col === '$price_type' ? 'Quotazione' : col));
                     // Split label on space or slash to put on two rows
                     if (label.includes(' ')) {
                         label = label.replace(' ', '<br>');
@@ -1289,7 +1291,7 @@
                         displayVal = displayVal + indicator;
                     }
 
-                    // Colonna Fase ($price_type): mostra la traduzione del valore di $price_type
+                    // Colonna Quotazione ($price_type): mostra la traduzione del valore di $price_type
                     // contenuto nel blocco "market" dell'item
                     if (col === '$price_type') {
                         const mk = item.market;
