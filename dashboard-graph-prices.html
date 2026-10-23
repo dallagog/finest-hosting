@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Market Trend 0.2</title>
+    <title>Market Trend 0.3</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <link rel="icon" type="image/png" href="images/icon-finest.png">
@@ -1355,24 +1355,24 @@
                         ctx.lineWidth = 3;
                         ctx.stroke();
 
-                        // Tratto verticale dello stesso colore: intensità = |delta| in milioni (nnnM).
-                        // Ogni 50M si aggiunge un tratto (STEP px) all'altezza.
+                        // Intensità = |delta| in milioni (nnnM): una barra ogni 50M (<=50M: 1 barra,
+                        // <=100M: 2 barre, ...). Ogni barra ha la stessa forma del trattino iniziale
+                        // (larghezza 10px, spessore 3px), impilate verso l'alto dello stesso colore.
                         const mVal = Math.abs(Number(delta)) * 1e6;
                         if (isFinite(mVal) && mVal > 0) {
-                            const STEP = 6;
-                            const steps = Math.ceil(mVal / 50);
-                            const maxH = (chartArea.bottom - chartArea.top) * 0.9;
-                            const h = Math.min(steps * STEP, maxH);
-                            ctx.save();
-                            ctx.globalAlpha = 0.6;
-                            ctx.beginPath();
-                            ctx.moveTo(x, y - 3);
-                            ctx.lineTo(x, y - 3 - h);
+                            const BAR_W = 10, BAR_H = 3, GAP = 2;
+                            const bars = Math.ceil(mVal / 50);
+                            const maxBars = Math.floor(((chartArea.bottom - chartArea.top) * 0.9) / (BAR_H + GAP));
+                            const n = Math.min(bars, maxBars);
                             ctx.strokeStyle = color;
-                            ctx.lineWidth = 4;
-                            ctx.lineCap = 'butt';
-                            ctx.stroke();
-                            ctx.restore();
+                            ctx.lineWidth = BAR_H;
+                            for (let i = 1; i < n; i++) {
+                                const yy = y - i * (BAR_H + GAP);
+                                ctx.beginPath();
+                                ctx.moveTo(x - BAR_W / 2, yy);
+                                ctx.lineTo(x + BAR_W / 2, yy);
+                                ctx.stroke();
+                            }
                         }
                     }
                 });
