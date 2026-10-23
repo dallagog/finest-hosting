@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Trend 0.1</title>
+    <title>Trend 0.2</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <link rel="icon" type="image/png" href="images/icon-finest.png">
@@ -416,10 +416,10 @@
             <div class="control-group">
                 <label id="chart-type-label">Chart Type:</label>
                 <div class="chart-type-selector">
-                    <button class="chart-type-btn active" onclick="changeChartType('line')" id="line-chart-btn">
+                    <button class="chart-type-btn" onclick="changeChartType('line')" id="line-chart-btn">
                         <i class="fas fa-chart-line"></i> Line
                     </button>
-                    <button class="chart-type-btn" onclick="changeChartType('bar')" id="bar-chart-btn">
+                    <button class="chart-type-btn active" onclick="changeChartType('bar')" id="bar-chart-btn">
                         <i class="fas fa-chart-bar"></i> Bar
                     </button>
                 </div>
@@ -564,7 +564,7 @@
         const API_URL = "https://feweb-tunnel.fe-web.eu";
         let chartInstance = null;
         let trendDataRaw = [];
-        let chartType = 'line'; // 'line' o 'bar'
+        let chartType = 'bar'; // 'line' o 'bar' (default: barre)
         let availableMetrics = [];
 
         const urlParams = new URLSearchParams(window.location.search);
@@ -605,6 +605,9 @@
             updateUserInfoUI();
             updateHeaderTranslations();
 
+            // Data iniziale di default: 1 gennaio dell'anno in corso
+            document.getElementById('date-start').value = `${new Date().getFullYear()}-01-01`;
+
             // Fetch filter to set default dates
             try {
                 const fpayload = { username: username, token: token, language: language, filter: "", code: "" };
@@ -621,7 +624,7 @@
                     else if (fdata.filter) filterData = (typeof fdata.filter === 'string') ? JSON.parse(fdata.filter) : fdata.filter;
 
                     if (filterData && filterData.Filter) {
-                        if (filterData.Filter.date_start) document.getElementById('date-start').value = filterData.Filter.date_start;
+                        // Data iniziale di default: inizio dell'anno in corso (non quella del filtro)
                         if (filterData.Filter.date_end) document.getElementById('date-end').value = filterData.Filter.date_end;
                     }
                 }

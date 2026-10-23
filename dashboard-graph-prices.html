@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Market Trend 0.4</title>
+    <title>Market Trend 0.1</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <link rel="icon" type="image/png" href="images/icon-finest.png">
@@ -744,9 +744,6 @@
                 </div>
             </div>
 
-            <button type="button" id="export-image-btn" class="time-filter-btn" onclick="exportChartImage()"
-                title="Esporta come immagine" style="padding: 8px 10px; font-size: 1rem;">📷</button>
-
             <div class="date-period-controls">
                 <div class="control-group">
                     <span class="time-filter-wrap">
@@ -815,6 +812,9 @@
         <!-- MODIFICA 3: Combobox Layers posizionato sotto i tasti -->
         <div class="header-right">
             <div class="header-right-actions">
+                <button type="button" id="export-image-btn" class="close-btn" onclick="exportChartImage()"
+                    title="Esporta come immagine"
+                    style="background: rgba(0, 0, 0, 0.05); border-color: #888; color: inherit;">📷</button>
                 <button class="confirm-btn" onclick="loadPrices()" id="btn-confirm">Applica</button>
                 <button class="close-btn" onclick="window.close()" id="close-btn">Close</button>
             </div>
@@ -1392,7 +1392,40 @@
 
             const title = (document.getElementById('page-title-input')?.value || '').trim();
             const dpr = src.width / (src.clientWidth || src.width);
-            const titleH = title ? Math.round(36 * dpr) : 0;
+
+            // Dati del titolo: descrizione, ISIN, divisa, mercato
+            const code = idInstrument || instrumentNameFromUrl || '';
+            const desc = (filterData && filterData.instrument_description) || instrumentNameFromUrl || '';
+            const isin = (filterData && filterData.code_isin) || '';
+            const curr = (filterData && filterData.currency) || instrumentCurrency || '';
+            const marketRaw = (filterData && filterData.code_market) || urlParams.get('code_market') || '';
+            let market = marketRaw;
+            if (marketRaw) {
+                const tr = getTranslation(`dom.code_market:${marketRaw}`);
+                if (tr && tr !== `dom.code_market:${marketRaw}`) market = tr;
+            }
+
+            const labelIsin = 'ISIN';
+            const labelCurr = getTranslation('int.currency') !== 'int.currency' ? getTranslation('int.currency') : 'Divisa';
+            const labelMkt = getTranslation('int.market') !== 'int.market' ? getTranslation('int.market') : 'Mercato';
+
+            const line2 = [code, desc && desc !== code ? desc : ''].filter(Boolean).join(' · ');
+            const line3 = [
+                isin ? `${labelIsin}: ${isin}` : '',
+                curr ? `${labelCurr}: ${curr}` : '',
+                market ? `${labelMkt}: ${market}` : ''
+            ].filter(Boolean).join('   |   ');
+
+            const lines = [];
+            if (title) lines.push({ text: title, size: 18, bold: true, color: '#222222' });
+            if (line2) lines.push({ text: line2, size: 14, bold: true, color: '#333333' });
+            if (line3) lines.push({ text: line3, size: 13, bold: false, color: '#555555' });
+
+            const padY = 8;
+            const lineGap = 6;
+            const titleH = lines.length
+                ? Math.round((lines.reduce((s, l) => s + l.size + lineGap, 0) + padY * 2) * dpr)
+                : 0;
 
             const out = document.createElement('canvas');
             out.width = src.width;
@@ -1401,13 +1434,15 @@
             octx.fillStyle = '#ffffff';
             octx.fillRect(0, 0, out.width, out.height);
 
-            if (title) {
-                octx.fillStyle = '#222222';
-                octx.font = `bold ${Math.round(18 * dpr)}px Arial, sans-serif`;
-                octx.textAlign = 'center';
-                octx.textBaseline = 'middle';
-                octx.fillText(title, out.width / 2, titleH / 2);
-            }
+            octx.textAlign = 'center';
+            octx.textBaseline = 'top';
+            let cy = padY * dpr;
+            lines.forEach(l => {
+                octx.fillStyle = l.color;
+                octx.font = `${l.bold ? 'bold ' : ''}${Math.round(l.size * dpr)}px Arial, sans-serif`;
+                octx.fillText(l.text, out.width / 2, cy, out.width - 20 * dpr);
+                cy += (l.size + lineGap) * dpr;
+            });
             octx.drawImage(src, 0, titleH);
 
             const endDate = document.getElementById('end-date')?.value || '';
@@ -1503,6 +1538,17 @@
             if (Math.abs(n) >= 1e12) return (n / 1e12).toFixed(2) + 'T';
             if (Math.abs(n) >= 1e9) return (n / 1e9).toFixed(2) + 'B';
             if (Math.abs(n) >= 1e6) return (n / 1e6).toFixed(2) + 'M';
+            return n.toLocaleString();
+        }
+
+        // Valori della scala volumi: senza decimali inutili (120.00M -> 120M)
+        function formatVolumeAxis(v) {
+            const n = parseFloat(v);
+            if (!isFinite(n) || n === 0) return '0';
+            const fmt = (x, s) => `${parseFloat(x.toFixed(2))}${s}`;
+            if (Math.abs(n) >= 1e12) return fmt(n / 1e12, 'T');
+            if (Math.abs(n) >= 1e9) return fmt(n / 1e9, 'B');
+            if (Math.abs(n) >= 1e6) return fmt(n / 1e6, 'M');
             return n.toLocaleString();
         }
 
@@ -2109,7 +2155,7 @@
                             },
                             ticks: {
                                 callback: function (value) {
-                                    return formatVolume(value);
+                                    return formatVolumeAxis(value);
                                 },
                                 color: 'rgba(100, 149, 237, 0.9)'
                             },
