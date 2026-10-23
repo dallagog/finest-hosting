@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Market Trend 0.3</title>
+    <title>Market Trend 0.2</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <link rel="icon" type="image/png" href="images/icon-finest.png">
@@ -1358,21 +1358,23 @@
                         // Intensità = |delta| in milioni (nnnM): una barra ogni 50M (<=50M: 1 barra,
                         // <=100M: 2 barre, ...). Ogni barra ha la stessa forma del trattino iniziale
                         // (larghezza 10px, spessore 3px), impilate verso l'alto dello stesso colore.
-                        const mVal = Math.abs(Number(delta)) * 1e6;
+                        // Conversione in milioni (nnnM): valori grezzi >= 1e6 -> /1e6;
+                        // valori frazionari (< 1) -> *1e6; altrimenti già espressi in M.
+                        const absD = Math.abs(Number(delta));
+                        const mVal = absD >= 1e6 ? absD / 1e6 : (absD < 1 ? absD * 1e6 : absD);
                         if (isFinite(mVal) && mVal > 0) {
-                            const BAR_W = 10, BAR_H = 3, GAP = 2;
+                            const BAR_H = 3; // altezza di una barretta = spessore del trattino iniziale
                             const bars = Math.ceil(mVal / 50);
-                            const maxBars = Math.floor(((chartArea.bottom - chartArea.top) * 0.9) / (BAR_H + GAP));
-                            const n = Math.min(bars, maxBars);
+                            const maxH = (chartArea.bottom - chartArea.top) * 0.9;
+                            const h = Math.min(bars * BAR_H, maxH);
+                            // Linea verticale continua, stesso colore, spessore = quello del trattino (3px)
+                            ctx.beginPath();
+                            ctx.moveTo(x, y - BAR_H / 2);
+                            ctx.lineTo(x, y - BAR_H / 2 - h);
                             ctx.strokeStyle = color;
                             ctx.lineWidth = BAR_H;
-                            for (let i = 1; i < n; i++) {
-                                const yy = y - i * (BAR_H + GAP);
-                                ctx.beginPath();
-                                ctx.moveTo(x - BAR_W / 2, yy);
-                                ctx.lineTo(x + BAR_W / 2, yy);
-                                ctx.stroke();
-                            }
+                            ctx.lineCap = 'butt';
+                            ctx.stroke();
                         }
                     }
                 });
