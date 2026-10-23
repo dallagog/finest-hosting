@@ -1354,6 +1354,26 @@
                         ctx.strokeStyle = color;
                         ctx.lineWidth = 3;
                         ctx.stroke();
+
+                        // Tratto verticale dello stesso colore: intensità = |delta| in milioni (nnnM).
+                        // Ogni 50M si aggiunge un tratto (STEP px) all'altezza.
+                        const mVal = Math.abs(Number(delta)) * 1e6;
+                        if (isFinite(mVal) && mVal > 0) {
+                            const STEP = 6;
+                            const steps = Math.ceil(mVal / 50);
+                            const maxH = (chartArea.bottom - chartArea.top) * 0.9;
+                            const h = Math.min(steps * STEP, maxH);
+                            ctx.save();
+                            ctx.globalAlpha = 0.6;
+                            ctx.beginPath();
+                            ctx.moveTo(x, y - 3);
+                            ctx.lineTo(x, y - 3 - h);
+                            ctx.strokeStyle = color;
+                            ctx.lineWidth = 4;
+                            ctx.lineCap = 'butt';
+                            ctx.stroke();
+                            ctx.restore();
+                        }
                     }
                 });
                 ctx.restore();
