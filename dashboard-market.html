@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Market 0.6</title>
+    <title>Market 0.1</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <link rel="icon" type="image/png" href="images/icon-finest.png">
     <style>
@@ -635,7 +635,6 @@
             </div>
         </div>
     </div>
-    </div>
 
     <script>
         const API_URL = "https://feweb-tunnel.fe-web.eu";
@@ -1096,11 +1095,12 @@
                 // Headers
                 tableColumns.forEach(col => {
                     const th = document.createElement('th');
-                    let translationKey = col === 'market' ? 'int.market' : col;
+                    let translationKey = col;
+                    if (col === 'market') translationKey = 'int.market.hours';
                     if (col === 'azioni') translationKey = 'int.trading';
-                    if (col === '$price_type') translationKey = 'int.market.hours';
+                    if (col === '$price_type') translationKey = '$price_type';
 
-                    let label = getTranslation(translationKey) || (col === 'azioni' ? 'Trading' : (col === '$price_type' ? 'Quotazione' : col));
+                    let label = getTranslation(translationKey) || (col === 'azioni' ? 'Trading' : (col === '$price_type' ? '$price_type' : col));
                     // Split label on space or slash to put on two rows
                     if (label.includes(' ')) {
                         label = label.replace(' ', '<br>');
