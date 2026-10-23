@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Market 0.1</title>
+    <title>Market 0.5</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <link rel="icon" type="image/png" href="images/icon-finest.png">
     <style>
@@ -1284,6 +1284,17 @@
 
                         const indicator = `<span class="status-circle ${statusClass}" title="${statusTitle}"></span>`;
                         displayVal = displayVal + indicator;
+                    }
+
+                    // Colonna Fase ($price_type): usa la traduzione di market.$price_type (es. "int.close"),
+                    // altrimenti traduce il valore della colonna stesso
+                    if (col === '$price_type') {
+                        const mk = item.market;
+                        const mkType = (mk && typeof mk === 'object') ? mk['$price_type'] : null;
+                        const source = mkType || val;
+                        if (source) {
+                            displayVal = getTranslation(source) || source;
+                        }
                     }
 
                     // Traduzione per price_mkt_type usando getTranslation diretta
