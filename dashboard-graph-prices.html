@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Market Trend 0.1</title>
+    <title>Market Trend 0.2</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <link rel="icon" type="image/png" href="images/icon-finest.png">
@@ -1309,16 +1309,7 @@
                         });
                     });
 
-                    if (hasSelectedPattern) {
-                        ctx.beginPath();
-                        ctx.strokeStyle = '#800080';
-                        ctx.lineWidth = 1.5;
-                        ctx.setLineDash([5, 3]);
-                        ctx.moveTo(x, point.y);
-                        ctx.lineTo(x, chartArea.bottom);
-                        ctx.stroke();
-                        ctx.setLineDash([]);
-                    }
+                    // Linee verticali tratteggiate rimosse: per i pattern resta solo la pallina viola
                 });
                 ctx.restore();
             }
@@ -1676,6 +1667,7 @@
                 return (v !== undefined && v !== null) ? parseFloat(v) : null;
             });
             const hasVolume = volumeValues.some(v => v !== null && v > 0);
+            const hasExchange = exchanges.some(v => v !== null && v !== undefined && v !== 0 && !isNaN(v));
 
             const layerVolumeItem = document.getElementById('layer-volume-item');
             if (layerVolumeItem) layerVolumeItem.style.display = hasVolume ? '' : 'none';
@@ -1894,7 +1886,7 @@
                             tension: 0.1,
                             pointRadius: 0,
                             yAxisID: 'y',
-                            hidden: !document.getElementById('layer-exchange')?.checked || exchanges.every(v => v === 0)
+                            hidden: !document.getElementById('layer-exchange')?.checked || !hasExchange
                         },
                         {
                             label: `Short (%)`,
@@ -1919,7 +1911,7 @@
                         }
                     ]
                 },
-                plugins: [forceArrowsPlugin, rsiArrowsPlugin, patternLinesPlugin, invariancePointsPlugin, {
+                plugins: [forceArrowsPlugin, rsiArrowsPlugin, invariancePointsPlugin, {
                     id: 'eventsPlugin',
                     afterDatasetsDraw(chart) {
                         if (!document.getElementById('layer-event')?.checked) return;
@@ -2006,7 +1998,7 @@
                     scales: {
                         y: {
                             type: 'linear',
-                            display: (document.getElementById('layer-exchange')?.checked || document.getElementById('layer-short')?.checked),
+                            display: (!!document.getElementById('layer-exchange')?.checked && hasExchange) || !!document.getElementById('layer-short')?.checked,
                             position: 'left',
                             beginAtZero: false,
                             grace: '10%',
@@ -2020,8 +2012,9 @@
                                 }
                             },
                             title: {
-                                display: !!document.getElementById('layer-exchange')?.checked,
-                                text: getTranslation('int.exchange') || 'Exchange'
+                                display: !!document.getElementById('layer-exchange')?.checked && hasExchange,
+                                text: getTranslation('int.exchange') || 'Exchange',
+                                color: 'rgba(255, 159, 64, 1)'
                             }
                         },
                         y1: {
@@ -2042,7 +2035,8 @@
                                 color: '#666'
                             },
                             title: {
-                                display: false
+                                display: !!document.getElementById('layer-price')?.checked,
+                                text: getTranslation('int.prices') || 'Prezzo'
                             }
                         },
                         y2: {
@@ -2162,14 +2156,22 @@
                                         }
                                     }
 
-                                    if (document.getElementById('layer-volume')?.checked) {
-                                        const volVal = volumeValues[index];
-                                        if (volVal !== null && volVal !== undefined && volVal > 0) {
-                                            lines.push(`📊 Volume: ${formatVolume(volVal)}`);
-                                        }
-                                    }
-
                                     return lines;
+                                },
+                                // Etichette del tooltip: prezzo tradotto (int.prices) e volume formattato (una sola riga Volume)
+                                label: function (ctx) {
+                                    const ds = ctx.dataset;
+                                    let name = ds.label || '';
+                                    let value = ctx.formattedValue;
+                                    if (ctx.datasetIndex === 0) {
+                                        name = getTranslation('int.prices') || 'Prezzo';
+                                    } else if (ctx.datasetIndex === 1) {
+                                        name = `${getTranslation('int.prices') || 'Prezzo'} ${targetCurrency}`;
+                                    } else if (ds.yAxisID === 'y2') {
+                                        const v = ctx.parsed.y;
+                                        value = (v !== null && v !== undefined) ? formatVolume(v) : value;
+                                    }
+                                    return `${name}: ${value}`;
                                 }
                             }
                         }
