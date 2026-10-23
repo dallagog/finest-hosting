@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Market Trend 0.2</title>
+    <title>Market Trend 0.4</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <link rel="icon" type="image/png" href="images/icon-finest.png">
@@ -744,6 +744,9 @@
                 </div>
             </div>
 
+            <button type="button" id="export-image-btn" class="time-filter-btn" onclick="exportChartImage()"
+                title="Esporta come immagine" style="padding: 8px 10px; font-size: 1rem;">📷</button>
+
             <div class="date-period-controls">
                 <div class="control-group">
                     <span class="time-filter-wrap">
@@ -1345,7 +1348,7 @@
                     if (deltaRaw !== undefined && deltaRaw !== null) {
                         const delta = parseValue(deltaRaw);
                         const { x } = point;
-                        const y = chartArea.bottom - 10;
+                        const y = chartArea.bottom - 1; // a livello della base dei volumi
                         const color = delta >= 0 ? 'blue' : 'red';
 
                         ctx.beginPath();
@@ -1372,7 +1375,7 @@
                             ctx.moveTo(x, y - BAR_H / 2);
                             ctx.lineTo(x, y - BAR_H / 2 - h);
                             ctx.strokeStyle = color;
-                            ctx.lineWidth = BAR_H;
+                            ctx.lineWidth = 1.5; // barra verticale più sottile del trattino
                             ctx.lineCap = 'butt';
                             ctx.stroke();
                         }
@@ -1381,6 +1384,41 @@
                 ctx.restore();
             }
         };
+
+        // Esporta il grafico andamentale come immagine PNG (sfondo bianco + titolo)
+        function exportChartImage() {
+            const src = document.getElementById('chartCanvas');
+            if (!src || !src.width || !src.height) return;
+
+            const title = (document.getElementById('page-title-input')?.value || '').trim();
+            const dpr = src.width / (src.clientWidth || src.width);
+            const titleH = title ? Math.round(36 * dpr) : 0;
+
+            const out = document.createElement('canvas');
+            out.width = src.width;
+            out.height = src.height + titleH;
+            const octx = out.getContext('2d');
+            octx.fillStyle = '#ffffff';
+            octx.fillRect(0, 0, out.width, out.height);
+
+            if (title) {
+                octx.fillStyle = '#222222';
+                octx.font = `bold ${Math.round(18 * dpr)}px Arial, sans-serif`;
+                octx.textAlign = 'center';
+                octx.textBaseline = 'middle';
+                octx.fillText(title, out.width / 2, titleH / 2);
+            }
+            octx.drawImage(src, 0, titleH);
+
+            const endDate = document.getElementById('end-date')?.value || '';
+            const safeName = (title || 'chart').replace(/[^\w\-]+/g, '_').replace(/^_+|_+$/g, '') || 'chart';
+            const link = document.createElement('a');
+            link.download = `${safeName}${endDate ? '_' + endDate : ''}.png`;
+            link.href = out.toDataURL('image/png');
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
 
         async function loadPrices() {
             console.log('===== loadPrices START =====');
