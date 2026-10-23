@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Market 0.1</title>
+    <title>Market 0.4</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <link rel="icon" type="image/png" href="images/icon-finest.png">
     <style>
@@ -1257,25 +1257,27 @@
                         const th = item.market;
 
                         // Determina lo stato del mercato dal campo "fase"
-                        // giallo = unknown, verde = open, rosso = close
-                        let statusClass = 'status-unknown'; // Default giallo per dati mancanti
-                        let statusTitle = getTranslation('int.market.unknown') || 'Sconosciuto';
+                        // int.fasemarket.open   -> verde
+                        // int.fasemarket.close  -> rosso
+                        // int.fasemarket.unknown (o assente/altro) -> giallo
+                        let statusClass = 'status-unknown'; // Default giallo
+                        let statusTitle = getTranslation('int.fasemarket.unknown') || 'Sconosciuto';
 
                         if (th && typeof th === 'object' && th.fase) {
-                            if (th.fase === 'int.market.open') {
+                            if (th.fase === 'int.fasemarket.open') {
                                 statusClass = 'status-open';
-                                statusTitle = getTranslation('int.market.open') || 'Aperto';
-                            } else if (th.fase === 'int.market.close') {
+                                statusTitle = getTranslation('int.fasemarket.open') || 'Aperto';
+                            } else if (th.fase === 'int.fasemarket.close') {
                                 statusClass = 'status-closed';
-                                statusTitle = getTranslation('int.market.close') || 'Chiuso';
+                                statusTitle = getTranslation('int.fasemarket.close') || 'Chiuso';
                             } else {
-                                // int.market.unknown o qualsiasi altro valore
+                                // int.fasemarket.unknown o qualsiasi altro valore
                                 statusClass = 'status-unknown';
-                                statusTitle = getTranslation('int.market.unknown') || 'Sconosciuto';
+                                statusTitle = getTranslation('int.fasemarket.unknown') || 'Sconosciuto';
                             }
                         }
 
-                        // Dettaglio fase: aggiunge la traduzione di market.$price_type (es. "int.close")
+                        // Dettaglio fase: aggiunge la traduzione di market.$price_type
                         if (th && typeof th === 'object' && th['$price_type']) {
                             const priceTypeLabel = getTranslation(th['$price_type']);
                             if (priceTypeLabel) {
