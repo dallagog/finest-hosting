@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Market Trend 0.5</title>
+    <title>Market Trend 0.1</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <link rel="icon" type="image/png" href="images/icon-finest.png">
@@ -1109,22 +1109,31 @@
             renderChart();
         }
 
-        // Freccia ricurva: curva quadratica (sx,sy) -> (ex,ey) con punto di controllo (cx,cy) e punta all'arrivo
-        function drawCurvedForceArrow(ctx, sx, sy, cx, cy, ex, ey, color) {
+        // Freccia a U: dir = 'down' -> U rovesciata (∩) con punta verso il basso;
+        //              dir = 'up'   -> U con punta verso l'alto.
+        // (x, yEnd) = punto d'arrivo della punta (lato destro), height = altezza della U, w = semi-larghezza.
+        function drawUShapedArrow(ctx, x, yEnd, height, dir, color) {
+            const w = 8;
+            const k = height * 4 / 3;               // con due punti di controllo a quota k, il picco della curva vale 0.75*k = height
+            const s = dir === 'down' ? -1 : 1;      // direzione della curva rispetto alla base
+            const xl = x - w, xr = x + w;
+
             ctx.beginPath();
             ctx.lineWidth = 2;
+            ctx.lineCap = 'round';
             ctx.strokeStyle = color;
             ctx.fillStyle = color;
-            ctx.moveTo(sx, sy);
-            ctx.quadraticCurveTo(cx, cy, ex, ey);
+            ctx.moveTo(xl, yEnd);
+            ctx.bezierCurveTo(xl, yEnd + s * k, xr, yEnd + s * k, xr, yEnd);
             ctx.stroke();
 
-            const ang = Math.atan2(ey - cy, ex - cx);
-            const len = 8, spread = Math.PI / 6;
+            // Punta della freccia sul braccio destro (verso il basso per ∩, verso l'alto per U)
+            const hs = dir === 'down' ? -1 : 1;     // la base della punta sta sul lato da cui arriva la curva
+            const headLen = 7, headHalf = 4.5;
             ctx.beginPath();
-            ctx.moveTo(ex, ey);
-            ctx.lineTo(ex - len * Math.cos(ang - spread), ey - len * Math.sin(ang - spread));
-            ctx.lineTo(ex - len * Math.cos(ang + spread), ey - len * Math.sin(ang + spread));
+            ctx.moveTo(xr, yEnd);
+            ctx.lineTo(xr - headHalf, yEnd + (dir === 'down' ? -headLen : headLen));
+            ctx.lineTo(xr + headHalf, yEnd + (dir === 'down' ? -headLen : headLen));
             ctx.closePath();
             ctx.fill();
         }
@@ -1182,7 +1191,7 @@
                         const isPositive = force.value > 0;
                         const color = isPositive ? 'green' : 'red';
                         const offset = 20 + (idx * 15);
-                        const arrowSize = 10;
+                        const arrowSize = invNegative ? 16 : 10; // le frecce a U sono più alte
                         const { x, y } = point;
 
                         ctx.beginPath();
@@ -1192,8 +1201,8 @@
 
                         if (isPositive) {
                             if (invNegative) {
-                                // Forza positiva + invarianza negativa: freccia ricurva verso il basso
-                                drawCurvedForceArrow(ctx, x - 10, y - offset - arrowSize + 2, x + 9, y - offset - arrowSize - 2, x, y - offset, color);
+                                // Forza positiva + invarianza negativa: U rovesciata (∩), punta verso il basso
+                                drawUShapedArrow(ctx, x, y - offset, arrowSize, 'down', color);
                             } else {
                                 ctx.moveTo(x, y - offset);
                                 ctx.lineTo(x, y - offset - arrowSize);
@@ -1218,8 +1227,8 @@
                             }
                         } else {
                             if (invNegative) {
-                                // Forza negativa + invarianza negativa: freccia ricurva verso l'alto
-                                drawCurvedForceArrow(ctx, x - 10, y + offset + arrowSize - 2, x + 9, y + offset + arrowSize + 2, x, y + offset, color);
+                                // Forza negativa + invarianza negativa: U, punta verso l'alto
+                                drawUShapedArrow(ctx, x, y + offset, arrowSize, 'up', color);
                             } else {
                                 ctx.moveTo(x, y + offset);
                                 ctx.lineTo(x, y + offset + arrowSize);
