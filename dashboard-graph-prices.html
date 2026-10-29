@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Market Trend 0.3</title>
+    <title>Market Trend 0.5</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <link rel="icon" type="image/png" href="images/icon-finest.png">
@@ -1109,6 +1109,26 @@
             renderChart();
         }
 
+        // Freccia ricurva: curva quadratica (sx,sy) -> (ex,ey) con punto di controllo (cx,cy) e punta all'arrivo
+        function drawCurvedForceArrow(ctx, sx, sy, cx, cy, ex, ey, color) {
+            ctx.beginPath();
+            ctx.lineWidth = 2;
+            ctx.strokeStyle = color;
+            ctx.fillStyle = color;
+            ctx.moveTo(sx, sy);
+            ctx.quadraticCurveTo(cx, cy, ex, ey);
+            ctx.stroke();
+
+            const ang = Math.atan2(ey - cy, ex - cx);
+            const len = 8, spread = Math.PI / 6;
+            ctx.beginPath();
+            ctx.moveTo(ex, ey);
+            ctx.lineTo(ex - len * Math.cos(ang - spread), ey - len * Math.sin(ang - spread));
+            ctx.lineTo(ex - len * Math.cos(ang + spread), ey - len * Math.sin(ang + spread));
+            ctx.closePath();
+            ctx.fill();
+        }
+
         const forceArrowsPlugin = {
             id: 'forceArrows',
             afterDatasetsDraw(chart) {
@@ -1135,6 +1155,11 @@
                 meta.data.forEach((point, index) => {
                     const forceObj = forceValues[index];
                     if (!forceObj) return;
+
+                    // Segno dell'invarianza (delta) nello stesso punto
+                    const invObjAtPoint = dataset.invValues ? dataset.invValues[index] : null;
+                    const invDeltaRaw = invObjAtPoint ? invObjAtPoint['invariance@delta'] : undefined;
+                    const invNegative = (invDeltaRaw !== undefined && invDeltaRaw !== null) && parseValue(invDeltaRaw) < 0;
 
                     let forcesToDraw = [];
 
@@ -1166,16 +1191,21 @@
                         ctx.fillStyle = color;
 
                         if (isPositive) {
-                            ctx.moveTo(x, y - offset);
-                            ctx.lineTo(x, y - offset - arrowSize);
-                            ctx.stroke();
+                            if (invNegative) {
+                                // Forza positiva + invarianza negativa: freccia ricurva verso il basso
+                                drawCurvedForceArrow(ctx, x - 10, y - offset - arrowSize + 2, x + 9, y - offset - arrowSize - 2, x, y - offset, color);
+                            } else {
+                                ctx.moveTo(x, y - offset);
+                                ctx.lineTo(x, y - offset - arrowSize);
+                                ctx.stroke();
 
-                            ctx.beginPath();
-                            ctx.moveTo(x, y - offset - arrowSize);
-                            ctx.lineTo(x - 5, y - offset - arrowSize + 5);
-                            ctx.lineTo(x + 5, y - offset - arrowSize + 5);
-                            ctx.closePath();
-                            ctx.fill();
+                                ctx.beginPath();
+                                ctx.moveTo(x, y - offset - arrowSize);
+                                ctx.lineTo(x - 5, y - offset - arrowSize + 5);
+                                ctx.lineTo(x + 5, y - offset - arrowSize + 5);
+                                ctx.closePath();
+                                ctx.fill();
+                            }
 
                             ctx.font = 'bold 10px Orbitron';
                             ctx.textAlign = 'center';
@@ -1187,16 +1217,21 @@
                                 ctx.fillText(force.field.replace('forza@', ''), x, y - offset - arrowSize - 15);
                             }
                         } else {
-                            ctx.moveTo(x, y + offset);
-                            ctx.lineTo(x, y + offset + arrowSize);
-                            ctx.stroke();
+                            if (invNegative) {
+                                // Forza negativa + invarianza negativa: freccia ricurva verso l'alto
+                                drawCurvedForceArrow(ctx, x - 10, y + offset + arrowSize - 2, x + 9, y + offset + arrowSize + 2, x, y + offset, color);
+                            } else {
+                                ctx.moveTo(x, y + offset);
+                                ctx.lineTo(x, y + offset + arrowSize);
+                                ctx.stroke();
 
-                            ctx.beginPath();
-                            ctx.moveTo(x, y + offset + arrowSize);
-                            ctx.lineTo(x - 5, y + offset + arrowSize - 5);
-                            ctx.lineTo(x + 5, y + offset + arrowSize - 5);
-                            ctx.closePath();
-                            ctx.fill();
+                                ctx.beginPath();
+                                ctx.moveTo(x, y + offset + arrowSize);
+                                ctx.lineTo(x - 5, y + offset + arrowSize - 5);
+                                ctx.lineTo(x + 5, y + offset + arrowSize - 5);
+                                ctx.closePath();
+                                ctx.fill();
+                            }
 
                             ctx.font = 'bold 10px Orbitron';
                             ctx.textAlign = 'center';
@@ -1416,10 +1451,15 @@
                 market ? `${labelMkt}: ${market}` : ''
             ].filter(Boolean).join('   |   ');
 
+            // Prossimo evento (data e descrizione), come nella testata
+            const nextEvEl = document.getElementById('inst-next-event');
+            const line4 = (nextEvEl && nextEvEl.style.display !== 'none') ? nextEvEl.textContent.trim() : '';
+
             const lines = [];
             if (title) lines.push({ text: title, size: 18, bold: true, color: '#222222' });
             if (line2) lines.push({ text: line2, size: 14, bold: true, color: '#333333' });
             if (line3) lines.push({ text: line3, size: 13, bold: false, color: '#555555' });
+            if (line4) lines.push({ text: line4, size: 13, bold: true, color: '#16a34a' });
 
             const padY = 8;
             const lineGap = 6;

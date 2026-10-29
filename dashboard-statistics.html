@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Statistics 0.1</title>
+    <title>Statistics 0.6</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <script src="js/dashboard-shared.js"></script>
     <link rel="icon" type="image/png" href="images/icon-finest.png">
@@ -1091,6 +1091,8 @@
         let _sectorGroups = [];
         // Settori espansi: Set di sectorKey
         let _expandedSectors = new Set();
+        let _autoExpandedByInstrument = false;
+        let _expandedBeforeInstrument = null;
 
         let _instrumentIndex = [];
         let _instSelIdx = -1;
@@ -1491,6 +1493,8 @@
             _sectorPages = {};
             // Reset espansione settori quando si ricaricano i dati
             _expandedSectors = new Set();
+            _expandedBeforeInstrument = null;
+            _autoExpandedByInstrument = false;
 
             populateInstrumentSelector(data);
             populateMarketSelector(data);
@@ -1544,6 +1548,20 @@
                 const labelB = getSectorLabel(b);
                 return labelA.localeCompare(labelB, langCode, { sensitivity: 'base' });
             });
+
+            // Con un singolo strumento selezionato, espande automaticamente i dettagli.
+            // Quando la selezione viene rimossa, ripristina lo stato precedente.
+            if (instrumentFilter) {
+                if (!_autoExpandedByInstrument) {
+                    _expandedBeforeInstrument = new Set(_expandedSectors);
+                    _autoExpandedByInstrument = true;
+                }
+                sortedSectorKeys.forEach(k => _expandedSectors.add(k));
+            } else if (_autoExpandedByInstrument) {
+                _expandedSectors = _expandedBeforeInstrument || new Set();
+                _expandedBeforeInstrument = null;
+                _autoExpandedByInstrument = false;
+            }
 
             _sectorGroups = sortedSectorKeys.map((key, idx) => {
                 const rows = sectorMap[key];
