@@ -4,10 +4,9 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Import 0.1</title>
+    <title>Import 0.2</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <link rel="icon" type="image/png" href="images/icon-finest.png">
-    <!-- JSZip per creare lo zip da inviare a /importall -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&display=swap');
@@ -16,6 +15,7 @@
             --bg-color: #f5f5f0;
             --glass-bg: #ffffff;
             --text-color: #333333;
+            --active-color: #0066cc;
         }
 
         * {
@@ -115,13 +115,43 @@
             margin-bottom: 20px;
             border-radius: 8px;
             box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+            transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+        }
+
+        .content-section.active-section {
+            border-color: var(--active-color);
+            box-shadow: 0 0 0 1px var(--active-color);
+        }
+
+        .content-section.active-section .section-head h2::after {
+            content: ' ●';
+            color: var(--active-color);
+            font-size: 0.7em;
+            vertical-align: middle;
+            margin-left: 6px;
+        }
+
+        @keyframes flash-section {
+
+            0%,
+            100% {
+                background: var(--glass-bg);
+            }
+
+            50% {
+                background: #eef6ff;
+            }
+        }
+
+        .content-section.flash {
+            animation: flash-section 0.8s ease;
         }
 
         .section-head {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 15px;
+            margin-bottom: 12px;
             gap: 10px;
             flex-wrap: wrap;
         }
@@ -131,6 +161,11 @@
             font-weight: 600;
             color: #000;
             margin: 0;
+        }
+
+        .section-head h2 i {
+            margin-right: 6px;
+            color: var(--active-color);
         }
 
         .toolbar {
@@ -149,19 +184,20 @@
         .drop-zone {
             border: 2px dashed #999;
             border-radius: 8px;
-            padding: 30px;
+            padding: 18px;
             text-align: center;
             background: #fafafa;
             cursor: pointer;
             transition: all 0.2s;
             color: #666;
+            margin-bottom: 12px;
         }
 
         .drop-zone i {
-            font-size: 32px;
+            font-size: 22px;
             color: #000;
-            margin-bottom: 10px;
-            display: block;
+            margin-right: 6px;
+            vertical-align: middle;
         }
 
         .drop-zone.dragover {
@@ -172,17 +208,17 @@
 
         .drop-zone small {
             display: block;
-            margin-top: 8px;
+            margin-top: 6px;
             font-size: 11px;
             color: #999;
         }
 
-        body.dragging .drop-zone {
+        body.dragging .content-section.active-section .drop-zone {
             background: #eef6ff;
-            border-color: #0066cc;
+            border-color: var(--active-color);
         }
 
-        #docs-table-container {
+        .table-container {
             overflow-x: auto;
         }
 
@@ -196,9 +232,8 @@
         .data-table td {
             padding: 4px 8px;
             text-align: left;
-            border-bottom: none;
             color: #333;
-            min-height: 32px;
+            min-height: 28px;
             font-size: 12px;
         }
 
@@ -221,7 +256,7 @@
             position: relative;
             line-height: 1.1;
             vertical-align: bottom;
-            padding: 8px 8px;
+            padding: 6px 8px;
         }
 
         .data-table th:hover {
@@ -278,6 +313,16 @@
             background: #eee;
         }
 
+        .row-btn.proc {
+            background: #fff;
+            color: #000;
+            border-color: #000;
+        }
+
+        .row-btn.proc:hover:not(:disabled) {
+            background: #eee;
+        }
+
         .file-link {
             cursor: pointer;
             text-decoration: underline;
@@ -314,8 +359,8 @@
         }
 
         .badge.working {
-            border-color: #0066cc;
-            color: #0066cc;
+            border-color: var(--active-color);
+            color: var(--active-color);
             background: #eef6ff;
         }
 
@@ -350,16 +395,6 @@
             font-size: 12px;
             font-weight: 600;
             text-transform: uppercase;
-        }
-
-        .row-btn.proc {
-            background: #fff;
-            color: #000;
-            border-color: #000;
-        }
-
-        .row-btn.proc:hover:not(:disabled) {
-            background: #eee;
         }
 
         .message {
@@ -512,46 +547,8 @@
 
         <div id="message" class="message"></div>
 
-        <!-- Upload -->
-        <div class="content-section">
-            <div class="section-head">
-                <h2 id="uploadTitle">Carica documenti</h2>
-            </div>
-            <div id="dropZone" class="drop-zone">
-                <i class="fa fa-cloud-upload-alt"></i>
-                <span id="dropText">Trascina qui i file (o incolla con Ctrl+V) oppure clicca per selezionarli</span>
-                <small id="dropHint">Formati ammessi: PDF, TXT, CSV, XLS, XLSX, JSON, XML, immagini — max 20 MB per
-                    file</small>
-            </div>
-            <input type="file" id="fileInput" multiple style="display:none"
-                accept=".pdf,.txt,.csv,.tsv,.xls,.xlsx,.json,.xml,.xml,.doc,.docx,.png,.jpg,.jpeg">
-        </div>
-
-        <!-- Bucket -->
-        <div class="content-section">
-            <div class="section-head">
-                <h2 id="bucketTitle">Documenti nel bucket</h2>
-                <div class="toolbar">
-                    <button id="importConfirmBtn" class="update-btn" onclick="importSelected()" disabled>
-                        <i class="fa fa-check"></i> <span id="importConfirmText">Conferma</span>
-                    </button>
-                    <button id="deleteSelBtn" class="update-btn" onclick="deleteSelected()" disabled>
-                        <i class="fa fa-trash"></i> <span id="deleteSelText">Elimina selezionati</span>
-                    </button>
-                </div>
-            </div>
-            <div id="docs-table-container">
-                <table id="docs-table" class="data-table">
-                    <thead>
-                        <tr id="docs-header-row"></tr>
-                    </thead>
-                    <tbody id="docs-body"></tbody>
-                    <tfoot>
-                        <tr id="docs-footer-row"></tr>
-                    </tfoot>
-                </table>
-            </div>
-        </div>
+        <!-- Contenitore dinamico: qui vengono create le 4 sezioni (trade, instrument, price, exchange) -->
+        <div id="sections-container"></div>
     </div>
 
     <!-- Preview modal -->
@@ -571,11 +568,11 @@
     <div id="confirm-modal" class="modal-overlay">
         <div class="modal-content small">
             <div class="modal-header" style="justify-content:center">
-                <h2 id="confirmTitle">Conferma eliminazione</h2>
+                <h2 id="confirmTitle">Conferma</h2>
             </div>
             <p id="confirmText"></p>
             <div class="modal-footer">
-                <button id="confirmYes"><i class="fa fa-trash"></i> <span id="confirmYesText">Elimina</span></button>
+                <button id="confirmYes"><i class="fa fa-check"></i> <span id="confirmYesText">Conferma</span></button>
                 <button class="close-btn" onclick="closeConfirm()"><i class="fa fa-times"></i> <span
                         id="confirmNoText">Annulla</span></button>
             </div>
@@ -591,8 +588,8 @@
         //         username, token, language,
         //         file     = ZIP contenente il file originale
         //         recreate = 'false'
-        //         ticker   = 'trade'
-        //         filename = 'trade:<basename>' (senza estensione)
+        //         ticker   = <sezione>   (trade | instrument | price | exchange)
+        //         filename = '<sezione>:<basename>' (senza estensione)
         //         -> {status:'ok', msg, document?:{id,name,size,uploaded_at,imported}}
         //
         //  DELETE:   POST /bucket/delete   {username, token, language, id}  -> {status:'ok'}
@@ -607,20 +604,34 @@
             get: `${API_URL}/bucket/get`,
             processed: `${API_URL}/bucket/processed`
         };
-        let localCounter = 0;
+
+        // Configurazione delle sezioni. Aggiungere/togliere voci qui per
+        // cambiare dinamicamente le sezioni mostrate.
+        const SECTIONS = [
+            { key: 'trade', labelKey: 'int.import.section.trade', fallbackLabel: 'Trade', icon: 'fa-chart-line' },
+            { key: 'instrument', labelKey: 'int.import.section.instrument', fallbackLabel: 'Instrument', icon: 'fa-chart-pie' },
+            { key: 'price', labelKey: 'int.import.section.price', fallbackLabel: 'Price', icon: 'fa-tag' },
+            { key: 'exchange', labelKey: 'int.import.section.exchange', fallbackLabel: 'Exchange', icon: 'fa-exchange-alt' }
+        ];
+        const SECTION_KEYS = SECTIONS.map(s => s.key);
 
         const MAX_FILE_SIZE = 20 * 1024 * 1024;
         const ALLOWED_EXT = ['pdf', 'txt', 'csv', 'tsv', 'xls', 'xlsx', 'json', 'xml', 'doc', 'docx', 'png', 'jpg', 'jpeg'];
 
+        let localCounter = 0;
         let credentials = { username: '', token: '', language: '' };
         let translations = {};
         let availableLanguages = [];
+
+        // documents[i] = { id, name, size, uploaded_at, imported, local, copied, file, section, importing }
         let documents = [];
-        let sortColumn = 'uploaded_at';
-        let sortAscending = false;
-        let selectedIds = new Set();
-        let previewUrl = null;
+        let selectedIds = new Set(); // Set di ID globali (unique)
+        let sectionSort = {};
+        SECTIONS.forEach(s => { sectionSort[s.key] = { column: 'uploaded_at', asc: false }; });
+
+        let activeSection = 'trade'; // sezione target di Ctrl+V
         let importing = false;
+        let previewUrl = null;
 
         // ========== UTILITY ==========
         function t(key, fallback) {
@@ -691,7 +702,6 @@
             } catch (e) {
                 console.error('Error loading translations:', e);
             }
-            updatePageTranslations();
         }
 
         async function initializeLanguages() {
@@ -724,28 +734,129 @@
         }
 
         function updatePageTranslations() {
-            const set = (id, key, fb) => { document.getElementById(id).textContent = t(key, fb); };
-            set('pageTitle', 'int.import', 'Import');
-            set('userLabel', 'int.user.label', 'Utente:');
-            set('closeText', 'int.close', 'Chiudi');
-            set('previewCloseText', 'int.close', 'Chiudi');
-            set('uploadTitle', 'int.import.upload', 'Carica documenti');
-            set('dropText', 'int.import.drop', 'Trascina qui i file (o incolla con Ctrl+V) oppure clicca per selezionarli');
-            set('dropHint', 'int.import.hint', 'Formati ammessi: PDF, TXT, CSV, XLS, XLSX, JSON, XML, immagini — max 20 MB per file');
-            set('bucketTitle', 'int.import.bucket', 'Documenti nel bucket');
-            set('deleteSelText', 'int.import.delete_selected', 'Elimina selezionati');
-            set('importConfirmText', 'int.confirm', 'Conferma');
-            set('confirmTitle', 'int.import.confirm_title', 'Conferma eliminazione');
-            set('confirmYesText', 'int.delete', 'Elimina');
-            set('confirmNoText', 'int.cancel', 'Annulla');
+            document.getElementById('userLabel').textContent = t('int.user.label', 'Utente:');
+            document.getElementById('pageTitle').textContent = t('int.import', 'Import');
+            document.getElementById('closeText').textContent = t('int.close', 'Chiudi');
+            document.getElementById('previewCloseText').textContent = t('int.close', 'Chiudi');
             document.title = t('int.import', 'Import');
-            renderTable(true);
         }
 
-        function renderTable(rebuildHeader) {
-            const thead = document.getElementById('docs-header-row');
-            const tbody = document.getElementById('docs-body');
-            const tfoot = document.getElementById('docs-footer-row');
+        // ========== BUILD SECTIONS ==========
+        function buildSections() {
+            const container = document.getElementById('sections-container');
+            container.innerHTML = '';
+
+            SECTIONS.forEach(section => {
+                const block = document.createElement('div');
+                block.className = 'content-section';
+                block.dataset.section = section.key;
+
+                block.innerHTML = `
+                    <div class="section-head">
+                        <h2><i class="fa ${section.icon}"></i>${escapeHtml(t(section.labelKey, section.fallbackLabel))}</h2>
+                        <div class="toolbar">
+                            <button class="update-btn import-btn" disabled>
+                                <i class="fa fa-check"></i> ${escapeHtml(t('int.confirm', 'Conferma'))}
+                            </button>
+                            <button class="update-btn delete-btn" disabled>
+                                <i class="fa fa-trash"></i> ${escapeHtml(t('int.import.delete_selected', 'Elimina selezionati'))}
+                            </button>
+                        </div>
+                    </div>
+                    <div class="drop-zone">
+                        <i class="fa fa-cloud-upload-alt"></i>
+                        <span>${escapeHtml(t('int.import.drop', 'Trascina qui i file (o incolla con Ctrl+V) oppure clicca per selezionarli'))}</span>
+                        <small>${escapeHtml(t('int.import.hint', 'Formati ammessi: PDF, TXT, CSV, XLS, XLSX, JSON, XML, immagini — max 20 MB per file'))}</small>
+                    </div>
+                    <input type="file" class="file-input" multiple style="display:none"
+                        accept=".pdf,.txt,.csv,.tsv,.xls,.xlsx,.json,.xml,.doc,.docx,.png,.jpg,.jpeg">
+                    <div class="table-container">
+                        <table class="data-table">
+                            <thead></thead>
+                            <tbody></tbody>
+                            <tfoot></tfoot>
+                        </table>
+                    </div>
+                `;
+
+                container.appendChild(block);
+                attachSectionEvents(section.key, block);
+                renderSection(section.key);
+            });
+        }
+
+        function attachSectionEvents(sectionKey, block) {
+            const dropZone = block.querySelector('.drop-zone');
+            const fileInput = block.querySelector('.file-input');
+            const importBtn = block.querySelector('.import-btn');
+            const deleteBtn = block.querySelector('.delete-btn');
+
+            dropZone.onclick = () => {
+                setActiveSection(sectionKey);
+                fileInput.click();
+            };
+
+            fileInput.onchange = () => {
+                setActiveSection(sectionKey);
+                handleFiles(sectionKey, fileInput.files);
+                fileInput.value = '';
+            };
+
+            dropZone.addEventListener('dragenter', e => {
+                e.preventDefault();
+                dropZone.classList.add('dragover');
+                setActiveSection(sectionKey);
+            });
+            dropZone.addEventListener('dragover', e => {
+                e.preventDefault();
+                dropZone.classList.add('dragover');
+                setActiveSection(sectionKey);
+            });
+            dropZone.addEventListener('dragleave', e => {
+                e.preventDefault();
+                dropZone.classList.remove('dragover');
+            });
+            dropZone.addEventListener('drop', e => {
+                e.preventDefault();
+                e.stopPropagation(); // evita che il document handler processi lo stesso drop
+                dropZone.classList.remove('dragover');
+                if (e.dataTransfer && e.dataTransfer.files.length) {
+                    setActiveSection(sectionKey);
+                    handleFiles(sectionKey, e.dataTransfer.files);
+                }
+            });
+
+            importBtn.onclick = () => importSelected(sectionKey);
+            deleteBtn.onclick = () => deleteSelected(sectionKey);
+        }
+
+        function setActiveSection(key) {
+            activeSection = key;
+            document.querySelectorAll('.content-section').forEach(el => {
+                el.classList.toggle('active-section', el.dataset.section === key);
+            });
+        }
+
+        function flashSection(key) {
+            const el = document.querySelector(`.content-section[data-section="${key}"]`);
+            if (!el) return;
+            el.classList.add('flash');
+            setTimeout(() => el.classList.remove('flash'), 800);
+        }
+
+        // ========== RENDER PER SECTION ==========
+        function renderSection(sectionKey) {
+            const block = document.querySelector(`.content-section[data-section="${sectionKey}"]`);
+            if (!block) return;
+
+            const docs = documents.filter(d => d.section === sectionKey);
+            const sort = sectionSort[sectionKey] || { column: 'uploaded_at', asc: false };
+
+            const thead = block.querySelector('thead');
+            const tbody = block.querySelector('tbody');
+            const tfoot = block.querySelector('tfoot');
+            const importBtn = block.querySelector('.import-btn');
+            const deleteBtn = block.querySelector('.delete-btn');
 
             const cols = [
                 { key: 'name', label: t('int.import.col.name', 'Nome file') },
@@ -756,41 +867,39 @@
                 { key: 'azioni', label: t('int.trading', 'Azioni'), cls: 'center' }
             ];
 
-            if (rebuildHeader || thead.children.length === 0) {
-                thead.innerHTML = '';
-                const thSel = document.createElement('th');
-                thSel.className = 'center';
-                thSel.style.cursor = 'default';
-                const all = document.createElement('input');
-                all.type = 'checkbox';
-                all.id = 'selectAll';
-                all.onchange = () => {
-                    if (all.checked) documents.forEach(d => selectedIds.add(String(d.id)));
-                    else selectedIds.clear();
-                    renderTable();
-                };
-                thSel.appendChild(all);
-                thead.appendChild(thSel);
+            // --- Header ---
+            thead.innerHTML = '';
+            const trH = document.createElement('tr');
 
-                cols.forEach(c => {
-                    const th = document.createElement('th');
-                    th.textContent = c.label;
-                    if (c.cls) th.className = c.cls;
-                    if (c.key === 'azioni') {
-                        th.style.cursor = 'default';
-                    } else {
-                        th.onclick = () => sortTable(c.key);
-                    }
-                    th.dataset.key = c.key;
-                    thead.appendChild(th);
-                });
-            }
+            const thSel = document.createElement('th');
+            thSel.className = 'center';
+            thSel.style.cursor = 'default';
+            const all = document.createElement('input');
+            all.type = 'checkbox';
+            all.onchange = () => {
+                const sectionDocs = documents.filter(d => d.section === sectionKey);
+                if (all.checked) sectionDocs.forEach(d => selectedIds.add(String(d.id)));
+                else sectionDocs.forEach(d => selectedIds.delete(String(d.id)));
+                renderSection(sectionKey);
+            };
+            thSel.appendChild(all);
+            trH.appendChild(thSel);
 
-            Array.from(thead.cells).forEach(th => {
-                th.classList.remove('sort-asc', 'sort-desc');
-                if (th.dataset.key === sortColumn) th.classList.add(sortAscending ? 'sort-asc' : 'sort-desc');
+            cols.forEach(c => {
+                const th = document.createElement('th');
+                th.textContent = c.label;
+                if (c.cls) th.className = c.cls;
+                if (c.key === 'azioni') {
+                    th.style.cursor = 'default';
+                } else {
+                    th.onclick = () => sortTable(sectionKey, c.key);
+                }
+                if (sort.column === c.key) th.classList.add(sort.asc ? 'sort-asc' : 'sort-desc');
+                trH.appendChild(th);
             });
+            thead.appendChild(trH);
 
+            // --- Sort ---
             const getVal = (d, key) => {
                 if (key === 'type') return extOf(d.name);
                 if (key === 'size') return Number(d.size) || 0;
@@ -798,142 +907,133 @@
                 if (key === 'imported') return d.imported ? 1 : 0;
                 return String(d[key] || '').toLowerCase();
             };
-            const sorted = [...documents].sort((a, b) => {
-                const va = getVal(a, sortColumn), vb = getVal(b, sortColumn);
+            const sorted = [...docs].sort((a, b) => {
+                const va = getVal(a, sort.column), vb = getVal(b, sort.column);
                 const r = (typeof va === 'number' && typeof vb === 'number') ? va - vb : String(va).localeCompare(String(vb));
-                return sortAscending ? r : -r;
+                return sort.asc ? r : -r;
             });
 
+            // --- Body ---
             tbody.innerHTML = '';
             if (sorted.length === 0) {
                 const tr = document.createElement('tr');
                 tr.className = 'empty-row';
                 const td = document.createElement('td');
                 td.colSpan = cols.length + 1;
-                td.textContent = t('int.import.empty', 'Nessun documento presente. Trascina, incolla o seleziona dei file.');
+                td.textContent = t('int.import.empty_section', 'Nessun file in questa sezione.');
                 tr.appendChild(td);
                 tbody.appendChild(tr);
+            } else {
+                sorted.forEach(d => {
+                    const id = String(d.id);
+                    const tr = document.createElement('tr');
+
+                    const tdSel = document.createElement('td');
+                    tdSel.className = 'center';
+                    const cb = document.createElement('input');
+                    cb.type = 'checkbox';
+                    cb.checked = selectedIds.has(id);
+                    cb.onchange = () => {
+                        if (cb.checked) selectedIds.add(id); else selectedIds.delete(id);
+                        renderSection(sectionKey);
+                    };
+                    tdSel.appendChild(cb);
+                    tr.appendChild(tdSel);
+
+                    const tdName = document.createElement('td');
+                    const link = document.createElement('span');
+                    link.className = 'file-link';
+                    link.textContent = d.name;
+                    link.onclick = () => viewDocument(d);
+                    tdName.appendChild(link);
+                    tr.appendChild(tdName);
+
+                    const tdType = document.createElement('td');
+                    tdType.textContent = extOf(d.name).toUpperCase();
+                    tr.appendChild(tdType);
+
+                    const tdSize = document.createElement('td');
+                    tdSize.className = 'num';
+                    tdSize.textContent = formatSize(d.size);
+                    tr.appendChild(tdSize);
+
+                    const tdDate = document.createElement('td');
+                    tdDate.textContent = formatDate(d.uploaded_at);
+                    tr.appendChild(tdDate);
+
+                    const tdStatus = document.createElement('td');
+                    const badge = document.createElement('span');
+                    if (d.importing) {
+                        badge.className = 'badge working';
+                        badge.textContent = t('int.import.status.importing', 'Importazione...');
+                    } else if (d.imported || d.copied) {
+                        badge.className = 'badge imported';
+                        badge.textContent = t('int.import.status.imported', 'Importato');
+                    } else {
+                        badge.className = 'badge';
+                        badge.textContent = t('int.import.status.local', 'Da importare');
+                    }
+                    tdStatus.appendChild(badge);
+                    tr.appendChild(tdStatus);
+
+                    const tdAct = document.createElement('td');
+                    tdAct.className = 'center';
+                    tdAct.style.whiteSpace = 'nowrap';
+
+                    const bView = document.createElement('button');
+                    bView.className = 'row-btn view';
+                    bView.innerHTML = '<i class="fa fa-file"></i> ' + escapeHtml(t('int.import.original', 'Originale'));
+                    bView.onclick = () => viewDocument(d);
+
+                    const bProc = document.createElement('button');
+                    bProc.className = 'row-btn proc';
+                    bProc.innerHTML = '<i class="fa fa-cogs"></i> ' + escapeHtml(t('int.import.processed', 'Elaborato'));
+                    bProc.onclick = () => viewProcessed(d);
+
+                    const bDel = document.createElement('button');
+                    bDel.className = 'row-btn';
+                    bDel.innerHTML = '<i class="fa fa-trash"></i> ' + escapeHtml(t('int.delete', 'Elimina'));
+                    bDel.onclick = () => confirmDelete(sectionKey, [id]);
+
+                    tdAct.appendChild(bView);
+                    tdAct.appendChild(bProc);
+                    tdAct.appendChild(bDel);
+                    tr.appendChild(tdAct);
+
+                    tbody.appendChild(tr);
+                });
             }
 
-            sorted.forEach(d => {
-                const id = String(d.id);
-                const tr = document.createElement('tr');
-
-                const tdSel = document.createElement('td');
-                tdSel.className = 'center';
-                const cb = document.createElement('input');
-                cb.type = 'checkbox';
-                cb.checked = selectedIds.has(id);
-                cb.onchange = () => {
-                    if (cb.checked) selectedIds.add(id); else selectedIds.delete(id);
-                    updateSelectionUI();
-                };
-                tdSel.appendChild(cb);
-                tr.appendChild(tdSel);
-
-                const tdName = document.createElement('td');
-                const link = document.createElement('span');
-                link.className = 'file-link';
-                link.textContent = d.name;
-                link.title = t('int.import.view_original', 'Visualizza documento');
-                link.onclick = () => viewDocument(d);
-                tdName.appendChild(link);
-                tr.appendChild(tdName);
-
-                const tdType = document.createElement('td');
-                tdType.textContent = extOf(d.name).toUpperCase();
-                tr.appendChild(tdType);
-
-                const tdSize = document.createElement('td');
-                tdSize.className = 'num';
-                tdSize.textContent = formatSize(d.size);
-                tr.appendChild(tdSize);
-
-                const tdDate = document.createElement('td');
-                tdDate.textContent = formatDate(d.uploaded_at);
-                tr.appendChild(tdDate);
-
-                const tdStatus = document.createElement('td');
-                const badge = document.createElement('span');
-                if (d.importing) {
-                    badge.className = 'badge working';
-                    badge.textContent = t('int.import.status.importing', 'Importazione...');
-                } else if (d.local) {
-                    badge.className = 'badge' + (d.copied ? ' imported' : '');
-                    badge.textContent = d.copied
-                        ? t('int.import.status.copied', 'Importato')
-                        : t('int.import.status.local', 'Da importare');
-                } else {
-                    badge.className = 'badge' + (d.imported ? ' imported' : '');
-                    badge.textContent = d.imported
-                        ? t('int.import.status.imported', 'Importato')
-                        : t('int.import.status.pending', 'Sul server');
-                }
-                tdStatus.appendChild(badge);
-                tr.appendChild(tdStatus);
-
-                const tdAct = document.createElement('td');
-                tdAct.className = 'center';
-                tdAct.style.whiteSpace = 'nowrap';
-                const bView = document.createElement('button');
-                bView.className = 'row-btn view';
-                bView.title = t('int.import.view_original', 'Visualizza documento originale');
-                bView.innerHTML = '<i class="fa fa-file"></i> ' + escapeHtml(t('int.import.original', 'Originale'));
-                bView.onclick = () => viewDocument(d);
-                const bProc = document.createElement('button');
-                bProc.className = 'row-btn proc';
-                bProc.title = t('int.import.view_processed', 'Visualizza documento elaborato');
-                bProc.innerHTML = '<i class="fa fa-cogs"></i> ' + escapeHtml(t('int.import.processed', 'Elaborato'));
-                bProc.onclick = () => viewProcessed(d);
-                const bDel = document.createElement('button');
-                bDel.className = 'row-btn';
-                bDel.innerHTML = '<i class="fa fa-trash"></i> ' + escapeHtml(t('int.delete', 'Elimina'));
-                bDel.onclick = () => confirmDelete([id]);
-                tdAct.appendChild(bView);
-                tdAct.appendChild(bProc);
-                tdAct.appendChild(bDel);
-                tr.appendChild(tdAct);
-
-                tbody.appendChild(tr);
-            });
-
+            // --- Footer ---
             tfoot.innerHTML = '';
+            const trF = document.createElement('tr');
             const tdF = document.createElement('td');
             tdF.colSpan = cols.length + 1;
-            const total = documents.reduce((s, d) => s + (Number(d.size) || 0), 0);
-            tdF.textContent = `${t('int.import.total', 'TOTALE')}: ${documents.length} ${t('int.import.files', 'file')} — ${formatSize(total)}`;
-            tfoot.appendChild(tdF);
+            const total = docs.reduce((s, d) => s + (Number(d.size) || 0), 0);
+            tdF.textContent = `${t('int.import.total', 'TOTALE')}: ${docs.length} ${t('int.import.files', 'file')} — ${formatSize(total)}`;
+            trF.appendChild(tdF);
+            tfoot.appendChild(trF);
 
-            updateSelectionUI();
+            // --- Select all state ---
+            const selectedInSection = docs.filter(d => selectedIds.has(String(d.id)));
+            all.checked = docs.length > 0 && selectedInSection.length === docs.length;
+            all.indeterminate = selectedInSection.length > 0 && selectedInSection.length < docs.length;
+
+            // --- Buttons ---
+            const localSelected = docs.filter(d => selectedIds.has(String(d.id)) && d.local && !d.copied && d.file).length;
+            importBtn.disabled = localSelected === 0 || importing;
+            deleteBtn.disabled = selectedInSection.length === 0 || importing;
         }
 
-        function updateSelectionUI() {
-            const localSelected = countLocalSelected();
-            const del = document.getElementById('deleteSelBtn');
-            const imp = document.getElementById('importConfirmBtn');
-            if (del) del.disabled = selectedIds.size === 0 || importing;
-            if (imp) imp.disabled = localSelected === 0 || importing;
-
-            const all = document.getElementById('selectAll');
-            if (all) {
-                all.checked = documents.length > 0 && selectedIds.size === documents.length;
-                all.indeterminate = selectedIds.size > 0 && selectedIds.size < documents.length;
-            }
+        function renderAll() {
+            SECTION_KEYS.forEach(k => renderSection(k));
         }
 
-        function countLocalSelected() {
-            let n = 0;
-            selectedIds.forEach(id => {
-                const d = documents.find(doc => String(doc.id) === String(id));
-                if (d && d.local && !d.copied && d.file) n++;
-            });
-            return n;
-        }
-
-        function sortTable(key) {
-            if (sortColumn === key) sortAscending = !sortAscending;
-            else { sortColumn = key; sortAscending = true; }
-            renderTable();
+        function sortTable(sectionKey, key) {
+            const s = sectionSort[sectionKey];
+            if (s.column === key) s.asc = !s.asc;
+            else { s.column = key; s.asc = true; }
+            renderSection(sectionKey);
         }
 
         // ========== UPLOAD ==========
@@ -945,7 +1045,7 @@
             return null;
         }
 
-        function handleFiles(fileList) {
+        function handleFiles(sectionKey, fileList) {
             const files = Array.from(fileList || []);
             if (files.length === 0) return;
 
@@ -954,8 +1054,12 @@
             files.forEach(file => {
                 const err = validateFile(file);
                 if (err) { errors.push(`${file.name}: ${err}`); return; }
-                const dup = documents.some(d => d.local && !d.copied && d.name === file.name && Number(d.size) === file.size);
+                const dup = documents.some(d =>
+                    d.section === sectionKey && d.local && !d.copied &&
+                    d.name === file.name && Number(d.size) === file.size
+                );
                 if (dup) { errors.push(`${file.name}: ${t('int.import.err.dup', 'già presente nell\'elenco')}`); return; }
+
                 const newDoc = {
                     id: 'local-' + (++localCounter),
                     name: file.name,
@@ -964,17 +1068,20 @@
                     imported: false,
                     local: true,
                     copied: false,
-                    file: file
+                    file: file,
+                    section: sectionKey,
+                    importing: false
                 };
                 documents.push(newDoc);
                 selectedIds.add(String(newDoc.id));
                 added++;
             });
 
-            renderTable();
+            renderSection(sectionKey);
+            flashSection(sectionKey);
 
             if (added > 0) {
-                let msg = `${added} ${t('int.import.files_added', 'file aggiunti all\'elenco: premi Conferma per importarli sul server')}`;
+                let msg = `${added} ${t('int.import.files_added', 'file aggiunti alla sezione ' + sectionKey + ': premi Conferma per importarli')}`;
                 if (errors.length) msg += ` — ${errors.join('; ')}`;
                 showMessage(msg, errors.length ? 'error' : 'success');
             } else {
@@ -982,53 +1089,8 @@
             }
         }
 
-        function initDropZone() {
-            const zone = document.getElementById('dropZone');
-            const input = document.getElementById('fileInput');
-
-            zone.onclick = () => input.click();
-            input.onchange = () => { handleFiles(input.files); input.value = ''; };
-
-            zone.addEventListener('dragenter', e => { e.preventDefault(); zone.classList.add('dragover'); });
-            zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('dragover'); });
-            zone.addEventListener('dragleave', e => { e.preventDefault(); zone.classList.remove('dragover'); });
-
-            document.addEventListener('dragover', e => {
-                e.preventDefault();
-                document.body.classList.add('dragging');
-            });
-            document.addEventListener('dragleave', e => {
-                if (!e.relatedTarget) document.body.classList.remove('dragging');
-            });
-            document.addEventListener('drop', e => {
-                e.preventDefault();
-                document.body.classList.remove('dragging');
-                zone.classList.remove('dragover');
-                if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length) {
-                    handleFiles(e.dataTransfer.files);
-                }
-            });
-
-            document.addEventListener('paste', e => {
-                const items = e.clipboardData && e.clipboardData.items;
-                if (!items) return;
-                const files = [];
-                for (const item of items) {
-                    if (item.kind === 'file') {
-                        const f = item.getAsFile();
-                        if (f) files.push(f);
-                    }
-                }
-                if (files.length) {
-                    e.preventDefault();
-                    handleFiles(files);
-                }
-            });
-        }
-
         // ========== VIEW ==========
         async function fetchDocumentBlob(doc) {
-            // Se abbiamo il file locale lo usiamo subito (evita round-trip al server)
             if (doc.file) return doc.file;
             const r = await fetch(API.get, {
                 method: 'POST',
@@ -1088,8 +1150,7 @@
 
         async function viewProcessed(doc) {
             const body = document.getElementById('previewBody');
-            document.getElementById('previewTitle').textContent =
-                `${doc.name} — ${t('int.import.processed', 'Elaborato')}`;
+            document.getElementById('previewTitle').textContent = `${doc.name} — ${t('int.import.processed', 'Elaborato')}`;
             document.getElementById('preview-modal').style.display = 'flex';
             body.innerHTML = '<div class="no-preview"><i class="fa fa-spinner fa-spin"></i></div>';
 
@@ -1194,28 +1255,28 @@
             document.getElementById('confirm-modal').style.display = 'none';
         }
 
-        function confirmDelete(ids) {
+        function confirmDelete(sectionKey, ids) {
             const msg = ids.length === 1
-                ? t('int.import.confirm_one', 'Eliminare il documento selezionato dal bucket?')
-                : `${t('int.import.confirm_many', 'Eliminare i documenti selezionati dal bucket?')} (${ids.length})`;
+                ? t('int.import.confirm_one', 'Eliminare il documento selezionato?')
+                : `${t('int.import.confirm_many', 'Eliminare i documenti selezionati?')} (${ids.length})`;
             openConfirm({
                 title: t('int.import.confirm_title', 'Conferma eliminazione'),
                 text: msg,
                 yesLabel: t('int.delete', 'Elimina'),
                 yesIcon: 'fa-trash',
-                onYes: () => deleteDocuments(ids)
+                onYes: () => deleteDocuments(sectionKey, ids)
             });
         }
 
-        // ========== IMPORT via /importall (uno ZIP per file) ==========
-        function importSelected() {
+        // ========== IMPORT (uno ZIP per file) ==========
+        function importSelected(sectionKey) {
             if (importing) return;
             const localIds = [...selectedIds].filter(id => {
                 const d = documents.find(doc => String(doc.id) === String(id));
-                return d && d.local && !d.copied && d.file;
+                return d && d.section === sectionKey && d.local && !d.copied && d.file;
             });
             if (localIds.length === 0) {
-                showMessage(t('int.import.nothing_to_import', 'Nessun file locale da importare.'), 'error');
+                showMessage(t('int.import.nothing_to_import', 'Nessun file locale da importare in questa sezione.'), 'error');
                 return;
             }
             openConfirm({
@@ -1223,17 +1284,17 @@
                 text: `${t('int.import.import_text', 'Importare sul server i documenti selezionati?')} (${localIds.length})`,
                 yesLabel: t('int.confirm', 'Conferma'),
                 yesIcon: 'fa-check',
-                onYes: () => runImport(localIds)
+                onYes: () => runImport(sectionKey, localIds)
             });
         }
 
-        async function importDataFile(file) {
-            if (typeof JSZip === 'undefined') {
-                throw new Error('JSZip non caricato');
-            }
+        // Chiamata /importall per un singolo file:
+        // ticker e filename usano il prefisso della sezione (es. 'trade:nomefile')
+        async function importDataFile(sectionKey, file) {
+            if (typeof JSZip === 'undefined') throw new Error('JSZip non caricato');
 
             const baseName = file.name.replace(/\.[^.]+$/, '');
-            const filename = `trade:${baseName}`;
+            const filename = `${sectionKey}:${baseName}`;
 
             const zip = new JSZip();
             const fileContent = await file.arrayBuffer();
@@ -1246,27 +1307,23 @@
             form.append('language', credentials.language);
             form.append('file', zipBlob, filename + '.zip');
             form.append('recreate', 'false');
-            form.append('ticker', 'trade');
+            form.append('ticker', sectionKey);
             form.append('filename', filename);
 
-            const r = await fetch(API.importAll, {
-                method: 'POST',
-                body: form
-            });
+            const r = await fetch(API.importAll, { method: 'POST', body: form });
             if (!r.ok) throw new Error('HTTP ' + r.status);
             const data = await r.json();
             if (data.status !== 'ok') throw new Error(data.msg || 'Errore sconosciuto');
             return data;
         }
 
-        async function runImport(ids) {
-            const btn = document.getElementById('importConfirmBtn');
+        async function runImport(sectionKey, ids) {
             importing = true;
-            btn.disabled = true;
+            renderAll();
 
             const localDocs = ids
                 .map(id => documents.find(d => String(d.id) === String(id)))
-                .filter(d => d && d.local && !d.copied && d.file);
+                .filter(d => d && d.section === sectionKey && d.local && !d.copied && d.file);
 
             let okCount = 0;
             const errs = [];
@@ -1277,16 +1334,14 @@
                     const oldId = String(doc.id);
 
                     showMessage(
-                        `${t('int.import.importing', 'Importazione in corso...')} (${i + 1}/${localDocs.length}) — ${doc.name}`,
+                        `${t('int.import.importing', 'Importazione in corso...')} (${i + 1}/${localDocs.length}) — [${sectionKey}] ${doc.name}`,
                         'loading'
                     );
                     doc.importing = true;
-                    renderTable();
+                    renderSection(sectionKey);
                     try {
-                        const result = await importDataFile(doc.file);
-
-                        // Se il server restituisce il documento, adottiamo il suo ID:
-                        // così /bucket/get, /bucket/processed e /bucket/delete funzioneranno.
+                        const result = await importDataFile(sectionKey, doc.file);
+                        // Adotta ID server se presente
                         if (result && result.document && result.document.id) {
                             doc.id = result.document.id;
                             doc.name = result.document.name || doc.name;
@@ -1294,7 +1349,6 @@
                             doc.uploaded_at = result.document.uploaded_at || doc.uploaded_at;
                             doc.local = false;
                         }
-
                         doc.copied = true;
                         doc.imported = true;
                         okCount++;
@@ -1304,11 +1358,11 @@
                         errs.push(`${doc.name}: ${e.message}`);
                     } finally {
                         doc.importing = false;
-                        renderTable();
+                        renderSection(sectionKey);
                     }
                 }
 
-                let msg = `${t('int.import.imported_count', 'Documenti importati')}: ${okCount}/${localDocs.length}`;
+                let msg = `[${sectionKey}] ${t('int.import.imported_count', 'Documenti importati')}: ${okCount}/${localDocs.length}`;
                 if (errs.length) msg += ` — ${t('int.error', 'Errore')}: ${errs.join('; ')}`;
                 showMessage(msg, errs.length ? 'error' : 'success');
             } catch (e) {
@@ -1316,16 +1370,20 @@
                 showMessage(`${t('int.error', 'Errore')}: ${e.message}`, 'error');
             } finally {
                 importing = false;
-                updateSelectionUI();
+                renderAll();
             }
         }
 
         // ========== DELETE ==========
-        function deleteSelected() {
-            if (selectedIds.size > 0) confirmDelete([...selectedIds]);
+        function deleteSelected(sectionKey) {
+            const ids = [...selectedIds].filter(id => {
+                const d = documents.find(doc => String(doc.id) === String(id));
+                return d && d.section === sectionKey;
+            });
+            if (ids.length > 0) confirmDelete(sectionKey, ids);
         }
 
-        async function deleteDocuments(ids) {
+        async function deleteDocuments(sectionKey, ids) {
             const localIds = [];
             const serverIds = [];
             ids.forEach(id => {
@@ -1354,6 +1412,7 @@
                     if (!r.ok) throw new Error('HTTP ' + r.status);
                     const data = await r.json();
                     if (data.status !== 'ok') throw new Error(data.msg || 'Errore sconosciuto');
+                    documents = documents.filter(d => String(d.id) !== String(id));
                     selectedIds.delete(String(id));
                     ok++;
                 } catch (e) {
@@ -1367,21 +1426,59 @@
             if (done === total) showMessage(t('int.import.deleted', 'Documenti eliminati'), 'success');
             else showMessage(`${t('int.error', 'Errore')}: ${lastErr}`, 'error');
 
-            renderTable(true);
+            renderSection(sectionKey);
         }
 
         // ========== INIT ==========
         window.addEventListener('load', async () => {
-            initDropZone();
+            // Drag globale (solo per feedback visivo / prevenire apertura file)
+            document.addEventListener('dragover', e => {
+                e.preventDefault();
+                document.body.classList.add('dragging');
+            });
+            document.addEventListener('dragleave', e => {
+                if (!e.relatedTarget) document.body.classList.remove('dragging');
+            });
+            document.addEventListener('drop', e => {
+                e.preventDefault();
+                document.body.classList.remove('dragging');
+                // Se il drop è fuori da una drop-zone, usa la sezione attiva
+                if (e.target.closest && e.target.closest('.drop-zone')) return;
+                if (e.dataTransfer && e.dataTransfer.files.length) {
+                    handleFiles(activeSection, e.dataTransfer.files);
+                }
+            });
+
+            // Incolla (Ctrl+V): va nella sezione attiva
+            document.addEventListener('paste', e => {
+                const items = e.clipboardData && e.clipboardData.items;
+                if (!items) return;
+                const files = [];
+                for (const item of items) {
+                    if (item.kind === 'file') {
+                        const f = item.getAsFile();
+                        if (f) files.push(f);
+                    }
+                }
+                if (files.length) {
+                    e.preventDefault();
+                    handleFiles(activeSection, files);
+                }
+            });
+
+            // Esc chiude i modali
+            document.addEventListener('keydown', e => {
+                if (e.key === 'Escape') { closePreview(); closeConfirm(); }
+            });
+
             if (!getCredentialsFromURL()) return;
             await initializeLanguages();
             await loadTranslations(credentials.language);
+            updatePageTranslations();
             updateUserInfo();
-            renderTable(true);
-        });
 
-        document.addEventListener('keydown', e => {
-            if (e.key === 'Escape') { closePreview(); closeConfirm(); }
+            buildSections();
+            setActiveSection('trade'); // default
         });
     </script>
 </body>
