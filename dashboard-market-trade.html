@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Import Trade 0.1</title>
+    <title>Import Trade 0.2</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <link rel="icon" type="image/png" href="images/icon-finest.png">
     <style>
@@ -642,8 +642,12 @@
         //
         //  POST /bucket/list     {username, token, language}
         //        -> {status:'ok', documents:[{id, name, size, content_type, uploaded_at}]}
-        //  POST /bucket/upload   multipart/form-data: username, token, language, file
-        //        -> {status:'ok', document:{...}}
+        //  POST /importdata      (GIÀ ESISTENTE, usata anche da dashboard-database-import.html)
+        //        multipart/form-data: username, token, language, file, type='trade'
+        //        -> {status:'ok', msg, document?:{id,name,size,uploaded_at,imported}}
+        //        Copia sul server UN file per chiamata: viene chiamata una volta per
+        //        ogni file selezionato nell'elenco. Il campo 'type=trade' serve a
+        //        distinguere i PDF degli eseguiti dal backup ZIP del database.
         //  POST /bucket/delete   {username, token, language, id}
         //        -> {status:'ok'}
         //  POST /bucket/get      {username, token, language, id}
@@ -653,22 +657,19 @@
         //           rows[i] = {causale, id_instrument, dt_trade, qty_str, price_str,
         //                      gross_str, net_str, sql_stock, sql_liq}
         //           sql     = righe SQL (stock + liquidità) come scritte in tradelist.sqldata
-        //  POST /bucket/import   {username, token, language, ids:[...]}
-        //        -> {status:'ok', results:[{id, status:'ok'|'duplicate'|'error', msg}]}
-        //           importa sul server i documenti scelti (FE_ImportManager)
         //
         //  Il documento in /bucket/list può avere anche:
-        //     imported: true|false   (già importato sul server)
+        //     imported: true|false   (già elaborato/importato nel database)
         // =====================================================================
         const API_URL = "https://feweb-tunnel.fe-web.eu";
         const API = {
             list: `${API_URL}/bucket/list`,
-            upload: `${API_URL}/bucket/upload`,
+            importData: `${API_URL}/importdata`,
             remove: `${API_URL}/bucket/delete`,
             get: `${API_URL}/bucket/get`,
-            processed: `${API_URL}/bucket/processed`,
-            importDocs: `${API_URL}/bucket/import`
+            processed: `${API_URL}/bucket/processed`
         };
+        let localCounter = 0;
 
         const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20 MB
         const ALLOWED_EXT = ['pdf', 'txt', 'csv', 'tsv', 'xls', 'xlsx', 'json', 'xml', 'doc', 'docx', 'png', 'jpg', 'jpeg'];
@@ -818,7 +819,11 @@
                 if (!r.ok) throw new Error('HTTP ' + r.status);
                 const data = await r.json();
                 if (data.status !== 'ok') throw new Error(data.msg || 'Errore sconosciuto');
-                documents = Array.isArray(data.documents) ? data.documents : [];
+                const serverDocs = Array.isArray(data.documents) ? data.documents : [];
+                // Mantiene i file locali non ancora presenti sul server (stesso nome = già copiato)
+                const serverNames = new Set(serverDocs.map(d => d.name));
+                const localDocs = documents.filter(d => d.local && !serverNames.has(d.name));
+                documents = serverDocs.concat(localDocs);
                 const ids = new Set(documents.map(d => String(d.id)));
                 selectedIds = new Set([...selectedIds].filter(id => ids.has(id)));
                 renderTable(true);
@@ -943,10 +948,17 @@
 
                 const tdStatus = document.createElement('td');
                 const badge = document.createElement('span');
-                badge.className = 'badge' + (d.imported ? ' imported' : '');
-                badge.textContent = d.imported
-                    ? t('int.import.status.imported', 'Importato')
-                    : t('int.import.status.pending', 'Da importare');
+                if (d.local) {
+                    badge.className = 'badge' + (d.copied ? ' imported' : '');
+                    badge.textContent = d.copied
+                        ? t('int.import.status.copied', 'Copiato sul server')
+                        : t('int.import.status.local', 'Da copiare');
+                } else {
+                    badge.className = 'badge' + (d.imported ? ' imported' : '');
+                    badge.textContent = d.imported
+                        ? t('int.import.status.imported', 'Importato')
+                        : t('int.import.status.pending', 'Sul server');
+                }
                 tdStatus.appendChild(badge);
                 tr.appendChild(tdStatus);
 
@@ -1023,14 +1035,16 @@
                 const err = validateFile(file);
                 if (err) { bar.style.width = '100%'; return fail(err); }
 
+                // Stessa chiamata di dashboard-database-import.html (/importdata)
                 const form = new FormData();
                 form.append('username', credentials.username);
                 form.append('token', credentials.token);
                 form.append('language', credentials.language);
+                form.append('type', 'trade');
                 form.append('file', file, file.name);
 
                 const xhr = new XMLHttpRequest();
-                xhr.open('POST', API.upload);
+                xhr.open('POST', API.importData);
                 xhr.upload.onprogress = e => {
                     if (e.lengthComputable) {
                         const pct = Math.round(e.loaded / e.total * 100);
@@ -1044,16 +1058,8 @@
                         if (xhr.status >= 200 && xhr.status < 300 && data.status === 'ok') {
                             bar.style.width = '100%';
                             item.classList.add('done');
-                            status.textContent = t('int.import.uploaded', 'Caricato');
-                            // Documento restituito dal server (o costruito dal file locale)
-                            const doc = data.document || (Array.isArray(data.documents) ? data.documents[0] : null) || {
-                                id: data.id || file.name,
-                                name: file.name,
-                                size: file.size,
-                                uploaded_at: new Date().toISOString(),
-                                imported: false
-                            };
-                            resolve({ doc });
+                            status.textContent = t('int.import.uploaded', 'Copiato');
+                            resolve({ data });
                         } else {
                             fail(data.msg || ('HTTP ' + xhr.status));
                         }
@@ -1066,37 +1072,40 @@
             });
         }
 
-        async function handleFiles(fileList) {
+        // Aggiunge i file all'elenco (locale). La copia sul server avviene solo
+        // per i file selezionati, premendo Conferma.
+        function handleFiles(fileList) {
             const files = Array.from(fileList);
             if (files.length === 0) return;
-            const queue = document.getElementById('queue');
-            queue.innerHTML = '';
 
-            const jobs = files.map(file => {
-                const item = document.createElement('div');
-                item.className = 'queue-item';
-                item.innerHTML = '<span class="qname"></span><div class="progress"><div></div></div><span class="qstatus">0%</span>';
-                item.querySelector('.qname').textContent = file.name;
-                queue.appendChild(item);
-                return uploadFile(file, item);
+            let added = 0;
+            const errors = [];
+            files.forEach(file => {
+                const err = validateFile(file);
+                if (err) { errors.push(`${file.name}: ${err}`); return; }
+                const dup = documents.some(d => d.local && !d.copied && d.name === file.name && Number(d.size) === file.size);
+                if (dup) { errors.push(`${file.name}: ${t('int.import.err.dup', 'già presente nell\'elenco')}`); return; }
+                documents.push({
+                    id: 'local-' + (++localCounter),
+                    name: file.name,
+                    size: file.size,
+                    uploaded_at: new Date().toISOString(),
+                    imported: false,
+                    local: true,
+                    copied: false,
+                    file: file
+                });
+                added++;
             });
 
-            const results = await Promise.all(jobs);
-            const uploaded = results.filter(Boolean);
-            const ok = uploaded.length;
-            if (ok > 0) {
-                // Mostra subito i nuovi documenti nell'elenco, senza attendere il ricaricamento
-                uploaded.forEach(r => {
-                    const idx = documents.findIndex(d => String(d.id) === String(r.doc.id));
-                    if (idx >= 0) documents[idx] = r.doc; else documents.push(r.doc);
-                });
-                renderTable();
-            }
-            if (ok > 0) {
-                showMessage(`${ok}/${files.length} ${t('int.import.files_uploaded', 'file caricati')}`, ok === files.length ? 'success' : 'error');
-                await loadDocuments();
+            renderTable();
+
+            if (added > 0) {
+                let msg = `${added} ${t('int.import.files_added', 'file aggiunti all\'elenco: selezionali e premi Conferma per copiarli sul server')}`;
+                if (errors.length) msg += ` — ${errors.join('; ')}`;
+                showMessage(msg, errors.length ? 'error' : 'success');
             } else {
-                showMessage(t('int.import.err.none', 'Nessun file caricato'), 'error');
+                showMessage(errors.join('; ') || t('int.import.err.none', 'Nessun file aggiunto'), 'error');
             }
         }
 
@@ -1116,6 +1125,8 @@
 
         // ========== VIEW ==========
         async function fetchDocumentBlob(doc) {
+            // File locale: si visualizza direttamente senza passare dal server
+            if (doc.local && doc.file) return doc.file;
             const r = await fetch(API.get, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -1178,6 +1189,14 @@
                 `${doc.name} — ${t('int.import.processed', 'Elaborato')}`;
             document.getElementById('preview-modal').style.display = 'flex';
             body.innerHTML = '<div class="no-preview"><i class="fa fa-spinner fa-spin"></i></div>';
+
+            if (doc.local) {
+                body.innerHTML = '<div class="no-preview"></div>';
+                body.firstChild.textContent = doc.copied
+                    ? t('int.import.processed_refresh', 'File copiato sul server: aggiorna l\'elenco per vedere il documento elaborato.')
+                    : t('int.import.processed_after_copy', 'Il documento elaborato è disponibile dopo la copia sul server (seleziona il file e premi Conferma).');
+                return;
+            }
 
             try {
                 const r = await fetch(API.processed, {
