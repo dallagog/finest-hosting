@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Import Trade 0.2</title>
+    <title>Import Trade 0.3</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <link rel="icon" type="image/png" href="images/icon-finest.png">
     <style>
@@ -176,63 +176,9 @@
             color: #999;
         }
 
-        /* Upload queue */
-        .queue {
-            margin-top: 15px;
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-
-        .queue-item {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 8px 12px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            background: #f9f9f9;
-            font-size: 12px;
-        }
-
-        .queue-item .qname {
-            flex: 2;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-        }
-
-        .progress {
-            flex: 3;
-            height: 8px;
-            background: #e0e0e0;
-            border-radius: 4px;
-            overflow: hidden;
-        }
-
-        .progress>div {
-            height: 100%;
-            width: 0;
-            background: #000;
-            transition: width 0.2s;
-        }
-
-        .queue-item.done .progress>div {
-            background: #27ae60;
-        }
-
-        .queue-item.error .progress>div {
-            background: #d32f2f;
-        }
-
-        .queue-item .qstatus {
-            flex: 1;
-            text-align: right;
-            color: #666;
-        }
-
-        .queue-item.error .qstatus {
-            color: #d32f2f;
+        body.dragging .drop-zone {
+            background: #eef6ff;
+            border-color: #0066cc;
         }
 
         /* Table */
@@ -365,6 +311,12 @@
             border-color: #d32f2f;
             color: #d32f2f;
             background: #fff0f0;
+        }
+
+        .badge.working {
+            border-color: #0066cc;
+            color: #0066cc;
+            background: #eef6ff;
         }
 
         .proc-table {
@@ -569,13 +521,12 @@
             </div>
             <div id="dropZone" class="drop-zone">
                 <i class="fa fa-cloud-upload-alt"></i>
-                <span id="dropText">Trascina qui i file oppure clicca per selezionarli</span>
+                <span id="dropText">Trascina qui i file (o incolla con Ctrl+V) oppure clicca per selezionarli</span>
                 <small id="dropHint">Formati ammessi: PDF, TXT, CSV, XLS, XLSX, JSON, XML, immagini — max 20 MB per
                     file</small>
             </div>
             <input type="file" id="fileInput" multiple style="display:none"
                 accept=".pdf,.txt,.csv,.tsv,.xls,.xlsx,.json,.xml,.xml,.doc,.docx,.png,.jpg,.jpeg">
-            <div id="queue" class="queue"></div>
         </div>
 
         <!-- Bucket -->
@@ -583,9 +534,6 @@
             <div class="section-head">
                 <h2 id="bucketTitle">Documenti nel bucket</h2>
                 <div class="toolbar">
-                    <button id="refreshBtn" class="update-btn" onclick="loadDocuments()">
-                        <i class="fa fa-sync-alt"></i> <span id="refreshText">Aggiorna</span>
-                    </button>
                     <button id="importConfirmBtn" class="update-btn" onclick="importSelected()" disabled>
                         <i class="fa fa-check"></i> <span id="importConfirmText">Conferma</span>
                     </button>
@@ -638,28 +586,18 @@
 
     <script>
         // =====================================================================
-        // API  (TODO: gli endpoint lato server sono da realizzare)
+        // API
         //
         //  POST /bucket/list     {username, token, language}
-        //        -> {status:'ok', documents:[{id, name, size, content_type, uploaded_at}]}
-        //  POST /importdata      (GIÀ ESISTENTE, usata anche da dashboard-database-import.html)
-        //        multipart/form-data: username, token, language, file, type='trade'
+        //        -> {status:'ok', documents:[{id, name, size, content_type, uploaded_at, imported}]}
+        //  POST /importdata      multipart/form-data: username, token, language, file, type='trade'
         //        -> {status:'ok', msg, document?:{id,name,size,uploaded_at,imported}}
         //        Copia sul server UN file per chiamata: viene chiamata una volta per
-        //        ogni file selezionato nell'elenco. Il campo 'type=trade' serve a
-        //        distinguere i PDF degli eseguiti dal backup ZIP del database.
-        //  POST /bucket/delete   {username, token, language, id}
-        //        -> {status:'ok'}
-        //  POST /bucket/get      {username, token, language, id}
-        //        -> file binario ORIGINALE (usato per visualizzare/scaricare)
+        //        ogni file selezionato nell'elenco.
+        //  POST /bucket/delete   {username, token, language, id}   -> {status:'ok'}
+        //  POST /bucket/get      {username, token, language, id}   -> file binario
         //  POST /bucket/processed {username, token, language, id}
-        //        -> {status:'ok', rows:[...], sql:'...'}  risultato di fe_import_trade.py
-        //           rows[i] = {causale, id_instrument, dt_trade, qty_str, price_str,
-        //                      gross_str, net_str, sql_stock, sql_liq}
-        //           sql     = righe SQL (stock + liquidità) come scritte in tradelist.sqldata
-        //
-        //  Il documento in /bucket/list può avere anche:
-        //     imported: true|false   (già elaborato/importato nel database)
+        //        -> {status:'ok', rows:[...], sql:'...'}
         // =====================================================================
         const API_URL = "https://feweb-tunnel.fe-web.eu";
         const API = {
@@ -671,7 +609,7 @@
         };
         let localCounter = 0;
 
-        const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20 MB
+        const MAX_FILE_SIZE = 20 * 1024 * 1024;
         const ALLOWED_EXT = ['pdf', 'txt', 'csv', 'tsv', 'xls', 'xlsx', 'json', 'xml', 'doc', 'docx', 'png', 'jpg', 'jpeg'];
 
         let credentials = { username: '', token: '', language: '' };
@@ -696,7 +634,7 @@
             el.className = 'message ' + type;
             el.style.display = 'block';
             if (type === 'success' || type === 'error') {
-                setTimeout(() => { el.style.display = 'none'; }, 3000);
+                setTimeout(() => { el.style.display = 'none'; }, 4000);
             }
         }
 
@@ -792,10 +730,9 @@
             set('closeText', 'int.close', 'Chiudi');
             set('previewCloseText', 'int.close', 'Chiudi');
             set('uploadTitle', 'int.import.upload', 'Carica documenti');
-            set('dropText', 'int.import.drop', 'Trascina qui i file oppure clicca per selezionarli');
+            set('dropText', 'int.import.drop', 'Trascina qui i file (o incolla con Ctrl+V) oppure clicca per selezionarli');
             set('dropHint', 'int.import.hint', 'Formati ammessi: PDF, TXT, CSV, XLS, XLSX, JSON, XML, immagini — max 20 MB per file');
             set('bucketTitle', 'int.import.bucket', 'Documenti nel bucket');
-            set('refreshText', 'int.update', 'Aggiorna');
             set('deleteSelText', 'int.import.delete_selected', 'Elimina selezionati');
             set('importConfirmText', 'int.confirm', 'Conferma');
             set('confirmTitle', 'int.import.confirm_title', 'Conferma eliminazione');
@@ -806,11 +743,9 @@
         }
 
         // ========== DOCUMENT LIST ==========
-        async function loadDocuments() {
-            const btn = document.getElementById('refreshBtn');
-            btn.disabled = true;
+        async function loadDocuments(silent) {
             try {
-                showMessage(t('int.loading', 'Caricamento...'), 'loading');
+                if (!silent) showMessage(t('int.loading', 'Caricamento...'), 'loading');
                 const r = await fetch(API.list, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -827,12 +762,10 @@
                 const ids = new Set(documents.map(d => String(d.id)));
                 selectedIds = new Set([...selectedIds].filter(id => ids.has(id)));
                 renderTable(true);
-                document.getElementById('message').style.display = 'none';
+                if (!silent) document.getElementById('message').style.display = 'none';
             } catch (e) {
                 console.error('Error loading documents:', e);
                 showMessage((t('int.error', 'Errore') + ': ') + e.message, 'error');
-            } finally {
-                btn.disabled = false;
             }
         }
 
@@ -904,7 +837,7 @@
                 tr.className = 'empty-row';
                 const td = document.createElement('td');
                 td.colSpan = cols.length + 1;
-                td.textContent = t('int.import.empty', 'Nessun documento presente nel bucket');
+                td.textContent = t('int.import.empty', 'Nessun documento presente. Trascina, incolla o seleziona dei file.');
                 tr.appendChild(td);
                 tbody.appendChild(tr);
             }
@@ -929,6 +862,7 @@
                 const link = document.createElement('span');
                 link.className = 'file-link';
                 link.textContent = d.name;
+                link.title = t('int.import.view_original', 'Visualizza documento');
                 link.onclick = () => viewDocument(d);
                 tdName.appendChild(link);
                 tr.appendChild(tdName);
@@ -948,11 +882,14 @@
 
                 const tdStatus = document.createElement('td');
                 const badge = document.createElement('span');
-                if (d.local) {
+                if (d.importing) {
+                    badge.className = 'badge working';
+                    badge.textContent = t('int.import.status.importing', 'Importazione...');
+                } else if (d.local) {
                     badge.className = 'badge' + (d.copied ? ' imported' : '');
                     badge.textContent = d.copied
-                        ? t('int.import.status.copied', 'Copiato sul server')
-                        : t('int.import.status.local', 'Da copiare');
+                        ? t('int.import.status.copied', 'Importato')
+                        : t('int.import.status.local', 'Da importare');
                 } else {
                     badge.className = 'badge' + (d.imported ? ' imported' : '');
                     badge.textContent = d.imported
@@ -998,13 +935,23 @@
         }
 
         function updateSelectionUI() {
-            document.getElementById('deleteSelBtn').disabled = selectedIds.size === 0;
-            document.getElementById('importConfirmBtn').disabled = selectedIds.size === 0 || importing;
+            const localSelected = countLocalSelected();
+            document.getElementById('deleteSelBtn').disabled = selectedIds.size === 0 || importing;
+            document.getElementById('importConfirmBtn').disabled = localSelected === 0 || importing;
             const all = document.getElementById('selectAll');
             if (all) {
                 all.checked = documents.length > 0 && selectedIds.size === documents.length;
                 all.indeterminate = selectedIds.size > 0 && selectedIds.size < documents.length;
             }
+        }
+
+        function countLocalSelected() {
+            let n = 0;
+            selectedIds.forEach(id => {
+                const d = documents.find(doc => String(doc.id) === String(id));
+                if (d && d.local && !d.copied && d.file) n++;
+            });
+            return n;
         }
 
         function sortTable(key) {
@@ -1022,60 +969,10 @@
             return null;
         }
 
-        function uploadFile(file, item) {
-            return new Promise(resolve => {
-                const bar = item.querySelector('.progress > div');
-                const status = item.querySelector('.qstatus');
-                const fail = msg => {
-                    item.classList.add('error');
-                    status.textContent = msg;
-                    resolve(false);
-                };
-
-                const err = validateFile(file);
-                if (err) { bar.style.width = '100%'; return fail(err); }
-
-                // Stessa chiamata di dashboard-database-import.html (/importdata)
-                const form = new FormData();
-                form.append('username', credentials.username);
-                form.append('token', credentials.token);
-                form.append('language', credentials.language);
-                form.append('type', 'trade');
-                form.append('file', file, file.name);
-
-                const xhr = new XMLHttpRequest();
-                xhr.open('POST', API.importData);
-                xhr.upload.onprogress = e => {
-                    if (e.lengthComputable) {
-                        const pct = Math.round(e.loaded / e.total * 100);
-                        bar.style.width = pct + '%';
-                        status.textContent = pct + '%';
-                    }
-                };
-                xhr.onload = () => {
-                    try {
-                        const data = JSON.parse(xhr.responseText);
-                        if (xhr.status >= 200 && xhr.status < 300 && data.status === 'ok') {
-                            bar.style.width = '100%';
-                            item.classList.add('done');
-                            status.textContent = t('int.import.uploaded', 'Copiato');
-                            resolve({ data });
-                        } else {
-                            fail(data.msg || ('HTTP ' + xhr.status));
-                        }
-                    } catch (e) {
-                        fail('HTTP ' + xhr.status);
-                    }
-                };
-                xhr.onerror = () => fail(t('int.error.connection', 'Errore connessione'));
-                xhr.send(form);
-            });
-        }
-
-        // Aggiunge i file all'elenco (locale). La copia sul server avviene solo
-        // per i file selezionati, premendo Conferma.
+        // Aggiunge i file all'elenco (locale). La copia/import sul server avviene
+        // singolarmente per i file selezionati premendo Conferma.
         function handleFiles(fileList) {
-            const files = Array.from(fileList);
+            const files = Array.from(fileList || []);
             if (files.length === 0) return;
 
             let added = 0;
@@ -1085,7 +982,7 @@
                 if (err) { errors.push(`${file.name}: ${err}`); return; }
                 const dup = documents.some(d => d.local && !d.copied && d.name === file.name && Number(d.size) === file.size);
                 if (dup) { errors.push(`${file.name}: ${t('int.import.err.dup', 'già presente nell\'elenco')}`); return; }
-                documents.push({
+                const newDoc = {
                     id: 'local-' + (++localCounter),
                     name: file.name,
                     size: file.size,
@@ -1094,14 +991,16 @@
                     local: true,
                     copied: false,
                     file: file
-                });
+                };
+                documents.push(newDoc);
+                selectedIds.add(String(newDoc.id));
                 added++;
             });
 
             renderTable();
 
             if (added > 0) {
-                let msg = `${added} ${t('int.import.files_added', 'file aggiunti all\'elenco: selezionali e premi Conferma per copiarli sul server')}`;
+                let msg = `${added} ${t('int.import.files_added', 'file aggiunti all\'elenco: premi Conferma per importarli sul server')}`;
                 if (errors.length) msg += ` — ${errors.join('; ')}`;
                 showMessage(msg, errors.length ? 'error' : 'success');
             } else {
@@ -1112,20 +1011,52 @@
         function initDropZone() {
             const zone = document.getElementById('dropZone');
             const input = document.getElementById('fileInput');
+
             zone.onclick = () => input.click();
             input.onchange = () => { handleFiles(input.files); input.value = ''; };
-            ['dragenter', 'dragover'].forEach(ev => zone.addEventListener(ev, e => {
-                e.preventDefault(); zone.classList.add('dragover');
-            }));
-            ['dragleave', 'drop'].forEach(ev => zone.addEventListener(ev, e => {
-                e.preventDefault(); zone.classList.remove('dragover');
-            }));
-            zone.addEventListener('drop', e => handleFiles(e.dataTransfer.files));
+
+            // Feedback visivo sulla drop zone
+            zone.addEventListener('dragenter', e => { e.preventDefault(); zone.classList.add('dragover'); });
+            zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('dragover'); });
+            zone.addEventListener('dragleave', e => { e.preventDefault(); zone.classList.remove('dragover'); });
+
+            // Drop gestito a livello di pagina (drop zone e resto della pagina)
+            document.addEventListener('dragover', e => {
+                e.preventDefault();
+                document.body.classList.add('dragging');
+            });
+            document.addEventListener('dragleave', e => {
+                if (!e.relatedTarget) document.body.classList.remove('dragging');
+            });
+            document.addEventListener('drop', e => {
+                e.preventDefault();
+                document.body.classList.remove('dragging');
+                zone.classList.remove('dragover');
+                if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length) {
+                    handleFiles(e.dataTransfer.files);
+                }
+            });
+
+            // Incolla (Ctrl+V) di file/immagini dalla clipboard
+            document.addEventListener('paste', e => {
+                const items = e.clipboardData && e.clipboardData.items;
+                if (!items) return;
+                const files = [];
+                for (const item of items) {
+                    if (item.kind === 'file') {
+                        const f = item.getAsFile();
+                        if (f) files.push(f);
+                    }
+                }
+                if (files.length) {
+                    e.preventDefault();
+                    handleFiles(files);
+                }
+            });
         }
 
         // ========== VIEW ==========
         async function fetchDocumentBlob(doc) {
-            // File locale: si visualizza direttamente senza passare dal server
             if (doc.local && doc.file) return doc.file;
             const r = await fetch(API.get, {
                 method: 'POST',
@@ -1190,11 +1121,9 @@
             document.getElementById('preview-modal').style.display = 'flex';
             body.innerHTML = '<div class="no-preview"><i class="fa fa-spinner fa-spin"></i></div>';
 
-            if (doc.local) {
+            if (doc.local && !doc.copied) {
                 body.innerHTML = '<div class="no-preview"></div>';
-                body.firstChild.textContent = doc.copied
-                    ? t('int.import.processed_refresh', 'File copiato sul server: aggiorna l\'elenco per vedere il documento elaborato.')
-                    : t('int.import.processed_after_copy', 'Il documento elaborato è disponibile dopo la copia sul server (seleziona il file e premi Conferma).');
+                body.firstChild.textContent = t('int.import.processed_after_copy', 'Il documento elaborato è disponibile dopo l\'importazione sul server (seleziona il file e premi Conferma).');
                 return;
             }
 
@@ -1253,7 +1182,6 @@
                     body.appendChild(table);
                 }
 
-                // Istruzioni SQL (come scritte in tradelist.sqldata)
                 const sql = data.sql || rows.map(x => [x.sql_stock, x.sql_liq].filter(Boolean).join('\n')).join('\n');
                 if (sql) {
                     const title2 = document.createElement('div');
@@ -1277,7 +1205,7 @@
             if (previewUrl) { URL.revokeObjectURL(previewUrl); previewUrl = null; }
         }
 
-        // ========== DELETE ==========
+        // ========== CONFIRM DIALOG ==========
         function openConfirm({ title, text, yesLabel, yesIcon, onYes }) {
             document.getElementById('confirmTitle').textContent = title;
             document.getElementById('confirmText').textContent = text;
@@ -1288,6 +1216,10 @@
                 await onYes();
             };
             document.getElementById('confirm-modal').style.display = 'flex';
+        }
+
+        function closeConfirm() {
+            document.getElementById('confirm-modal').style.display = 'none';
         }
 
         function confirmDelete(ids) {
@@ -1303,54 +1235,88 @@
             });
         }
 
-        // ========== IMPORT SUL SERVER ==========
+        // ========== IMPORT (uno per file via /importdata) ==========
         function importSelected() {
-            if (selectedIds.size === 0 || importing) return;
-            const ids = [...selectedIds];
+            if (importing) return;
+            const localIds = [...selectedIds].filter(id => {
+                const d = documents.find(doc => String(doc.id) === String(id));
+                return d && d.local && !d.copied && d.file;
+            });
+            if (localIds.length === 0) {
+                showMessage(t('int.import.nothing_to_import', 'Nessun file locale da importare (i file sul server sono già stati processati).'), 'error');
+                return;
+            }
             openConfirm({
                 title: t('int.import.import_title', 'Conferma importazione'),
-                text: `${t('int.import.import_text', 'Importare sul server i documenti selezionati?')} (${ids.length})`,
+                text: `${t('int.import.import_text', 'Importare sul server i documenti selezionati?')} (${localIds.length})`,
                 yesLabel: t('int.confirm', 'Conferma'),
                 yesIcon: 'fa-check',
-                onYes: () => runImport(ids)
+                onYes: () => runImport(localIds)
             });
+        }
+
+        // Chiamata API /importdata per un singolo file (una chiamata per file).
+        async function importDataFile(file) {
+            const form = new FormData();
+            form.append('username', credentials.username);
+            form.append('token', credentials.token);
+            form.append('language', credentials.language);
+            form.append('type', 'trade');
+            form.append('file', file, file.name);
+
+            const r = await fetch(API.importData, {
+                method: 'POST',
+                body: form
+            });
+            if (!r.ok) throw new Error('HTTP ' + r.status);
+            const data = await r.json();
+            if (data.status !== 'ok') throw new Error(data.msg || 'Errore sconosciuto');
+            return data;
         }
 
         async function runImport(ids) {
             const btn = document.getElementById('importConfirmBtn');
             importing = true;
             btn.disabled = true;
+
+            const localDocs = ids
+                .map(id => documents.find(d => String(d.id) === String(id)))
+                .filter(d => d && d.local && !d.copied && d.file);
+
+            let okCount = 0;
+            const errs = [];
+
             try {
-                showMessage(t('int.import.importing', 'Importazione in corso...'), 'loading');
-                const r = await fetch(API.importDocs, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(authBody({ ids }))
-                });
-                if (!r.ok) throw new Error('HTTP ' + r.status);
-                const data = await r.json();
-                if (data.status !== 'ok') throw new Error(data.msg || 'Errore sconosciuto');
-
-                const results = Array.isArray(data.results) ? data.results : [];
-                const okCount = results.filter(x => x.status === 'ok').length;
-                const dupCount = results.filter(x => x.status === 'duplicate').length;
-                const errs = results.filter(x => x.status === 'error');
-
-                // Aggiorna subito lo stato nell'elenco
-                results.forEach(x => {
-                    if (x.status === 'ok' || x.status === 'duplicate') {
-                        const d = documents.find(doc => String(doc.id) === String(x.id));
-                        if (d) d.imported = true;
-                        selectedIds.delete(String(x.id));
+                // Processa i file SINGOLARMENTE (una chiamata /importdata per file)
+                for (let i = 0; i < localDocs.length; i++) {
+                    const doc = localDocs[i];
+                    showMessage(
+                        `${t('int.import.importing', 'Importazione in corso...')} (${i + 1}/${localDocs.length}) — ${doc.name}`,
+                        'loading'
+                    );
+                    doc.importing = true;
+                    renderTable();
+                    try {
+                        await importDataFile(doc.file);
+                        doc.copied = true;
+                        doc.imported = true;
+                        okCount++;
+                        selectedIds.delete(String(doc.id));
+                    } catch (e) {
+                        console.error('Import failed for', doc.name, e);
+                        errs.push(`${doc.name}: ${e.message}`);
+                    } finally {
+                        doc.importing = false;
+                        renderTable();
                     }
-                });
-                renderTable();
+                }
 
-                let msg = `${t('int.import.imported_count', 'Documenti importati')}: ${okCount}/${ids.length}`;
-                if (dupCount) msg += ` — ${t('int.import.duplicates', 'doppioni ignorati')}: ${dupCount}`;
-                if (errs.length) msg += ` — ${t('int.error', 'Errore')}: ${errs.map(e => e.msg || e.id).join('; ')}`;
+                // Sincronizza con il server (senza sovrascrivere il messaggio finale)
+                await loadDocuments(true);
+
+                let msg = `${t('int.import.imported_count', 'Documenti importati')}: ${okCount}/${localDocs.length}`;
+                if (errs.length) msg += ` — ${t('int.error', 'Errore')}: ${errs.join('; ')}`;
                 showMessage(msg, errs.length ? 'error' : 'success');
-                await loadDocuments();
             } catch (e) {
                 console.error('Import failed:', e);
                 showMessage(`${t('int.error', 'Errore')}: ${e.message}`, 'error');
@@ -1360,18 +1326,32 @@
             }
         }
 
-        function closeConfirm() {
-            document.getElementById('confirm-modal').style.display = 'none';
-        }
-
+        // ========== DELETE ==========
         function deleteSelected() {
             if (selectedIds.size > 0) confirmDelete([...selectedIds]);
         }
 
         async function deleteDocuments(ids) {
+            // I file locali (non ancora importati) si rimuovono solo dal client
+            const localIds = [];
+            const serverIds = [];
+            ids.forEach(id => {
+                const d = documents.find(doc => String(doc.id) === String(id));
+                if (d && d.local) localIds.push(d);
+                else serverIds.push(id);
+            });
+
+            // Rimozione lato client
+            if (localIds.length) {
+                const localSet = new Set(localIds.map(d => String(d.id)));
+                documents = documents.filter(d => !localSet.has(String(d.id)));
+                localSet.forEach(id => selectedIds.delete(id));
+            }
+
+            // Rimozione lato server
             let ok = 0;
             let lastErr = '';
-            for (const id of ids) {
+            for (const id of serverIds) {
                 try {
                     const r = await fetch(API.remove, {
                         method: 'POST',
@@ -1388,9 +1368,14 @@
                     lastErr = e.message;
                 }
             }
-            if (ok === ids.length) showMessage(t('int.import.deleted', 'Documenti eliminati'), 'success');
+
+            const total = ids.length;
+            const done = localIds.length + ok;
+            if (done === total) showMessage(t('int.import.deleted', 'Documenti eliminati'), 'success');
             else showMessage(`${t('int.error', 'Errore')}: ${lastErr}`, 'error');
-            await loadDocuments();
+
+            if (serverIds.length) await loadDocuments(true);
+            else renderTable();
         }
 
         // ========== INIT ==========
