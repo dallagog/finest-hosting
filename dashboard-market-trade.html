@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Import 0.3</title>
+    <title>Import Trade 0.4</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <link rel="icon" type="image/png" href="images/icon-finest.png">
     <!-- JSZip per creare lo zip da inviare a /importall -->
@@ -543,8 +543,6 @@
             <div class="section-head">
                 <h2 id="bucketTitle">Documenti nel bucket</h2>
                 <div class="toolbar">
-                    <!-- Bottone "Riprova": visibile SOLO se il listing fallisce.
-                         In condizioni normali è nascosto (l'utente non vede un "Aggiorna" fisso). -->
                     <button id="reloadBtn" class="update-btn" onclick="loadDocuments()" style="display:none;"
                         title="Riprova a caricare l'elenco dal server">
                         <i class="fa fa-sync-alt"></i> <span id="reloadText">Riprova</span>
@@ -602,12 +600,6 @@
     <script>
         // =====================================================================
         // API
-        //
-        //  LISTING  (con fallback automatico):
-        //    POST /bucket/list     {username, token, language}
-        //         -> {status:'ok', documents:[{id, name, size, content_type, uploaded_at, imported}]}
-        //    Se 404, tenta:
-        //    POST /listbucket      stesso payload
         //
         //  IMPORT   (uno ZIP per file, sequenziale):
         //    POST /importall       multipart/form-data:
@@ -771,9 +763,6 @@
         }
 
         // ========== DOCUMENT LIST (resiliente ai 404) ==========
-        // Prova in sequenza gli endpoint in API.listCandidates. Se nessuno
-        // risponde, NON blocca l'uso della pagina: mantiene i file locali,
-        // mostra un messaggio e rende visibile il bottone "Riprova".
         async function loadDocuments(silent) {
             const reloadBtn = document.getElementById('reloadBtn');
             if (reloadBtn) reloadBtn.disabled = true;
@@ -795,7 +784,7 @@
                     if (r.status === 404) {
                         console.warn(`[loadDocuments] Endpoint non trovato: ${url} (404)`);
                         lastError = new Error(`HTTP 404 su ${url}`);
-                        continue; // prova il prossimo
+                        continue;
                     }
 
                     if (!r.ok) {
@@ -813,7 +802,7 @@
 
                     docsFromServer = Array.isArray(data.documents) ? data.documents : [];
                     usedEndpoint = url;
-                    break; // successo: esci dal loop
+                    break;
                 } catch (e) {
                     console.warn(`[loadDocuments] Eccezione su ${url}:`, e.message);
                     lastError = e;
@@ -821,7 +810,6 @@
             }
 
             if (docsFromServer !== null) {
-                // ---- Successo: unisci docs server + locali non ancora copiati ----
                 console.log(`[loadDocuments] OK da ${usedEndpoint}, ${docsFromServer.length} documenti`);
                 const serverNames = new Set(docsFromServer.map(d => d.name));
                 const localDocs = documents.filter(d => d.local && !serverNames.has(d.name));
@@ -833,27 +821,20 @@
                 renderTable(true);
 
                 if (!silent) document.getElementById('message').style.display = 'none';
-
-                // In caso di successo, il bottone "Riprova" resta nascosto
                 if (reloadBtn) reloadBtn.style.display = 'none';
             } else {
-                // ---- Fallback: nessun endpoint di listing raggiungibile ----
                 console.error('[loadDocuments] Impossibile caricare l\'elenco dal server:', lastError);
 
-                // Mantieni solo i file locali (per non perdere il lavoro in corso)
                 const locals = documents.filter(d => d.local);
                 documents = locals;
 
-                // Messaggio informativo ma NON bloccante
                 const reason = lastError ? lastError.message : 'endpoint non disponibile';
                 const msg = `${t('int.error', 'Errore')}: ${reason} — ` +
                     `${t('int.import.list_unavailable', 'Elenco server non disponibile. Puoi comunque importare i file locali con Conferma.')}`;
                 showMessage(msg, 'error');
 
-                // Ridisegna comunque la tabella con i file locali
                 renderTable(true);
 
-                // Mostra il bottone "Riprova"
                 if (reloadBtn) reloadBtn.style.display = '';
             }
 
@@ -1112,7 +1093,6 @@
             zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('dragover'); });
             zone.addEventListener('dragleave', e => { e.preventDefault(); zone.classList.remove('dragover'); });
 
-            // Drop sull'intera pagina (non solo sulla drop zone)
             document.addEventListener('dragover', e => {
                 e.preventDefault();
                 document.body.classList.add('dragging');
@@ -1129,7 +1109,6 @@
                 }
             });
 
-            // Incolla (Ctrl+V) di file/immagini dalla clipboard
             document.addEventListener('paste', e => {
                 const items = e.clipboardData && e.clipboardData.items;
                 if (!items) return;
@@ -1347,24 +1326,14 @@
             });
         }
 
-        // Chiamata API /importall per un singolo file:
-        //  1) crea uno ZIP contenente il file originale
-        //  2) invia multipart/form-data con
-        //     username, token, language,
-        //     file     = <filename>.zip
-        //     recreate = 'false'
-        //     ticker   = 'trade'
-        //     filename = 'trade:<basename>'
         async function importDataFile(file) {
             if (typeof JSZip === 'undefined') {
                 throw new Error('JSZip non caricato');
             }
 
-            // Nome base senza estensione
             const baseName = file.name.replace(/\.[^.]+$/, '');
             const filename = `trade:${baseName}`;
 
-            // Crea zip con il file originale
             const zip = new JSZip();
             const fileContent = await file.arrayBuffer();
             zip.file(file.name, fileContent);
@@ -1402,7 +1371,6 @@
             const errs = [];
 
             try {
-                // Processa i file SINGOLARMENTE (una chiamata /importall per file)
                 for (let i = 0; i < localDocs.length; i++) {
                     const doc = localDocs[i];
                     showMessage(
@@ -1426,7 +1394,6 @@
                     }
                 }
 
-                // Sincronizza con il server (silent: non sovrascrive il messaggio finale)
                 await loadDocuments(true);
 
                 let msg = `${t('int.import.imported_count', 'Documenti importati')}: ${okCount}/${localDocs.length}`;
@@ -1455,14 +1422,12 @@
                 else serverIds.push(id);
             });
 
-            // Rimozione lato client
             if (localIds.length) {
                 const localSet = new Set(localIds.map(d => String(d.id)));
                 documents = documents.filter(d => !localSet.has(String(d.id)));
                 localSet.forEach(id => selectedIds.delete(id));
             }
 
-            // Rimozione lato server
             let ok = 0;
             let lastErr = '';
             for (const id of serverIds) {
