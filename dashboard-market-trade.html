@@ -344,6 +344,72 @@
             padding: 20px !important;
         }
 
+        .badge {
+            display: inline-block;
+            padding: 1px 8px;
+            border-radius: 10px;
+            font-size: 10px;
+            border: 1px solid #999;
+            color: #666;
+            background: #fff;
+            white-space: nowrap;
+        }
+
+        .badge.imported {
+            border-color: #1a7a1a;
+            color: #1a7a1a;
+            background: #f0fff0;
+        }
+
+        .badge.error {
+            border-color: #d32f2f;
+            color: #d32f2f;
+            background: #fff0f0;
+        }
+
+        .proc-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .proc-table th,
+        .proc-table td {
+            padding: 4px 8px;
+            font-size: 12px;
+            text-align: left;
+        }
+
+        .proc-table th {
+            background: #f0f0f0;
+            color: #000;
+            font-weight: 600;
+        }
+
+        .proc-table tbody tr:nth-child(even) {
+            background: #f9f9f9;
+        }
+
+        .proc-table tbody tr:nth-child(odd) {
+            background: #fff;
+        }
+
+        .proc-title {
+            padding: 10px 15px 0;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .row-btn.proc {
+            background: #fff;
+            color: #000;
+            border-color: #000;
+        }
+
+        .row-btn.proc:hover:not(:disabled) {
+            background: #eee;
+        }
+
         /* Messages */
         .message {
             padding: 15px;
@@ -520,6 +586,9 @@
                     <button id="refreshBtn" class="update-btn" onclick="loadDocuments()">
                         <i class="fa fa-sync-alt"></i> <span id="refreshText">Aggiorna</span>
                     </button>
+                    <button id="importConfirmBtn" class="update-btn" onclick="importSelected()" disabled>
+                        <i class="fa fa-check"></i> <span id="importConfirmText">Conferma</span>
+                    </button>
                     <button id="deleteSelBtn" class="update-btn" onclick="deleteSelected()" disabled>
                         <i class="fa fa-trash"></i> <span id="deleteSelText">Elimina selezionati</span>
                     </button>
@@ -578,14 +647,27 @@
         //  POST /bucket/delete   {username, token, language, id}
         //        -> {status:'ok'}
         //  POST /bucket/get      {username, token, language, id}
-        //        -> file binario (usato per visualizzare/scaricare)
+        //        -> file binario ORIGINALE (usato per visualizzare/scaricare)
+        //  POST /bucket/processed {username, token, language, id}
+        //        -> {status:'ok', rows:[...], sql:'...'}  risultato di fe_import_trade.py
+        //           rows[i] = {causale, id_instrument, dt_trade, qty_str, price_str,
+        //                      gross_str, net_str, sql_stock, sql_liq}
+        //           sql     = righe SQL (stock + liquidità) come scritte in tradelist.sqldata
+        //  POST /bucket/import   {username, token, language, ids:[...]}
+        //        -> {status:'ok', results:[{id, status:'ok'|'duplicate'|'error', msg}]}
+        //           importa sul server i documenti scelti (FE_ImportManager)
+        //
+        //  Il documento in /bucket/list può avere anche:
+        //     imported: true|false   (già importato sul server)
         // =====================================================================
         const API_URL = "https://feweb-tunnel.fe-web.eu";
         const API = {
             list: `${API_URL}/bucket/list`,
             upload: `${API_URL}/bucket/upload`,
             remove: `${API_URL}/bucket/delete`,
-            get: `${API_URL}/bucket/get`
+            get: `${API_URL}/bucket/get`,
+            processed: `${API_URL}/bucket/processed`,
+            importDocs: `${API_URL}/bucket/import`
         };
 
         const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20 MB
@@ -599,6 +681,7 @@
         let sortAscending = false;
         let selectedIds = new Set();
         let previewUrl = null;
+        let importing = false;
 
         // ========== UTILITY ==========
         function t(key, fallback) {
@@ -713,6 +796,7 @@
             set('bucketTitle', 'int.import.bucket', 'Documenti nel bucket');
             set('refreshText', 'int.update', 'Aggiorna');
             set('deleteSelText', 'int.import.delete_selected', 'Elimina selezionati');
+            set('importConfirmText', 'int.confirm', 'Conferma');
             set('confirmTitle', 'int.import.confirm_title', 'Conferma eliminazione');
             set('confirmYesText', 'int.delete', 'Elimina');
             set('confirmNoText', 'int.cancel', 'Annulla');
@@ -757,6 +841,7 @@
                 { key: 'type', label: t('int.import.col.type', 'Tipo') },
                 { key: 'size', label: t('int.import.col.size', 'Dimensione'), cls: 'num' },
                 { key: 'uploaded_at', label: t('int.import.col.date', 'Caricato il') },
+                { key: 'imported', label: t('int.import.col.status', 'Stato') },
                 { key: 'azioni', label: t('int.trading', 'Azioni'), cls: 'center' }
             ];
 
@@ -799,6 +884,7 @@
                 if (key === 'type') return extOf(d.name);
                 if (key === 'size') return Number(d.size) || 0;
                 if (key === 'uploaded_at') return d.uploaded_at ? new Date(d.uploaded_at).getTime() || 0 : 0;
+                if (key === 'imported') return d.imported ? 1 : 0;
                 return String(d[key] || '').toLowerCase();
             };
             const sorted = [...documents].sort((a, b) => {
@@ -855,18 +941,34 @@
                 tdDate.textContent = formatDate(d.uploaded_at);
                 tr.appendChild(tdDate);
 
+                const tdStatus = document.createElement('td');
+                const badge = document.createElement('span');
+                badge.className = 'badge' + (d.imported ? ' imported' : '');
+                badge.textContent = d.imported
+                    ? t('int.import.status.imported', 'Importato')
+                    : t('int.import.status.pending', 'Da importare');
+                tdStatus.appendChild(badge);
+                tr.appendChild(tdStatus);
+
                 const tdAct = document.createElement('td');
                 tdAct.className = 'center';
                 tdAct.style.whiteSpace = 'nowrap';
                 const bView = document.createElement('button');
                 bView.className = 'row-btn view';
-                bView.innerHTML = '<i class="fa fa-eye"></i> ' + escapeHtml(t('int.view', 'Visualizza'));
+                bView.title = t('int.import.view_original', 'Visualizza documento originale');
+                bView.innerHTML = '<i class="fa fa-file"></i> ' + escapeHtml(t('int.import.original', 'Originale'));
                 bView.onclick = () => viewDocument(d);
+                const bProc = document.createElement('button');
+                bProc.className = 'row-btn proc';
+                bProc.title = t('int.import.view_processed', 'Visualizza documento elaborato');
+                bProc.innerHTML = '<i class="fa fa-cogs"></i> ' + escapeHtml(t('int.import.processed', 'Elaborato'));
+                bProc.onclick = () => viewProcessed(d);
                 const bDel = document.createElement('button');
                 bDel.className = 'row-btn';
                 bDel.innerHTML = '<i class="fa fa-trash"></i> ' + escapeHtml(t('int.delete', 'Elimina'));
                 bDel.onclick = () => confirmDelete([id]);
                 tdAct.appendChild(bView);
+                tdAct.appendChild(bProc);
                 tdAct.appendChild(bDel);
                 tr.appendChild(tdAct);
 
@@ -885,6 +987,7 @@
 
         function updateSelectionUI() {
             document.getElementById('deleteSelBtn').disabled = selectedIds.size === 0;
+            document.getElementById('importConfirmBtn').disabled = selectedIds.size === 0 || importing;
             const all = document.getElementById('selectAll');
             if (all) {
                 all.checked = documents.length > 0 && selectedIds.size === documents.length;
@@ -942,7 +1045,15 @@
                             bar.style.width = '100%';
                             item.classList.add('done');
                             status.textContent = t('int.import.uploaded', 'Caricato');
-                            resolve(true);
+                            // Documento restituito dal server (o costruito dal file locale)
+                            const doc = data.document || (Array.isArray(data.documents) ? data.documents[0] : null) || {
+                                id: data.id || file.name,
+                                name: file.name,
+                                size: file.size,
+                                uploaded_at: new Date().toISOString(),
+                                imported: false
+                            };
+                            resolve({ doc });
                         } else {
                             fail(data.msg || ('HTTP ' + xhr.status));
                         }
@@ -971,7 +1082,16 @@
             });
 
             const results = await Promise.all(jobs);
-            const ok = results.filter(Boolean).length;
+            const uploaded = results.filter(Boolean);
+            const ok = uploaded.length;
+            if (ok > 0) {
+                // Mostra subito i nuovi documenti nell'elenco, senza attendere il ricaricamento
+                uploaded.forEach(r => {
+                    const idx = documents.findIndex(d => String(d.id) === String(r.doc.id));
+                    if (idx >= 0) documents[idx] = r.doc; else documents.push(r.doc);
+                });
+                renderTable();
+            }
             if (ok > 0) {
                 showMessage(`${ok}/${files.length} ${t('int.import.files_uploaded', 'file caricati')}`, ok === files.length ? 'success' : 'error');
                 await loadDocuments();
@@ -1052,6 +1172,86 @@
             }
         }
 
+        async function viewProcessed(doc) {
+            const body = document.getElementById('previewBody');
+            document.getElementById('previewTitle').textContent =
+                `${doc.name} — ${t('int.import.processed', 'Elaborato')}`;
+            document.getElementById('preview-modal').style.display = 'flex';
+            body.innerHTML = '<div class="no-preview"><i class="fa fa-spinner fa-spin"></i></div>';
+
+            try {
+                const r = await fetch(API.processed, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(authBody({ id: doc.id }))
+                });
+                if (!r.ok) throw new Error('HTTP ' + r.status);
+                const data = await r.json();
+                if (data.status !== 'ok') throw new Error(data.msg || 'Errore sconosciuto');
+
+                body.innerHTML = '';
+                const rows = Array.isArray(data.rows) ? data.rows : [];
+
+                if (rows.length === 0 && !data.sql) {
+                    body.innerHTML = '<div class="no-preview"></div>';
+                    body.firstChild.textContent = t('int.import.no_processed', 'Nessuna operazione estratta da questo documento.');
+                    return;
+                }
+
+                if (rows.length > 0) {
+                    const title = document.createElement('div');
+                    title.className = 'proc-title';
+                    title.textContent = t('int.import.operations', 'Operazioni estratte');
+                    body.appendChild(title);
+
+                    const cols = [
+                        ['causale', t('int.import.proc.causale', 'Causale')],
+                        ['id_instrument', t('int.import.proc.instrument', 'Strumento')],
+                        ['dt_trade', t('int.import.proc.date', 'Data trade')],
+                        ['qty_str', t('int.import.proc.qty', 'Quantità')],
+                        ['price_str', t('int.import.proc.price', 'Prezzo')],
+                        ['gross_str', t('int.import.proc.gross', 'Controvalore')],
+                        ['net_str', t('int.import.proc.net', 'Netto')]
+                    ];
+                    const table = document.createElement('table');
+                    table.className = 'proc-table';
+                    const thead = document.createElement('thead');
+                    const hr = document.createElement('tr');
+                    cols.forEach(c => { const th = document.createElement('th'); th.textContent = c[1]; hr.appendChild(th); });
+                    thead.appendChild(hr);
+                    table.appendChild(thead);
+                    const tb = document.createElement('tbody');
+                    rows.forEach(row => {
+                        const tr = document.createElement('tr');
+                        cols.forEach(c => {
+                            const td = document.createElement('td');
+                            td.textContent = row[c[0]] !== undefined && row[c[0]] !== null ? String(row[c[0]]) : '';
+                            tr.appendChild(td);
+                        });
+                        tb.appendChild(tr);
+                    });
+                    table.appendChild(tb);
+                    body.appendChild(table);
+                }
+
+                // Istruzioni SQL (come scritte in tradelist.sqldata)
+                const sql = data.sql || rows.map(x => [x.sql_stock, x.sql_liq].filter(Boolean).join('\n')).join('\n');
+                if (sql) {
+                    const title2 = document.createElement('div');
+                    title2.className = 'proc-title';
+                    title2.textContent = t('int.import.sql', 'Istruzioni SQL');
+                    body.appendChild(title2);
+                    const pre = document.createElement('pre');
+                    pre.textContent = sql;
+                    body.appendChild(pre);
+                }
+            } catch (e) {
+                console.error('Error viewing processed document:', e);
+                body.innerHTML = '<div class="no-preview" style="color:#d32f2f"></div>';
+                body.firstChild.textContent = (t('int.error', 'Errore') + ': ') + e.message;
+            }
+        }
+
         function closePreview() {
             document.getElementById('preview-modal').style.display = 'none';
             document.getElementById('previewBody').innerHTML = '';
@@ -1059,16 +1259,86 @@
         }
 
         // ========== DELETE ==========
+        function openConfirm({ title, text, yesLabel, yesIcon, onYes }) {
+            document.getElementById('confirmTitle').textContent = title;
+            document.getElementById('confirmText').textContent = text;
+            document.getElementById('confirmYesText').textContent = yesLabel;
+            document.querySelector('#confirmYes i').className = 'fa ' + yesIcon;
+            document.getElementById('confirmYes').onclick = async () => {
+                closeConfirm();
+                await onYes();
+            };
+            document.getElementById('confirm-modal').style.display = 'flex';
+        }
+
         function confirmDelete(ids) {
             const msg = ids.length === 1
                 ? t('int.import.confirm_one', 'Eliminare il documento selezionato dal bucket?')
                 : `${t('int.import.confirm_many', 'Eliminare i documenti selezionati dal bucket?')} (${ids.length})`;
-            document.getElementById('confirmText').textContent = msg;
-            document.getElementById('confirmYes').onclick = async () => {
-                closeConfirm();
-                await deleteDocuments(ids);
-            };
-            document.getElementById('confirm-modal').style.display = 'flex';
+            openConfirm({
+                title: t('int.import.confirm_title', 'Conferma eliminazione'),
+                text: msg,
+                yesLabel: t('int.delete', 'Elimina'),
+                yesIcon: 'fa-trash',
+                onYes: () => deleteDocuments(ids)
+            });
+        }
+
+        // ========== IMPORT SUL SERVER ==========
+        function importSelected() {
+            if (selectedIds.size === 0 || importing) return;
+            const ids = [...selectedIds];
+            openConfirm({
+                title: t('int.import.import_title', 'Conferma importazione'),
+                text: `${t('int.import.import_text', 'Importare sul server i documenti selezionati?')} (${ids.length})`,
+                yesLabel: t('int.confirm', 'Conferma'),
+                yesIcon: 'fa-check',
+                onYes: () => runImport(ids)
+            });
+        }
+
+        async function runImport(ids) {
+            const btn = document.getElementById('importConfirmBtn');
+            importing = true;
+            btn.disabled = true;
+            try {
+                showMessage(t('int.import.importing', 'Importazione in corso...'), 'loading');
+                const r = await fetch(API.importDocs, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(authBody({ ids }))
+                });
+                if (!r.ok) throw new Error('HTTP ' + r.status);
+                const data = await r.json();
+                if (data.status !== 'ok') throw new Error(data.msg || 'Errore sconosciuto');
+
+                const results = Array.isArray(data.results) ? data.results : [];
+                const okCount = results.filter(x => x.status === 'ok').length;
+                const dupCount = results.filter(x => x.status === 'duplicate').length;
+                const errs = results.filter(x => x.status === 'error');
+
+                // Aggiorna subito lo stato nell'elenco
+                results.forEach(x => {
+                    if (x.status === 'ok' || x.status === 'duplicate') {
+                        const d = documents.find(doc => String(doc.id) === String(x.id));
+                        if (d) d.imported = true;
+                        selectedIds.delete(String(x.id));
+                    }
+                });
+                renderTable();
+
+                let msg = `${t('int.import.imported_count', 'Documenti importati')}: ${okCount}/${ids.length}`;
+                if (dupCount) msg += ` — ${t('int.import.duplicates', 'doppioni ignorati')}: ${dupCount}`;
+                if (errs.length) msg += ` — ${t('int.error', 'Errore')}: ${errs.map(e => e.msg || e.id).join('; ')}`;
+                showMessage(msg, errs.length ? 'error' : 'success');
+                await loadDocuments();
+            } catch (e) {
+                console.error('Import failed:', e);
+                showMessage(`${t('int.error', 'Errore')}: ${e.message}`, 'error');
+            } finally {
+                importing = false;
+                updateSelectionUI();
+            }
         }
 
         function closeConfirm() {
