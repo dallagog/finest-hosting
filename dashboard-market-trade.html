@@ -1,0 +1,1123 @@
+<!DOCTYPE html>
+<html lang="it">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Import Trade 0.1</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link rel="icon" type="image/png" href="images/icon-finest.png">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&display=swap');
+
+        :root {
+            --bg-color: #f5f5f0;
+            --glass-bg: #ffffff;
+            --text-color: #333333;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Orbitron', sans-serif;
+            background-color: var(--bg-color);
+            padding: 20px;
+            color: var(--text-color);
+            min-height: 100vh;
+        }
+
+        .main-container {
+            width: 100%;
+            max-width: 100%;
+            margin: 0 auto;
+        }
+
+        .header-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: var(--glass-bg);
+            border: 1px solid #ddd;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+        }
+
+        .user-info-left {
+            flex: 1;
+            text-align: left;
+            font-size: 14px;
+            color: #666;
+        }
+
+        h1 {
+            flex: 1;
+            text-align: center;
+            margin: 0;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: #000;
+            font-size: 2em;
+        }
+
+        .close-container {
+            flex: 1;
+            text-align: right;
+        }
+
+        button {
+            padding: 10px 20px;
+            background: #000;
+            border: 1px solid #000;
+            color: #fff;
+            font-family: inherit;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+
+        button:hover:not(:disabled) {
+            background: #333;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        button:disabled {
+            background: #666;
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+
+        .close-btn {
+            background: rgba(255, 0, 0, 0.2);
+            border-color: #ff3333;
+            color: #ff3333;
+        }
+
+        .close-btn:hover:not(:disabled) {
+            background: rgba(255, 0, 0, 0.4);
+            box-shadow: 0 0 10px #ff3333;
+        }
+
+        .content-section {
+            background: var(--glass-bg);
+            border: 1px solid #ddd;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+        }
+
+        .section-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .section-head h2 {
+            font-size: 18px;
+            font-weight: 600;
+            color: #000;
+            margin: 0;
+        }
+
+        .toolbar {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .update-btn {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+        }
+
+        /* Drop zone */
+        .drop-zone {
+            border: 2px dashed #999;
+            border-radius: 8px;
+            padding: 30px;
+            text-align: center;
+            background: #fafafa;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: #666;
+        }
+
+        .drop-zone i {
+            font-size: 32px;
+            color: #000;
+            margin-bottom: 10px;
+            display: block;
+        }
+
+        .drop-zone.dragover {
+            background: #eee;
+            border-color: #000;
+            color: #000;
+        }
+
+        .drop-zone small {
+            display: block;
+            margin-top: 8px;
+            font-size: 11px;
+            color: #999;
+        }
+
+        /* Upload queue */
+        .queue {
+            margin-top: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .queue-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background: #f9f9f9;
+            font-size: 12px;
+        }
+
+        .queue-item .qname {
+            flex: 2;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .progress {
+            flex: 3;
+            height: 8px;
+            background: #e0e0e0;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .progress>div {
+            height: 100%;
+            width: 0;
+            background: #000;
+            transition: width 0.2s;
+        }
+
+        .queue-item.done .progress>div {
+            background: #27ae60;
+        }
+
+        .queue-item.error .progress>div {
+            background: #d32f2f;
+        }
+
+        .queue-item .qstatus {
+            flex: 1;
+            text-align: right;
+            color: #666;
+        }
+
+        .queue-item.error .qstatus {
+            color: #d32f2f;
+        }
+
+        /* Table */
+        #docs-table-container {
+            overflow-x: auto;
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 700px;
+        }
+
+        .data-table th,
+        .data-table td {
+            padding: 4px 8px;
+            text-align: left;
+            border-bottom: none;
+            color: #333;
+            min-height: 32px;
+            font-size: 12px;
+        }
+
+        .data-table td.num,
+        .data-table th.num {
+            text-align: right;
+        }
+
+        .data-table td.center,
+        .data-table th.center {
+            text-align: center;
+        }
+
+        .data-table th {
+            background: #f0f0f0;
+            color: #000;
+            font-weight: 600;
+            cursor: pointer;
+            user-select: none;
+            position: relative;
+            line-height: 1.1;
+            vertical-align: bottom;
+            padding: 8px 8px;
+        }
+
+        .data-table th:hover {
+            background: #e0e0e0;
+        }
+
+        .data-table th.sort-asc::after {
+            content: ' ▲';
+            font-size: 0.8em;
+        }
+
+        .data-table th.sort-desc::after {
+            content: ' ▼';
+            font-size: 0.8em;
+        }
+
+        .data-table tbody tr {
+            transition: background 0.2s;
+        }
+
+        .data-table tbody tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+
+        .data-table tbody tr:nth-child(odd) {
+            background-color: #ffffff;
+        }
+
+        .data-table tbody tr:hover {
+            background: #f0f0f0 !important;
+        }
+
+        .data-table tfoot td {
+            font-weight: bold;
+            background: #f0f0f0;
+            border-top: 2px solid #000;
+        }
+
+        .row-btn {
+            padding: 1px 8px;
+            font-size: 10px;
+            min-height: 18px;
+            line-height: 15px;
+            margin-left: 4px;
+        }
+
+        .row-btn.view {
+            background: #fff;
+            color: #000;
+            border-color: #000;
+        }
+
+        .row-btn.view:hover:not(:disabled) {
+            background: #eee;
+        }
+
+        .file-link {
+            cursor: pointer;
+            text-decoration: underline;
+            color: #000;
+        }
+
+        .empty-row td {
+            text-align: center !important;
+            color: #999;
+            padding: 20px !important;
+        }
+
+        /* Messages */
+        .message {
+            padding: 15px;
+            border-radius: 4px;
+            margin: 10px 0;
+            display: none;
+        }
+
+        .message.loading {
+            background: #f0f0f0;
+            color: #333;
+            border: 1px solid #ccc;
+            display: block;
+        }
+
+        .message.success {
+            background: #f0fff0;
+            color: #1a7a1a;
+            border: 1px solid #1a7a1a;
+            display: block;
+        }
+
+        .message.error {
+            background: #fff0f0;
+            border: 1px solid #d32f2f;
+            color: #d32f2f;
+            display: block;
+        }
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            backdrop-filter: blur(5px);
+        }
+
+        .modal-content {
+            background: #fff;
+            border: 2px solid #000;
+            border-radius: 8px;
+            padding: 20px;
+            width: 90%;
+            max-width: 1000px;
+            height: 85vh;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .modal-content.small {
+            max-width: 450px;
+            height: auto;
+            text-align: center;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            gap: 10px;
+        }
+
+        .modal-header h2 {
+            color: #000;
+            font-size: 1.1em;
+            text-transform: uppercase;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .modal-body {
+            flex: 1;
+            overflow: auto;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background: #fafafa;
+        }
+
+        .modal-body iframe {
+            width: 100%;
+            height: 100%;
+            border: 0;
+        }
+
+        .modal-body img {
+            max-width: 100%;
+            display: block;
+            margin: 0 auto;
+        }
+
+        .modal-body pre {
+            padding: 15px;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        .modal-body .no-preview {
+            padding: 40px;
+            text-align: center;
+            color: #666;
+            font-size: 13px;
+        }
+
+        .modal-footer {
+            margin-top: 20px;
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .modal-content.small p {
+            margin: 15px 0;
+            font-size: 13px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="main-container">
+        <div class="header-bar">
+            <div class="user-info-left">
+                <div style="margin-bottom: 5px;">
+                    <strong id="userLabel">Utente:</strong>
+                    <span id="usernameDisplay">-</span>
+                </div>
+                <div style="font-size: 12px;">
+                    <span id="languageFlag"></span>
+                    <span id="languageDisplay">-</span>
+                </div>
+            </div>
+            <h1 id="pageTitle">Import</h1>
+            <div class="close-container">
+                <button class="close-btn" onclick="window.close()">
+                    <i class="fa fa-times"></i> <span id="closeText">Chiudi</span>
+                </button>
+            </div>
+        </div>
+
+        <div id="message" class="message"></div>
+
+        <!-- Upload -->
+        <div class="content-section">
+            <div class="section-head">
+                <h2 id="uploadTitle">Carica documenti</h2>
+            </div>
+            <div id="dropZone" class="drop-zone">
+                <i class="fa fa-cloud-upload-alt"></i>
+                <span id="dropText">Trascina qui i file oppure clicca per selezionarli</span>
+                <small id="dropHint">Formati ammessi: PDF, TXT, CSV, XLS, XLSX, JSON, XML, immagini — max 20 MB per
+                    file</small>
+            </div>
+            <input type="file" id="fileInput" multiple style="display:none"
+                accept=".pdf,.txt,.csv,.tsv,.xls,.xlsx,.json,.xml,.xml,.doc,.docx,.png,.jpg,.jpeg">
+            <div id="queue" class="queue"></div>
+        </div>
+
+        <!-- Bucket -->
+        <div class="content-section">
+            <div class="section-head">
+                <h2 id="bucketTitle">Documenti nel bucket</h2>
+                <div class="toolbar">
+                    <button id="refreshBtn" class="update-btn" onclick="loadDocuments()">
+                        <i class="fa fa-sync-alt"></i> <span id="refreshText">Aggiorna</span>
+                    </button>
+                    <button id="deleteSelBtn" class="update-btn" onclick="deleteSelected()" disabled>
+                        <i class="fa fa-trash"></i> <span id="deleteSelText">Elimina selezionati</span>
+                    </button>
+                </div>
+            </div>
+            <div id="docs-table-container">
+                <table id="docs-table" class="data-table">
+                    <thead>
+                        <tr id="docs-header-row"></tr>
+                    </thead>
+                    <tbody id="docs-body"></tbody>
+                    <tfoot>
+                        <tr id="docs-footer-row"></tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Preview modal -->
+    <div id="preview-modal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="previewTitle"></h2>
+                <button class="close-btn" onclick="closePreview()">
+                    <i class="fa fa-times"></i> <span id="previewCloseText">Chiudi</span>
+                </button>
+            </div>
+            <div id="previewBody" class="modal-body"></div>
+        </div>
+    </div>
+
+    <!-- Delete confirm modal -->
+    <div id="confirm-modal" class="modal-overlay">
+        <div class="modal-content small">
+            <div class="modal-header" style="justify-content:center">
+                <h2 id="confirmTitle">Conferma eliminazione</h2>
+            </div>
+            <p id="confirmText"></p>
+            <div class="modal-footer">
+                <button id="confirmYes"><i class="fa fa-trash"></i> <span id="confirmYesText">Elimina</span></button>
+                <button class="close-btn" onclick="closeConfirm()"><i class="fa fa-times"></i> <span
+                        id="confirmNoText">Annulla</span></button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // =====================================================================
+        // API  (TODO: gli endpoint lato server sono da realizzare)
+        //
+        //  POST /bucket/list     {username, token, language}
+        //        -> {status:'ok', documents:[{id, name, size, content_type, uploaded_at}]}
+        //  POST /bucket/upload   multipart/form-data: username, token, language, file
+        //        -> {status:'ok', document:{...}}
+        //  POST /bucket/delete   {username, token, language, id}
+        //        -> {status:'ok'}
+        //  POST /bucket/get      {username, token, language, id}
+        //        -> file binario (usato per visualizzare/scaricare)
+        // =====================================================================
+        const API_URL = "https://feweb-tunnel.fe-web.eu";
+        const API = {
+            list: `${API_URL}/bucket/list`,
+            upload: `${API_URL}/bucket/upload`,
+            remove: `${API_URL}/bucket/delete`,
+            get: `${API_URL}/bucket/get`
+        };
+
+        const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20 MB
+        const ALLOWED_EXT = ['pdf', 'txt', 'csv', 'tsv', 'xls', 'xlsx', 'json', 'xml', 'doc', 'docx', 'png', 'jpg', 'jpeg'];
+
+        let credentials = { username: '', token: '', language: '' };
+        let translations = {};
+        let availableLanguages = [];
+        let documents = [];
+        let sortColumn = 'uploaded_at';
+        let sortAscending = false;
+        let selectedIds = new Set();
+        let previewUrl = null;
+
+        // ========== UTILITY ==========
+        function t(key, fallback) {
+            const v = translations[key];
+            return v ? v : (fallback !== undefined ? fallback : key);
+        }
+
+        function showMessage(text, type = 'loading') {
+            const el = document.getElementById('message');
+            el.textContent = text;
+            el.className = 'message ' + type;
+            el.style.display = 'block';
+            if (type === 'success' || type === 'error') {
+                setTimeout(() => { el.style.display = 'none'; }, 3000);
+            }
+        }
+
+        function formatSize(bytes) {
+            const n = Number(bytes);
+            if (isNaN(n)) return '';
+            if (n < 1024) return n + ' B';
+            if (n < 1024 * 1024) return (n / 1024).toLocaleString(undefined, { maximumFractionDigits: 1 }) + ' KB';
+            return (n / 1024 / 1024).toLocaleString(undefined, { maximumFractionDigits: 2 }) + ' MB';
+        }
+
+        function formatDate(v) {
+            if (!v) return '';
+            const d = new Date(v);
+            return isNaN(d.getTime()) ? String(v) : d.toLocaleString();
+        }
+
+        function extOf(name) {
+            const i = (name || '').lastIndexOf('.');
+            return i >= 0 ? name.slice(i + 1).toLowerCase() : '';
+        }
+
+        function escapeHtml(s) {
+            return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+        }
+
+        function authBody(extra) {
+            return Object.assign({
+                username: credentials.username,
+                token: credentials.token,
+                language: credentials.language
+            }, extra || {});
+        }
+
+        // ========== AUTH / TRANSLATIONS ==========
+        function getCredentialsFromURL() {
+            const p = new URLSearchParams(window.location.search);
+            credentials.username = p.get('username') || '';
+            credentials.token = p.get('token') || '';
+            credentials.language = p.get('language') || 'it_IT';
+            if (!credentials.username || !credentials.token) {
+                showMessage('Credenziali mancanti', 'error');
+                return false;
+            }
+            document.getElementById('usernameDisplay').textContent = credentials.username;
+            return true;
+        }
+
+        async function loadTranslations(lang) {
+            try {
+                const r = await fetch(`lang/${lang}.json`);
+                if (!r.ok) throw new Error('Translation file not found');
+                translations = await r.json();
+            } catch (e) {
+                console.error('Error loading translations:', e);
+            }
+            updatePageTranslations();
+        }
+
+        async function initializeLanguages() {
+            try {
+                const r = await fetch('lang/manifest.json');
+                if (!r.ok) return;
+                const manifest = await r.json();
+                for (const code of (manifest.languages || [])) {
+                    try {
+                        const lr = await fetch(`lang/${code}.json`);
+                        if (!lr.ok) continue;
+                        const d = await lr.json();
+                        if (d['int.language.code'] && d['int.language.description'] && d['img.language.flag']) {
+                            availableLanguages.push({ code: d['int.language.code'], description: d['int.language.description'], flag: d['img.language.flag'] });
+                        }
+                    } catch (e) { /* ignora */ }
+                }
+            } catch (e) { /* ignora */ }
+        }
+
+        function updateUserInfo() {
+            const langData = availableLanguages.find(l => l.code === credentials.language);
+            if (langData) {
+                document.getElementById('languageFlag').textContent = langData.flag;
+                const d = t('int.language.description', '');
+                document.getElementById('languageDisplay').textContent = d || credentials.language;
+            } else {
+                document.getElementById('languageDisplay').textContent = credentials.language;
+            }
+        }
+
+        function updatePageTranslations() {
+            const set = (id, key, fb) => { document.getElementById(id).textContent = t(key, fb); };
+            set('pageTitle', 'int.import', 'Import');
+            set('userLabel', 'int.user.label', 'Utente:');
+            set('closeText', 'int.close', 'Chiudi');
+            set('previewCloseText', 'int.close', 'Chiudi');
+            set('uploadTitle', 'int.import.upload', 'Carica documenti');
+            set('dropText', 'int.import.drop', 'Trascina qui i file oppure clicca per selezionarli');
+            set('dropHint', 'int.import.hint', 'Formati ammessi: PDF, TXT, CSV, XLS, XLSX, JSON, XML, immagini — max 20 MB per file');
+            set('bucketTitle', 'int.import.bucket', 'Documenti nel bucket');
+            set('refreshText', 'int.update', 'Aggiorna');
+            set('deleteSelText', 'int.import.delete_selected', 'Elimina selezionati');
+            set('confirmTitle', 'int.import.confirm_title', 'Conferma eliminazione');
+            set('confirmYesText', 'int.delete', 'Elimina');
+            set('confirmNoText', 'int.cancel', 'Annulla');
+            document.title = t('int.import', 'Import');
+            renderTable(true);
+        }
+
+        // ========== DOCUMENT LIST ==========
+        async function loadDocuments() {
+            const btn = document.getElementById('refreshBtn');
+            btn.disabled = true;
+            try {
+                showMessage(t('int.loading', 'Caricamento...'), 'loading');
+                const r = await fetch(API.list, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(authBody())
+                });
+                if (!r.ok) throw new Error('HTTP ' + r.status);
+                const data = await r.json();
+                if (data.status !== 'ok') throw new Error(data.msg || 'Errore sconosciuto');
+                documents = Array.isArray(data.documents) ? data.documents : [];
+                const ids = new Set(documents.map(d => String(d.id)));
+                selectedIds = new Set([...selectedIds].filter(id => ids.has(id)));
+                renderTable(true);
+                document.getElementById('message').style.display = 'none';
+            } catch (e) {
+                console.error('Error loading documents:', e);
+                showMessage((t('int.error', 'Errore') + ': ') + e.message, 'error');
+            } finally {
+                btn.disabled = false;
+            }
+        }
+
+        function renderTable(rebuildHeader) {
+            const thead = document.getElementById('docs-header-row');
+            const tbody = document.getElementById('docs-body');
+            const tfoot = document.getElementById('docs-footer-row');
+
+            const cols = [
+                { key: 'name', label: t('int.import.col.name', 'Nome file') },
+                { key: 'type', label: t('int.import.col.type', 'Tipo') },
+                { key: 'size', label: t('int.import.col.size', 'Dimensione'), cls: 'num' },
+                { key: 'uploaded_at', label: t('int.import.col.date', 'Caricato il') },
+                { key: 'azioni', label: t('int.trading', 'Azioni'), cls: 'center' }
+            ];
+
+            if (rebuildHeader || thead.children.length === 0) {
+                thead.innerHTML = '';
+                const thSel = document.createElement('th');
+                thSel.className = 'center';
+                thSel.style.cursor = 'default';
+                const all = document.createElement('input');
+                all.type = 'checkbox';
+                all.id = 'selectAll';
+                all.onchange = () => {
+                    if (all.checked) documents.forEach(d => selectedIds.add(String(d.id)));
+                    else selectedIds.clear();
+                    renderTable();
+                };
+                thSel.appendChild(all);
+                thead.appendChild(thSel);
+
+                cols.forEach(c => {
+                    const th = document.createElement('th');
+                    th.textContent = c.label;
+                    if (c.cls) th.className = c.cls;
+                    if (c.key === 'azioni') {
+                        th.style.cursor = 'default';
+                    } else {
+                        th.onclick = () => sortTable(c.key);
+                    }
+                    th.dataset.key = c.key;
+                    thead.appendChild(th);
+                });
+            }
+
+            Array.from(thead.cells).forEach(th => {
+                th.classList.remove('sort-asc', 'sort-desc');
+                if (th.dataset.key === sortColumn) th.classList.add(sortAscending ? 'sort-asc' : 'sort-desc');
+            });
+
+            const getVal = (d, key) => {
+                if (key === 'type') return extOf(d.name);
+                if (key === 'size') return Number(d.size) || 0;
+                if (key === 'uploaded_at') return d.uploaded_at ? new Date(d.uploaded_at).getTime() || 0 : 0;
+                return String(d[key] || '').toLowerCase();
+            };
+            const sorted = [...documents].sort((a, b) => {
+                const va = getVal(a, sortColumn), vb = getVal(b, sortColumn);
+                const r = (typeof va === 'number' && typeof vb === 'number') ? va - vb : String(va).localeCompare(String(vb));
+                return sortAscending ? r : -r;
+            });
+
+            tbody.innerHTML = '';
+            if (sorted.length === 0) {
+                const tr = document.createElement('tr');
+                tr.className = 'empty-row';
+                const td = document.createElement('td');
+                td.colSpan = cols.length + 1;
+                td.textContent = t('int.import.empty', 'Nessun documento presente nel bucket');
+                tr.appendChild(td);
+                tbody.appendChild(tr);
+            }
+
+            sorted.forEach(d => {
+                const id = String(d.id);
+                const tr = document.createElement('tr');
+
+                const tdSel = document.createElement('td');
+                tdSel.className = 'center';
+                const cb = document.createElement('input');
+                cb.type = 'checkbox';
+                cb.checked = selectedIds.has(id);
+                cb.onchange = () => {
+                    if (cb.checked) selectedIds.add(id); else selectedIds.delete(id);
+                    updateSelectionUI();
+                };
+                tdSel.appendChild(cb);
+                tr.appendChild(tdSel);
+
+                const tdName = document.createElement('td');
+                const link = document.createElement('span');
+                link.className = 'file-link';
+                link.textContent = d.name;
+                link.onclick = () => viewDocument(d);
+                tdName.appendChild(link);
+                tr.appendChild(tdName);
+
+                const tdType = document.createElement('td');
+                tdType.textContent = extOf(d.name).toUpperCase();
+                tr.appendChild(tdType);
+
+                const tdSize = document.createElement('td');
+                tdSize.className = 'num';
+                tdSize.textContent = formatSize(d.size);
+                tr.appendChild(tdSize);
+
+                const tdDate = document.createElement('td');
+                tdDate.textContent = formatDate(d.uploaded_at);
+                tr.appendChild(tdDate);
+
+                const tdAct = document.createElement('td');
+                tdAct.className = 'center';
+                tdAct.style.whiteSpace = 'nowrap';
+                const bView = document.createElement('button');
+                bView.className = 'row-btn view';
+                bView.innerHTML = '<i class="fa fa-eye"></i> ' + escapeHtml(t('int.view', 'Visualizza'));
+                bView.onclick = () => viewDocument(d);
+                const bDel = document.createElement('button');
+                bDel.className = 'row-btn';
+                bDel.innerHTML = '<i class="fa fa-trash"></i> ' + escapeHtml(t('int.delete', 'Elimina'));
+                bDel.onclick = () => confirmDelete([id]);
+                tdAct.appendChild(bView);
+                tdAct.appendChild(bDel);
+                tr.appendChild(tdAct);
+
+                tbody.appendChild(tr);
+            });
+
+            tfoot.innerHTML = '';
+            const tdF = document.createElement('td');
+            tdF.colSpan = cols.length + 1;
+            const total = documents.reduce((s, d) => s + (Number(d.size) || 0), 0);
+            tdF.textContent = `${t('int.import.total', 'TOTALE')}: ${documents.length} ${t('int.import.files', 'file')} — ${formatSize(total)}`;
+            tfoot.appendChild(tdF);
+
+            updateSelectionUI();
+        }
+
+        function updateSelectionUI() {
+            document.getElementById('deleteSelBtn').disabled = selectedIds.size === 0;
+            const all = document.getElementById('selectAll');
+            if (all) {
+                all.checked = documents.length > 0 && selectedIds.size === documents.length;
+                all.indeterminate = selectedIds.size > 0 && selectedIds.size < documents.length;
+            }
+        }
+
+        function sortTable(key) {
+            if (sortColumn === key) sortAscending = !sortAscending;
+            else { sortColumn = key; sortAscending = true; }
+            renderTable();
+        }
+
+        // ========== UPLOAD ==========
+        function validateFile(file) {
+            const ext = extOf(file.name);
+            if (!ALLOWED_EXT.includes(ext)) return t('int.import.err.type', 'Formato non supportato');
+            if (file.size > MAX_FILE_SIZE) return t('int.import.err.size', 'File troppo grande (max 20 MB)');
+            if (file.size === 0) return t('int.import.err.empty', 'File vuoto');
+            return null;
+        }
+
+        function uploadFile(file, item) {
+            return new Promise(resolve => {
+                const bar = item.querySelector('.progress > div');
+                const status = item.querySelector('.qstatus');
+                const fail = msg => {
+                    item.classList.add('error');
+                    status.textContent = msg;
+                    resolve(false);
+                };
+
+                const err = validateFile(file);
+                if (err) { bar.style.width = '100%'; return fail(err); }
+
+                const form = new FormData();
+                form.append('username', credentials.username);
+                form.append('token', credentials.token);
+                form.append('language', credentials.language);
+                form.append('file', file, file.name);
+
+                const xhr = new XMLHttpRequest();
+                xhr.open('POST', API.upload);
+                xhr.upload.onprogress = e => {
+                    if (e.lengthComputable) {
+                        const pct = Math.round(e.loaded / e.total * 100);
+                        bar.style.width = pct + '%';
+                        status.textContent = pct + '%';
+                    }
+                };
+                xhr.onload = () => {
+                    try {
+                        const data = JSON.parse(xhr.responseText);
+                        if (xhr.status >= 200 && xhr.status < 300 && data.status === 'ok') {
+                            bar.style.width = '100%';
+                            item.classList.add('done');
+                            status.textContent = t('int.import.uploaded', 'Caricato');
+                            resolve(true);
+                        } else {
+                            fail(data.msg || ('HTTP ' + xhr.status));
+                        }
+                    } catch (e) {
+                        fail('HTTP ' + xhr.status);
+                    }
+                };
+                xhr.onerror = () => fail(t('int.error.connection', 'Errore connessione'));
+                xhr.send(form);
+            });
+        }
+
+        async function handleFiles(fileList) {
+            const files = Array.from(fileList);
+            if (files.length === 0) return;
+            const queue = document.getElementById('queue');
+            queue.innerHTML = '';
+
+            const jobs = files.map(file => {
+                const item = document.createElement('div');
+                item.className = 'queue-item';
+                item.innerHTML = '<span class="qname"></span><div class="progress"><div></div></div><span class="qstatus">0%</span>';
+                item.querySelector('.qname').textContent = file.name;
+                queue.appendChild(item);
+                return uploadFile(file, item);
+            });
+
+            const results = await Promise.all(jobs);
+            const ok = results.filter(Boolean).length;
+            if (ok > 0) {
+                showMessage(`${ok}/${files.length} ${t('int.import.files_uploaded', 'file caricati')}`, ok === files.length ? 'success' : 'error');
+                await loadDocuments();
+            } else {
+                showMessage(t('int.import.err.none', 'Nessun file caricato'), 'error');
+            }
+        }
+
+        function initDropZone() {
+            const zone = document.getElementById('dropZone');
+            const input = document.getElementById('fileInput');
+            zone.onclick = () => input.click();
+            input.onchange = () => { handleFiles(input.files); input.value = ''; };
+            ['dragenter', 'dragover'].forEach(ev => zone.addEventListener(ev, e => {
+                e.preventDefault(); zone.classList.add('dragover');
+            }));
+            ['dragleave', 'drop'].forEach(ev => zone.addEventListener(ev, e => {
+                e.preventDefault(); zone.classList.remove('dragover');
+            }));
+            zone.addEventListener('drop', e => handleFiles(e.dataTransfer.files));
+        }
+
+        // ========== VIEW ==========
+        async function fetchDocumentBlob(doc) {
+            const r = await fetch(API.get, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(authBody({ id: doc.id }))
+            });
+            if (!r.ok) throw new Error('HTTP ' + r.status);
+            return await r.blob();
+        }
+
+        async function viewDocument(doc) {
+            const body = document.getElementById('previewBody');
+            document.getElementById('previewTitle').textContent = doc.name;
+            body.innerHTML = '';
+            document.getElementById('preview-modal').style.display = 'flex';
+            body.innerHTML = '<div class="no-preview"><i class="fa fa-spinner fa-spin"></i></div>';
+
+            try {
+                const blob = await fetchDocumentBlob(doc);
+                const ext = extOf(doc.name);
+                body.innerHTML = '';
+                if (previewUrl) URL.revokeObjectURL(previewUrl);
+
+                if (ext === 'pdf') {
+                    previewUrl = URL.createObjectURL(new Blob([blob], { type: 'application/pdf' }));
+                    const f = document.createElement('iframe');
+                    f.src = previewUrl;
+                    body.appendChild(f);
+                } else if (['png', 'jpg', 'jpeg'].includes(ext)) {
+                    previewUrl = URL.createObjectURL(blob);
+                    const img = document.createElement('img');
+                    img.src = previewUrl;
+                    body.appendChild(img);
+                } else if (['txt', 'csv', 'tsv', 'json', 'xml'].includes(ext)) {
+                    const pre = document.createElement('pre');
+                    pre.textContent = await blob.text();
+                    body.appendChild(pre);
+                } else {
+                    previewUrl = URL.createObjectURL(blob);
+                    body.innerHTML = '<div class="no-preview"></div>';
+                    const box = body.firstChild;
+                    box.appendChild(document.createTextNode(t('int.import.no_preview', 'Anteprima non disponibile per questo formato.')));
+                    box.appendChild(document.createElement('br'));
+                    box.appendChild(document.createElement('br'));
+                    const a = document.createElement('a');
+                    a.href = previewUrl;
+                    a.download = doc.name;
+                    a.innerHTML = '<button><i class="fa fa-download"></i> ' + escapeHtml(t('int.download', 'Scarica')) + '</button>';
+                    box.appendChild(a);
+                }
+            } catch (e) {
+                console.error('Error viewing document:', e);
+                body.innerHTML = '<div class="no-preview" style="color:#d32f2f"></div>';
+                body.firstChild.textContent = (t('int.error', 'Errore') + ': ') + e.message;
+            }
+        }
+
+        function closePreview() {
+            document.getElementById('preview-modal').style.display = 'none';
+            document.getElementById('previewBody').innerHTML = '';
+            if (previewUrl) { URL.revokeObjectURL(previewUrl); previewUrl = null; }
+        }
+
+        // ========== DELETE ==========
+        function confirmDelete(ids) {
+            const msg = ids.length === 1
+                ? t('int.import.confirm_one', 'Eliminare il documento selezionato dal bucket?')
+                : `${t('int.import.confirm_many', 'Eliminare i documenti selezionati dal bucket?')} (${ids.length})`;
+            document.getElementById('confirmText').textContent = msg;
+            document.getElementById('confirmYes').onclick = async () => {
+                closeConfirm();
+                await deleteDocuments(ids);
+            };
+            document.getElementById('confirm-modal').style.display = 'flex';
+        }
+
+        function closeConfirm() {
+            document.getElementById('confirm-modal').style.display = 'none';
+        }
+
+        function deleteSelected() {
+            if (selectedIds.size > 0) confirmDelete([...selectedIds]);
+        }
+
+        async function deleteDocuments(ids) {
+            let ok = 0;
+            let lastErr = '';
+            for (const id of ids) {
+                try {
+                    const r = await fetch(API.remove, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(authBody({ id }))
+                    });
+                    if (!r.ok) throw new Error('HTTP ' + r.status);
+                    const data = await r.json();
+                    if (data.status !== 'ok') throw new Error(data.msg || 'Errore sconosciuto');
+                    selectedIds.delete(String(id));
+                    ok++;
+                } catch (e) {
+                    console.error('Delete failed for', id, e);
+                    lastErr = e.message;
+                }
+            }
+            if (ok === ids.length) showMessage(t('int.import.deleted', 'Documenti eliminati'), 'success');
+            else showMessage(`${t('int.error', 'Errore')}: ${lastErr}`, 'error');
+            await loadDocuments();
+        }
+
+        // ========== INIT ==========
+        window.addEventListener('load', async () => {
+            initDropZone();
+            if (!getCredentialsFromURL()) return;
+            await initializeLanguages();
+            await loadTranslations(credentials.language);
+            updateUserInfo();
+            await loadDocuments();
+        });
+
+        document.addEventListener('keydown', e => {
+            if (e.key === 'Escape') { closePreview(); closeConfirm(); }
+        });
+    </script>
+</body>
+
+</html>

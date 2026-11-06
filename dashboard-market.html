@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Market 0.1</title>
+    <title>Market 0.2</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <link rel="icon" type="image/png" href="images/icon-finest.png">
     <style>
@@ -593,6 +593,10 @@
                         <div class="spinner"></div>
                         <i class="fa fa-sync-alt"></i> <span id="updateBtnText">Conferma</span>
                     </button>
+
+                    <button id="importBtn" class="update-btn" onclick="openImport()">
+                        <i class="fa fa-file-import"></i> <span id="importBtnText">Import</span>
+                    </button>
                 </div>
             </div>
 
@@ -753,6 +757,7 @@
             document.getElementById('portfolioTitle').textContent = getTranslation('int.portfolio');
             document.getElementById('closeText').textContent = getTranslation('int.close');
             document.getElementById('updateBtnText').textContent = getTranslation('int.update') || '';
+            document.getElementById('importBtnText').textContent = getTranslation('int.import') || 'Import';
             document.getElementById('openOnlyLabel').textContent = getTranslation('int.open_only') || 'Solo aperti';
             document.getElementById('marketSelectorAnchor').textContent = getTranslation('int.select_markets') || 'Seleziona mercati';
         }
@@ -1718,6 +1723,15 @@
                 console.error("Error loading sectors:", error);
                 showMessage(getTranslation('int.error.loading_sectors') || "Errore caricamento settori", 'error');
             }
+        }
+
+        function openImport() {
+            const params = new URLSearchParams({
+                username: credentials.username,
+                token: credentials.token,
+                language: credentials.language
+            });
+            window.open(`dashboard-market-trade.html?${params.toString()}`, '_blank');
         }
 
         function closeSectorModal() {
