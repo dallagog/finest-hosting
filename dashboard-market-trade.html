@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Import 0.4</title>
+    <title>Import 0.1</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <link rel="icon" type="image/png" href="images/icon-finest.png">
     <!-- JSZip per creare lo zip da inviare a /importall -->
@@ -144,17 +144,6 @@
             align-items: center;
             gap: 8px;
             padding: 8px 16px;
-        }
-
-        /* Bottone "Riprova": nascosto di default, visibile solo su errore di listing */
-        #reloadBtn {
-            background: #fff;
-            color: #000;
-            border-color: #000;
-        }
-
-        #reloadBtn:hover:not(:disabled) {
-            background: #f0f0f0;
         }
 
         .drop-zone {
@@ -543,10 +532,6 @@
             <div class="section-head">
                 <h2 id="bucketTitle">Documenti nel bucket</h2>
                 <div class="toolbar">
-                    <button id="reloadBtn" class="update-btn" onclick="loadDocuments()" style="display:none;"
-                        title="Riprova a caricare l'elenco dal server">
-                        <i class="fa fa-sync-alt"></i> <span id="reloadText">Riprova</span>
-                    </button>
                     <button id="importConfirmBtn" class="update-btn" onclick="importSelected()" disabled>
                         <i class="fa fa-check"></i> <span id="importConfirmText">Conferma</span>
                     </button>
@@ -617,10 +602,6 @@
         // =====================================================================
         const API_URL = "https://feweb-tunnel.fe-web.eu";
         const API = {
-            listCandidates: [
-                `${API_URL}/bucket/list`,
-                `${API_URL}/listbucket`
-            ],
             importAll: `${API_URL}/importall`,
             remove: `${API_URL}/bucket/delete`,
             get: `${API_URL}/bucket/get`,
@@ -754,92 +735,11 @@
             set('bucketTitle', 'int.import.bucket', 'Documenti nel bucket');
             set('deleteSelText', 'int.import.delete_selected', 'Elimina selezionati');
             set('importConfirmText', 'int.confirm', 'Conferma');
-            set('reloadText', 'int.import.retry', 'Riprova');
             set('confirmTitle', 'int.import.confirm_title', 'Conferma eliminazione');
             set('confirmYesText', 'int.delete', 'Elimina');
             set('confirmNoText', 'int.cancel', 'Annulla');
             document.title = t('int.import', 'Import');
             renderTable(true);
-        }
-
-        // ========== DOCUMENT LIST (resiliente ai 404) ==========
-        async function loadDocuments(silent) {
-            const reloadBtn = document.getElementById('reloadBtn');
-            if (reloadBtn) reloadBtn.disabled = true;
-
-            if (!silent) showMessage(t('int.loading', 'Caricamento...'), 'loading');
-
-            let lastError = null;
-            let docsFromServer = null;
-            let usedEndpoint = null;
-
-            for (const url of API.listCandidates) {
-                try {
-                    const r = await fetch(url, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(authBody())
-                    });
-
-                    if (r.status === 404) {
-                        console.warn(`[loadDocuments] Endpoint non trovato: ${url} (404)`);
-                        lastError = new Error(`HTTP 404 su ${url}`);
-                        continue;
-                    }
-
-                    if (!r.ok) {
-                        console.warn(`[loadDocuments] Errore HTTP ${r.status} su ${url}`);
-                        lastError = new Error(`HTTP ${r.status} su ${url}`);
-                        continue;
-                    }
-
-                    const data = await r.json();
-                    if (data.status !== 'ok') {
-                        console.warn(`[loadDocuments] Risposta non valida da ${url}:`, data);
-                        lastError = new Error(data.msg || `Risposta non valida da ${url}`);
-                        continue;
-                    }
-
-                    docsFromServer = Array.isArray(data.documents) ? data.documents : [];
-                    usedEndpoint = url;
-                    break;
-                } catch (e) {
-                    console.warn(`[loadDocuments] Eccezione su ${url}:`, e.message);
-                    lastError = e;
-                }
-            }
-
-            if (docsFromServer !== null) {
-                console.log(`[loadDocuments] OK da ${usedEndpoint}, ${docsFromServer.length} documenti`);
-                const serverNames = new Set(docsFromServer.map(d => d.name));
-                const localDocs = documents.filter(d => d.local && !serverNames.has(d.name));
-                documents = docsFromServer.concat(localDocs);
-
-                const ids = new Set(documents.map(d => String(d.id)));
-                selectedIds = new Set([...selectedIds].filter(id => ids.has(id)));
-
-                renderTable(true);
-
-                if (!silent) document.getElementById('message').style.display = 'none';
-                if (reloadBtn) reloadBtn.style.display = 'none';
-            } else {
-                console.error('[loadDocuments] Impossibile caricare l\'elenco dal server:', lastError);
-
-                const locals = documents.filter(d => d.local);
-                documents = locals;
-
-                const reason = lastError ? lastError.message : 'endpoint non disponibile';
-                const msg = `${t('int.error', 'Errore')}: ${reason} — ` +
-                    `${t('int.import.list_unavailable', 'Elenco server non disponibile. Puoi comunque importare i file locali con Conferma.')}`;
-                showMessage(msg, 'error');
-
-                renderTable(true);
-
-                if (reloadBtn) reloadBtn.style.display = '';
-            }
-
-            if (reloadBtn) reloadBtn.disabled = false;
-            updateSelectionUI();
         }
 
         function renderTable(rebuildHeader) {
@@ -1128,7 +1028,8 @@
 
         // ========== VIEW ==========
         async function fetchDocumentBlob(doc) {
-            if (doc.local && doc.file) return doc.file;
+            // Se abbiamo il file locale lo usiamo subito (evita round-trip al server)
+            if (doc.file) return doc.file;
             const r = await fetch(API.get, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -1314,7 +1215,7 @@
                 return d && d.local && !d.copied && d.file;
             });
             if (localIds.length === 0) {
-                showMessage(t('int.import.nothing_to_import', 'Nessun file locale da importare (i file sul server sono già stati processati).'), 'error');
+                showMessage(t('int.import.nothing_to_import', 'Nessun file locale da importare.'), 'error');
                 return;
             }
             openConfirm({
@@ -1373,6 +1274,8 @@
             try {
                 for (let i = 0; i < localDocs.length; i++) {
                     const doc = localDocs[i];
+                    const oldId = String(doc.id);
+
                     showMessage(
                         `${t('int.import.importing', 'Importazione in corso...')} (${i + 1}/${localDocs.length}) — ${doc.name}`,
                         'loading'
@@ -1380,11 +1283,22 @@
                     doc.importing = true;
                     renderTable();
                     try {
-                        await importDataFile(doc.file);
+                        const result = await importDataFile(doc.file);
+
+                        // Se il server restituisce il documento, adottiamo il suo ID:
+                        // così /bucket/get, /bucket/processed e /bucket/delete funzioneranno.
+                        if (result && result.document && result.document.id) {
+                            doc.id = result.document.id;
+                            doc.name = result.document.name || doc.name;
+                            doc.size = result.document.size || doc.size;
+                            doc.uploaded_at = result.document.uploaded_at || doc.uploaded_at;
+                            doc.local = false;
+                        }
+
                         doc.copied = true;
                         doc.imported = true;
                         okCount++;
-                        selectedIds.delete(String(doc.id));
+                        selectedIds.delete(oldId);
                     } catch (e) {
                         console.error('Import failed for', doc.name, e);
                         errs.push(`${doc.name}: ${e.message}`);
@@ -1393,8 +1307,6 @@
                         renderTable();
                     }
                 }
-
-                await loadDocuments(true);
 
                 let msg = `${t('int.import.imported_count', 'Documenti importati')}: ${okCount}/${localDocs.length}`;
                 if (errs.length) msg += ` — ${t('int.error', 'Errore')}: ${errs.join('; ')}`;
@@ -1422,12 +1334,14 @@
                 else serverIds.push(id);
             });
 
+            // Rimozione lato client
             if (localIds.length) {
                 const localSet = new Set(localIds.map(d => String(d.id)));
                 documents = documents.filter(d => !localSet.has(String(d.id)));
                 localSet.forEach(id => selectedIds.delete(id));
             }
 
+            // Rimozione lato server
             let ok = 0;
             let lastErr = '';
             for (const id of serverIds) {
@@ -1453,8 +1367,7 @@
             if (done === total) showMessage(t('int.import.deleted', 'Documenti eliminati'), 'success');
             else showMessage(`${t('int.error', 'Errore')}: ${lastErr}`, 'error');
 
-            if (serverIds.length) await loadDocuments(true);
-            else renderTable();
+            renderTable(true);
         }
 
         // ========== INIT ==========
@@ -1464,7 +1377,7 @@
             await initializeLanguages();
             await loadTranslations(credentials.language);
             updateUserInfo();
-            await loadDocuments();
+            renderTable(true);
         });
 
         document.addEventListener('keydown', e => {
