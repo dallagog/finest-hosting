@@ -4,9 +4,11 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Import Trade 0.3</title>
+    <title>Import 0.3</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <link rel="icon" type="image/png" href="images/icon-finest.png">
+    <!-- JSZip per creare lo zip da inviare a /importall -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&display=swap');
 
@@ -144,7 +146,17 @@
             padding: 8px 16px;
         }
 
-        /* Drop zone */
+        /* Bottone "Riprova": nascosto di default, visibile solo su errore di listing */
+        #reloadBtn {
+            background: #fff;
+            color: #000;
+            border-color: #000;
+        }
+
+        #reloadBtn:hover:not(:disabled) {
+            background: #f0f0f0;
+        }
+
         .drop-zone {
             border: 2px dashed #999;
             border-radius: 8px;
@@ -181,7 +193,6 @@
             border-color: #0066cc;
         }
 
-        /* Table */
         #docs-table-container {
             overflow-x: auto;
         }
@@ -362,7 +373,6 @@
             background: #eee;
         }
 
-        /* Messages */
         .message {
             padding: 15px;
             border-radius: 4px;
@@ -391,7 +401,6 @@
             display: block;
         }
 
-        /* Modal */
         .modal-overlay {
             position: fixed;
             top: 0;
@@ -534,6 +543,12 @@
             <div class="section-head">
                 <h2 id="bucketTitle">Documenti nel bucket</h2>
                 <div class="toolbar">
+                    <!-- Bottone "Riprova": visibile SOLO se il listing fallisce.
+                         In condizioni normali è nascosto (l'utente non vede un "Aggiorna" fisso). -->
+                    <button id="reloadBtn" class="update-btn" onclick="loadDocuments()" style="display:none;"
+                        title="Riprova a caricare l'elenco dal server">
+                        <i class="fa fa-sync-alt"></i> <span id="reloadText">Riprova</span>
+                    </button>
                     <button id="importConfirmBtn" class="update-btn" onclick="importSelected()" disabled>
                         <i class="fa fa-check"></i> <span id="importConfirmText">Conferma</span>
                     </button>
@@ -569,7 +584,7 @@
         </div>
     </div>
 
-    <!-- Delete confirm modal -->
+    <!-- Confirm modal -->
     <div id="confirm-modal" class="modal-overlay">
         <div class="modal-content small">
             <div class="modal-header" style="justify-content:center">
@@ -588,21 +603,33 @@
         // =====================================================================
         // API
         //
-        //  POST /bucket/list     {username, token, language}
-        //        -> {status:'ok', documents:[{id, name, size, content_type, uploaded_at, imported}]}
-        //  POST /importdata      multipart/form-data: username, token, language, file, type='trade'
-        //        -> {status:'ok', msg, document?:{id,name,size,uploaded_at,imported}}
-        //        Copia sul server UN file per chiamata: viene chiamata una volta per
-        //        ogni file selezionato nell'elenco.
-        //  POST /bucket/delete   {username, token, language, id}   -> {status:'ok'}
-        //  POST /bucket/get      {username, token, language, id}   -> file binario
-        //  POST /bucket/processed {username, token, language, id}
-        //        -> {status:'ok', rows:[...], sql:'...'}
+        //  LISTING  (con fallback automatico):
+        //    POST /bucket/list     {username, token, language}
+        //         -> {status:'ok', documents:[{id, name, size, content_type, uploaded_at, imported}]}
+        //    Se 404, tenta:
+        //    POST /listbucket      stesso payload
+        //
+        //  IMPORT   (uno ZIP per file, sequenziale):
+        //    POST /importall       multipart/form-data:
+        //         username, token, language,
+        //         file     = ZIP contenente il file originale
+        //         recreate = 'false'
+        //         ticker   = 'trade'
+        //         filename = 'trade:<basename>' (senza estensione)
+        //         -> {status:'ok', msg, document?:{id,name,size,uploaded_at,imported}}
+        //
+        //  DELETE:   POST /bucket/delete   {username, token, language, id}  -> {status:'ok'}
+        //  VIEW:     POST /bucket/get      {username, token, language, id}  -> file binario
+        //  PROCESS:  POST /bucket/processed {username, token, language, id}
+        //         -> {status:'ok', rows:[...], sql:'...'}
         // =====================================================================
         const API_URL = "https://feweb-tunnel.fe-web.eu";
         const API = {
-            list: `${API_URL}/bucket/list`,
-            importData: `${API_URL}/importdata`,
+            listCandidates: [
+                `${API_URL}/bucket/list`,
+                `${API_URL}/listbucket`
+            ],
+            importAll: `${API_URL}/importall`,
             remove: `${API_URL}/bucket/delete`,
             get: `${API_URL}/bucket/get`,
             processed: `${API_URL}/bucket/processed`
@@ -634,7 +661,7 @@
             el.className = 'message ' + type;
             el.style.display = 'block';
             if (type === 'success' || type === 'error') {
-                setTimeout(() => { el.style.display = 'none'; }, 4000);
+                setTimeout(() => { el.style.display = 'none'; }, 5000);
             }
         }
 
@@ -735,6 +762,7 @@
             set('bucketTitle', 'int.import.bucket', 'Documenti nel bucket');
             set('deleteSelText', 'int.import.delete_selected', 'Elimina selezionati');
             set('importConfirmText', 'int.confirm', 'Conferma');
+            set('reloadText', 'int.import.retry', 'Riprova');
             set('confirmTitle', 'int.import.confirm_title', 'Conferma eliminazione');
             set('confirmYesText', 'int.delete', 'Elimina');
             set('confirmNoText', 'int.cancel', 'Annulla');
@@ -742,31 +770,95 @@
             renderTable(true);
         }
 
-        // ========== DOCUMENT LIST ==========
+        // ========== DOCUMENT LIST (resiliente ai 404) ==========
+        // Prova in sequenza gli endpoint in API.listCandidates. Se nessuno
+        // risponde, NON blocca l'uso della pagina: mantiene i file locali,
+        // mostra un messaggio e rende visibile il bottone "Riprova".
         async function loadDocuments(silent) {
-            try {
-                if (!silent) showMessage(t('int.loading', 'Caricamento...'), 'loading');
-                const r = await fetch(API.list, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(authBody())
-                });
-                if (!r.ok) throw new Error('HTTP ' + r.status);
-                const data = await r.json();
-                if (data.status !== 'ok') throw new Error(data.msg || 'Errore sconosciuto');
-                const serverDocs = Array.isArray(data.documents) ? data.documents : [];
-                // Mantiene i file locali non ancora presenti sul server (stesso nome = già copiato)
-                const serverNames = new Set(serverDocs.map(d => d.name));
+            const reloadBtn = document.getElementById('reloadBtn');
+            if (reloadBtn) reloadBtn.disabled = true;
+
+            if (!silent) showMessage(t('int.loading', 'Caricamento...'), 'loading');
+
+            let lastError = null;
+            let docsFromServer = null;
+            let usedEndpoint = null;
+
+            for (const url of API.listCandidates) {
+                try {
+                    const r = await fetch(url, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(authBody())
+                    });
+
+                    if (r.status === 404) {
+                        console.warn(`[loadDocuments] Endpoint non trovato: ${url} (404)`);
+                        lastError = new Error(`HTTP 404 su ${url}`);
+                        continue; // prova il prossimo
+                    }
+
+                    if (!r.ok) {
+                        console.warn(`[loadDocuments] Errore HTTP ${r.status} su ${url}`);
+                        lastError = new Error(`HTTP ${r.status} su ${url}`);
+                        continue;
+                    }
+
+                    const data = await r.json();
+                    if (data.status !== 'ok') {
+                        console.warn(`[loadDocuments] Risposta non valida da ${url}:`, data);
+                        lastError = new Error(data.msg || `Risposta non valida da ${url}`);
+                        continue;
+                    }
+
+                    docsFromServer = Array.isArray(data.documents) ? data.documents : [];
+                    usedEndpoint = url;
+                    break; // successo: esci dal loop
+                } catch (e) {
+                    console.warn(`[loadDocuments] Eccezione su ${url}:`, e.message);
+                    lastError = e;
+                }
+            }
+
+            if (docsFromServer !== null) {
+                // ---- Successo: unisci docs server + locali non ancora copiati ----
+                console.log(`[loadDocuments] OK da ${usedEndpoint}, ${docsFromServer.length} documenti`);
+                const serverNames = new Set(docsFromServer.map(d => d.name));
                 const localDocs = documents.filter(d => d.local && !serverNames.has(d.name));
-                documents = serverDocs.concat(localDocs);
+                documents = docsFromServer.concat(localDocs);
+
                 const ids = new Set(documents.map(d => String(d.id)));
                 selectedIds = new Set([...selectedIds].filter(id => ids.has(id)));
+
                 renderTable(true);
+
                 if (!silent) document.getElementById('message').style.display = 'none';
-            } catch (e) {
-                console.error('Error loading documents:', e);
-                showMessage((t('int.error', 'Errore') + ': ') + e.message, 'error');
+
+                // In caso di successo, il bottone "Riprova" resta nascosto
+                if (reloadBtn) reloadBtn.style.display = 'none';
+            } else {
+                // ---- Fallback: nessun endpoint di listing raggiungibile ----
+                console.error('[loadDocuments] Impossibile caricare l\'elenco dal server:', lastError);
+
+                // Mantieni solo i file locali (per non perdere il lavoro in corso)
+                const locals = documents.filter(d => d.local);
+                documents = locals;
+
+                // Messaggio informativo ma NON bloccante
+                const reason = lastError ? lastError.message : 'endpoint non disponibile';
+                const msg = `${t('int.error', 'Errore')}: ${reason} — ` +
+                    `${t('int.import.list_unavailable', 'Elenco server non disponibile. Puoi comunque importare i file locali con Conferma.')}`;
+                showMessage(msg, 'error');
+
+                // Ridisegna comunque la tabella con i file locali
+                renderTable(true);
+
+                // Mostra il bottone "Riprova"
+                if (reloadBtn) reloadBtn.style.display = '';
             }
+
+            if (reloadBtn) reloadBtn.disabled = false;
+            updateSelectionUI();
         }
 
         function renderTable(rebuildHeader) {
@@ -936,8 +1028,11 @@
 
         function updateSelectionUI() {
             const localSelected = countLocalSelected();
-            document.getElementById('deleteSelBtn').disabled = selectedIds.size === 0 || importing;
-            document.getElementById('importConfirmBtn').disabled = localSelected === 0 || importing;
+            const del = document.getElementById('deleteSelBtn');
+            const imp = document.getElementById('importConfirmBtn');
+            if (del) del.disabled = selectedIds.size === 0 || importing;
+            if (imp) imp.disabled = localSelected === 0 || importing;
+
             const all = document.getElementById('selectAll');
             if (all) {
                 all.checked = documents.length > 0 && selectedIds.size === documents.length;
@@ -969,8 +1064,6 @@
             return null;
         }
 
-        // Aggiunge i file all'elenco (locale). La copia/import sul server avviene
-        // singolarmente per i file selezionati premendo Conferma.
         function handleFiles(fileList) {
             const files = Array.from(fileList || []);
             if (files.length === 0) return;
@@ -1015,12 +1108,11 @@
             zone.onclick = () => input.click();
             input.onchange = () => { handleFiles(input.files); input.value = ''; };
 
-            // Feedback visivo sulla drop zone
             zone.addEventListener('dragenter', e => { e.preventDefault(); zone.classList.add('dragover'); });
             zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('dragover'); });
             zone.addEventListener('dragleave', e => { e.preventDefault(); zone.classList.remove('dragover'); });
 
-            // Drop gestito a livello di pagina (drop zone e resto della pagina)
+            // Drop sull'intera pagina (non solo sulla drop zone)
             document.addEventListener('dragover', e => {
                 e.preventDefault();
                 document.body.classList.add('dragging');
@@ -1235,7 +1327,7 @@
             });
         }
 
-        // ========== IMPORT (uno per file via /importdata) ==========
+        // ========== IMPORT via /importall (uno ZIP per file) ==========
         function importSelected() {
             if (importing) return;
             const localIds = [...selectedIds].filter(id => {
@@ -1255,16 +1347,39 @@
             });
         }
 
-        // Chiamata API /importdata per un singolo file (una chiamata per file).
+        // Chiamata API /importall per un singolo file:
+        //  1) crea uno ZIP contenente il file originale
+        //  2) invia multipart/form-data con
+        //     username, token, language,
+        //     file     = <filename>.zip
+        //     recreate = 'false'
+        //     ticker   = 'trade'
+        //     filename = 'trade:<basename>'
         async function importDataFile(file) {
+            if (typeof JSZip === 'undefined') {
+                throw new Error('JSZip non caricato');
+            }
+
+            // Nome base senza estensione
+            const baseName = file.name.replace(/\.[^.]+$/, '');
+            const filename = `trade:${baseName}`;
+
+            // Crea zip con il file originale
+            const zip = new JSZip();
+            const fileContent = await file.arrayBuffer();
+            zip.file(file.name, fileContent);
+            const zipBlob = await zip.generateAsync({ type: 'blob' });
+
             const form = new FormData();
             form.append('username', credentials.username);
             form.append('token', credentials.token);
             form.append('language', credentials.language);
-            form.append('type', 'trade');
-            form.append('file', file, file.name);
+            form.append('file', zipBlob, filename + '.zip');
+            form.append('recreate', 'false');
+            form.append('ticker', 'trade');
+            form.append('filename', filename);
 
-            const r = await fetch(API.importData, {
+            const r = await fetch(API.importAll, {
                 method: 'POST',
                 body: form
             });
@@ -1287,7 +1402,7 @@
             const errs = [];
 
             try {
-                // Processa i file SINGOLARMENTE (una chiamata /importdata per file)
+                // Processa i file SINGOLARMENTE (una chiamata /importall per file)
                 for (let i = 0; i < localDocs.length; i++) {
                     const doc = localDocs[i];
                     showMessage(
@@ -1311,7 +1426,7 @@
                     }
                 }
 
-                // Sincronizza con il server (senza sovrascrivere il messaggio finale)
+                // Sincronizza con il server (silent: non sovrascrive il messaggio finale)
                 await loadDocuments(true);
 
                 let msg = `${t('int.import.imported_count', 'Documenti importati')}: ${okCount}/${localDocs.length}`;
@@ -1332,7 +1447,6 @@
         }
 
         async function deleteDocuments(ids) {
-            // I file locali (non ancora importati) si rimuovono solo dal client
             const localIds = [];
             const serverIds = [];
             ids.forEach(id => {
