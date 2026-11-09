@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Statistics 0.6</title>
+    <title>Statistics 0.1</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <script src="js/dashboard-shared.js"></script>
     <link rel="icon" type="image/png" href="images/icon-finest.png">
@@ -388,30 +388,51 @@
             display: inline-block;
         }
 
+        /* Sorgente dati del tooltip: sempre nascosto, il contenuto viene copiato nel tooltip globale */
         .inst-tooltip {
-            visibility: hidden;
-            opacity: 0;
-            pointer-events: none;
-            position: absolute;
-            left: 0;
-            top: 100%;
-            margin-top: 6px;
-            z-index: 2000;
-            background: #fff;
-            border: 1px solid #000;
-            border-radius: 6px;
-            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
-            padding: 10px 14px;
-            min-width: 200px;
-            font-size: 0.78em;
-            font-family: inherit;
-            white-space: nowrap;
-            transition: opacity 0.15s, visibility 0.15s;
+            display: none;
         }
 
-        .inst-tooltip-anchor:hover .inst-tooltip {
-            visibility: visible;
-            opacity: 1;
+        /* Tooltip globale: fuori da qualsiasi contenitore con overflow, mai tagliato */
+        #global-inst-tooltip {
+            position: fixed;
+            left: 0;
+            top: 0;
+            z-index: 99999;
+            display: none;
+            pointer-events: none;
+            background: #fff;
+            border: 2px solid #000;
+            border-radius: 8px;
+            box-shadow: 0 8px 28px rgba(0, 0, 0, 0.3);
+            padding: 12px 16px;
+            min-width: 220px;
+            font-size: 0.85em;
+            font-family: 'Orbitron', sans-serif;
+            white-space: nowrap;
+        }
+
+        #global-inst-tooltip table {
+            border-collapse: collapse;
+            width: 100%;
+        }
+
+        #global-inst-tooltip td {
+            padding: 3px 6px;
+            border: none;
+            background: transparent !important;
+        }
+
+        #global-inst-tooltip td:first-child {
+            color: #666;
+            font-weight: 600;
+            padding-right: 14px;
+        }
+
+        #global-inst-tooltip td:last-child {
+            text-align: right;
+            color: #000;
+            font-weight: 700;
         }
 
         .inst-tooltip table {
@@ -774,6 +795,7 @@
 </head>
 
 <body>
+    <div id="global-inst-tooltip"></div>
     <div class="main-container">
         <div class="header-bar">
             <div class="user-info-left">
@@ -1665,6 +1687,50 @@
             const url = `dashboard-detail-instrument.html?id_instrument=${instrumentId}&username=${credentials.username}&token=${credentials.token}&language=${credentials.language}&currency=${credentials.currency}`;
             window.open(url, '_blank', 'width=1200,height=800');
         }
+
+        // Tooltip dettagli strumento: elemento globale posizionato in fixed,
+        // quindi visibile in evidenza e mai tagliato dalle sezioni/tabelle.
+        (function initGlobalTooltip() {
+            let tip = null;
+            let currentAnchor = null;
+
+            function positionTip(anchor) {
+                const r = anchor.getBoundingClientRect();
+                const margin = 8;
+                tip.style.display = 'block';
+                const tw = tip.offsetWidth;
+                const th = tip.offsetHeight;
+                let left = r.left;
+                let top = r.bottom + margin;
+                if (left + tw > window.innerWidth - margin) left = window.innerWidth - tw - margin;
+                if (left < margin) left = margin;
+                if (top + th > window.innerHeight - margin) top = r.top - th - margin;
+                if (top < margin) top = margin;
+                tip.style.left = left + 'px';
+                tip.style.top = top + 'px';
+            }
+
+            function hideTip() {
+                if (!tip) return;
+                tip.style.display = 'none';
+                currentAnchor = null;
+            }
+
+            document.addEventListener('mouseover', (e) => {
+                tip = tip || document.getElementById('global-inst-tooltip');
+                const anchor = e.target.closest ? e.target.closest('.inst-tooltip-anchor') : null;
+                if (!anchor) { if (currentAnchor) hideTip(); return; }
+                if (anchor === currentAnchor) return;
+                const src = anchor.querySelector('.inst-tooltip');
+                if (!src) return;
+                currentAnchor = anchor;
+                tip.innerHTML = src.innerHTML;
+                positionTip(anchor);
+            });
+
+            window.addEventListener('scroll', hideTip, true);
+            window.addEventListener('resize', hideTip);
+        })();
 
         window.onload = init;
     </script>
