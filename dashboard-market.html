@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Market 0.5</title>
+    <title>Market 0.1</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <link rel="icon" type="image/png" href="images/icon-finest.png">
     <style>
@@ -682,13 +682,20 @@
                 </div>
                 <div style="display: flex; align-items: center; gap: 10px;">
                     <label style="display: flex; align-items: center; gap: 6px; font-size: 12px;">
+                        <span id="adviceMarketLabel">Mercato</span>
+                        <select id="adviceMarketSelect" onchange="onAdviceMarketChange()"
+                            style="padding: 5px; border-radius: 4px; border: 1px solid #ddd; font-family: inherit; font-size: 12px; background: #fff; cursor: pointer;">
+                            <option value="">Tutti</option>
+                        </select>
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 6px; font-size: 12px;">
                         <span id="adviceDaysLabel">Giorni storici</span>
                         <select id="adviceDaysSelect" onchange="onAdviceDaysChange()"
                             style="padding: 5px; border-radius: 4px; border: 1px solid #ddd; font-family: inherit; font-size: 12px; background: #fff; cursor: pointer;">
                             <option value="1">1</option>
                             <option value="2">2</option>
-                            <option value="3">3</option>
-                            <option value="5" selected>5</option>
+                            <option value="3" selected>3</option>
+                            <option value="5">5</option>
                             <option value="7">7</option>
                             <option value="10">10</option>
                             <option value="15">15</option>
@@ -766,7 +773,8 @@
         let adviceSortCol = 'date_advice';
         let adviceSortAsc = false;
         let adviceExpanded = new Set(); // id_instrument espansi
-        let adviceDays = 3; // giorni storici da mostrare (default 5)
+        let adviceDays = 3; // giorni storici da mostrare
+        let adviceMarket = ''; // mercato selezionato ('' = tutti)
         let tableColumns = [];
         let translations = {};
         let availableLanguages = [];
@@ -887,6 +895,11 @@
             const adviceTitleEl = document.getElementById('adviceSectionTitle');
             if (adviceTitleEl) {
                 adviceTitleEl.textContent = getTranslation('int.advice.buy') || 'Consigli di acquisto';
+            }
+            const marketLabelEl = document.getElementById('adviceMarketLabel');
+            if (marketLabelEl) {
+                const k = 'int.market';
+                marketLabelEl.textContent = getTranslation(k) !== k ? getTranslation(k) : 'Mercato';
             }
             const daysLabelEl = document.getElementById('adviceDaysLabel');
             if (daysLabelEl) {
@@ -2822,6 +2835,40 @@
             renderAdviceTable();
         }
 
+        function adviceMarketOf(item) {
+            return item.code_market || item.id_market || '-';
+        }
+
+        function onAdviceMarketChange() {
+            adviceMarket = document.getElementById('adviceMarketSelect').value;
+            renderAdviceTable();
+        }
+
+        // Ricostruisce le opzioni del filtro mercato dagli advice BUY disponibili
+        function populateAdviceMarketSelect() {
+            const sel = document.getElementById('adviceMarketSelect');
+            if (!sel) return;
+            const markets = new Set();
+            (adviceData || []).filter(isBuyAdvice).forEach(a => markets.add(adviceMarketOf(a)));
+            if (adviceMarket && !markets.has(adviceMarket)) adviceMarket = '';
+
+            const allLabel = getTranslation('int.all') !== 'int.all' ? getTranslation('int.all') : 'Tutti';
+            sel.innerHTML = '';
+            const optAll = document.createElement('option');
+            optAll.value = '';
+            optAll.textContent = allLabel;
+            sel.appendChild(optAll);
+            Array.from(markets).sort().forEach(m => {
+                const key = `dom.code_market:${m}`;
+                const t = getTranslation(key);
+                const opt = document.createElement('option');
+                opt.value = m;
+                opt.textContent = (t && t !== key) ? t : m;
+                sel.appendChild(opt);
+            });
+            sel.value = adviceMarket;
+        }
+
         function onAdviceDaysChange() {
             const v = parseInt(document.getElementById('adviceDaysSelect').value, 10);
             adviceDays = isNaN(v) ? 5 : v;
@@ -2880,7 +2927,7 @@
             let invStr = '-';
             if (item.invariance !== undefined && item.invariance !== null) {
                 const inv = parseFloat(item.invariance);
-                invStr = !isNaN(inv) ? inv.toFixed(6) : String(item.invariance);
+                invStr = !isNaN(inv) ? (inv * 1000000).toFixed(2) + 'M' : String(item.invariance);
             }
             return {
                 mcapStr, priceStr, forzaStr, invStr,
@@ -2897,7 +2944,11 @@
             if (!tbody) return;
 
             // Solo advice BUY
-            const buyAdvices = (adviceData || []).filter(isBuyAdvice).filter(isWithinAdviceDays);
+            populateAdviceMarketSelect();
+            const buyAdvices = (adviceData || [])
+                .filter(isBuyAdvice)
+                .filter(isWithinAdviceDays)
+                .filter(a => !adviceMarket || adviceMarketOf(a) === adviceMarket);
 
             if (buyAdvices.length === 0) {
                 tbody.innerHTML = `<tr><td colspan="11" style="text-align: center; color: #888; padding: 20px;">${getTranslation('int.no_advice') || 'Nessun consiglio disponibile'}</td></tr>`;
@@ -2965,7 +3016,7 @@
                     <td style="text-align: center; color: #999; font-size: 11px;">${idx + 1}</td>
                     <td style="text-align: left; white-space: nowrap;">${esc(f.dateAdvice)}</td>
                     <td style="text-align: left; font-weight: bold; color: #000;">
-                        <span class="advice-toggle"><i class="fa ${expanded ? 'fa-chevron-down' : 'fa-chevron-right'}"></i></span><span style="cursor: pointer; text-decoration: underline;" onclick="event.stopPropagation(); openInstrumentDetails('${jsq(symbol)}')" title="Dettagli strumento">${esc(symbol)}</span><span class="advice-count" title="Date advice">${g.items.length}</span>
+                        <span class="advice-toggle"><i class="fa ${expanded ? 'fa-chevron-down' : 'fa-chevron-right'}"></i></span><span style="cursor: pointer; text-decoration: underline;" onclick="event.stopPropagation(); openPriceGraph('${jsq(symbol)}')" title="Grafico prezzi">${esc(symbol)}</span><span class="advice-count" title="Date advice">${g.items.length}</span>
                     </td>
                     <td style="text-align: left; max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${esc(f.desc)}">${esc(f.desc)}</td>
                     <td style="text-align: center;">${esc(f.market)}</td>
