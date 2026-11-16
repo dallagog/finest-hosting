@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Market 0.4</title>
+    <title>Market 0.5</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <link rel="icon" type="image/png" href="images/icon-finest.png">
     <style>
@@ -681,6 +681,22 @@
                     <span id="adviceBadge" style="font-size: 12px; color: #666; font-weight: normal;"></span>
                 </div>
                 <div style="display: flex; align-items: center; gap: 10px;">
+                    <label style="display: flex; align-items: center; gap: 6px; font-size: 12px;">
+                        <span id="adviceDaysLabel">Giorni storici</span>
+                        <select id="adviceDaysSelect" onchange="onAdviceDaysChange()"
+                            style="padding: 5px; border-radius: 4px; border: 1px solid #ddd; font-family: inherit; font-size: 12px; background: #fff; cursor: pointer;">
+                            <option value="1">1</option>
+                            <option value="2">2</option>
+                            <option value="3">3</option>
+                            <option value="5" selected>5</option>
+                            <option value="7">7</option>
+                            <option value="10">10</option>
+                            <option value="15">15</option>
+                            <option value="30">30</option>
+                            <option value="60">60</option>
+                            <option value="90">90</option>
+                        </select>
+                    </label>
                     <button class="update-btn" onclick="loadAdvices()"
                         style="padding: 6px 12px; font-size: 12px; min-height: 32px;">
                         <i class="fa fa-sync-alt"></i> <span id="refreshAdviceText">Aggiorna</span>
@@ -750,6 +766,7 @@
         let adviceSortCol = 'date_advice';
         let adviceSortAsc = false;
         let adviceExpanded = new Set(); // id_instrument espansi
+        let adviceDays = 5; // giorni storici da mostrare (default 5)
         let tableColumns = [];
         let translations = {};
         let availableLanguages = [];
@@ -870,6 +887,10 @@
             const adviceTitleEl = document.getElementById('adviceSectionTitle');
             if (adviceTitleEl) {
                 adviceTitleEl.textContent = getTranslation('int.advice.buy') || 'Consigli di acquisto';
+            }
+            const daysLabelEl = document.getElementById('adviceDaysLabel');
+            if (daysLabelEl) {
+                daysLabelEl.textContent = getTranslation('int.advice.days') || 'Giorni storici';
             }
             const refreshAdviceEl = document.getElementById('refreshAdviceText');
             if (refreshAdviceEl) {
@@ -2801,6 +2822,35 @@
             renderAdviceTable();
         }
 
+        function onAdviceDaysChange() {
+            const v = parseInt(document.getElementById('adviceDaysSelect').value, 10);
+            adviceDays = isNaN(v) ? 5 : v;
+            renderAdviceTable();
+        }
+
+        // Converte date_advice in Date (supporta ISO e DD/MM/YYYY); null se non interpretabile
+        function parseAdviceDate(v) {
+            if (!v) return null;
+            const str = String(v).trim();
+            let d = new Date(str);
+            if (!isNaN(d.getTime())) return d;
+            const m = str.match(/^(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{4})/);
+            if (m) {
+                d = new Date(parseInt(m[3], 10), parseInt(m[2], 10) - 1, parseInt(m[1], 10));
+                if (!isNaN(d.getTime())) return d;
+            }
+            return null;
+        }
+
+        function isWithinAdviceDays(item) {
+            const d = parseAdviceDate(item.date_advice);
+            if (!d) return true; // data non interpretabile: non scartare
+            const cutoff = new Date();
+            cutoff.setHours(0, 0, 0, 0);
+            cutoff.setDate(cutoff.getDate() - adviceDays);
+            return d >= cutoff;
+        }
+
         function toggleAdviceGroup(key) {
             if (adviceExpanded.has(key)) adviceExpanded.delete(key);
             else adviceExpanded.add(key);
@@ -2847,7 +2897,7 @@
             if (!tbody) return;
 
             // Solo advice BUY
-            const buyAdvices = (adviceData || []).filter(isBuyAdvice);
+            const buyAdvices = (adviceData || []).filter(isBuyAdvice).filter(isWithinAdviceDays);
 
             if (buyAdvices.length === 0) {
                 tbody.innerHTML = `<tr><td colspan="11" style="text-align: center; color: #888; padding: 20px;">${getTranslation('int.no_advice') || 'Nessun consiglio disponibile'}</td></tr>`;
