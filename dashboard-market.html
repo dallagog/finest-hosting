@@ -621,6 +621,48 @@
             </div>
         </div>
 
+        <!-- Sezione Advice -->
+        <div class="content-section" id="advice-section" style="margin-top: 25px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <h2 style="font-size: 18px; font-weight: 600; color: #000; margin: 0;" id="adviceSectionTitle">Consigli di acquisto</h2>
+                    <span id="adviceBadge" style="font-size: 12px; color: #666; font-weight: normal;"></span>
+                </div>
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <button class="update-btn" onclick="loadAdvices()" style="padding: 6px 12px; font-size: 12px; min-height: 32px;">
+                        <i class="fa fa-sync-alt"></i> <span id="refreshAdviceText">Aggiorna</span>
+                    </button>
+                </div>
+            </div>
+
+            <div id="advice-table-container" style="overflow-x: auto;">
+                <table id="advice-table" class="data-table">
+                    <thead>
+                        <tr id="advice-header-row">
+                            <th style="text-align: center; width: 40px;">#</th>
+                            <th data-col="date_advice" onclick="sortAdviceTable('date_advice')">Data</th>
+                            <th data-col="id_instrument" onclick="sortAdviceTable('id_instrument')">Strumento</th>
+                            <th data-col="instrument_description" onclick="sortAdviceTable('instrument_description')">Descrizione</th>
+                            <th data-col="sector" onclick="sortAdviceTable('sector')">Settore</th>
+                            <th data-col="code_market" onclick="sortAdviceTable('code_market')" style="text-align: center;">Mercato</th>
+                            <th data-col="advice" onclick="sortAdviceTable('advice')" style="text-align: center;">Advice</th>
+                            <th data-col="price_end" onclick="sortAdviceTable('price_end')" style="text-align: right;">Prezzo</th>
+                            <th data-col="id_currency" onclick="sortAdviceTable('id_currency')" style="text-align: center;">Divisa</th>
+                            <th data-col="forza" onclick="sortAdviceTable('forza')" style="text-align: right;">Forza</th>
+                            <th data-col="invariance" onclick="sortAdviceTable('invariance')" style="text-align: right;">Invarianza</th>
+                            <th data-col="market_capitalization" onclick="sortAdviceTable('market_capitalization')" style="text-align: right;">Cap. Mercato</th>
+                            <th style="text-align: right; width: 80px;">Trading</th>
+                        </tr>
+                    </thead>
+                    <tbody id="advice-body">
+                        <tr>
+                            <td colspan="13" style="text-align: center; color: #888; padding: 20px;">Caricamento consigli...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
         <!-- Sector Selector Modal -->
         <div id="sector-modal" class="modal-overlay">
             <div class="modal-content">
@@ -642,8 +684,12 @@
 
     <script>
         const API_URL = "https://feweb-tunnel.fe-web.eu";
+        const API_URL_MARKET = "https://market-tunnel.fe-web.eu";
         let credentials = { username: '', token: '', language: '', currency: '' };
         let portfolioData = [];
+        let adviceData = [];
+        let adviceSortCol = 'date_advice';
+        let adviceSortAsc = false;
         let tableColumns = [];
         let translations = {};
         let availableLanguages = [];
@@ -760,6 +806,15 @@
             document.getElementById('importBtnText').textContent = getTranslation('int.import') || 'Import';
             document.getElementById('openOnlyLabel').textContent = getTranslation('int.open_only') || 'Solo aperti';
             document.getElementById('marketSelectorAnchor').textContent = getTranslation('int.select_markets') || 'Seleziona mercati';
+
+            const adviceTitleEl = document.getElementById('adviceSectionTitle');
+            if (adviceTitleEl) {
+                adviceTitleEl.textContent = getTranslation('int.advice.buy') || 'Consigli di acquisto';
+            }
+            const refreshAdviceEl = document.getElementById('refreshAdviceText');
+            if (refreshAdviceEl) {
+                refreshAdviceEl.textContent = getTranslation('int.update') || 'Aggiorna';
+            }
         }
 
         async function loadLanguageManifest() {
@@ -2593,6 +2648,173 @@
 
             console.log('--- finishUpdate END ---');
         }
+        // ========== ADVICE FUNCTIONS ==========
+        async function loadAdvices() {
+            const tbody = document.getElementById('advice-body');
+            const badge = document.getElementById('adviceBadge');
+            try {
+                if (tbody) {
+                    tbody.innerHTML = `<tr><td colspan="13" style="text-align: center; color: #666; padding: 20px;"><i class="fa fa-spinner fa-spin"></i> ${getTranslation('int.loading') || 'Caricamento consigli...'}</td></tr>`;
+                }
+
+                const payload = {
+                    username: credentials.username,
+                    token: credentials.token,
+                    language: credentials.language || 'it_IT',
+                    filter: '',
+                    code: ''
+                };
+
+                console.log('Fetching advice from:', `${API_URL_MARKET}/getadvice`);
+                const response = await fetch(`${API_URL_MARKET}/getadvice`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+
+                const res = await response.json();
+                console.log('Advice result:', res);
+                if (res.status === 'ok') {
+                    adviceData = res.advice || res.data || [];
+                    renderAdviceTable();
+                } else {
+                    if (tbody) {
+                        tbody.innerHTML = `<tr><td colspan="13" style="text-align: center; color: #888; padding: 20px;">${res.msg || 'Nessun consiglio disponibile'}</td></tr>`;
+                    }
+                    if (badge) badge.textContent = '0';
+                }
+            } catch (err) {
+                console.error("Error loading advice:", err);
+                if (tbody) {
+                    tbody.innerHTML = `<tr><td colspan="13" style="text-align: center; color: #d32f2f; padding: 20px;">${getTranslation('int.error') || 'Errore'}: ${err.message}</td></tr>`;
+                }
+            }
+        }
+
+        function sortAdviceTable(col) {
+            if (adviceSortCol === col) {
+                adviceSortAsc = !adviceSortAsc;
+            } else {
+                adviceSortCol = col;
+                adviceSortAsc = (col === 'date_advice') ? false : true;
+            }
+            renderAdviceTable();
+        }
+
+        function renderAdviceTable() {
+            const tbody = document.getElementById('advice-body');
+            const badge = document.getElementById('adviceBadge');
+            if (!tbody) return;
+
+            if (!adviceData || adviceData.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="13" style="text-align: center; color: #888; padding: 20px;">${getTranslation('int.no_advice') || 'Nessun consiglio disponibile'}</td></tr>`;
+                if (badge) badge.textContent = '0';
+                return;
+            }
+
+            if (badge) {
+                badge.textContent = `${adviceData.length} ${getTranslation('int.elements') || 'elementi'}`;
+            }
+
+            const thead = document.getElementById('advice-header-row');
+            if (thead) {
+                Array.from(thead.cells).forEach(th => {
+                    const col = th.getAttribute('data-col');
+                    th.classList.remove('sort-asc', 'sort-desc');
+                    if (col && col === adviceSortCol) {
+                        th.classList.add(adviceSortAsc ? 'sort-asc' : 'sort-desc');
+                    }
+                });
+            }
+
+            const sorted = [...adviceData].sort((a, b) => {
+                let valA = a[adviceSortCol] ?? '';
+                let valB = b[adviceSortCol] ?? '';
+                const numA = parseFloat(valA);
+                const numB = parseFloat(valB);
+                if (!isNaN(numA) && !isNaN(numB)) {
+                    return adviceSortAsc ? numA - numB : numB - numA;
+                }
+                return adviceSortAsc ? String(valA).localeCompare(String(valB)) : String(valB).localeCompare(String(valA));
+            });
+
+            tbody.innerHTML = '';
+            sorted.forEach((item, idx) => {
+                const tr = document.createElement('tr');
+                const advType = String(item.advice_op || item.advice || '').toLowerCase();
+                const isBuy = advType.includes('buy');
+                const isDown = advType.includes('down');
+
+                const badgeStyle = isBuy
+                    ? 'background: #e8f5e9; color: #2e7d32; border: 1px solid #a5d6a7; padding: 2px 8px; border-radius: 4px; font-weight: bold; font-size: 11px;'
+                    : (isDown ? 'background: #ffebee; color: #c62828; border: 1px solid #ef9a9a; padding: 2px 8px; border-radius: 4px; font-weight: bold; font-size: 11px;' : 'padding: 2px 8px; font-weight: bold; font-size: 11px;');
+
+                const badgeLabel = isBuy ? 'BUY' : (isDown ? 'DOWN' : (item.advice_op || item.advice || ''));
+
+                let mcapStr = '-';
+                if (item.market_capitalization) {
+                    const mcap = parseFloat(item.market_capitalization);
+                    if (!isNaN(mcap)) {
+                        if (mcap >= 1e9) mcapStr = (mcap / 1e9).toFixed(2) + 'B';
+                        else if (mcap >= 1e6) mcapStr = (mcap / 1e6).toFixed(2) + 'M';
+                        else mcapStr = mcap.toLocaleString();
+                    }
+                }
+
+                let priceStr = '-';
+                if (item.price_end !== undefined && item.price_end !== null) {
+                    const p = parseFloat(item.price_end);
+                    priceStr = !isNaN(p) ? p.toFixed(2) : String(item.price_end);
+                }
+
+                let forzaStr = '-';
+                if (item.forza !== undefined && item.forza !== null) {
+                    const f = parseFloat(item.forza);
+                    forzaStr = !isNaN(f) ? f.toFixed(2) : String(item.forza);
+                }
+
+                let invStr = '-';
+                if (item.invariance !== undefined && item.invariance !== null) {
+                    const inv = parseFloat(item.invariance);
+                    invStr = !isNaN(inv) ? inv.toFixed(6) : String(item.invariance);
+                }
+
+                const symbol = item.id_instrument || '';
+                const desc = item.instrument_description || '-';
+                const sector = item.sector || '-';
+                const market = item.code_market || item.id_market || '-';
+                const currency = item.id_currency || item.currency || '-';
+                const dateAdvice = item.date_advice || '-';
+
+                tr.innerHTML = `
+                    <td style="text-align: center; color: #999; font-size: 11px;">${idx + 1}</td>
+                    <td style="text-align: left; white-space: nowrap;">${dateAdvice}</td>
+                    <td style="text-align: left; font-weight: bold; cursor: pointer; color: #000;" onclick="openInstrumentDetails('${symbol}')" title="Dettagli strumento">
+                        <i class="fa fa-chart-line" style="margin-right: 4px; font-size: 10px; color: #666;"></i>${symbol}
+                    </td>
+                    <td style="text-align: left; max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${desc}">${desc}</td>
+                    <td style="text-align: left;">${sector}</td>
+                    <td style="text-align: center;">${market}</td>
+                    <td style="text-align: center;"><span style="${badgeStyle}">${badgeLabel}</span></td>
+                    <td style="text-align: right; font-weight: 500;">${priceStr}</td>
+                    <td style="text-align: center;">${currency}</td>
+                    <td style="text-align: right;">${forzaStr}</td>
+                    <td style="text-align: right; font-size: 11px; color: #555;">${invStr}</td>
+                    <td style="text-align: right;">${mcapStr}</td>
+                    <td style="text-align: right; white-space: nowrap;">
+                        <button class="trade-btn buy" style="padding: 1px 8px; font-size: 10px; min-height: 20px; line-height: 16px;" onclick="event.stopPropagation(); openTrade({id_instrument: '${symbol}', instrument_description: '${desc.replace(/'/g, "\\'")}', currency: '${currency}'}, 'buy')">
+                            ${getTranslation('int.buy') || 'Acquisto'}
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
         // ========== INITIALIZATION ==========
         window.addEventListener('load', async () => {
             console.log('--- Window Load Event Fired ---');
@@ -2615,6 +2837,9 @@
                 await loadTranslations(credentials.language);
                 await loadCurrencies(credentials.language);
                 updateUserInfo();
+
+                // Start advice fetch
+                loadAdvices();
 
                 // Wait for portfolio data and then render
                 console.log('Waiting for portfolio data...');
