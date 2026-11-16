@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Market 0.2</title>
+    <title>Market 0.3</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <link rel="icon" type="image/png" href="images/icon-finest.png">
     <style>
@@ -209,6 +209,17 @@
 
         .trade-btn.sell:hover {
             background: #333;
+        }
+
+        .trade-btn.sell.sell-alert {
+            background: #d32f2f;
+            border-color: #d32f2f;
+            color: #fff;
+        }
+
+        .trade-btn.sell.sell-alert:hover {
+            background: #b71c1c;
+            border-color: #b71c1c;
         }
 
         .message {
@@ -625,11 +636,13 @@
         <div class="content-section" id="advice-section" style="margin-top: 25px;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
                 <div style="display: flex; align-items: center; gap: 10px;">
-                    <h2 style="font-size: 18px; font-weight: 600; color: #000; margin: 0;" id="adviceSectionTitle">Consigli di acquisto</h2>
+                    <h2 style="font-size: 18px; font-weight: 600; color: #000; margin: 0;" id="adviceSectionTitle">
+                        Consigli di acquisto</h2>
                     <span id="adviceBadge" style="font-size: 12px; color: #666; font-weight: normal;"></span>
                 </div>
                 <div style="display: flex; align-items: center; gap: 10px;">
-                    <button class="update-btn" onclick="loadAdvices()" style="padding: 6px 12px; font-size: 12px; min-height: 32px;">
+                    <button class="update-btn" onclick="loadAdvices()"
+                        style="padding: 6px 12px; font-size: 12px; min-height: 32px;">
                         <i class="fa fa-sync-alt"></i> <span id="refreshAdviceText">Aggiorna</span>
                     </button>
                 </div>
@@ -642,21 +655,29 @@
                             <th style="text-align: center; width: 40px;">#</th>
                             <th data-col="date_advice" onclick="sortAdviceTable('date_advice')">Data</th>
                             <th data-col="id_instrument" onclick="sortAdviceTable('id_instrument')">Strumento</th>
-                            <th data-col="instrument_description" onclick="sortAdviceTable('instrument_description')">Descrizione</th>
-                            <th data-col="sector" onclick="sortAdviceTable('sector')">Settore</th>
-                            <th data-col="code_market" onclick="sortAdviceTable('code_market')" style="text-align: center;">Mercato</th>
-                            <th data-col="advice" onclick="sortAdviceTable('advice')" style="text-align: center;">Advice</th>
-                            <th data-col="price_end" onclick="sortAdviceTable('price_end')" style="text-align: right;">Prezzo</th>
-                            <th data-col="id_currency" onclick="sortAdviceTable('id_currency')" style="text-align: center;">Divisa</th>
-                            <th data-col="forza" onclick="sortAdviceTable('forza')" style="text-align: right;">Forza</th>
-                            <th data-col="invariance" onclick="sortAdviceTable('invariance')" style="text-align: right;">Invarianza</th>
-                            <th data-col="market_capitalization" onclick="sortAdviceTable('market_capitalization')" style="text-align: right;">Cap. Mercato</th>
+                            <th data-col="instrument_description" onclick="sortAdviceTable('instrument_description')">
+                                Descrizione</th>
+                            <th data-col="code_market" onclick="sortAdviceTable('code_market')"
+                                style="text-align: center;">Mercato</th>
+                            <th data-col="advice" onclick="sortAdviceTable('advice')" style="text-align: center;">Advice
+                            </th>
+                            <th data-col="price_end" onclick="sortAdviceTable('price_end')" style="text-align: right;">
+                                Prezzo</th>
+                            <th data-col="id_currency" onclick="sortAdviceTable('id_currency')"
+                                style="text-align: center;">Divisa</th>
+                            <th data-col="forza" onclick="sortAdviceTable('forza')" style="text-align: right;">Forza
+                            </th>
+                            <th data-col="invariance" onclick="sortAdviceTable('invariance')"
+                                style="text-align: right;">Invarianza</th>
+                            <th data-col="market_capitalization" onclick="sortAdviceTable('market_capitalization')"
+                                style="text-align: right;">Cap. Mercato</th>
                             <th style="text-align: right; width: 80px;">Trading</th>
                         </tr>
                     </thead>
                     <tbody id="advice-body">
                         <tr>
-                            <td colspan="13" style="text-align: center; color: #888; padding: 20px;">Caricamento consigli...</td>
+                            <td colspan="12" style="text-align: center; color: #888; padding: 20px;">Caricamento
+                                consigli...</td>
                         </tr>
                     </tbody>
                 </table>
@@ -1480,6 +1501,7 @@
             });
 
             renderFooter(displayData);
+            updateSellHighlights();
 
             // Rimuove righe non più presenti in displayData
             const currentTickers = displayData.map(i => i.id_instrument || i.Ticker || 'unknown');
@@ -2654,7 +2676,7 @@
             const badge = document.getElementById('adviceBadge');
             try {
                 if (tbody) {
-                    tbody.innerHTML = `<tr><td colspan="13" style="text-align: center; color: #666; padding: 20px;"><i class="fa fa-spinner fa-spin"></i> ${getTranslation('int.loading') || 'Caricamento consigli...'}</td></tr>`;
+                    tbody.innerHTML = `<tr><td colspan="12" style="text-align: center; color: #666; padding: 20px;"><i class="fa fa-spinner fa-spin"></i> ${getTranslation('int.loading') || 'Caricamento consigli...'}</td></tr>`;
                 }
 
                 const payload = {
@@ -2681,18 +2703,53 @@
                 if (res.status === 'ok') {
                     adviceData = res.advice || res.data || [];
                     renderAdviceTable();
+                    updateSellHighlights();
                 } else {
                     if (tbody) {
-                        tbody.innerHTML = `<tr><td colspan="13" style="text-align: center; color: #888; padding: 20px;">${res.msg || 'Nessun consiglio disponibile'}</td></tr>`;
+                        tbody.innerHTML = `<tr><td colspan="12" style="text-align: center; color: #888; padding: 20px;">${res.msg || 'Nessun consiglio disponibile'}</td></tr>`;
                     }
                     if (badge) badge.textContent = '0';
                 }
             } catch (err) {
                 console.error("Error loading advice:", err);
                 if (tbody) {
-                    tbody.innerHTML = `<tr><td colspan="13" style="text-align: center; color: #d32f2f; padding: 20px;">${getTranslation('int.error') || 'Errore'}: ${err.message}</td></tr>`;
+                    tbody.innerHTML = `<tr><td colspan="12" style="text-align: center; color: #d32f2f; padding: 20px;">${getTranslation('int.error') || 'Errore'}: ${err.message}</td></tr>`;
                 }
             }
+        }
+
+        // ========== ADVICE HELPERS ==========
+        function adviceType(item) {
+            return String(item.advice_op || item.advice || '').toLowerCase();
+        }
+
+        function isBuyAdvice(item) {
+            return adviceType(item).includes('buy');
+        }
+
+        function isDownAdvice(item) {
+            return adviceType(item).includes('down');
+        }
+
+        function normalizeInstrumentId(id) {
+            if (!id) return '';
+            const str = String(id);
+            return str.substring(str.lastIndexOf(':') + 1).trim().toUpperCase();
+        }
+
+        // Evidenzia in rosso il tasto "Vendi" dei titoli in portafoglio con advice DOWN
+        function updateSellHighlights() {
+            const downSet = new Set(
+                (adviceData || []).filter(isDownAdvice).map(a => normalizeInstrumentId(a.id_instrument))
+            );
+            portfolioData.forEach(item => {
+                const ticker = item.id_instrument || item.Ticker || 'unknown';
+                const tr = document.getElementById(`row-${ticker}`);
+                if (!tr) return;
+                const sellBtn = tr.querySelector('.trade-btn.sell');
+                if (!sellBtn) return;
+                sellBtn.classList.toggle('sell-alert', downSet.has(normalizeInstrumentId(ticker)));
+            });
         }
 
         function sortAdviceTable(col) {
@@ -2710,14 +2767,17 @@
             const badge = document.getElementById('adviceBadge');
             if (!tbody) return;
 
-            if (!adviceData || adviceData.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="13" style="text-align: center; color: #888; padding: 20px;">${getTranslation('int.no_advice') || 'Nessun consiglio disponibile'}</td></tr>`;
+            // Mostra solo gli advice di tipo BUY
+            const buyAdvices = (adviceData || []).filter(isBuyAdvice);
+
+            if (buyAdvices.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="12" style="text-align: center; color: #888; padding: 20px;">${getTranslation('int.no_advice') || 'Nessun consiglio disponibile'}</td></tr>`;
                 if (badge) badge.textContent = '0';
                 return;
             }
 
             if (badge) {
-                badge.textContent = `${adviceData.length} ${getTranslation('int.elements') || 'elementi'}`;
+                badge.textContent = `${buyAdvices.length} ${getTranslation('int.elements') || 'elementi'}`;
             }
 
             const thead = document.getElementById('advice-header-row');
@@ -2731,7 +2791,7 @@
                 });
             }
 
-            const sorted = [...adviceData].sort((a, b) => {
+            const sorted = [...buyAdvices].sort((a, b) => {
                 let valA = a[adviceSortCol] ?? '';
                 let valB = b[adviceSortCol] ?? '';
                 const numA = parseFloat(valA);
@@ -2785,7 +2845,6 @@
 
                 const symbol = item.id_instrument || '';
                 const desc = item.instrument_description || '-';
-                const sector = item.sector || '-';
                 const market = item.code_market || item.id_market || '-';
                 const currency = item.id_currency || item.currency || '-';
                 const dateAdvice = item.date_advice || '-';
@@ -2797,7 +2856,6 @@
                         <i class="fa fa-chart-line" style="margin-right: 4px; font-size: 10px; color: #666;"></i>${symbol}
                     </td>
                     <td style="text-align: left; max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${desc}">${desc}</td>
-                    <td style="text-align: left;">${sector}</td>
                     <td style="text-align: center;">${market}</td>
                     <td style="text-align: center;"><span style="${badgeStyle}">${badgeLabel}</span></td>
                     <td style="text-align: right; font-weight: 500;">${priceStr}</td>
