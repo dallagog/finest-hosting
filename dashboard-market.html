@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Market 0.3</title>
+    <title>Market 0.4</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <link rel="icon" type="image/png" href="images/icon-finest.png">
     <style>
@@ -209,6 +209,46 @@
 
         .trade-btn.sell:hover {
             background: #333;
+        }
+
+        .trade-btn.buy.advice-buy {
+            background: #2e7d32;
+            border-color: #2e7d32;
+            color: #fff;
+        }
+
+        .trade-btn.buy.advice-buy:hover {
+            background: #1b5e20;
+            border-color: #1b5e20;
+        }
+
+        .advice-group-row {
+            cursor: pointer;
+        }
+
+        .advice-detail-row td {
+            background: #f4f8f4 !important;
+            color: #555;
+            font-size: 11px;
+        }
+
+        .advice-toggle {
+            display: inline-block;
+            width: 14px;
+            margin-right: 4px;
+            font-size: 10px;
+            color: #666;
+        }
+
+        .advice-count {
+            display: inline-block;
+            margin-left: 6px;
+            padding: 0 6px;
+            font-size: 10px;
+            font-weight: normal;
+            color: #666;
+            background: #eee;
+            border-radius: 8px;
         }
 
         .trade-btn.sell.sell-alert {
@@ -659,8 +699,6 @@
                                 Descrizione</th>
                             <th data-col="code_market" onclick="sortAdviceTable('code_market')"
                                 style="text-align: center;">Mercato</th>
-                            <th data-col="advice" onclick="sortAdviceTable('advice')" style="text-align: center;">Advice
-                            </th>
                             <th data-col="price_end" onclick="sortAdviceTable('price_end')" style="text-align: right;">
                                 Prezzo</th>
                             <th data-col="id_currency" onclick="sortAdviceTable('id_currency')"
@@ -676,7 +714,7 @@
                     </thead>
                     <tbody id="advice-body">
                         <tr>
-                            <td colspan="12" style="text-align: center; color: #888; padding: 20px;">Caricamento
+                            <td colspan="11" style="text-align: center; color: #888; padding: 20px;">Caricamento
                                 consigli...</td>
                         </tr>
                     </tbody>
@@ -711,6 +749,7 @@
         let adviceData = [];
         let adviceSortCol = 'date_advice';
         let adviceSortAsc = false;
+        let adviceExpanded = new Set(); // id_instrument espansi
         let tableColumns = [];
         let translations = {};
         let availableLanguages = [];
@@ -2676,7 +2715,7 @@
             const badge = document.getElementById('adviceBadge');
             try {
                 if (tbody) {
-                    tbody.innerHTML = `<tr><td colspan="12" style="text-align: center; color: #666; padding: 20px;"><i class="fa fa-spinner fa-spin"></i> ${getTranslation('int.loading') || 'Caricamento consigli...'}</td></tr>`;
+                    tbody.innerHTML = `<tr><td colspan="11" style="text-align: center; color: #666; padding: 20px;"><i class="fa fa-spinner fa-spin"></i> ${getTranslation('int.loading') || 'Caricamento consigli...'}</td></tr>`;
                 }
 
                 const payload = {
@@ -2706,14 +2745,14 @@
                     updateSellHighlights();
                 } else {
                     if (tbody) {
-                        tbody.innerHTML = `<tr><td colspan="12" style="text-align: center; color: #888; padding: 20px;">${res.msg || 'Nessun consiglio disponibile'}</td></tr>`;
+                        tbody.innerHTML = `<tr><td colspan="11" style="text-align: center; color: #888; padding: 20px;">${res.msg || 'Nessun consiglio disponibile'}</td></tr>`;
                     }
                     if (badge) badge.textContent = '0';
                 }
             } catch (err) {
                 console.error("Error loading advice:", err);
                 if (tbody) {
-                    tbody.innerHTML = `<tr><td colspan="12" style="text-align: center; color: #d32f2f; padding: 20px;">${getTranslation('int.error') || 'Errore'}: ${err.message}</td></tr>`;
+                    tbody.innerHTML = `<tr><td colspan="11" style="text-align: center; color: #d32f2f; padding: 20px;">${getTranslation('int.error') || 'Errore'}: ${err.message}</td></tr>`;
                 }
             }
         }
@@ -2762,22 +2801,76 @@
             renderAdviceTable();
         }
 
+        function toggleAdviceGroup(key) {
+            if (adviceExpanded.has(key)) adviceExpanded.delete(key);
+            else adviceExpanded.add(key);
+            renderAdviceTable();
+        }
+
+        function formatAdviceFields(item) {
+            let mcapStr = '-';
+            if (item.market_capitalization) {
+                const mcap = parseFloat(item.market_capitalization);
+                if (!isNaN(mcap)) {
+                    if (mcap >= 1e9) mcapStr = (mcap / 1e9).toFixed(2) + 'B';
+                    else if (mcap >= 1e6) mcapStr = (mcap / 1e6).toFixed(2) + 'M';
+                    else mcapStr = mcap.toLocaleString();
+                }
+            }
+            let priceStr = '-';
+            if (item.price_end !== undefined && item.price_end !== null) {
+                const p = parseFloat(item.price_end);
+                priceStr = !isNaN(p) ? p.toFixed(2) : String(item.price_end);
+            }
+            let forzaStr = '-';
+            if (item.forza !== undefined && item.forza !== null) {
+                const f = parseFloat(item.forza);
+                forzaStr = !isNaN(f) ? f.toFixed(2) : String(item.forza);
+            }
+            let invStr = '-';
+            if (item.invariance !== undefined && item.invariance !== null) {
+                const inv = parseFloat(item.invariance);
+                invStr = !isNaN(inv) ? inv.toFixed(6) : String(item.invariance);
+            }
+            return {
+                mcapStr, priceStr, forzaStr, invStr,
+                desc: item.instrument_description || '-',
+                market: item.code_market || item.id_market || '-',
+                currency: item.id_currency || item.currency || '-',
+                dateAdvice: item.date_advice || '-'
+            };
+        }
+
         function renderAdviceTable() {
             const tbody = document.getElementById('advice-body');
             const badge = document.getElementById('adviceBadge');
             if (!tbody) return;
 
-            // Mostra solo gli advice di tipo BUY
+            // Solo advice BUY
             const buyAdvices = (adviceData || []).filter(isBuyAdvice);
 
             if (buyAdvices.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="12" style="text-align: center; color: #888; padding: 20px;">${getTranslation('int.no_advice') || 'Nessun consiglio disponibile'}</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="11" style="text-align: center; color: #888; padding: 20px;">${getTranslation('int.no_advice') || 'Nessun consiglio disponibile'}</td></tr>`;
                 if (badge) badge.textContent = '0';
                 return;
             }
 
+            // Raggruppa per id_instrument
+            const groupsMap = new Map();
+            buyAdvices.forEach(item => {
+                const key = item.id_instrument || '';
+                if (!groupsMap.has(key)) groupsMap.set(key, []);
+                groupsMap.get(key).push(item);
+            });
+            const groups = [];
+            groupsMap.forEach((items, key) => {
+                // dettaglio ordinato per data decrescente; il primo è il più recente
+                items.sort((a, b) => String(b.date_advice ?? '').localeCompare(String(a.date_advice ?? '')));
+                groups.push({ key, items, rep: items[0] });
+            });
+
             if (badge) {
-                badge.textContent = `${buyAdvices.length} ${getTranslation('int.elements') || 'elementi'}`;
+                badge.textContent = `${groups.length} ${getTranslation('int.elements') || 'elementi'}`;
             }
 
             const thead = document.getElementById('advice-header-row');
@@ -2791,9 +2884,11 @@
                 });
             }
 
-            const sorted = [...buyAdvices].sort((a, b) => {
-                let valA = a[adviceSortCol] ?? '';
-                let valB = b[adviceSortCol] ?? '';
+            // Ordina i gruppi sul rappresentante (advice più recente)
+            groups.sort((ga, gb) => {
+                const a = ga.rep, b = gb.rep;
+                const valA = a[adviceSortCol] ?? '';
+                const valB = b[adviceSortCol] ?? '';
                 const numA = parseFloat(valA);
                 const numB = parseFloat(valB);
                 if (!isNaN(numA) && !isNaN(numB)) {
@@ -2802,74 +2897,62 @@
                 return adviceSortAsc ? String(valA).localeCompare(String(valB)) : String(valB).localeCompare(String(valA));
             });
 
+            const esc = (v) => String(v).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+            const jsq = (v) => String(v).replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+
             tbody.innerHTML = '';
-            sorted.forEach((item, idx) => {
+            groups.forEach((g, idx) => {
+                const item = g.rep;
+                const f = formatAdviceFields(item);
+                const symbol = g.key;
+                const expanded = adviceExpanded.has(symbol);
+                const multi = g.items.length > 1;
+
                 const tr = document.createElement('tr');
-                const advType = String(item.advice_op || item.advice || '').toLowerCase();
-                const isBuy = advType.includes('buy');
-                const isDown = advType.includes('down');
-
-                const badgeStyle = isBuy
-                    ? 'background: #e8f5e9; color: #2e7d32; border: 1px solid #a5d6a7; padding: 2px 8px; border-radius: 4px; font-weight: bold; font-size: 11px;'
-                    : (isDown ? 'background: #ffebee; color: #c62828; border: 1px solid #ef9a9a; padding: 2px 8px; border-radius: 4px; font-weight: bold; font-size: 11px;' : 'padding: 2px 8px; font-weight: bold; font-size: 11px;');
-
-                const badgeLabel = isBuy ? 'BUY' : (isDown ? 'DOWN' : (item.advice_op || item.advice || ''));
-
-                let mcapStr = '-';
-                if (item.market_capitalization) {
-                    const mcap = parseFloat(item.market_capitalization);
-                    if (!isNaN(mcap)) {
-                        if (mcap >= 1e9) mcapStr = (mcap / 1e9).toFixed(2) + 'B';
-                        else if (mcap >= 1e6) mcapStr = (mcap / 1e6).toFixed(2) + 'M';
-                        else mcapStr = mcap.toLocaleString();
-                    }
-                }
-
-                let priceStr = '-';
-                if (item.price_end !== undefined && item.price_end !== null) {
-                    const p = parseFloat(item.price_end);
-                    priceStr = !isNaN(p) ? p.toFixed(2) : String(item.price_end);
-                }
-
-                let forzaStr = '-';
-                if (item.forza !== undefined && item.forza !== null) {
-                    const f = parseFloat(item.forza);
-                    forzaStr = !isNaN(f) ? f.toFixed(2) : String(item.forza);
-                }
-
-                let invStr = '-';
-                if (item.invariance !== undefined && item.invariance !== null) {
-                    const inv = parseFloat(item.invariance);
-                    invStr = !isNaN(inv) ? inv.toFixed(6) : String(item.invariance);
-                }
-
-                const symbol = item.id_instrument || '';
-                const desc = item.instrument_description || '-';
-                const market = item.code_market || item.id_market || '-';
-                const currency = item.id_currency || item.currency || '-';
-                const dateAdvice = item.date_advice || '-';
-
+                tr.className = 'advice-group-row';
+                tr.onclick = () => toggleAdviceGroup(symbol);
                 tr.innerHTML = `
                     <td style="text-align: center; color: #999; font-size: 11px;">${idx + 1}</td>
-                    <td style="text-align: left; white-space: nowrap;">${dateAdvice}</td>
-                    <td style="text-align: left; font-weight: bold; cursor: pointer; color: #000;" onclick="openInstrumentDetails('${symbol}')" title="Dettagli strumento">
-                        <i class="fa fa-chart-line" style="margin-right: 4px; font-size: 10px; color: #666;"></i>${symbol}
+                    <td style="text-align: left; white-space: nowrap;">${esc(f.dateAdvice)}</td>
+                    <td style="text-align: left; font-weight: bold; color: #000;">
+                        <span class="advice-toggle"><i class="fa ${expanded ? 'fa-chevron-down' : 'fa-chevron-right'}"></i></span><span style="cursor: pointer; text-decoration: underline;" onclick="event.stopPropagation(); openInstrumentDetails('${jsq(symbol)}')" title="Dettagli strumento">${esc(symbol)}</span><span class="advice-count" title="Date advice">${g.items.length}</span>
                     </td>
-                    <td style="text-align: left; max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${desc}">${desc}</td>
-                    <td style="text-align: center;">${market}</td>
-                    <td style="text-align: center;"><span style="${badgeStyle}">${badgeLabel}</span></td>
-                    <td style="text-align: right; font-weight: 500;">${priceStr}</td>
-                    <td style="text-align: center;">${currency}</td>
-                    <td style="text-align: right;">${forzaStr}</td>
-                    <td style="text-align: right; font-size: 11px; color: #555;">${invStr}</td>
-                    <td style="text-align: right;">${mcapStr}</td>
+                    <td style="text-align: left; max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${esc(f.desc)}">${esc(f.desc)}</td>
+                    <td style="text-align: center;">${esc(f.market)}</td>
+                    <td style="text-align: right; font-weight: 500;">${f.priceStr}</td>
+                    <td style="text-align: center;">${esc(f.currency)}</td>
+                    <td style="text-align: right;">${f.forzaStr}</td>
+                    <td style="text-align: right; font-size: 11px; color: #555;">${f.invStr}</td>
+                    <td style="text-align: right;">${f.mcapStr}</td>
                     <td style="text-align: right; white-space: nowrap;">
-                        <button class="trade-btn buy" style="padding: 1px 8px; font-size: 10px; min-height: 20px; line-height: 16px;" onclick="event.stopPropagation(); openTrade({id_instrument: '${symbol}', instrument_description: '${desc.replace(/'/g, "\\'")}', currency: '${currency}'}, 'buy')">
+                        <button class="trade-btn buy advice-buy" style="padding: 1px 8px; font-size: 10px; min-height: 20px; line-height: 16px;" onclick="event.stopPropagation(); openTrade({id_instrument: '${jsq(symbol)}', instrument_description: '${jsq(item.instrument_description || '')}', currency: '${jsq(f.currency)}'}, 'buy')">
                             ${getTranslation('int.buy') || 'Acquisto'}
                         </button>
                     </td>
                 `;
                 tbody.appendChild(tr);
+
+                if (expanded) {
+                    g.items.forEach(d => {
+                        const df = formatAdviceFields(d);
+                        const dtr = document.createElement('tr');
+                        dtr.className = 'advice-detail-row';
+                        dtr.innerHTML = `
+                            <td></td>
+                            <td style="text-align: left; white-space: nowrap;">${esc(df.dateAdvice)}</td>
+                            <td style="text-align: left; padding-left: 26px;">${esc(symbol)}</td>
+                            <td style="text-align: left; max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${esc(df.desc)}">${esc(df.desc)}</td>
+                            <td style="text-align: center;">${esc(df.market)}</td>
+                            <td style="text-align: right;">${df.priceStr}</td>
+                            <td style="text-align: center;">${esc(df.currency)}</td>
+                            <td style="text-align: right;">${df.forzaStr}</td>
+                            <td style="text-align: right;">${df.invStr}</td>
+                            <td style="text-align: right;">${df.mcapStr}</td>
+                            <td></td>
+                        `;
+                        tbody.appendChild(dtr);
+                    });
+                }
             });
         }
 
