@@ -3006,17 +3006,17 @@
                 const item = g.rep;
                 const f = formatAdviceFields(item);
                 const symbol = g.key;
-                const expanded = adviceExpanded.has(symbol);
-                const multi = g.items.length > 1;
+                const multi = g.items.length > 1; // con un solo record non c'è nulla da espandere
+                const expanded = multi && adviceExpanded.has(symbol);
 
                 const tr = document.createElement('tr');
-                tr.className = 'advice-group-row';
-                tr.onclick = () => toggleAdviceGroup(symbol);
+                tr.className = multi ? 'advice-group-row' : '';
+                if (multi) tr.onclick = () => toggleAdviceGroup(symbol);
                 tr.innerHTML = `
                     <td style="text-align: center; color: #999; font-size: 11px;">${idx + 1}</td>
                     <td style="text-align: left; white-space: nowrap;">${esc(f.dateAdvice)}</td>
                     <td style="text-align: left; font-weight: bold; color: #000;">
-                        <span class="advice-toggle"><i class="fa ${expanded ? 'fa-chevron-down' : 'fa-chevron-right'}"></i></span><span style="cursor: pointer; text-decoration: underline;" onclick="event.stopPropagation(); openPriceGraph('${jsq(symbol)}')" title="Grafico prezzi">${esc(symbol)}</span><span class="advice-count" title="Date advice">${g.items.length}</span>
+                        <span class="advice-toggle">${multi ? `<i class="fa ${expanded ? 'fa-chevron-down' : 'fa-chevron-right'}"></i>` : ''}</span><span style="cursor: pointer; text-decoration: underline;" onclick="event.stopPropagation(); openPriceGraph('${jsq(symbol)}')" title="Grafico prezzi">${esc(symbol)}</span>${multi ? `<span class="advice-count" title="Date advice">${g.items.length}</span>` : ''}
                     </td>
                     <td style="text-align: left; max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${esc(f.desc)}">${esc(f.desc)}</td>
                     <td style="text-align: center;">${esc(f.market)}</td>
